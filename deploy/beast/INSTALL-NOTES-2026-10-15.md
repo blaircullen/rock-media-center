@@ -9,7 +9,7 @@ is named instead.
 - Published only on `10.0.0.13:8787` and `100.114.152.41:8787`  ; container port 7878; runs as 1000:100.
 - Data: `/var/lib/rock-media-center` (1000:100, 750). Staging and quarantine:
   `/mnt/nas/downloads/beast-qbt/rmc/{staging,quarantine}` (created as 1000:100).
-- Admin account `blair`; password in `~/.config/rock-media-center/admin.env` on Goat (mode 600).
+- Admin account: Blair's email login; password in `~/.config/rock-media-center/admin.env` on Goat (mode 600).
 
 ## Secrets in `deploy/beast/.env` on Beast (mode 600), and where each came from
 
