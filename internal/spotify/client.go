@@ -61,6 +61,28 @@ func (e *APIError) Error() string {
 	return msg
 }
 
+// NotBeforeKey is the settings key holding the unix second before which no request may be made
+// (set from a 429's Retry-After). It is plain data here; the wiring supplies the store.
+const NotBeforeKey = "musicengine_spotify_not_before"
+
+// minBackoff is the cool-down used when a 429 carries no usable Retry-After.
+const minBackoff = 60 * time.Second
+
+// NotBeforeStore persists the cool-down so it survives a restart. *settings.Service satisfies
+// it (Get returns def when the key was never saved).
+type NotBeforeStore interface {
+	Get(ctx context.Context, key, def string) string
+	Set(ctx context.Context, key, value string) error
+}
+
+// BackoffError means a request was not sent because Spotify asked us to wait. Until is when
+// the cool-down ends.
+type BackoffError struct{ Until time.Time }
+
+func (e *BackoffError) Error() string {
+	return fmt.Sprintf("spotify is rate limiting this app; no requests until %s", e.Until.UTC().Format(time.RFC3339))
+}
+
 // Config holds everything New needs. Only ClientID and ClientSecret are required.
 type Config struct {
 	ClientID     string
@@ -85,6 +107,9 @@ type Config struct {
 	HTTPClient *http.Client
 	// Now is optional (tests inject a fake clock for token expiry).
 	Now func() time.Time
+	// NotBefore is optional. When set, a 429's Retry-After is saved under NotBeforeKey, and no
+	// token or API request is made until that time passes, across restarts.
+	NotBefore NotBeforeStore
 }
 
 // Client talks to the Spotify Web API with an app token.
@@ -97,6 +122,7 @@ type Client struct {
 	legacyTracks           bool
 	http                   *http.Client
 	now                    func() time.Time
+	notBefore              NotBeforeStore
 
 	mu      sync.Mutex
 	token   string
@@ -118,6 +144,7 @@ func New(cfg Config) (*Client, error) {
 		legacyTracks: cfg.LegacyTracks,
 		http:         cfg.HTTPClient,
 		now:          cfg.Now,
+		notBefore:    cfg.NotBefore,
 	}
 	if c.pageSize < 1 || c.pageSize > 50 {
 		c.pageSize = 50
@@ -146,6 +173,9 @@ func orDefault(v, d string) string {
 // accessToken returns the cached app token, fetching a new one when none is cached or it is
 // within tokenSkew of expiry.
 func (c *Client) accessToken(ctx context.Context) (string, error) {
+	if err := c.checkBackoff(ctx); err != nil {
+		return "", err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.token != "" && c.now().Before(c.expires.Add(-tokenSkew)) {
@@ -179,7 +209,11 @@ func (c *Client) fetchTokenLocked(ctx context.Context) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", newAPIError("token", resp)
+		e := newAPIError("token", resp)
+		if berr := c.recordBackoff(ctx, e); berr != nil {
+			return "", errors.Join(e, fmt.Errorf("spotify: saving rate-limit cool-down: %w", berr))
+		}
+		return "", e
 	}
 	var tr struct {
 		AccessToken string `json:"access_token"`
@@ -194,6 +228,45 @@ func (c *Client) fetchTokenLocked(ctx context.Context) (string, error) {
 	c.token = tr.AccessToken
 	c.expires = c.now().Add(time.Duration(tr.ExpiresIn) * time.Second)
 	return c.token, nil
+}
+
+// checkBackoff refuses a request while a saved cool-down is in the future.
+func (c *Client) checkBackoff(ctx context.Context) error {
+	if c.notBefore == nil {
+		return nil
+	}
+	raw := c.notBefore.Get(ctx, NotBeforeKey, "")
+	if raw == "" {
+		return nil
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return fmt.Errorf("spotify: saved %s %q is not a unix time: %w", NotBeforeKey, raw, err)
+	}
+	if until := time.Unix(n, 0); c.now().Before(until) {
+		return &BackoffError{Until: until}
+	}
+	return nil
+}
+
+// recordBackoff saves the cool-down a 429 asked for. A failure to save is returned so the
+// caller can report it next to the 429.
+func (c *Client) recordBackoff(ctx context.Context, e *APIError) error {
+	if c.notBefore == nil || e.Status != http.StatusTooManyRequests {
+		return nil
+	}
+	wait := e.RetryAfter
+	if wait < minBackoff {
+		wait = minBackoff
+	}
+	until := c.now().Add(wait).Unix()
+	// Never shorten a cool-down that is already longer.
+	if raw := c.notBefore.Get(ctx, NotBeforeKey, ""); raw != "" {
+		if cur, err := strconv.ParseInt(raw, 10, 64); err == nil && cur > until {
+			return nil
+		}
+	}
+	return c.notBefore.Set(ctx, NotBeforeKey, strconv.FormatInt(until, 10))
 }
 
 func newAPIError(op string, resp *http.Response) *APIError {
@@ -235,6 +308,9 @@ func (c *Client) getJSON(ctx context.Context, op, fullURL string, out any) error
 		if resp.StatusCode != http.StatusOK {
 			e := newAPIError(op, resp)
 			resp.Body.Close()
+			if berr := c.recordBackoff(ctx, e); berr != nil {
+				return errors.Join(e, fmt.Errorf("spotify: saving rate-limit cool-down: %w", berr))
+			}
 			return e
 		}
 		err = json.NewDecoder(io.LimitReader(resp.Body, maxJSONBody)).Decode(out)

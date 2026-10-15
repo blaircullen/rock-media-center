@@ -102,6 +102,8 @@ type Space struct {
 	quarEpisode  int64
 	why          spaceWhy
 	alerted      map[string]bool
+	// incidentCleared notes incidents already closed in the database, so recovery writes once.
+	incidentCleared map[string]bool
 }
 
 type spaceWhy struct{ sweep, intake, quarantine string }
@@ -303,8 +305,9 @@ func (s *Space) updateLocked(ctx context.Context, r spaceReading, st SpaceSettin
 	}
 	if !s.sweepPaused && !s.intakePaused {
 		s.episode = 0
+		s.incidentClear(ctx, incidentSpacePause, now.Unix())
 	} else if !wasPaused || s.episode == 0 {
-		s.episode = now.Unix()
+		s.episode = s.incidentStart(ctx, incidentSpacePause, now.Unix())
 	}
 
 	var out []spaceAlert
@@ -380,7 +383,7 @@ func (s *Space) evaluate(ctx context.Context) (r spaceReading, st SpaceSettings,
 		quarOK = false
 		if !s.quarFull {
 			s.quarFull = true
-			s.quarEpisode = s.now().Unix()
+			s.quarEpisode = s.incidentStart(ctx, incidentQuarantineFull, s.now().Unix())
 		}
 		key := fmt.Sprintf("mus-quarantine-full:%d", s.quarEpisode)
 		alerts = append(alerts, filterAlerted([]spaceAlert{{key, Alert{
@@ -390,6 +393,7 @@ func (s *Space) evaluate(ctx context.Context) (r spaceReading, st SpaceSettings,
 		}}}, s.alerted)...)
 	default:
 		s.quarFull, s.quarEpisode = false, 0
+		s.incidentClear(ctx, incidentQuarantineFull, s.now().Unix())
 		quarOK = true
 	}
 	return r, st, quarOK, alerts, nil
@@ -454,7 +458,7 @@ func (s *Space) Reserve(ctx context.Context, itemID, bytes int64) (bool, string)
 		s.intakePaused, s.sweepPaused = true, true
 		s.why.intake, s.why.sweep = reason, reason
 		if s.episode == 0 {
-			s.episode = s.now().Unix()
+			s.episode = s.incidentStart(ctx, incidentSpacePause, s.now().Unix())
 		}
 		key := fmt.Sprintf("mus-space:%d:intake", s.episode)
 		alerts = append(alerts, filterAlerted([]spaceAlert{{key, Alert{

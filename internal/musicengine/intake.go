@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/tristenlammi/arrmada/internal/spotify"
 	"github.com/tristenlammi/arrmada/internal/store"
@@ -66,6 +67,13 @@ func (e *Engine) SyncIntake(ctx context.Context) (SyncReport, error) {
 	}
 
 	read, err := e.spotify.ReadPlaylist(ctx, pid)
+	var backoff *spotify.BackoffError
+	if errors.As(err, &backoff) {
+		// Spotify asked us to wait (a saved Retry-After): nothing was requested, so nothing
+		// failed. Skip the run; the cool-down survives a restart.
+		e.log.Info("musicengine: intake skipped, Spotify is rate limiting this app", "until", backoff.Until.UTC().Format(time.RFC3339))
+		return rep, nil
+	}
 	if err == nil && len(read.Entries) == 0 {
 		var present int
 		qerr := e.db.QueryRowContext(ctx,
@@ -144,9 +152,17 @@ func (e *Engine) applyRead(ctx context.Context, pl playlistRow, read *spotify.Pl
 		}
 
 		var gone []entryRow
-		for key, row := range existing {
-			if row.Present && !seen[key] {
-				gone = append(gone, row)
+		if rep.Skipped > 0 {
+			// A slot with no identity could be any known entry (Spotify returns a null item for a
+			// track it removed or hides), so a known entry missing from `seen` is not proven
+			// removed. Remove and cancel nothing this run; the next complete read decides.
+			e.log.Warn("musicengine: playlist has slots with no identity, so no entry is marked removed or cancelled this run",
+				"playlist", pl.SpotifyID, "unidentified_slots", rep.Skipped)
+		} else {
+			for key, row := range existing {
+				if row.Present && !seen[key] {
+					gone = append(gone, row)
+				}
 			}
 		}
 		for _, row := range gone {
@@ -182,29 +198,30 @@ func (e *Engine) insertEntry(ctx context.Context, tx store.Execer, playlistID in
 	}
 	_, err = tx.ExecContext(ctx,
 		`INSERT INTO mus_playlist_entries (playlist_id, spotify_track_id, isrc, title, artist, album,
-		        duration_ms, explicit, is_local, relinked_from_id, item_id, present, first_seen_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+		        duration_ms, explicit, is_local, unavailable, relinked_from_id, item_id, present, first_seen_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
 		playlistID, key, se.ISRC, se.Name, strings.Join(se.Artists, ", "), se.Album, se.DurationMs,
-		boolInt(se.Explicit), boolInt(isLocalEntry(se)), se.LinkedFromID, itemID, nowUnix)
+		boolInt(se.Explicit), boolInt(isLocalEntry(se)), boolInt(se.Unavailable), se.LinkedFromID, itemID, nowUnix)
 	if err != nil {
 		return fmt.Errorf("inserting playlist entry %s: %w", key, err)
 	}
 	return nil
 }
 
-// isLocalEntry: a local file, or an item Spotify gave no track id for, has no identity the
-// engine can pin by.
-func isLocalEntry(se spotify.Entry) bool { return se.IsLocal || se.TrackID == "" }
+// isLocalEntry: a local file, an item Spotify gave no track id for, or a track Spotify lists
+// but marks unavailable has no identity the engine can pin by itself; pinning sends such an
+// entry to Blair instead of searching (R6). The unavailable column keeps the real reason.
+func isLocalEntry(se spotify.Entry) bool { return se.IsLocal || se.TrackID == "" || se.Unavailable }
 
 // refreshEntry updates a known entry from the read and, when it comes back after being
 // removed, reopens its item.
 func (e *Engine) refreshEntry(ctx context.Context, tx store.Execer, row entryRow, se spotify.Entry, rep *SyncReport) error {
 	_, err := tx.ExecContext(ctx,
 		`UPDATE mus_playlist_entries SET isrc = ?, title = ?, artist = ?, album = ?, duration_ms = ?,
-		        explicit = ?, is_local = ?, relinked_from_id = ?, present = 1, removed_at = 0
+		        explicit = ?, is_local = ?, unavailable = ?, relinked_from_id = ?, present = 1, removed_at = 0
 		 WHERE id = ?`,
 		se.ISRC, se.Name, strings.Join(se.Artists, ", "), se.Album, se.DurationMs,
-		boolInt(se.Explicit), boolInt(isLocalEntry(se)), se.LinkedFromID, row.ID)
+		boolInt(se.Explicit), boolInt(isLocalEntry(se)), boolInt(se.Unavailable), se.LinkedFromID, row.ID)
 	if err != nil {
 		return fmt.Errorf("refreshing playlist entry %d: %w", row.ID, err)
 	}

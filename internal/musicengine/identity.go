@@ -95,6 +95,9 @@ type Remapper struct {
 	paths pathMap
 	log   *slog.Logger
 	now   func() time.Time
+	// items caches playlist contents for one Remap run (snapshot refreshes read each playlist
+	// once, not once per track).
+	items map[string][]plex.PlaylistItem
 }
 
 // NewRemapper builds a Remapper.
@@ -147,6 +150,7 @@ type membershipRow struct {
 // write is read back before the database records it.
 func (r *Remapper) Remap(ctx context.Context) (RemapReport, error) {
 	var rep RemapReport
+	r.items = map[string][]plex.PlaylistItem{}
 	section := r.cfg.PlexSection()
 	if section == "" {
 		return rep, errors.New("remap: no Plex music section is configured")
@@ -286,6 +290,11 @@ func (r *Remapper) remapOne(ctx context.Context, section string, id identityRow,
 		return remapUnmappable, "the file's checksum is not the recorded one", nil
 	}
 	track := hits[0]
+	if id.Key == track.RatingKey {
+		// Same key, same file: nothing was replaced, so Plex is the truth. Restoring the saved
+		// state here would undo a rating change or playlist removal the user made since.
+		return r.refreshSnapshot(ctx, id, track, pls)
+	}
 	ms, err := r.memberships(ctx, id.ID)
 	if err != nil {
 		return remapUnchanged, "", err
@@ -306,7 +315,7 @@ func (r *Remapper) remapOne(ctx context.Context, section string, id identityRow,
 		}
 		adds = append(adds, add{pl: pl, m: m})
 	}
-	changed := id.Key != track.RatingKey
+	changed := true // the key moved: a verified re-import
 	wantRating := id.Rating.Valid && id.Rating.Float64 > 0
 	if wantRating && track.UserRating != id.Rating.Float64 {
 		if err := r.cfg.Plex.SetRating(ctx, track.RatingKey, id.Rating.Float64); err != nil {
@@ -364,12 +373,9 @@ func (r *Remapper) remapOne(ctx context.Context, section string, id identityRow,
 				return fmt.Errorf("updating membership of identity %d: %w", id.ID, err)
 			}
 		}
-		// The library row carries the key the mirror uses; move it unless another row has it.
-		_, err := tx.ExecContext(ctx,
-			`UPDATE mus_library_tracks SET plex_rating_key = ? WHERE path = ?
-			   AND NOT EXISTS (SELECT 1 FROM mus_library_tracks o WHERE o.plex_rating_key = ? AND o.path <> ?)`,
-			track.RatingKey, id.Path, track.RatingKey, id.Path)
-		return err
+		// The library row carries the key the mirror uses; merge a catalogue-refresh duplicate
+		// into it and move the key.
+		return mergeLibraryRowKey(ctx, tx, id.Path, track.RatingKey)
 	})
 	if err != nil {
 		return remapUnchanged, "", err
