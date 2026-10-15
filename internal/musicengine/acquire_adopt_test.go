@@ -69,3 +69,30 @@ func TestAdoptRenamesWhenItCan(t *testing.T) {
 		t.Error("source should have moved")
 	}
 }
+
+// slskd saves a second file of the same name as "<stem>_<digits><ext>". The transfer's own
+// file is then the suffixed one, told apart from the older download by its size.
+func TestFindSoulseekFileTakesSlskdCollisionName(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "Riser (2014)")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := filepath.Join(dir, "06 - Drunk on a Plane.flac")
+	mine := filepath.Join(dir, "06 - Drunk on a Plane_639276573952246895.flac")
+	if err := os.WriteFile(old, []byte("older download"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(mine, []byte("this transfer's bytes"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := acqFindSoulseekFile(root, `music\Dierks Bentley\Riser (2014)\06 - Drunk on a Plane.flac`, int64(len("this transfer's bytes")))
+	if err != nil || got != mine {
+		t.Fatalf("found %q, %v; want the suffixed file", got, err)
+	}
+	for _, bad := range []string{"06 - Drunk on a Plane_x1.flac", "06 - Drunk on a Plane_.flac", "06 - Drunk on a Plane_12.mp3"} {
+		if acqSlskdNameMatches(bad, "06 - Drunk on a Plane.flac") {
+			t.Errorf("%q must not match", bad)
+		}
+	}
+}

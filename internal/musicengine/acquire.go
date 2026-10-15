@@ -785,6 +785,31 @@ func (a *Acquire) soulseekDownload(ctx context.Context, m Machine, it Item, c ca
 	return a.toChecking(ctx, m, it, c, dir)
 }
 
+// acqSlskdNameMatches: the saved file has the remote file's name, or, when a file of that name
+// was already in the folder, slskd's collision name "<stem>_<digits><ext>" (seen on Beast
+// 2026-10-15: "... Drunk on a Plane_639276573952246895.flac" beside an older download). The
+// size check in the caller then tells the two apart.
+func acqSlskdNameMatches(name, base string) bool {
+	if strings.EqualFold(name, base) {
+		return true
+	}
+	ext := filepath.Ext(base)
+	stem := strings.TrimSuffix(base, ext)
+	if len(name) <= len(stem)+1+len(ext) || !strings.EqualFold(filepath.Ext(name), ext) {
+		return false
+	}
+	head, tail := name[:len(stem)+1], strings.TrimSuffix(name[len(stem)+1:], filepath.Ext(name))
+	if !strings.EqualFold(head, stem+"_") || tail == "" {
+		return false
+	}
+	for _, r := range tail {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 // acqFindSoulseekFile finds THIS transfer's finished file in slskd's download folder. slskd
 // saves a transfer under the remote file's own folder name, so the match needs the file name,
 // that parent folder and the size together; the same name and size from another peer lands in
@@ -808,7 +833,7 @@ func acqFindSoulseekFile(root, remote string, size int64) (string, error) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() || !strings.EqualFold(d.Name(), base) {
+		if d.IsDir() || !acqSlskdNameMatches(d.Name(), base) {
 			return nil
 		}
 		if parent != "" && !strings.EqualFold(filepath.Base(filepath.Dir(p)), parent) {
