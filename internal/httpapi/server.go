@@ -150,6 +150,11 @@ type Deps struct {
 	ImportFailures func() []library.FailureInfo
 	// Issues is "Report a problem" (Requests → Issues). nil = reporting answers 503.
 	Issues *issues.Service
+	// MusicEngine is what the lossless music engine's routes (/api/v1/musicengine/*) call.
+	// nil = every one of them answers 503. A value with only DB set (the engine is switched
+	// off) keeps the settings, release-check and listing routes working, so the engine can be
+	// switched on from its own page; the routes that need a service answer 503.
+	MusicEngine *MusicEngineAPI
 }
 
 type api struct {
@@ -616,6 +621,9 @@ func (a *api) registerRoutes(mux *router) {
 	mux.HandleFunc("GET /api/v1/insights/library", a.requireRole(auth.RoleManager, a.handleInsightsLibrary))
 	mux.HandleFunc("GET /api/v1/insights/recently-added", a.requireRole(auth.RoleManager, a.handleInsightsRecentlyAdded))
 	mux.HandleFunc("GET /api/v1/insights/image", a.requireRole(auth.RoleManager, a.handleInsightsImage))
+
+	// The lossless music engine's admin routes (musicengine.go).
+	a.registerMusicEngineRoutes(mux, a.deps.MusicEngine)
 
 	// Music (Lidarr replacement - MusicBrainz metadata + album acquisition). A preview that's
 	// off by default: musicRoute 404s every endpoint while it's switched off. It sits inside

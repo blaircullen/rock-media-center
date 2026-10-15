@@ -260,7 +260,7 @@ func TestTuneBundledSAB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(got.Categories, ",") != "arrmada-music" || got.Folders != root+"/usenet" {
+	if strings.Join(got.Categories, ",") != "arrmada-music,rmc-music" || got.Folders != root+"/usenet" {
 		t.Errorf("tuned = %+v", got)
 	}
 	// Its categories' own folders are made inside the downloads folder, and only there.

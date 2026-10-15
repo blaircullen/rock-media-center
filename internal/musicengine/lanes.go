@@ -27,9 +27,8 @@ const (
 	LaneYouTube  = "youtube"
 )
 
-// acqCategoryDefault is the download-client category for engine downloads (KTD1). U15 adds
-// the constant to internal/download/categories.go; until then this package keeps its own.
-const acqCategoryDefault = "rmc-music"
+// acqCategoryDefault is the download-client category for engine downloads (KTD1).
+const acqCategoryDefault = download.CategoryMusicEngine
 
 // Newznab categories searched in order (KTD14): lossless audio, then all audio.
 var laneUsenetCategories = []int{3040, 3000}

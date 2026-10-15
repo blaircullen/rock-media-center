@@ -66,7 +66,7 @@ func (s *SABnzbd) categories() []sabCategory {
 	s.mu.RLock()
 	c := FixedCategories(s.movieCat)
 	s.mu.RUnlock()
-	return []sabCategory{{c.Movies, "movies"}, {c.TV, "tv"}, {c.Music, "music"}}
+	return []sabCategory{{c.Movies, "movies"}, {c.TV, "tv"}, {c.Music, "music"}, {CategoryMusicEngine, "music"}}
 }
 
 type sabCategory struct{ name, kind string }

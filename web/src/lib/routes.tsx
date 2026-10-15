@@ -33,6 +33,8 @@ const Requests = lazyPage(() => import("../pages/Requests"), "Requests");
 const Music = lazyPage(() => import("../pages/Music"), "Music");
 const ArtistDetail = lazyPage(() => import("../pages/ArtistDetail"), "ArtistDetail");
 const AlbumDetail = lazyPage(() => import("../pages/AlbumDetail"), "AlbumDetail");
+const MusicEngine = lazyPage(() => import("../pages/MusicEngine"), "MusicEngine");
+const MusicEngineSettings = lazyPage(() => import("../pages/settings/MusicEngineSettings"), "MusicEngineSettings");
 const Insights = lazyPage(() => import("../pages/Insights"), "Insights");
 const Calendar = lazyPage(() => import("../pages/Calendar"), "Calendar");
 const Logs = lazyPage(() => import("../pages/Logs"), "Logs");
@@ -157,6 +159,15 @@ function staffRoutes(admin: boolean): RouteObject[] {
     page("/quality/:media/*", "Quality profile", <QualityEditorRoute />),
     // The log is admin-only on the server; for a manager the address falls through to Not found.
     ...(admin ? [page("/logs", "Logs", <Logs />)] : []),
+    // The lossless music engine's status page and its settings, admin-only like the nav entry.
+    // The settings address is more specific than the /settings/* splat above, so it wins.
+    // /music-engine is the address the engine's alerts link to.
+    ...(admin
+      ? [
+          page("/music-engine", "Music engine", <MusicEngine />),
+          page("/settings/music-engine", "Music engine settings", <MusicEngineSettings />),
+        ]
+      : []),
     redirect("/library", "/settings/library"),
     page("*", "Page not found", <NotFound />),
   ];

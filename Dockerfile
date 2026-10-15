@@ -52,7 +52,7 @@ FROM ubuntu:24.04
 # gosu is the su-exec equivalent: the entrypoint drops from root to a configurable PUID/PGID.
 # apprise (Python) is bundled for notifications — one image, 80+ services, no extra container.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates curl gnupg gosu python3 python3-pip && \
+        ca-certificates curl flac gnupg gosu python3 python3-pip && \
     mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key \
         | gpg --dearmor -o /etc/apt/keyrings/jellyfin.gpg && \
@@ -63,8 +63,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ln -sf /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/local/bin/ffmpeg && \
     ln -sf /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe && \
     pip3 install --no-cache-dir --break-system-packages apprise && \
-    apprise --version && ffmpeg -version | head -1 && \
+    apprise --version && ffmpeg -version | head -1 && flac --version | head -1 && metaflac --version | head -1 && \
     mkdir -p /data /media/downloads /media/library
+
+# yt-dlp for the music engine's last-resort YouTube lane (internal/ytaudio). NOT the Ubuntu
+# package: distro releases lag behind the YouTube changes that break old yt-dlp versions.
+# The official zipapp release is pinned to a version and checked against the SHA-256 that
+# the release publishes in its SHA2-256SUMS file; it runs on the python3 installed above.
+# To update: change both values together (checksum from the release's SHA2-256SUMS).
+ARG YT_DLP_VERSION=2026.08.19
+ARG YT_DLP_SHA256=1fa6733c37ea6fb51c99ad8fe785e7b7e5f3246c9b980230329d4fb72ed8d4d6
+RUN curl -fsSL -o /usr/local/bin/yt-dlp \
+        "https://github.com/yt-dlp/yt-dlp/releases/download/${YT_DLP_VERSION}/yt-dlp" && \
+    echo "${YT_DLP_SHA256}  /usr/local/bin/yt-dlp" | sha256sum -c - && \
+    chmod 0755 /usr/local/bin/yt-dlp && \
+    yt-dlp --version
 
 COPY --from=build /out/arrmada /usr/local/bin/arrmada
 COPY docker/entrypoint.sh /entrypoint.sh

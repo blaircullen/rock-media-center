@@ -51,6 +51,8 @@ export const NAV: NavGroup[] = [
       { to: "/movies", label: "Movies", icon: "movies" },
       { to: "/series", label: "Series", icon: "series" },
       { to: "/music", label: "Music", icon: "music", module: "music", tag: "Preview" },
+      // The lossless music engine's status page; the address is the one its alerts link to.
+      { to: "/music-engine", label: "Music engine", icon: "music", adminOnly: true },
       { to: "/calendar", label: "Calendar", icon: "calendar" },
     ],
   },

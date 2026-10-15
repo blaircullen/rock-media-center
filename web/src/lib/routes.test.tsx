@@ -54,6 +54,14 @@ describe("buildRoutes", () => {
     expect(paths(buildRoutes({ role: "manager", external: false }))).not.toContain("/logs");
   });
 
+  it("serves the music engine pages to admins only", () => {
+    const admin = paths(buildRoutes({ role: "admin", external: false }));
+    expect(admin).toEqual(expect.arrayContaining(["/music-engine", "/settings/music-engine"]));
+    const manager = paths(buildRoutes({ role: "manager", external: false }));
+    expect(manager).not.toContain("/music-engine");
+    expect(manager).not.toContain("/settings/music-engine");
+  });
+
   it("offers Run setup again to admins only", () => {
     expect(paths(buildRoutes({ role: "admin", external: false }))).toContain("/setup");
     expect(paths(buildRoutes({ role: "manager", external: false }))).not.toContain("/setup");

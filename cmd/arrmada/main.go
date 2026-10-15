@@ -342,8 +342,10 @@ func main() {
 	seriesSvc.SetMonitorDefaultFunc(func(ctx context.Context) string {
 		return settingsSvc.Get(ctx, series.KeyMonitorDefault, series.DefaultMonitorPreset)
 	})
-	// MusicBrainz needs no key.
-	musicSvc := music.NewService(st.DB(), metadata.NewMusicBrainz(), modLog(log, "music"))
+	// MusicBrainz needs no key. One client is shared by the album module and the lossless
+	// music engine, so the 1 request/second pace is never doubled (KTD15).
+	musicBrainz := metadata.NewMusicBrainz()
+	musicSvc := music.NewService(st.DB(), musicBrainz, modLog(log, "music"))
 	// Music is off by default now (it's a preview), but an install already using it must
 	// not have it switched off underneath it by an upgrade: an unsaved toggle on a library
 	// with artists is pinned on. A saved choice, either way, is never touched.
@@ -957,6 +959,12 @@ func main() {
 		}
 		return err
 	}, scheduler.Label("Tidy the import outbox"), scheduler.Description("Removes finished import follow-ups older than a week; failed ones stay until retried."))
+	// The lossless music engine (musicengine.go): off unless its setting is on. When on, it
+	// settles the placement journal here and registers its tasks, before the scheduler starts.
+	musicEngine := wireMusicEngine(musicEngineDeps{
+		Ctx: runCtx, Log: log, Config: cfg, DB: st.DB(), Settings: settingsSvc, Keys: keyStore, Roots: roots,
+		Sched: sched, MB: musicBrainz, Insights: insightsSvc, Indexers: indexers, Downloads: downloads, Notify: notifySvc,
+	})
 	// The scheduler starts last: every task above, and the import sweeps in particular,
 	// must only run once the outbox has its consumers.
 	sched.Start(runCtx)
@@ -990,6 +998,7 @@ func main() {
 		Discovery:    tmdb,
 		Ratings:      omdb,
 		Music:        musicSvc,
+		MusicEngine:  musicEngine,
 		Insights:     insightsSvc,
 		Push:         pushSvc,
 		Recycle:      recycleSvc,

@@ -15,6 +15,12 @@ describe("visibleNav", () => {
     expect(tos({ ...all, admin: false })).not.toContain("/logs");
   });
 
+  it("shows the Music engine page to admins only, whatever the Music module says", () => {
+    expect(tos(all)).toContain("/music-engine");
+    expect(tos({ ...all, musicEnabled: false })).toContain("/music-engine");
+    expect(tos({ ...all, admin: false })).not.toContain("/music-engine");
+  });
+
   it("drops a group left empty", () => {
     const nav = [{ group: "Library", items: [{ to: "/music", label: "Music", icon: "music" as const, module: "music" as const }] }];
     expect(visibleNav({ ...all, musicEnabled: false }, nav)).toEqual([]);

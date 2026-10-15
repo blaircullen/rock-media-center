@@ -445,8 +445,8 @@ func TestSABnzbdListStatuses(t *testing.T) {
 
 	// Only Rock Media Center's categories are asked for.
 	for _, c := range f.allCalls() {
-		if c.mode == "queue" && c.form.Get("cat") != "arrmada,arrmada-tv,arrmada-music" ||
-			c.mode == "history" && c.form.Get("category") != "arrmada,arrmada-tv,arrmada-music" {
+		if c.mode == "queue" && c.form.Get("cat") != "arrmada,arrmada-tv,arrmada-music,rmc-music" ||
+			c.mode == "history" && c.form.Get("category") != "arrmada,arrmada-tv,arrmada-music,rmc-music" {
 			t.Errorf("%s read with %v", c.mode, c.form)
 		}
 	}
@@ -467,7 +467,7 @@ func TestSABnzbdMovieCategory(t *testing.T) {
 			t.Errorf("a job in the default movie category was listed: %s", it.Name)
 		}
 	}
-	if got := f.allCalls()[0].form.Get("cat"); got != "films,arrmada-tv,arrmada-music" {
+	if got := f.allCalls()[0].form.Get("cat"); got != "films,arrmada-tv,arrmada-music,rmc-music" {
 		t.Errorf("cat = %q", got)
 	}
 }
@@ -872,9 +872,9 @@ func TestSABnzbdFacts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if facts.Version != "5.1.3" || strings.Join(facts.Missing, ",") != "arrmada-tv,arrmada-music" ||
+	if facts.Version != "5.1.3" || strings.Join(facts.Missing, ",") != "arrmada-tv,arrmada-music,rmc-music" ||
 		!facts.CompleteFolder.Visible || facts.CompleteFolder.Local != filepath.Join(local, "complete") ||
-		facts.Language != "de" || !facts.NotEnglish || facts.ServersConfigured != 0 || len(facts.Categories) != 3 {
+		facts.Language != "de" || !facts.NotEnglish || facts.ServersConfigured != 0 || len(facts.Categories) != 4 {
 		t.Errorf("facts = %+v", facts)
 	}
 	movies := facts.Categories[0]
@@ -915,7 +915,7 @@ func TestSABnzbdFacts(t *testing.T) {
 func TestSABnzbdAddMissingCategories(t *testing.T) {
 	ctx := context.Background()
 	f, dc := newSABFake(t, "4.5.5")
-	f.setCats("*", "arrmada", "arrmada-music")
+	f.setCats("*", "arrmada", "arrmada-music", "rmc-music")
 	created, err := newSAB().AddMissingCategories(ctx, dc)
 	if err != nil {
 		t.Fatal(err)

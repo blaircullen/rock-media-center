@@ -83,6 +83,29 @@ var Catalog = []Key{
 	// the server address (internal/jellyfinsvc). An install can set it from the
 	// environment, like the Plex token; it's never sent back to the browser.
 	{ID: Jellyfin, Label: "Jellyfin API key", Purpose: "Jellyfin: Watch links, library updates.", EnvVar: "ARRMADA_JELLYFIN_API_KEY", Secret: true, Hidden: true},
+	// The lossless music engine's credentials. Listed like the other API keys (the engine's
+	// own settings page has no card for them), so they are entered in Settings → API keys.
+	// None has a Test button: nothing verifies them until the engine uses them.
+	{
+		ID: SpotifyClientID, Label: "Spotify client ID", Purpose: "Music engine: reading the watched Spotify playlist. Optional.",
+		HelpURL: "https://developer.spotify.com/dashboard", EnvVar: "ARRMADA_SPOTIFY_CLIENT_ID", Secret: false,
+		Steps: "Create an app in the Spotify developer dashboard and copy its client ID. The client secret goes in the next field.",
+	},
+	{
+		ID: SpotifyClientSecret, Label: "Spotify client secret", Purpose: "Music engine: reading the watched Spotify playlist. Optional.",
+		HelpURL: "https://developer.spotify.com/dashboard", EnvVar: "ARRMADA_SPOTIFY_CLIENT_SECRET", Secret: true,
+		Steps: "The secret of the same Spotify app as the client ID.",
+	},
+	{
+		ID: SlskdAPIKey, Label: "slskd API key", Purpose: "Music engine: the Soulseek lane. Optional.",
+		HelpURL: "https://github.com/slskd/slskd", EnvVar: "ARRMADA_SLSKD_API_KEY", Secret: true,
+		Steps: "The API key from slskd's configuration (web.authentication.api_keys). The address is the Music engine settings' Soulseek URL.",
+	},
+	{
+		ID: GluetunControl, Label: "Gluetun control key", Purpose: "Music engine: asking gluetun whether the VPN is up. Only needed when gluetun's control server requires a key.",
+		HelpURL: "https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md", EnvVar: "ARRMADA_GLUETUN_CONTROL_KEY", Secret: true,
+		Steps: "Leave blank unless gluetun's control server has authentication on. It is sent as the X-API-Key header.",
+	},
 }
 
 // The outgoing-email credentials' ids.
@@ -94,6 +117,14 @@ const (
 
 // Jellyfin is the Jellyfin API key's id.
 const Jellyfin = "jellyfin"
+
+// The lossless music engine's credentials' ids (internal/musicengine).
+const (
+	SpotifyClientID     = "spotify_client_id"
+	SpotifyClientSecret = "spotify_client_secret"
+	SlskdAPIKey         = "slskd_api_key"
+	GluetunControl      = "gluetun_control"
+)
 
 // Listed reports whether id is a credential the API keys list shows and its routes edit.
 func Listed(id string) bool {

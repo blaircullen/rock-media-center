@@ -13,6 +13,10 @@ const (
 	CategoryTV = "arrmada-tv"
 	// CategoryMusic routes album downloads through the music importer.
 	CategoryMusic = "arrmada-music"
+	// CategoryMusicEngine is where the lossless music engine (internal/musicengine) files its
+	// downloads. No importer reads it: the engine fetches the finished download itself, so
+	// the album importer above never sees an engine download (plan KTD1).
+	CategoryMusicEngine = "rmc-music"
 )
 
 // Categories is the fixed set Rock Media Center files downloads under, for showing to the owner.
