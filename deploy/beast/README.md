@@ -81,9 +81,9 @@ Do not drop the tunnel to watch traffic stop: Sonarr shares that qBittorrent. Ne
 The script reads `GET /api/v1/musicengine/heartbeat` (returns `{"last_tick": <unix seconds>}` with no session; 503 while the engine is switched off) and sends one Telegram message per outage and one on recovery. Needs `curl` and `jq` (both on Beast).
 
 1. Install the script: `scp deploy/beast/rmc-watchdog.sh beast:/home/olares/bin/rmc-watchdog.sh` (from the repo root on Goat), then `ssh beast 'chmod 755 /home/olares/bin/rmc-watchdog.sh'`.
-2. Create the env file with mode 600 and put two lines in it, `TELEGRAM_BOT_TOKEN=...` and `TELEGRAM_CHAT_ID=...` (reuse the Telegram bot Blair already uses for Beast alerts; do not paste values into chat or the repo): `ssh beast 'install -m 600 /dev/null /home/olares/.config/rmc-watchdog.env'` then edit it on Beast.
+2. Create the env file with mode 600 and put three lines in it, `TELEGRAM_BOT_TOKEN=...`, `TELEGRAM_CHAT_ID=...` (the bot and chat `spotify-sync.py` already uses; do not paste values into chat or the repo) and `RMC_URL=http://10.0.0.13:8787`: `ssh beast 'install -m 600 /dev/null /home/olares/.config/rmc-watchdog.env'` then edit it on Beast.
 3. Dry run, expect `ok (last tick Ns ago)` and exit 0: `ssh beast '/home/olares/bin/rmc-watchdog.sh; echo exit=$?'`
-4. Cron line (every 10 minutes, output to the journal so there is no flat log to rotate): `ssh beast "(crontab -l; echo '*/10 * * * * /home/olares/bin/rmc-watchdog.sh 2>&1 | logger -t rmc-watchdog') | crontab -"`
+4. Cron line (every 10 minutes at :07, :17, ... so it does not share a tick with the existing :00 and */15 jobs; output to the journal so there is no flat log to rotate): `ssh beast "(crontab -l; echo '7-59/10 * * * * /home/olares/bin/rmc-watchdog.sh 2>&1 | logger -t rmc-watchdog') | crontab -"`
 5. Prove it: `ssh beast 'docker stop rock-media-center'`, wait for at least two cron runs (within 20 minutes a Telegram message must arrive, exactly one), then `ssh beast 'docker start rock-media-center'` and wait for the recovery message. Read the run history with `ssh beast 'journalctl -t rmc-watchdog --since "-1h"'`.
 
 Exit codes: 0 healthy, 1 unhealthy (alert sent or already sent), 2 config error, 3 unhealthy and the Telegram send failed (retried next run).
