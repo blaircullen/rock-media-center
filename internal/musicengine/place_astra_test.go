@@ -5,8 +5,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
+
+	"github.com/tristenlammi/arrmada/internal/metadata"
 )
 
 // Tests for the Astra revision pass over placement, swaps, undo and recovery
@@ -411,5 +414,51 @@ func TestResumeConfirmsAnItemlessPlacementOncePlexIndexesIt(t *testing.T) {
 	}
 	if n := r.v.count(`SELECT COUNT(*) FROM mus_library_tracks WHERE path = ?`, r.fp.toPlex(dest)); n != 1 {
 		t.Errorf("library tracks for the placed file = %d, want 1", n)
+	}
+}
+
+// A song downloaded as a track of a various-artists compilation is placed under the pinned
+// recording's own release, numbered as on it, with the album tags rewritten (Beast,
+// 2026-10-15: two songs landed in "Various Artists/NOW That's What I Call Music").
+func TestCompilationRipIsPlacedUnderTheRecordingsOwnRelease(t *testing.T) {
+	r := newPlaceRig(t)
+	s := r.seed(placeSeed{Title: "Leave Before You Love Me", Artist: "Marshmello & Jonas Brothers",
+		Album: "NOW 79", AlbumArtist: "Various Artists", Disc: 1, Track: 16})
+	rel := &metadata.ReleaseDetails{Artist: "Marshmello & Jonas Brothers", Tracks: []metadata.ReleaseTrack{
+		{RecordingMBID: "other", Disc: 1, Position: 1}, {RecordingMBID: "mbid-Leave Before You Love Me", Disc: 1, Position: 2}}}
+	rel.MBID, rel.Title, rel.Date, rel.ReleaseGroupMBID, rel.PrimaryType = "own-rel", "Shockwave", "2021-06-11", "own-rg", "Album"
+	r.pl.cfg.Releases = placeFakeReleases{rel: rel}
+	if _, err := r.v.db.Exec(`UPDATE mus_recordings SET release_mbid = 'own-rel' WHERE id = ?`, s.RecID); err != nil {
+		t.Fatal(err)
+	}
+	r.drive(s.ItemID, 5)
+
+	got := r.libFlacs()
+	want := filepath.Join("Marshmello & Jonas Brothers", "Shockwave")
+	if len(got) != 1 || !strings.Contains(got[0], want) || !strings.Contains(filepath.Base(got[0]), "02") {
+		t.Fatalf("library = %v, want track 02 under %s", got, want)
+	}
+	b, err := os.ReadFile(got[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, tags, _ := placeDecode(b); tags.Album != "Shockwave" || tags.AlbumArtist != "Marshmello & Jonas Brothers" || tags.Compilation {
+		t.Fatalf("tags = %+v, want the own release", tags)
+	}
+}
+
+// A compilation rip whose pinned release is itself a compilation keeps its own tags.
+func TestCompilationRipStaysWhenThePinnedReleaseIsACompilation(t *testing.T) {
+	r := newPlaceRig(t)
+	s := r.seed(placeSeed{Title: "Song", Artist: "Band", Album: "Hits", AlbumArtist: "Various Artists", Disc: 1, Track: 3})
+	rel := &metadata.ReleaseDetails{Tracks: []metadata.ReleaseTrack{{RecordingMBID: "mbid-Song", Disc: 1, Position: 3}}}
+	rel.MBID, rel.Title, rel.SecondaryTypes = "comp", "Hits", []string{"Compilation"}
+	r.pl.cfg.Releases = placeFakeReleases{rel: rel}
+	if _, err := r.v.db.Exec(`UPDATE mus_recordings SET release_mbid = 'comp' WHERE id = ?`, s.RecID); err != nil {
+		t.Fatal(err)
+	}
+	r.drive(s.ItemID, 5)
+	if got := r.libFlacs(); len(got) != 1 || !strings.Contains(got[0], filepath.Join("Various Artists", "Hits")) {
+		t.Fatalf("library = %v, want it left under Various Artists/Hits", got)
 	}
 }

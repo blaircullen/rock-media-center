@@ -74,6 +74,22 @@ func (e *placeFakeEditor) WriteNumbering(_ context.Context, path string, disc, t
 	return os.WriteFile(path, placeEncode(audio, t), 0o600)
 }
 
+func (e *placeFakeEditor) WriteAlbum(_ context.Context, path string, a AlbumTags) error {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	audio, t, err := placeDecode(b)
+	if err != nil {
+		return err
+	}
+	t.Album, t.AlbumArtist, t.Compilation = a.Album, a.AlbumArtist, false
+	e.mu.Lock()
+	e.writes = append(e.writes, fmt.Sprintf("%s album %s / %s", filepath.Base(path), a.AlbumArtist, a.Album))
+	e.mu.Unlock()
+	return os.WriteFile(path, placeEncode(audio, t), 0o600)
+}
+
 // placeFakeChecker judges a file by markers in its audio part.
 type placeFakeChecker struct {
 	mu    sync.Mutex

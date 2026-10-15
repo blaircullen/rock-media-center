@@ -75,6 +75,15 @@ type TrackTags struct {
 	Artist, AlbumArtist, Album, Title string
 	Disc, Track                       int
 	RecordingMBID                     string
+	// Compilation: the file was ripped from a various-artists compilation (COMPILATION=1,
+	// RELEASETYPE=compilation, or album artist "Various Artists").
+	Compilation bool
+}
+
+// AlbumTags re-home a compilation rip onto the recording's own release.
+type AlbumTags struct {
+	Album, AlbumArtist, Date      string
+	ReleaseMBID, ReleaseGroupMBID string
 }
 
 // TagEditor reads and fixes FLAC tags (metaflac through internal/toolrun in production).
@@ -82,6 +91,9 @@ type TagEditor interface {
 	Read(ctx context.Context, path string) (TrackTags, error)
 	// WriteNumbering replaces the file's disc and track tags.
 	WriteNumbering(ctx context.Context, path string, disc, track int) error
+	// WriteAlbum replaces the file's album tags with a, dropping the compilation's own
+	// release tags (ids, label, barcode, totals).
+	WriteAlbum(ctx context.Context, path string, a AlbumTags) error
 }
 
 // Metaflac is the production TagEditor.
@@ -126,6 +138,37 @@ func (m Metaflac) WriteNumbering(ctx context.Context, path string, disc, track i
 	return err
 }
 
+// compilationReleaseTags are a compilation rip's release-level tags, removed when the file is
+// re-homed onto the recording's own release.
+var compilationReleaseTags = []string{
+	"ALBUM", "ALBUMARTIST", "ALBUM ARTIST", "ALBUMARTISTSORT", "COMPILATION", "RELEASETYPE",
+	"MUSICBRAINZ_ALBUMID", "MUSICBRAINZ_RELEASEGROUPID", "MUSICBRAINZ_ALBUMARTISTID",
+	"MUSICBRAINZ_RELEASETRACKID", "BARCODE", "CATALOGNUMBER", "LABEL", "RELEASECOUNTRY",
+	"RELEASESTATUS", "MEDIA", "TOTALTRACKS", "TRACKTOTAL", "TOTALDISCS", "DISCTOTAL",
+	"DATE", "ORIGINALDATE", "ORIGINALYEAR", "SCRIPT", "ASIN",
+}
+
+// WriteAlbum removes the compilation's release tags and sets the recording's own release, in
+// one metaflac call.
+func (m Metaflac) WriteAlbum(ctx context.Context, path string, a AlbumTags) error {
+	var args []string
+	for _, t := range compilationReleaseTags {
+		args = append(args, "--remove-tag="+t)
+	}
+	set := func(k, v string) {
+		if strings.TrimSpace(v) != "" {
+			args = append(args, "--set-tag="+k+"="+v)
+		}
+	}
+	set("ALBUM", a.Album)
+	set("ALBUMARTIST", a.AlbumArtist)
+	set("DATE", a.Date)
+	set("MUSICBRAINZ_ALBUMID", a.ReleaseMBID)
+	set("MUSICBRAINZ_RELEASEGROUPID", a.ReleaseGroupMBID)
+	_, err := m.run(ctx, append(args, path)...)
+	return err
+}
+
 func parseVorbisTags(b []byte) TrackTags {
 	var t TrackTags
 	for _, line := range strings.Split(string(b), "\n") {
@@ -151,9 +194,18 @@ func parseVorbisTags(b []byte) TrackTags {
 			t.Disc = placeLeadingInt(v)
 		case "MUSICBRAINZ_TRACKID":
 			t.RecordingMBID = strings.ToLower(v)
+		case "COMPILATION":
+			t.Compilation = t.Compilation || v == "1" || strings.EqualFold(v, "true")
+		case "RELEASETYPE":
+			t.Compilation = t.Compilation || strings.EqualFold(v, "compilation")
 		}
 	}
 	return t
+}
+
+// isCompilation: tagged as a compilation, or credited to "Various Artists".
+func (t TrackTags) isCompilation() bool {
+	return t.Compilation || strings.EqualFold(strings.TrimSpace(t.AlbumArtist), "various artists")
 }
 
 // placeLeadingInt reads "3" and "3/12" as 3.
@@ -549,6 +601,7 @@ type StageSpec struct {
 	MembershipsBefore            string
 	PreviousSwapID               int64
 	Number                       *layoutNumber // tag numbering to write; nil leaves tags alone
+	Album                        *AlbumTags    // album tags to write (a re-homed compilation rip); nil leaves them
 }
 
 // Stage runs phases 0 to 2: open the row, check the staged source, copy it to a temp name in
@@ -642,6 +695,11 @@ func (p *Placement) Stage(ctx context.Context, s StageSpec) (JournalRow, error) 
 		}
 	} else if s.Number != nil {
 		notes = append(notes, "tag numbering left as downloaded: "+strings.ToLower(filepath.Ext(s.Dest))+" is not FLAC")
+	}
+	if s.Album != nil && strings.EqualFold(filepath.Ext(s.Dest), ".flac") && p.cfg.Editor != nil {
+		if err := p.cfg.Editor.WriteAlbum(ctx, row.TempPath, *s.Album); err != nil {
+			return row, fmt.Errorf("writing album tags on %s: %w", row.TempPath, err)
+		}
 	}
 	if err := p.at("stage:tagged"); err != nil {
 		return row, err
@@ -1292,23 +1350,71 @@ func (p *Placement) specForCandidate(ctx context.Context, it Item, c placeCand) 
 		return StageSpec{}, fmt.Errorf("reading tags of %s: %w", c.StagingPath, err)
 	}
 	title, artist := firstNonEmpty(tags.Title, rec.Title), firstNonEmpty(tags.folderArtist(), rec.Artist)
-	self := layoutTrack{Key: c.StagingPath, Disc: tags.Disc, Track: tags.Track}
-	if self.Track < 1 {
-		self = p.positionFromRelease(ctx, c, rec, self)
+	album := tags.Album
+	var num layoutNumber
+	var repaired bool
+	own, pos, rehome := p.ownRelease(ctx, it, rec, tags)
+	if rehome {
+		// A compilation rip goes under the recording's own release, numbered as on it; the
+		// compilation's other tracks in staging say nothing about that numbering.
+		artist, album = own.AlbumArtist, own.Album
+		num, repaired = layoutNumberFor(layoutTrack{Key: c.StagingPath, Disc: pos.Disc, Track: pos.Track}, nil)
+	} else {
+		self := layoutTrack{Key: c.StagingPath, Disc: tags.Disc, Track: tags.Track}
+		if self.Track < 1 {
+			self = p.positionFromRelease(ctx, c, rec, self)
+		}
+		num, repaired = layoutNumberFor(self, p.siblings(ctx, it, c))
 	}
-	num, repaired := layoutNumberFor(self, p.siblings(ctx, it, c))
-	plan, err := p.layout.Plan(artist, tags.Album, num.Continuous, title, filepath.Ext(c.StagingPath))
+	plan, err := p.layout.Plan(artist, album, num.Continuous, title, filepath.Ext(c.StagingPath))
 	if err != nil {
 		return StageSpec{}, err
 	}
 	if repaired {
 		p.log.Info("musicengine placement: track numbering was not usable; fell back", "item", it.ID, "disc", num.Disc, "track", num.Continuous)
 	}
-	return StageSpec{
+	spec := StageSpec{
 		Kind: JournalPlace, ItemID: it.ID, CandidateID: c.ID, RecordingID: it.RecordingID,
 		Source: c.StagingPath, SourceSHA: c.SHA256, Dest: plan.Path, ExpectFingerprint: c.Fingerprint,
 		Number: &num,
-	}, nil
+	}
+	if rehome {
+		spec.Album = &own
+	}
+	return spec, nil
+}
+
+// ownRelease decides whether a compilation rip is re-homed onto the pinned recording's own
+// release (Beast, 2026-10-15: songs landed in "Various Artists/NOW That's What I Call
+// Music"). It needs the release the pin recorded, its track listing holding the recording,
+// and that release not being a compilation itself; otherwise the file keeps its own tags.
+func (p *Placement) ownRelease(ctx context.Context, it Item, rec Recording, tags TrackTags) (AlbumTags, layoutTrack, bool) {
+	if !tags.isCompilation() || p.cfg.Releases == nil || rec.ReleaseMBID == "" || rec.MBID == "" {
+		return AlbumTags{}, layoutTrack{}, false
+	}
+	rel, err := p.cfg.Releases.GetRelease(ctx, rec.ReleaseMBID)
+	if err != nil || rel == nil {
+		p.log.Warn("musicengine placement: compilation rip keeps its own album; release lookup failed",
+			"item", it.ID, "release", rec.ReleaseMBID, "err", err)
+		return AlbumTags{}, layoutTrack{}, false
+	}
+	for _, st := range rel.SecondaryTypes {
+		if strings.EqualFold(st, "compilation") {
+			return AlbumTags{}, layoutTrack{}, false
+		}
+	}
+	for _, t := range rel.Tracks {
+		if t.RecordingMBID == rec.MBID {
+			a := AlbumTags{
+				Album: rel.Title, AlbumArtist: firstNonEmpty(rel.Artist, rec.Artist), Date: rel.Date,
+				ReleaseMBID: rel.MBID, ReleaseGroupMBID: firstNonEmpty(rel.ReleaseGroupMBID, rec.ReleaseGroupMBID),
+			}
+			p.log.Info("musicengine placement: compilation rip placed under the recording's own release",
+				"item", it.ID, "album", a.Album, "artist", a.AlbumArtist)
+			return a, layoutTrack{Disc: t.Disc, Track: t.Position}, true
+		}
+	}
+	return AlbumTags{}, layoutTrack{}, false
 }
 
 func firstNonEmpty(ss ...string) string {
