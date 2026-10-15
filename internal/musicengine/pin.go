@@ -254,7 +254,7 @@ func describeRecording(c metadata.Recording) string {
 
 func (e *Engine) handlePinning(ctx context.Context, it Item) error {
 	if it.RecordingID != 0 {
-		return e.Transition(ctx, it.ID, StateLibraryCheck, "recording already pinned")
+		return e.Transition(ctx, it.ID, StateLibraryCheck, "This song is already identified; moving on to the library check.")
 	}
 	if e.mb == nil {
 		return errors.New("musicengine: no MusicBrainz client configured")
@@ -264,7 +264,7 @@ func (e *Engine) handlePinning(ctx context.Context, it Item) error {
 		return err
 	}
 	if !ok {
-		return e.raiseAndWait(ctx, it, "ambiguous", "no playlist entry to pin this item to", []string{OptionRetry, OptionDrop})
+		return e.raiseAndWait(ctx, it, "ambiguous", "This song has no playlist entry to identify it from.", []string{OptionRetry, OptionDrop})
 	}
 
 	mctx := metadata.WithMBClass(ctx, mbClass(it))
@@ -277,9 +277,9 @@ func (e *Engine) handlePinning(ctx context.Context, it Item) error {
 	var forced string
 	switch {
 	case en.Unavailable:
-		forced = "Spotify lists this track as unavailable"
+		forced = "Spotify lists this track as unavailable, so it can't be identified automatically"
 	case en.IsLocal:
-		forced = "local file or an entry with no Spotify track id"
+		forced = "This is a local file, or a playlist entry with no Spotify track, so it can't be identified automatically"
 	}
 	// A relink (Spotify serving the same song under another track id in this market) is
 	// pinned like any entry when exactly one recording fits (Blair, 2026-10-15: "auto-pin
@@ -293,15 +293,15 @@ func (e *Engine) handlePinning(ctx context.Context, it Item) error {
 	switch {
 	case forced != "":
 	case len(filtered) == 0 && len(cands) == 0:
-		reason = "MusicBrainz knows no recording for this song"
+		reason = "Couldn't find this song in the MusicBrainz music database"
 	case len(filtered) == 0:
-		reason = "no MusicBrainz recording matches the version and explicit flag of the Spotify entry"
+		reason = "Found songs with this name, but none matches the version and explicit/clean flag of the Spotify entry"
 		pool = cands
 	default:
-		reason = fmt.Sprintf("%d MusicBrainz recordings match equally", len(filtered))
+		reason = fmt.Sprintf("%d different recordings match equally, so it is unclear which one you mean", len(filtered))
 	}
 	if forced == "" && en.RelinkedID != "" {
-		reason += " (Spotify relinked this track, was " + en.RelinkedID + ")"
+		reason += " (Spotify swapped this track for another copy; the old track ID was " + en.RelinkedID + ")"
 	}
 	if forced != "" && len(pool) == 0 {
 		pool = cands
@@ -315,7 +315,7 @@ func ambiguousReason(en entryRow, reason string, pool []metadata.Recording) stri
 		pool = pool[:maxPinOptions]
 	}
 	for _, c := range pool {
-		s += "; candidate " + describeRecording(c)
+		s += "; possible match: " + describeRecording(c)
 	}
 	return s
 }
@@ -499,7 +499,7 @@ func (e *Engine) applyPin(ctx context.Context, it Item, en entryRow, c metadata.
 			return fmt.Errorf("pinning entries of item %d: %w", it.ID, err)
 		}
 		return e.TransitionTx(ctx, tx, it.ID, StateLibraryCheck,
-			fmt.Sprintf("pinned to %s (%s)", row.MBID, row.VersionHint))
+			fmt.Sprintf("Matched to recording %s (%s)", row.MBID, row.VersionHint))
 	})
 }
 
@@ -520,5 +520,5 @@ func (e *Engine) mergeInto(ctx context.Context, tx store.Execer, from Item, hold
 		return fmt.Errorf("raising priority of item %d: %w", holder, err)
 	}
 	return e.TransitionTx(ctx, tx, from.ID, StateCancelled,
-		fmt.Sprintf("merged into item %d: same recording %s", holder, mbid))
+		fmt.Sprintf("Merged into item %d, which is for the same song (recording %s).", holder, mbid))
 }

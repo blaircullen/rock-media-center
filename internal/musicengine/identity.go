@@ -260,9 +260,9 @@ func remapPlaylistFor(pls []plex.Playlist, m membershipRow) (plex.Playlist, stri
 		case 1:
 			return hits[0], ""
 		case 0:
-			return plex.Playlist{}, fmt.Sprintf("playlist %q no longer exists in Plex", m.Title)
+			return plex.Playlist{}, fmt.Sprintf("The Plex playlist %q no longer exists", m.Title)
 		default:
-			return plex.Playlist{}, fmt.Sprintf("Plex has %d playlists named %q, so the membership is ambiguous", len(hits), m.Title)
+			return plex.Playlist{}, fmt.Sprintf("Plex has %d playlists named %q, so it is unclear which one this track belongs to", len(hits), m.Title)
 		}
 	}
 	for _, p := range pls {
@@ -270,7 +270,7 @@ func remapPlaylistFor(pls []plex.Playlist, m membershipRow) (plex.Playlist, stri
 			return p, ""
 		}
 	}
-	return plex.Playlist{}, fmt.Sprintf("playlist %s no longer exists in Plex", m.PlaylistKey)
+	return plex.Playlist{}, fmt.Sprintf("The Plex playlist %s no longer exists", m.PlaylistKey)
 }
 
 func (r *Remapper) remapOne(ctx context.Context, section string, id identityRow, byPath map[string][]plex.Track, pls []plex.Playlist) (remapOutcome, string, error) {
@@ -291,14 +291,14 @@ func (r *Remapper) remapOne(ctx context.Context, section string, id identityRow,
 	}
 	// The key changed: only a checksum proves the file under the new key is the same one.
 	if id.SHA256 == "" {
-		return remapUnmappable, "no checksum was recorded, so the file cannot be proven to be the same", nil
+		return remapUnmappable, "Can't confirm this is the same file, because no checksum (a signature of its contents) was saved for it earlier.", nil
 	}
 	sum, err := r.cfg.Hash(r.paths.toLocal(id.Path))
 	if err != nil {
-		return remapUnmappable, "the file could not be read to confirm it: " + err.Error(), nil
+		return remapUnmappable, "Couldn't read the file to confirm it: " + err.Error(), nil
 	}
 	if sum != id.SHA256 {
-		return remapUnmappable, "the file's checksum is not the recorded one", nil
+		return remapUnmappable, "The file's contents have changed since they were last checked (its checksum doesn't match), so it was left alone.", nil
 	}
 	ms, err := r.memberships(ctx, id.ID)
 	if err != nil {

@@ -65,7 +65,7 @@ func (s *Swaps) Undo(ctx context.Context, swapID int64) (UndoResult, error) {
 	}
 	sw, err := s.p.jr.Get(ctx, swapID)
 	if err != nil {
-		return UndoResult{}, undoRefuse("swap %d does not exist", swapID)
+		return UndoResult{}, undoRefuse("Swap %d doesn't exist.", swapID)
 	}
 	// One undo of a track at a time (a double click, two tabs). The lock name differs from the
 	// destination lock Stage, Advance and confirm take inside, so it nests without deadlock.
@@ -79,9 +79,9 @@ func (s *Swaps) Undo(ctx context.Context, swapID int64) (UndoResult, error) {
 	}
 	switch {
 	case sw.Kind != JournalSwap || sw.Phase < PhasePlexConfirmed:
-		return UndoResult{}, undoRefuse("journal row %d is not a completed swap", swapID)
+		return UndoResult{}, undoRefuse("Entry %d is not a completed swap, so there is nothing to undo.", swapID)
 	case sw.UndoneAt != 0:
-		return UndoResult{}, undoRefuse("swap %d was already undone", swapID)
+		return UndoResult{}, undoRefuse("Swap %d was already undone.", swapID)
 	}
 
 	// A later swap on the same track blocks the undo (AE10). A swap that is still running
@@ -94,7 +94,7 @@ func (s *Swaps) Undo(ctx context.Context, swapID int64) (UndoResult, error) {
 	switch {
 	case err == nil:
 		return UndoResult{}, &UndoRefusal{
-			Reason:      fmt.Sprintf("swap %d changed this track after swap %d; undo swap %d first", later, swapID, later),
+			Reason:      fmt.Sprintf("Swap %d changed this track after swap %d, so undo swap %d first.", later, swapID, later),
 			LaterSwapID: later,
 		}
 	case !errors.Is(err, sql.ErrNoRows):
@@ -102,7 +102,7 @@ func (s *Swaps) Undo(ctx context.Context, swapID int64) (UndoResult, error) {
 	}
 
 	if sw.QuarantineID == 0 {
-		return UndoResult{}, undoRefuse("swap %d has no quarantined version recorded", swapID)
+		return UndoResult{}, undoRefuse("Swap %d has no saved copy of the old file, so it can't be undone.", swapID)
 	}
 	qe, err := s.cfg.Quarantine.Entry(ctx, sw.QuarantineID)
 	if err != nil {
@@ -110,7 +110,7 @@ func (s *Swaps) Undo(ctx context.Context, swapID int64) (UndoResult, error) {
 	}
 	if qe.ClearedAt != 0 {
 		return UndoResult{}, &UndoRefusal{
-			Reason:  fmt.Sprintf("the old version was cleared from quarantine on %s", time.Unix(qe.ClearedAt, 0).UTC().Format("2006-01-02")),
+			Reason:  fmt.Sprintf("The saved copy of the old file was deleted on %s.", time.Unix(qe.ClearedAt, 0).UTC().Format("2006-01-02")),
 			Cleared: true,
 		}
 	}
@@ -120,11 +120,11 @@ func (s *Swaps) Undo(ctx context.Context, swapID int64) (UndoResult, error) {
 	qsha, err := placeSHA256(qe.Path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
-		return UndoResult{}, undoRefuse("the quarantined file %s is missing", qe.Path)
+		return UndoResult{}, undoRefuse("The saved copy of the old file (%s) is missing.", qe.Path)
 	case err != nil:
 		return UndoResult{}, fmt.Errorf("checksumming the quarantined file %s: %w", qe.Path, err)
 	case qsha != sw.QuarantineSHA:
-		return UndoResult{}, undoRefuse("the quarantined file %s no longer has the checksum recorded for it", qe.Path)
+		return UndoResult{}, undoRefuse("The saved copy of the old file (%s) has changed since it was saved, so it can't be restored.", qe.Path)
 	}
 
 	if err := s.p.layout.Check(); err != nil {
@@ -136,23 +136,23 @@ func (s *Swaps) Undo(ctx context.Context, swapID int64) (UndoResult, error) {
 	cur, err := placeSHA256(sw.NewPath)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
-		return UndoResult{}, undoRefuse("the library file %s is missing", sw.NewPath)
+		return UndoResult{}, undoRefuse("The file in your library (%s) is missing.", sw.NewPath)
 	case err != nil:
 		return UndoResult{}, fmt.Errorf("checksumming the library file %s: %w", sw.NewPath, err)
 	case cur != sw.PublishedSHA:
-		return UndoResult{}, undoRefuse("the library file is no longer the version swap %d put there, so it is left alone", swapID)
+		return UndoResult{}, undoRefuse("The file in your library is no longer the one swap %d put there, so it was left alone.", swapID)
 	}
 
 	track, err := swapLoadTrack(ctx, m.DB(), sw.TrackID)
 	if err != nil {
-		return UndoResult{}, undoRefuse("the library track of swap %d is gone (%v)", swapID, err)
+		return UndoResult{}, undoRefuse("The library track from swap %d is gone (%v).", swapID, err)
 	}
 	playing, err := s.isPlaying(ctx, track.RatingKey)
 	if err != nil {
 		return UndoResult{}, err
 	}
 	if playing {
-		return UndoResult{}, undoRefuse("the track is playing right now; try again when it stops")
+		return UndoResult{}, undoRefuse("The track is playing right now. Try again when it stops.")
 	}
 	snap, err := s.snapshot(ctx, track)
 	if err != nil {
@@ -176,7 +176,7 @@ func (s *Swaps) Undo(ctx context.Context, swapID int64) (UndoResult, error) {
 	if err != nil {
 		var ve *VerifyError
 		if errors.As(err, &ve) {
-			return UndoResult{}, undoRefuse("the quarantined version failed its checks (%s); the library file was not touched", ve.Reason)
+			return UndoResult{}, undoRefuse("The saved old file failed its checks (%s). Your library file was not touched.", ve.Reason)
 		}
 		return UndoResult{UndoID: row.ID}, err
 	}

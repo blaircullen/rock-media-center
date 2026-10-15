@@ -110,13 +110,13 @@ func acqCheckIdentity(rec Recording, c candRow, target string, tags AcquireFileT
 	tagMatch := false
 	switch {
 	case tagsErr != nil:
-		unproven = append(unproven, "tags unreadable ("+clip(tagsErr.Error(), 120)+")")
+		unproven = append(unproven, "the file's tags couldn't be read ("+clip(tagsErr.Error(), 120)+")")
 	case tags.RecordingMBID == "":
-		unproven = append(unproven, "no recording id tag")
+		unproven = append(unproven, "the file has no song-ID tag")
 	case rec.MBID == "":
-		unproven = append(unproven, "pinned recording has no id")
+		unproven = append(unproven, "the requested song has no ID on record")
 	case !strings.EqualFold(tags.RecordingMBID, rec.MBID):
-		return fmt.Sprintf("wrong recording: the file's tags name recording %s, the pinned one is %s", tags.RecordingMBID, rec.MBID), ""
+		return fmt.Sprintf("Wrong song: the file is tagged as recording %s, but the song you asked for is %s.", tags.RecordingMBID, rec.MBID), ""
 	default:
 		tagMatch = true
 	}
@@ -124,10 +124,10 @@ func acqCheckIdentity(rec Recording, c candRow, target string, tags AcquireFileT
 	if tagsErr == nil {
 		// Explicit/clean mismatch is a different release of the song.
 		if tags.Advisory == "explicit" && !rec.Explicit {
-			return "the file is marked explicit but the pinned recording is the clean one", ""
+			return "The file is marked explicit, but the song you asked for is the clean version.", ""
 		}
 		if tags.Advisory == "clean" && rec.Explicit {
-			return "the file is marked clean but the pinned recording is the explicit one", ""
+			return "The file is marked clean, but the song you asked for is the explicit version.", ""
 		}
 	}
 
@@ -136,7 +136,7 @@ func acqCheckIdentity(rec Recording, c candRow, target string, tags AcquireFileT
 		hay := " " + acqNorm(c.ReleaseName+" "+filepath.Base(target)+" "+tags.Title) + " "
 		for _, w := range acqWantedVersionWords(rec.VersionHint) {
 			if !strings.Contains(hay, " "+w+" ") {
-				return fmt.Sprintf("the pinned recording is a %s version but neither the release name nor the file says so", w), ""
+				return fmt.Sprintf("You asked for the %s version, but neither the release name nor the file says it is.", w), ""
 			}
 		}
 		if tags.Title != "" {
@@ -144,7 +144,7 @@ func acqCheckIdentity(rec Recording, c candRow, target string, tags AcquireFileT
 			title := " " + acqNorm(tags.Title) + " "
 			for _, v := range stagingVersionWords {
 				if strings.Contains(title, " "+v+" ") && !strings.Contains(allowed, " "+v+" ") {
-					return fmt.Sprintf("the file's title %q names a %s version the pinned recording is not", tags.Title, v), ""
+					return fmt.Sprintf("The file's title %q names a %s version, which is not the one you asked for.", tags.Title, v), ""
 				}
 			}
 		}
@@ -155,18 +155,18 @@ func acqCheckIdentity(rec Recording, c candRow, target string, tags AcquireFileT
 		}
 		switch {
 		case rec.LengthMs <= 0:
-			unproven = append(unproven, "pinned recording has no length")
+			unproven = append(unproven, "the requested song's length isn't on record")
 		case got <= 0:
-			unproven = append(unproven, "file length unknown")
+			unproven = append(unproven, "the file's length is unknown")
 		default:
 			want := float64(rec.LengthMs) / 1000
 			if d := math.Abs(got - want); d > acqLengthToleranceSec {
-				return fmt.Sprintf("wrong length: the file runs %.1fs, the pinned recording %.1fs (tolerance %.0fs)", got, want, acqLengthToleranceSec), ""
+				return fmt.Sprintf("Wrong length: the file runs %.1fs, the song you asked for runs %.1fs (allowed difference %.0fs).", got, want, acqLengthToleranceSec), ""
 			}
 		}
 	}
 	if len(unproven) > 0 {
-		return "", "identity not proven: " + strings.Join(unproven, "; ")
+		return "", "Couldn't fully confirm this is the right song: " + strings.Join(unproven, "; ")
 	}
 	return "", ""
 }

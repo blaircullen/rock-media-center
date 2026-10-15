@@ -185,20 +185,20 @@ func cmpQuality(in CmpInput) (better, worse []string) {
 func cmpMastering(inc, cand CmpFacts) string {
 	switch {
 	case inc.ReleaseGroupMBID == "" || cand.ReleaseGroupMBID == "":
-		return "there is no release-group evidence for one of the two files, so the mastering cannot be shown to be the same"
+		return "Can't tell if the new download is the same version (mastering) as the copy you have, because one of the files doesn't say which album release it came from."
 	case inc.ReleaseGroupMBID != cand.ReleaseGroupMBID:
-		return "the candidate is from a different release group, so it may be a different mastering"
+		return "The new download comes from a different album release than the copy you have, so it may be a different version (mastering)."
 	case inc.LengthMs <= 0 || cand.LengthMs <= 0:
-		return "a decoded length is missing, so the mastering cannot be shown to be the same"
+		return "Can't tell if the new download is the same version (mastering) as the copy you have, because the length of one of the files couldn't be measured."
 	}
 	if d := cand.LengthMs - inc.LengthMs; d > cmpLengthToleranceMs || d < -cmpLengthToleranceMs {
-		return fmt.Sprintf("the decoded lengths differ by %.1f s (limit 1 s), so it may be a different edit or mastering", math.Abs(float64(d))/1000)
+		return fmt.Sprintf("The two files differ in length by %.1f s (limit 1 s), so the new download may be a different edit or version (mastering).", math.Abs(float64(d))/1000)
 	}
 	if inc.LoudnessLUFS == nil || cand.LoudnessLUFS == nil {
-		return "a loudness measurement is missing, so the mastering cannot be shown to be the same"
+		return "Can't tell if the new download is the same version (mastering) as the copy you have, because the loudness of one of the files couldn't be measured."
 	}
 	if d := math.Abs(*cand.LoudnessLUFS - *inc.LoudnessLUFS); d > cmpLoudnessToleranceLU {
-		return fmt.Sprintf("loudness differs by %.1f LU (limit 1 LU), so it is probably a different mastering", d)
+		return fmt.Sprintf("The two files differ in loudness by %.1f LU (limit 1 LU), so the new download is probably a different version (mastering).", d)
 	}
 	return ""
 }
@@ -210,25 +210,25 @@ func cmpDecide(in CmpInput) CmpResult {
 
 	if inc.Verdict == string(audiocheck.Blind) || inc.Verdict == "" {
 		return CmpResult{Action: CmpKeep, Blind: true,
-			Reason: "the library file could not be read, so it was not compared; it will be rechecked (a read failure is never a reason to replace it)"}
+			Reason: "Couldn't read the copy you have, so nothing was compared. It will be checked again; a read failure never causes a replacement."}
 	}
 	if in.Blocked {
-		return cmpKeep("this candidate is blocked for this song (it was undone, or Blair kept the current file against it)")
+		return cmpKeep("This download is blocked for this song (the swap was undone, or you chose to keep the current file).")
 	}
 	if !cmpPasses(cand.Verdict) {
-		return cmpKeep("the candidate did not pass the authenticity check (%s)", cand.Verdict)
+		return cmpKeep("The new download failed the authenticity check (%s), so it was not used.", cand.Verdict)
 	}
 	if inc.Fingerprint != "" && inc.Fingerprint == cand.Fingerprint {
-		return cmpKeep("the candidate decodes to exactly the same audio as the library file")
+		return cmpKeep("The new download has exactly the same audio as the copy you have, so nothing was replaced.")
 	}
 	if cmpSpectral(inc.Verdict) && inc.TopHz > 0 && cand.TopHz > 0 {
 		if d := cand.TopHz - inc.TopHz; d <= cmpSignatureWindowHz && d >= -cmpSignatureWindowHz {
-			return cmpKeep("the candidate has the same spectral signature as the %s library file (content stops at %d Hz, library file %d Hz), so it comes from the same bad source",
+			return cmpKeep("The new download has the same %s quality problem as the copy you have (its sound cuts off at %d Hz, yours at %d Hz), so it comes from the same bad source.",
 				inc.Verdict, cand.TopHz, inc.TopHz)
 		}
 	}
 	if inc.Explicit != cand.Explicit {
-		return cmpKeep("explicit and clean versions never replace each other (library file is %s, candidate is %s)",
+		return cmpKeep("Explicit and clean versions never replace each other (the copy you have is %s, the new download is %s).",
 			cmpExplicitWord(inc.Explicit), cmpExplicitWord(cand.Explicit))
 	}
 
@@ -238,7 +238,7 @@ func cmpDecide(in CmpInput) CmpResult {
 	masteringWaived := false
 	if why := cmpMastering(inc, cand); why != "" {
 		if !in.Approved {
-			return cmpAsk(DecisionDifferentMaster, "%s", why)
+			return cmpAsk(DecisionDifferentMaster, "%s Approve to replace it, or keep the one you have.", why)
 		}
 		masteringWaived = true
 	}
@@ -246,40 +246,40 @@ func cmpDecide(in CmpInput) CmpResult {
 	override := cmpSpectral(inc.Verdict) && cand.Verdict == string(audiocheck.Genuine) && cand.Lossless()
 	var reason string
 	if override {
-		reason = fmt.Sprintf("the library file is %s and the candidate (%s) passes", inc.Verdict, cmpDescribe(cand))
+		reason = fmt.Sprintf("The copy you have is rated %s and the new download (%s) passes the check", inc.Verdict, cmpDescribe(cand))
 	} else {
 		better, worse := cmpQuality(in)
 		switch {
 		case len(better) > 0 && len(worse) > 0:
 			if !in.Approved {
-				return cmpAsk(DecisionTradeOff, "the candidate (%s) is better in %s but worse in %s than the library file (%s)",
+				return cmpAsk(DecisionTradeOff, "The new download (%s) is better in %s but worse in %s than the copy you have (%s). Approve to replace it, or keep the one you have.",
 					cmpDescribe(cand), strings.Join(better, ", "), strings.Join(worse, ", "), cmpDescribe(inc))
 			}
-			reason = fmt.Sprintf("Blair approved the trade-off: the candidate (%s) is better in %s but worse in %s than the library file (%s)",
+			reason = fmt.Sprintf("You approved the trade-off: the new download (%s) is better in %s but worse in %s than the copy you have (%s)",
 				cmpDescribe(cand), strings.Join(better, ", "), strings.Join(worse, ", "), cmpDescribe(inc))
 		case len(worse) > 0:
-			return cmpKeep("the candidate (%s) is worse in %s than the library file (%s)", cmpDescribe(cand), strings.Join(worse, ", "), cmpDescribe(inc))
+			return cmpKeep("The new download (%s) is worse in %s than the copy you have (%s), so it was not used.", cmpDescribe(cand), strings.Join(worse, ", "), cmpDescribe(inc))
 		case len(better) == 0 && !masteringWaived:
-			return cmpKeep("the candidate (%s) is no better than the library file (%s)", cmpDescribe(cand), cmpDescribe(inc))
+			return cmpKeep("The new download (%s) is no better than the copy you have (%s), so it was not used.", cmpDescribe(cand), cmpDescribe(inc))
 		case len(better) == 0:
-			reason = "Blair approved the different mastering: the candidate is not worse in any measured quality"
+			reason = "You approved the different version (mastering); the new download is not worse in anything measured"
 		default:
-			reason = fmt.Sprintf("the candidate (%s) is better in %s and worse in nothing than the library file (%s)",
+			reason = fmt.Sprintf("The new download (%s) is better in %s and worse in nothing than the copy you have (%s)",
 				cmpDescribe(cand), strings.Join(better, ", "), cmpDescribe(inc))
 		}
 	}
-	if masteringWaived && !strings.HasPrefix(reason, "Blair approved") {
-		reason = "Blair approved the different mastering; " + reason
+	if masteringWaived && !strings.HasPrefix(reason, "You approved") {
+		reason = "You approved the different version (mastering). " + reason
 	}
 
 	if !strings.EqualFold(filepath.Ext(cand.Path), filepath.Ext(inc.Path)) {
 		// KTD8: a swap reuses the exact path. The journal replaces a file in place, so a
 		// different extension cannot be swapped in; it can only be put to Blair.
-		return cmpAsk(DecisionPathChange, "%s, but replacing %s with a %s file would change its file name and path",
+		return cmpAsk(DecisionPathChange, "%s, but replacing the %s file with a %s file would change its file name and path.",
 			reason, strings.ToLower(filepath.Ext(inc.Path)), strings.ToLower(filepath.Ext(cand.Path)))
 	}
 	if !in.AutoSwaps && !in.Approved {
-		return cmpAsk(DecisionSwapDisabled, "%s, but automatic swaps are switched off", reason)
+		return cmpAsk(DecisionSwapDisabled, "%s, but automatic swaps are switched off. Approve to replace it, or keep the one you have.", reason)
 	}
 	return CmpResult{Action: CmpSwap, Reason: reason}
 }

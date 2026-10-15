@@ -288,7 +288,7 @@ func TestQuarShareFullPausesSweepNotIntakeUntilCleared(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ok, why := space.Allow(context.Background(), WorkSweep); ok || !strings.Contains(why, "quarantine") {
+	if ok, why := space.Allow(context.Background(), WorkSweep); ok || !strings.Contains(why, "Replaced files") {
 		t.Fatalf("sweep allowed = %v (%q), want paused because quarantine is full", ok, why)
 	}
 	if ok, why := space.Allow(context.Background(), WorkIntake); !ok {
@@ -321,7 +321,7 @@ func TestQuarShareFullPausesSweepNotIntakeUntilCleared(t *testing.T) {
 	before := r.audioOf(inc.Local)
 	_, uerr := r.sw.Undo(context.Background(), swapID)
 	var ref *UndoRefusal
-	if !errors.As(uerr, &ref) || !ref.Cleared || !strings.Contains(ref.Reason, "cleared from quarantine") {
+	if !errors.As(uerr, &ref) || !ref.Cleared || !strings.Contains(ref.Reason, "saved copy of the old file was deleted") {
 		t.Fatalf("undo err = %v, want a refusal saying the old version was cleared", uerr)
 	}
 	if !errors.Is(uerr, ErrUndoRefused) {

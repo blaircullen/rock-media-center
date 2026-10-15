@@ -141,7 +141,7 @@ func TestBlindLibraryReadStaysInLibraryCheckAndRetries(t *testing.T) {
 	if got.State != StateLibraryCheck || got.Attempts != 1 || got.NextAttemptAt <= v.clock.Now().Unix() {
 		t.Fatalf("after a blind read: %+v", got)
 	}
-	if !strings.Contains(got.LastReason, "retrying") {
+	if !strings.Contains(got.LastReason, "Will try again") {
 		t.Fatalf("reason %q", got.LastReason)
 	}
 	if len(v.acquirer.calls) != 0 {
@@ -189,7 +189,7 @@ func TestNothingInPlexGoesToSearching(t *testing.T) {
 	it, _ := v.libItem()
 	v.tick(1)
 	got := v.item(it.ID)
-	if got.State != StateSearching || !strings.Contains(got.LastReason, "not in the library") {
+	if got.State != StateSearching || !strings.Contains(got.LastReason, "isn't in your library") {
 		t.Fatalf("state %s reason %q", got.State, got.LastReason)
 	}
 }
@@ -200,7 +200,7 @@ func TestUnreadableTagsRetryInsteadOfDeclaringTheSongMissing(t *testing.T) {
 	v.plexHas(songPath, "100") // no tags registered: ReadTags fails
 	v.tick(1)
 	got := v.item(it.ID)
-	if got.State != StateLibraryCheck || got.Attempts != 1 || !strings.Contains(got.LastReason, "unreadable") {
+	if got.State != StateLibraryCheck || got.Attempts != 1 || !strings.Contains(got.LastReason, "Couldn't read") {
 		t.Fatalf("state %s attempts %d reason %q, want a retry (a duplicate download would follow otherwise)", got.State, got.Attempts, got.LastReason)
 	}
 }

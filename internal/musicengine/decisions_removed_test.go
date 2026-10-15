@@ -30,7 +30,7 @@ func TestAnswerIgnoresRemovedSongStillWaitingButNotASweepItem(t *testing.T) {
 	if st := v.item(item.ID).State; st != StateWaitingBlair {
 		t.Errorf("ignored answer moved the item to %s", st)
 	}
-	if _, note, at := v.decAnswered(id); at == 0 || !strings.HasPrefix(note, "ignored: the song was removed") {
+	if _, note, at := v.decAnswered(id); at == 0 || !strings.HasPrefix(note, "ignored: The song was removed") {
 		t.Errorf("decision note %q answered_at %d, want closed with the reason", note, at)
 	}
 

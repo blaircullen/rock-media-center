@@ -178,7 +178,7 @@ func TestUndoRefusesWhenTheLibraryFileIsNoLongerTheSwapsVersion(t *testing.T) {
 	placeWrite(t, inc.Local, "HAND-EDITED", TrackTags{Artist: "Band", Album: "Album", Title: "Gold", Track: 1, RecordingMBID: inc.MBID})
 	edited := r.sha(inc.Local)
 	ref := r.wantRefusal(swap1)
-	if !strings.Contains(ref.Reason, "no longer the version") {
+	if !strings.Contains(ref.Reason, "is no longer the one swap") {
 		t.Errorf("reason %q should say the file is not the swap's version", ref.Reason)
 	}
 	if r.sha(inc.Local) != edited || r.journalRows(JournalUndo) != 0 {
@@ -206,7 +206,7 @@ func TestUndoRefusesWhileTheTrackIsPlaying(t *testing.T) {
 
 func TestUndoRefusesWhatIsNotACompletedSwap(t *testing.T) {
 	r := newSwapHarness(t)
-	if ref := r.wantRefusal(999); !strings.Contains(ref.Reason, "does not exist") {
+	if ref := r.wantRefusal(999); !strings.Contains(ref.Reason, "doesn't exist") {
 		t.Errorf("unknown id: %q", ref.Reason)
 	}
 	inc := r.seedTrack(swapTrackOpts{Title: "Gold", Audio: "A-OLD SUSPECT", RG: "rg1"})
@@ -235,7 +235,7 @@ func TestUndoRefusesWhenTheQuarantinedFileIsMissingOrAltered(t *testing.T) {
 	if err := os.WriteFile(qp, []byte("bitrot"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if ref := r.wantRefusal(swap1); !strings.Contains(ref.Reason, "checksum") {
+	if ref := r.wantRefusal(swap1); !strings.Contains(ref.Reason, "has changed since it was saved") {
 		t.Errorf("altered: %q", ref.Reason)
 	}
 	if err := os.Remove(qp); err != nil {

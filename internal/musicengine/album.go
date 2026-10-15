@@ -210,7 +210,7 @@ func (a *Album) Place(ctx context.Context, itemID int64, opts AlbumOptions) (Alb
 			res.NeedsConfirmation = true
 			if err := a.cfg.Placement.cfg.Decisions.Raise(ctx, a.db(), DecisionRequest{
 				ItemID: itemID, Kind: DecisionAlbumSubstitute, Now: a.cfg.Placement.m.Now(),
-				Reason: fmt.Sprintf("The release the single came from is no longer in staging. Getting the full album would fetch: %s.",
+				Reason: fmt.Sprintf("The download of the album this single came from is gone. Getting the full album would download this instead: %s.",
 					plan.Substitute),
 				Options: []string{OptionApprove, OptionDrop},
 			}); err != nil {
@@ -277,7 +277,7 @@ func (a *Album) albumFiles(ctx context.Context, dir string) ([]albumFile, error)
 		f := albumFile{Path: path}
 		tags, terr := p.readTags(ctx, path)
 		if terr != nil {
-			f.Res = audiocheck.Result{Path: path, Verdict: audiocheck.Blind, Reason: "tags unreadable: " + terr.Error()}
+			f.Res = audiocheck.Result{Path: path, Verdict: audiocheck.Blind, Reason: "Couldn't read the file's tags: " + terr.Error()}
 			out = append(out, f)
 			continue
 		}
@@ -357,7 +357,7 @@ func (a *Album) placeFrom(ctx context.Context, itemID int64, dir string, res Alb
 				res.Placed = append(res.Placed, plan.Path) // an earlier run already placed it
 				continue
 			}
-			res.Skipped = append(res.Skipped, AlbumSkip{Path: f.Path, Reason: plan.Path + " is already used by a different file; left untouched"})
+			res.Skipped = append(res.Skipped, AlbumSkip{Path: f.Path, Reason: plan.Path + " already holds a different file, so this one was left alone."})
 			continue
 		}
 		// A track whose recording the library already holds (or another item is getting) is
@@ -384,7 +384,7 @@ func (a *Album) placeFrom(ctx context.Context, itemID int64, dir string, res Alb
 		case out.pending:
 			res.Pending = append(res.Pending, plan.Path)
 		case out.stopped:
-			res.Skipped = append(res.Skipped, AlbumSkip{Path: f.Path, Reason: "stopped: " + out.reason})
+			res.Skipped = append(res.Skipped, AlbumSkip{Path: f.Path, Reason: "Stopped: " + out.reason})
 		default:
 			res.Placed = append(res.Placed, plan.Path)
 		}
@@ -434,7 +434,7 @@ func (a *Album) placeOne(ctx context.Context, f albumFile, dest string, num layo
 	if errors.Is(err, ErrSpaceWait) {
 		// No journal row was started, so nothing resumes this track; asking for the album
 		// again places it once there is room (earlier tracks are reported as placed).
-		return albumPlaced{stopped: true, reason: "not enough free space; ask for the album again later"}, nil
+		return albumPlaced{stopped: true, reason: "Not enough free disk space. Ask for the album again later."}, nil
 	}
 	if err != nil {
 		return albumPlaced{}, err
@@ -450,9 +450,9 @@ func (a *Album) placeOne(ctx context.Context, f albumFile, dest string, num layo
 	case OutcomePending:
 		return albumPlaced{pending: true}, nil
 	case OutcomeRolledBack:
-		return albumPlaced{stopped: true, reason: "rolled back; nothing was placed"}, nil
+		return albumPlaced{stopped: true, reason: "The track was rolled back; nothing was added to your library."}, nil
 	case OutcomeStopped:
-		return albumPlaced{stopped: true, reason: "the name is taken by another file"}, nil
+		return albumPlaced{stopped: true, reason: "Another file already has that name."}, nil
 	}
 	row, err = p.jr.Get(ctx, row.ID)
 	if err != nil {

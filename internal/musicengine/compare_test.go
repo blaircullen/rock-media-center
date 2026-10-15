@@ -63,11 +63,11 @@ func TestCmpDecide(t *testing.T) {
 		{"same spectral signature as a FAKE incumbent never wins (different PCM)", func(in *CmpInput) {
 			in.Incumbent.Verdict, in.Incumbent.TopHz = "FAKE", 16000
 			in.Candidate.TopHz = 16100
-		}, CmpKeep, "", "spectral signature"},
+		}, CmpKeep, "", "quality problem"},
 		{"signature exactly 200 Hz away still counts as the same", func(in *CmpInput) {
 			in.Incumbent.Verdict, in.Incumbent.TopHz = "SUSPECT", 19000
 			in.Candidate.TopHz = 19200
-		}, CmpKeep, "", "spectral signature"},
+		}, CmpKeep, "", "quality problem"},
 		{"signature 201 Hz away is a different source", func(in *CmpInput) {
 			in.Incumbent.Verdict, in.Incumbent.TopHz = "SUSPECT", 19000
 			in.Candidate.TopHz = 19201
@@ -90,12 +90,12 @@ func TestCmpDecide(t *testing.T) {
 		{"a candidate that failed the authenticity check never wins", func(in *CmpInput) {
 			in.Candidate.Verdict = "FAKE"
 			in.Candidate.BitDepth = 24
-		}, CmpKeep, "", "did not pass"},
+		}, CmpKeep, "", "failed the authenticity check"},
 		// AE6
 		{"a BLIND incumbent is not compared", func(in *CmpInput) {
 			in.Incumbent.Verdict = "BLIND"
 			in.Candidate.BitDepth = 24
-		}, CmpKeep, "", "could not be read"},
+		}, CmpKeep, "", "Couldn't read the copy you have"},
 		// AE8
 		{"explicit incumbent is never replaced by a clean higher-resolution candidate", func(in *CmpInput) {
 			in.Incumbent.Explicit = true
@@ -113,15 +113,15 @@ func TestCmpDecide(t *testing.T) {
 		{"different release group is a decision", func(in *CmpInput) {
 			in.Candidate.ReleaseGroupMBID = "rg2"
 			in.Candidate.BitDepth = 24
-		}, CmpAsk, DecisionDifferentMaster, "different release group"},
+		}, CmpAsk, DecisionDifferentMaster, "different album release"},
 		{"no release group on the candidate is a decision", func(in *CmpInput) {
 			in.Candidate.ReleaseGroupMBID = ""
 			in.Candidate.BitDepth = 24
-		}, CmpAsk, DecisionDifferentMaster, "release-group evidence"},
+		}, CmpAsk, DecisionDifferentMaster, "doesn't say which album release it came from"},
 		{"no release group on the incumbent is a decision", func(in *CmpInput) {
 			in.Incumbent.ReleaseGroupMBID = ""
 			in.Candidate.BitDepth = 24
-		}, CmpAsk, DecisionDifferentMaster, "release-group evidence"},
+		}, CmpAsk, DecisionDifferentMaster, "doesn't say which album release it came from"},
 		{"loudness 3 LU apart is a decision", func(in *CmpInput) {
 			in.Candidate.LoudnessLUFS = cmpLufs(-12)
 			in.Candidate.BitDepth = 24
@@ -133,11 +133,11 @@ func TestCmpDecide(t *testing.T) {
 		{"missing loudness is a decision", func(in *CmpInput) {
 			in.Candidate.LoudnessLUFS = nil
 			in.Candidate.BitDepth = 24
-		}, CmpAsk, DecisionDifferentMaster, "loudness measurement is missing"},
+		}, CmpAsk, DecisionDifferentMaster, "loudness of one of the files couldn't be measured"},
 		{"lengths 1.5 s apart is a decision", func(in *CmpInput) {
 			in.Candidate.LengthMs = 201500
 			in.Candidate.BitDepth = 24
-		}, CmpAsk, DecisionDifferentMaster, "decoded lengths differ"},
+		}, CmpAsk, DecisionDifferentMaster, "differ in length by"},
 		{"lengths exactly 1 s apart is the same mastering", func(in *CmpInput) {
 			in.Candidate.LengthMs = 201000
 			in.Candidate.BitDepth = 24
@@ -145,7 +145,7 @@ func TestCmpDecide(t *testing.T) {
 		{"a missing decoded length is a decision", func(in *CmpInput) {
 			in.Candidate.LengthMs = 0
 			in.Candidate.BitDepth = 24
-		}, CmpAsk, DecisionDifferentMaster, "length is missing"},
+		}, CmpAsk, DecisionDifferentMaster, "length of one of the files couldn't be measured"},
 		{"approval turns a different master into a swap", func(in *CmpInput) {
 			in.Candidate.ReleaseGroupMBID = "rg2"
 			in.Candidate.BitDepth = 24
@@ -154,7 +154,7 @@ func TestCmpDecide(t *testing.T) {
 		{"mastering evidence is needed even for a SUSPECT incumbent", func(in *CmpInput) {
 			in.Incumbent.Verdict, in.Incumbent.TopHz = "SUSPECT", 19000
 			in.Candidate.ReleaseGroupMBID = ""
-		}, CmpAsk, DecisionDifferentMaster, "release-group evidence"},
+		}, CmpAsk, DecisionDifferentMaster, "doesn't say which album release it came from"},
 		// AE15 / KTD8
 		{"a lossy m4a incumbent and a passing FLAC is a path change", func(in *CmpInput) {
 			in.Incumbent.Path, in.Incumbent.Codec, in.Incumbent.BitDepth, in.Incumbent.BitrateKbps = "/lib/a.m4a", "aac", 0, 256

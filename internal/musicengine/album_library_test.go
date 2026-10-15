@@ -68,7 +68,7 @@ func TestEngineTrackBlocked(t *testing.T) {
 	}
 
 	id := v.seedItem(KindRequest, StateSearching, recID)
-	if why, _ := v.e.TrackBlocked(ctx, rec); !strings.Contains(why, "already owns") {
+	if why, _ := v.e.TrackBlocked(ctx, rec); !strings.Contains(why, "already working on this song") {
 		t.Errorf("owned recording: %q", why)
 	}
 	if _, err := v.db.Exec(`UPDATE mus_items SET state = 'done' WHERE id = ?`, id); err != nil {
@@ -80,7 +80,7 @@ func TestEngineTrackBlocked(t *testing.T) {
 		plex.Track{RatingKey: "1", Title: "Song", Artist: "Artist", Album: "Song album", Files: []string{mp3}})
 	v.tags.tags[mp3] = Tags{RecordingMBID: "rec-1"}
 	v.checker.results[mp3] = []audiocheck.Result{verdictResult(audiocheck.Genuine, "mp3")}
-	if why, _ := v.e.TrackBlocked(ctx, rec); !strings.Contains(why, "lossy or flagged") || !strings.Contains(why, "deferred") {
+	if why, _ := v.e.TrackBlocked(ctx, rec); !strings.Contains(why, "lossy or flagged") || !strings.Contains(why, "not done for album downloads yet") {
 		t.Errorf("lossy copy: %q, want blocked with the swap deferral", why)
 	}
 
@@ -89,7 +89,7 @@ func TestEngineTrackBlocked(t *testing.T) {
 		plex.Track{RatingKey: "2", Title: "Song", Artist: "Artist", Album: "Song album", Files: []string{flac}})
 	v.tags.tags[flac] = Tags{RecordingMBID: "rec-1"}
 	v.checker.results[flac] = []audiocheck.Result{genuineFLAC()}
-	if why, _ := v.e.TrackBlocked(ctx, rec); !strings.Contains(why, "already in the library") {
+	if why, _ := v.e.TrackBlocked(ctx, rec); !strings.Contains(why, "Already in your library") {
 		t.Errorf("genuine copy: %q", why)
 	}
 }
@@ -112,7 +112,7 @@ func TestAlbumTrackWithoutRoomIsSkippedNotFailed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("a space refusal must not fail the album: %v", err)
 	}
-	if len(res.Placed) != 0 || len(res.Skipped) != 1 || !strings.Contains(res.Skipped[0].Reason, "free space") {
+	if len(res.Placed) != 0 || len(res.Skipped) != 1 || !strings.Contains(res.Skipped[0].Reason, "free disk space") {
 		t.Errorf("result = %+v, want Other One skipped for space", res)
 	}
 	if n := r.v.count(`SELECT COUNT(*) FROM mus_swap_journal`); n != before {

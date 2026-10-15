@@ -97,7 +97,7 @@ func TestAmbiguousRelinkedEntryGoesToBlairOnceEvenIfRunTwice(t *testing.T) {
 	v.tick(2)
 
 	it := v.itemFor("sp1")
-	if it.State != StateWaitingBlair || !strings.Contains(it.LastReason, "relinked") {
+	if it.State != StateWaitingBlair || !strings.Contains(it.LastReason, "swapped this track") {
 		t.Fatalf("state %s reason %q, want waiting_blair with a relinked reason", it.State, it.LastReason)
 	}
 	if it.DeadlineAt != 0 {
@@ -234,7 +234,7 @@ func TestPinMergesIntoActiveSweepItemAndTakesIntakePriority(t *testing.T) {
 		t.Fatal("more than one active item holds the recording")
 	}
 	merged := v.item(req.ID)
-	if merged.State != StateCancelled || !strings.Contains(merged.LastReason, "merged into item") {
+	if merged.State != StateCancelled || !strings.Contains(merged.LastReason, "Merged into item") {
 		t.Fatalf("request item = %s %q", merged.State, merged.LastReason)
 	}
 	survivor := v.item(sweep)

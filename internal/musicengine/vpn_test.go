@@ -53,7 +53,7 @@ func TestVPNNotOKStates(t *testing.T) {
 		{"empty status", 200, `{}`, "not running"},
 		{"server error", 500, `boom`, "HTTP 500"},
 		{"unauthorised", 401, `{"error":"unauthorized"}`, "HTTP 401"},
-		{"not json", 200, `<html>`, "not JSON"},
+		{"not json", 200, `<html>`, "unreadable"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -73,7 +73,7 @@ func TestVPNUnreachableIsNotOK(t *testing.T) {
 	srv.Close()
 	g := NewGluetunVPN(GluetunVPNConfig{URL: func() string { return url }})
 	ok, why := g.Check(context.Background())
-	if ok || !strings.Contains(why, "unreachable") {
+	if ok || !strings.Contains(why, "Couldn't reach") {
 		t.Fatalf("Check = %v, %q, want unreachable", ok, why)
 	}
 }
@@ -91,7 +91,7 @@ func TestVPNHardDeadline(t *testing.T) {
 	g := NewGluetunVPN(GluetunVPNConfig{URL: func() string { return srv.URL }, Timeout: 100 * time.Millisecond})
 	start := time.Now()
 	ok, why := g.Check(context.Background())
-	if ok || !strings.Contains(why, "unreachable") {
+	if ok || !strings.Contains(why, "Couldn't reach") {
 		t.Fatalf("Check = %v, %q", ok, why)
 	}
 	if d := time.Since(start); d > 3*time.Second {

@@ -180,20 +180,20 @@ func (d *Decisions) Answer(ctx context.Context, decisionID int64, option, note s
 
 	switch {
 	case option == OptionDrop:
-		return d.finish(ctx, dec, it, res, note, StateDropped, "dropped by Blair", 0)
+		return d.finish(ctx, dec, it, res, note, StateDropped, "You dropped this song.", 0)
 	case option == OptionRetry:
-		return d.finish(ctx, dec, it, res, note, decRetryTarget(dec, it), "Blair asked to try again", 0)
+		return d.finish(ctx, dec, it, res, note, decRetryTarget(dec, it), "You asked to try again.", 0)
 	case option == OptionNotAMatch:
-		return d.finish(ctx, dec, it, res, note, StateSearching, "Blair: the library file is not this recording", 0)
+		return d.finish(ctx, dec, it, res, note, StateSearching, "You said the library file is not this song.", 0)
 	case option == OptionWait:
-		why := "Blair chose to keep waiting for a lossless copy"
+		why := "You chose to keep waiting for a lossless copy."
 		hold := DecisionWaitRetry
 		if expired, detail := d.stagedExpired(ctx, dec); expired {
-			why, hold = "Blair chose to keep waiting; the staged candidate "+detail+", so searching again", 0
+			why, hold = "You chose to keep waiting, but the downloaded file "+detail+", so the search starts again.", 0
 		}
 		return d.finish(ctx, dec, it, res, note, StateSearching, why, hold)
 	case option == OptionKeep:
-		return d.finish(ctx, dec, it, res, note, StateDropped, "Blair kept the current version", 0)
+		return d.finish(ctx, dec, it, res, note, StateDropped, "You kept the copy you have.", 0)
 	case strings.HasPrefix(option, OptionUsePrefix):
 		mbid := strings.TrimPrefix(option, OptionUsePrefix)
 		if err := d.e.PinToRecording(ctx, it.ID, mbid); err != nil {
@@ -208,7 +208,7 @@ func (d *Decisions) Answer(ctx context.Context, decisionID int64, option, note s
 	case option == OptionLossy || option == OptionApprove:
 		if expired, detail := d.stagedExpired(ctx, dec); expired {
 			return d.finish(ctx, dec, it, res, note, StateSearching,
-				"Blair answered "+option+" but the staged candidate "+detail+", so searching again", 0)
+				"You chose "+option+", but the downloaded file "+detail+", so the search starts again.", 0)
 		}
 		hook := d.hooks.TakeLossy
 		if option == OptionApprove {
@@ -263,7 +263,7 @@ func itemWantedTx(ctx context.Context, q store.Execer, it Item) (bool, string, e
 		return false, "", fmt.Errorf("checking that item %d still has a playlist entry: %w", it.ID, err)
 	}
 	if total > 0 && present == 0 {
-		return false, fmt.Sprintf("the song was removed from the Spotify playlist (item is %s)", it.State), nil
+		return false, fmt.Sprintf("The song was removed from the Spotify playlist, so this question no longer applies (its status is %s).", it.State), nil
 	}
 	return true, "", nil
 }
@@ -341,9 +341,9 @@ func (d *Decisions) ignoredReason(ctx context.Context, it Item) string {
 	if err != nil {
 		d.e.log.Warn("musicengine: could not check whether a song left the playlist", "item", it.ID, "err", err)
 	} else if total > 0 && present == 0 {
-		return fmt.Sprintf("the song was removed from the Spotify playlist (item is now %s)", it.State)
+		return fmt.Sprintf("The song was removed from the Spotify playlist, so this question no longer applies (its status is now %s).", it.State)
 	}
-	return fmt.Sprintf("the item is now %s, not waiting for you", it.State)
+	return fmt.Sprintf("This question no longer applies: the item's status is now %s, so it is not waiting for you.", it.State)
 }
 
 // stagedExpired reports whether the decision's staged candidate is gone: past its expiry,

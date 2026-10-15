@@ -536,7 +536,7 @@ func TestAcquireAllCandidatesFailRaisesTheThreeChoices(t *testing.T) {
 	if kind != DecisionNoGenuineCopy || opts != `["lossy","wait","drop"]` {
 		t.Errorf("decision = %s %s", kind, opts)
 	}
-	if !strings.Contains(it.LastReason, "failed the checks") {
+	if !strings.Contains(it.LastReason, "failed the quality checks") {
 		t.Errorf("reason = %q", it.LastReason)
 	}
 	// A further step changes nothing (waiting_blair is not an acquirer state) and raises no second decision.
@@ -579,7 +579,7 @@ func TestAcquireReservationRefusedDoesNotStart(t *testing.T) {
 	h.stepOK(id)
 
 	it := h.item(id)
-	if it.State != StateSearching || !strings.Contains(it.LastReason, "waiting for space") {
+	if it.State != StateSearching || !strings.Contains(it.LastReason, "Waiting for disk space") {
 		t.Fatalf("state = %s reason = %q", it.State, it.LastReason)
 	}
 	if h.dl.addCount() != 0 {

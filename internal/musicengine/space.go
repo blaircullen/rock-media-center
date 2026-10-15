@@ -283,7 +283,7 @@ func (s *Space) updateLocked(ctx context.Context, r spaceReading, st SpaceSettin
 			storage = "(no volume configured)"
 		}
 		s.sweepPaused, s.intakePaused = true, true
-		why := "cannot measure free space on " + storage
+		why := "Can't measure free space on " + storage
 		s.why.sweep, s.why.intake = why, why
 	default:
 		if s.intakePaused {
@@ -292,7 +292,7 @@ func (s *Space) updateLocked(ctx context.Context, r spaceReading, st SpaceSettin
 			}
 		} else if r.minFree < st.Floor {
 			s.intakePaused = true
-			s.why.intake = fmt.Sprintf("free space %s is below the %s floor", spaceGB(r.minFree), spaceGB(st.Floor))
+			s.why.intake = fmt.Sprintf("Free space (%s) is below the %s minimum", spaceGB(r.minFree), spaceGB(st.Floor))
 		}
 		if s.sweepPaused {
 			if r.minFree >= st.Floor+2*st.Margin {
@@ -300,7 +300,7 @@ func (s *Space) updateLocked(ctx context.Context, r spaceReading, st SpaceSettin
 			}
 		} else if r.minFree < st.Floor+st.Margin {
 			s.sweepPaused = true
-			s.why.sweep = fmt.Sprintf("free space %s is under the %s floor plus %s margin", spaceGB(r.minFree), spaceGB(st.Floor), spaceGB(st.Margin))
+			s.why.sweep = fmt.Sprintf("Free space (%s) is under the %s minimum plus a %s safety margin", spaceGB(r.minFree), spaceGB(st.Floor), spaceGB(st.Margin))
 		}
 	}
 	if !s.sweepPaused && !s.intakePaused {
@@ -376,10 +376,10 @@ func (s *Space) evaluate(ctx context.Context) (r spaceReading, st SpaceSettings,
 	switch {
 	case qerr != nil:
 		s.log.Warn("musicengine: quarantine usage unreadable, sweep paused", "err", qerr)
-		s.why.quarantine = "cannot read quarantine usage: " + qerr.Error()
+		s.why.quarantine = "Can't read how much space replaced files use: " + qerr.Error()
 		quarOK = false
 	case used >= st.QuarantineShare:
-		s.why.quarantine = fmt.Sprintf("quarantine holds %s, its full %s share", spaceGB(used), spaceGB(st.QuarantineShare))
+		s.why.quarantine = fmt.Sprintf("Replaced files kept aside use %s, which is their full %s allowance", spaceGB(used), spaceGB(st.QuarantineShare))
 		quarOK = false
 		if !s.quarFull {
 			s.quarFull = true
@@ -388,8 +388,8 @@ func (s *Space) evaluate(ctx context.Context) (r spaceReading, st SpaceSettings,
 		key := fmt.Sprintf("mus-quarantine-full:%d", s.quarEpisode)
 		alerts = append(alerts, filterAlerted([]spaceAlert{{key, Alert{
 			Kind: AlertQuarantineFull, Key: key,
-			Subject: "Music quarantine is full",
-			Body:    "Replaced versions use " + spaceGB(used) + " of the " + spaceGB(st.QuarantineShare) + " share, so the upgrade sweep is paused. New music still runs. Clear old versions on the music engine page to resume the sweep.",
+			Subject: "Space for replaced music files is full",
+			Body:    "Replaced versions use " + spaceGB(used) + " of their " + spaceGB(st.QuarantineShare) + " allowance, so the upgrade sweep is paused. New music still runs. Clear old versions on the music engine page to resume the sweep.",
 		}}}, s.alerted)...)
 	default:
 		s.quarFull, s.quarEpisode = false, 0
@@ -454,7 +454,7 @@ func (s *Space) Reserve(ctx context.Context, itemID, bytes int64) (bool, string)
 	case r.minFree-bytes < st.Floor:
 		// The download would take free space under the floor: pause new music too, so the
 		// next item does not try the same thing (AE14).
-		reason = fmt.Sprintf("a %s download would leave %s free, under the %s floor", spaceGB(bytes), spaceGB(r.minFree-bytes), spaceGB(st.Floor))
+		reason = fmt.Sprintf("A %s download would leave only %s free, under the %s minimum", spaceGB(bytes), spaceGB(r.minFree-bytes), spaceGB(st.Floor))
 		s.intakePaused, s.sweepPaused = true, true
 		s.why.intake, s.why.sweep = reason, reason
 		if s.episode == 0 {

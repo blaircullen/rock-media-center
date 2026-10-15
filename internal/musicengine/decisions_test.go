@@ -77,7 +77,7 @@ func TestAnswerWaitForExpiredCandidateStartsANewSearch(t *testing.T) {
 		t.Fatal(err)
 	}
 	it := v.item(item)
-	if res.Ignored || it.State != StateSearching || !strings.Contains(it.LastReason, "searching again") {
+	if res.Ignored || it.State != StateSearching || !strings.Contains(it.LastReason, "the search starts again") {
 		t.Fatalf("result %+v item %s %q, want a new search with the reason", res, it.State, it.LastReason)
 	}
 	if v.nextAttemptAt(item) != 0 {
@@ -140,7 +140,7 @@ func TestAnswerForASongRemovedFromSpotifyIsIgnored(t *testing.T) {
 		t.Error("an ignored answer must not move the item")
 	}
 	ans, note, at := v.decAnswered(id)
-	if ans != OptionLossy || at == 0 || !strings.HasPrefix(note, "ignored: the song was removed") {
+	if ans != OptionLossy || at == 0 || !strings.HasPrefix(note, "ignored: The song was removed") {
 		t.Errorf("decision = %q %q %d, want closed with the reason", ans, note, at)
 	}
 	open, err := d.Open(context.Background())

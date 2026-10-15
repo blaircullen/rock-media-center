@@ -101,7 +101,7 @@ func TestLaneNoIndexerOfTransportIsUnavailable(t *testing.T) {
 		t.Fatalf("state = %s", st)
 	}
 	var reason string
-	if err := h.db.QueryRow(`SELECT reason FROM mus_lane_status WHERE lane = 'usenet'`).Scan(&reason); err != nil || !strings.Contains(reason, "no enabled usenet indexer") {
+	if err := h.db.QueryRow(`SELECT reason FROM mus_lane_status WHERE lane = 'usenet'`).Scan(&reason); err != nil || !strings.Contains(reason, "No enabled usenet indexer") {
 		t.Fatalf("reason = %q, %v", reason, err)
 	}
 }
@@ -143,7 +143,7 @@ func TestLaneVPNDownMakesTorrentAndSoulseekUnavailable(t *testing.T) {
 				if err := h.db.QueryRow(`SELECT status, reason, vpn_ok FROM mus_lane_status WHERE lane = ?`, lane).Scan(&status, &reason, &vpn); err != nil {
 					t.Fatal(err)
 				}
-				if status != "unavailable" || vpn != 0 || !strings.Contains(reason, "VPN attachment not confirmed") {
+				if status != "unavailable" || vpn != 0 || !strings.Contains(reason, "The VPN isn't confirmed") {
 					t.Errorf("%s = %s %q vpn=%d", lane, status, reason, vpn)
 				}
 			}

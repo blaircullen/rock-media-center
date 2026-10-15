@@ -29,7 +29,7 @@ type SyncReport struct {
 // next failed read tries the alert again.
 const alertUndelivered = "[alert not queued] "
 
-var errEmptyRead = errors.New("playlist read returned no entries although the playlist held songs on the last sync; treating it as a failed read, not an emptied playlist")
+var errEmptyRead = errors.New("The playlist came back empty, but it had songs last time. Treating this as a failed read, not an emptied playlist, so nothing was removed.")
 
 // entryKey identifies a playlist entry by the song itself (R3): its Spotify track id. Local
 // files and items with no id get a stable hash of what the playlist shows.
@@ -105,7 +105,7 @@ func (e *Engine) recordReadFailure(ctx context.Context, pl playlistRow, cause er
 			Kind:    AlertPlaylistReadFailed,
 			Key:     fmt.Sprintf("mus-playlist-read:%s:%d", pl.SpotifyID, e.now().Unix()),
 			Subject: "Spotify playlist could not be read",
-			Body: "The engine could not read the watched playlist completely, so it changed nothing and kept every request. Reason: " +
+			Body: "The engine could not read the watched playlist completely, so it changed nothing and kept every request. Why: " +
 				msg,
 		})
 		if alertErr != nil {
@@ -270,7 +270,7 @@ func (e *Engine) reopenForEntry(ctx context.Context, tx store.Execer, row entryR
 			return fmt.Errorf("looking for an active item on recording %d: %w", it.RecordingID, err)
 		}
 	}
-	if err := e.reopen(ctx, tx, it, "re-added to the playlist"); err != nil {
+	if err := e.reopen(ctx, tx, it, "The song was added back to the playlist."); err != nil {
 		return err
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE mus_items SET priority = ? WHERE id = ?`, PriorityIntake, it.ID); err != nil {
@@ -312,7 +312,7 @@ func (e *Engine) cancelIfAbandoned(ctx context.Context, tx store.Execer, row ent
 		rep.Kept++ // the download started: the item finishes, the library file is never touched (R4)
 		return nil
 	}
-	if err := e.TransitionTx(ctx, tx, it.ID, StateCancelled, "removed from the playlist"); err != nil {
+	if err := e.TransitionTx(ctx, tx, it.ID, StateCancelled, "The song was removed from the playlist."); err != nil {
 		return err
 	}
 	rep.Cancelled++

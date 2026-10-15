@@ -694,7 +694,7 @@ func TestSwapPlaybackWaitIsBounded(t *testing.T) {
 	r.v.clock.Advance(DefaultPlaybackWait + time.Minute)
 	r.mustStep(item)
 	it := r.v.item(item)
-	if it.State != StateDropped || !strings.Contains(it.LastReason, "next sweep cycle") {
+	if it.State != StateDropped || !strings.Contains(it.LastReason, "next scan") {
 		t.Fatalf("item is %s (%q), want dropped with the deferral reason", it.State, it.LastReason)
 	}
 	var next, interval int64
@@ -898,7 +898,7 @@ func TestSwapNoReleaseGroupEvidenceIsADecision(t *testing.T) {
 		t.Fatalf("item is %s, want waiting_blair", st)
 	}
 	d := r.openDecision(item, DecisionDifferentMaster)
-	if !strings.Contains(d.Reason, "release-group evidence") {
+	if !strings.Contains(d.Reason, "doesn't say which album release it came from") {
 		t.Errorf("reason %q should name the missing evidence", d.Reason)
 	}
 }
@@ -923,7 +923,7 @@ func TestSwapSameSpectralSignatureAsFakeIncumbentNeverWins(t *testing.T) {
 	old := r.sha(inc.Local)
 	r.mustStep(item)
 	it := r.v.item(item)
-	if it.State != StateDropped || !strings.Contains(it.LastReason, "spectral signature") {
+	if it.State != StateDropped || !strings.Contains(it.LastReason, "quality problem") {
 		t.Fatalf("item is %s (%q), want dropped for the shared spectral signature", it.State, it.LastReason)
 	}
 	if r.sha(inc.Local) != old || r.journalRows(JournalSwap) != 0 {
@@ -1034,7 +1034,7 @@ func TestSwapDestinationChangedSinceRecordingStopsAndChangesNothing(t *testing.T
 		t.Fatalf("item is %s, want waiting_blair", it.State)
 	}
 	d := r.openDecision(item, "collision")
-	if !strings.Contains(d.Reason, "no longer holds the incumbent") {
+	if !strings.Contains(d.Reason, "is no longer the file that was there when the swap started") {
 		t.Errorf("decision reason %q should say the destination no longer holds the incumbent", d.Reason)
 	}
 	var lastErr string

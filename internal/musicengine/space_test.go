@@ -113,7 +113,7 @@ func TestSpaceSweepPausesFirstThenIntakeOnAReservation(t *testing.T) {
 
 	// A 30 GB download would leave 90 GB: refused, and intake pauses with it.
 	item := v.seedItem(KindRequest, StateSearching, 0)
-	if ok, reason := s.Reserve(context.Background(), item, 30*spaceGiB); ok || !strings.Contains(reason, "floor") {
+	if ok, reason := s.Reserve(context.Background(), item, 30*spaceGiB); ok || !strings.Contains(reason, "minimum") {
 		t.Fatalf("Reserve crossing the floor: ok=%v reason=%q", ok, reason)
 	}
 	if ok, _ := spaceAllow(t, s, WorkIntake); ok {
@@ -320,7 +320,7 @@ func TestSpaceQuarantineShareFullPausesOnlyTheSweep(t *testing.T) {
 		}
 	}
 	for i := 0; i < 3; i++ {
-		if ok, why := spaceAllow(t, s, WorkSweep); ok || !strings.Contains(why, "quarantine") {
+		if ok, why := spaceAllow(t, s, WorkSweep); ok || !strings.Contains(why, "Replaced files") {
 			t.Fatalf("sweep with a full quarantine: ok=%v reason=%q", ok, why)
 		}
 		if ok, why := spaceAllow(t, s, WorkIntake); !ok {

@@ -176,7 +176,7 @@ func (l *laneIndexed) name() string { return l.lane }
 
 func (l *laneIndexed) search(ctx context.Context, q laneQuery) laneResult {
 	if l.idx == nil {
-		return laneUnavailable(l.lane, "%s lane is not configured", l.lane)
+		return laneUnavailable(l.lane, "The %s source isn't set up", l.lane)
 	}
 	if l.transport == indexer.TransportTorrent {
 		if why := laneVPNProblem(ctx, l.vpn); why != "" {
@@ -185,7 +185,7 @@ func (l *laneIndexed) search(ctx context.Context, q laneQuery) laneResult {
 	}
 	all, err := l.idx.List(ctx)
 	if err != nil {
-		return laneUnavailable(l.lane, "reading indexers: %v", err)
+		return laneUnavailable(l.lane, "Couldn't read the list of indexers: %v", err)
 	}
 	names := map[string]bool{}
 	for _, ix := range all {
@@ -194,7 +194,7 @@ func (l *laneIndexed) search(ctx context.Context, q laneQuery) laneResult {
 		}
 	}
 	if len(names) == 0 {
-		return laneUnavailable(l.lane, "no enabled %s indexer serves music", l.transport)
+		return laneUnavailable(l.lane, "No enabled %s indexer is set up for music", l.transport)
 	}
 
 	var issues []string
@@ -315,16 +315,16 @@ func laneScoreRelease(r indexer.Release, q laneQuery, losslessCategory bool) (in
 
 func laneVPNProblem(ctx context.Context, vpn VPNCheck) string {
 	if vpn == nil {
-		return "VPN attachment not confirmed: nothing recorded at install (KTD20)"
+		return "The VPN isn't confirmed: no VPN check was recorded when the engine was installed."
 	}
 	ok, why := vpn(ctx)
 	if ok {
 		return ""
 	}
 	if strings.TrimSpace(why) == "" {
-		why = "check did not pass"
+		why = "the VPN check did not pass"
 	}
-	return "VPN attachment not confirmed: " + why
+	return "The VPN isn't confirmed: " + why
 }
 
 // ---- Soulseek lane ----
@@ -340,14 +340,14 @@ var laneSoulseekExts = map[string]bool{"flac": true, "wav": true, "ape": true, "
 
 func (l *laneSoulseek) search(ctx context.Context, q laneQuery) laneResult {
 	if l.client == nil {
-		return laneUnavailable(LaneSoulseek, "soulseek lane is not configured")
+		return laneUnavailable(LaneSoulseek, "The Soulseek source isn't set up")
 	}
 	if why := laneVPNProblem(ctx, l.vpn); why != "" {
 		return laneUnavailable(LaneSoulseek, "%s", why)
 	}
 	files, err := l.client.Search(ctx, q.text(), slskd.SearchOptions{})
 	if err != nil {
-		return laneUnavailable(LaneSoulseek, "slskd search failed: %v", err)
+		return laneUnavailable(LaneSoulseek, "The Soulseek search (slskd) failed: %v", err)
 	}
 	title := acqNorm(q.Title)
 	var out []laneCandidate

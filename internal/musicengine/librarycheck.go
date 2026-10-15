@@ -122,7 +122,7 @@ func (e *Engine) lookupLibrary(ctx context.Context, it Item, rec Recording) (lib
 		case matchUnsettled:
 			f.unsettled = append(f.unsettled, c)
 		default:
-			if why != "" && strings.HasPrefix(why, "unreadable") {
+			if why != "" && strings.HasPrefix(why, libUnreadablePrefix) {
 				f.unreadable = why
 			}
 		}
@@ -134,7 +134,7 @@ func (e *Engine) lookupLibrary(ctx context.Context, it Item, rec Recording) (lib
 		cf := &checkedFile{cand: c, res: res}
 		switch {
 		case res.Verdict == audiocheck.Blind:
-			f.blind = fmt.Sprintf("library file %s could not be read: %s", c.path, res.Reason)
+			f.blind = fmt.Sprintf("Couldn't read your library file %s: %s", c.path, res.Reason)
 		case res.Verdict == audiocheck.Genuine && isLossless(res.Facts.Codec):
 			f.winner = cf
 		default:
@@ -151,7 +151,7 @@ func (e *Engine) lookupLibrary(ctx context.Context, it Item, rec Recording) (lib
 
 // truncatedReason is the text of the ambiguity decision raised when the search was cut short.
 func truncatedReason(rec Recording) string {
-	return fmt.Sprintf("the library search for %s - %s stopped at its limit (%d candidate files, %d matches) before every copy was looked at, so a missing or lossy copy cannot be trusted",
+	return fmt.Sprintf("The search of your music library for %s - %s stopped at its limit (%d files looked at, %d matches) before every copy was checked, so a 'missing' or 'lossy' result can't be trusted.",
 		rec.Artist, rec.Title, maxLibraryCandidates, maxMatchedChecks)
 }
 
@@ -184,21 +184,21 @@ func (e *Engine) handleLibraryCheck(ctx context.Context, it Item) error {
 			return e.retryLibraryCheck(ctx, it, f.unreadable)
 		case len(f.unsettled) > 0:
 			return e.raiseAndWait(ctx, it, "ambiguous",
-				fmt.Sprintf("library file %s may be %s - %s but the tags cannot settle it", f.unsettled[0].path, rec.Artist, rec.Title),
+				fmt.Sprintf("Your library file %s may be %s - %s, but its tags can't settle it.", f.unsettled[0].path, rec.Artist, rec.Title),
 				[]string{OptionTreatAsMatch, OptionNotAMatch, OptionDrop})
 		}
-		return e.Transition(ctx, it.ID, StateSearching, "not in the library")
+		return e.Transition(ctx, it.ID, StateSearching, "The song isn't in your library yet.")
 	}
 
 	switch {
 	case f.winner != nil:
 		return e.finishFromLibrary(ctx, it, rec, *f.winner, StateDone, "",
-			fmt.Sprintf("already in the library as %s (%s)", f.winner.cand.path, describeFacts(f.winner.res)))
+			fmt.Sprintf("Already in your library as %s (%s)", f.winner.cand.path, describeFacts(f.winner.res)))
 	case f.flawed != nil:
 		flawed := f.flawed
-		why := fmt.Sprintf("library copy %s is %s (%s): upgrade", flawed.cand.path, flawed.res.Verdict, flawed.res.Reason)
+		why := fmt.Sprintf("The copy in your library, %s, is rated %s (%s), so a better one will be looked for.", flawed.cand.path, flawed.res.Verdict, flawed.res.Reason)
 		if flawed.res.Verdict == audiocheck.Genuine {
-			why = fmt.Sprintf("library copy %s is lossy (%s): upgrade", flawed.cand.path, flawed.res.Facts.Codec)
+			why = fmt.Sprintf("The copy in your library, %s, is lossy (%s), so a lossless one will be looked for.", flawed.cand.path, flawed.res.Facts.Codec)
 		}
 		upgrade := ""
 		if it.Kind == KindRequest {
@@ -222,7 +222,7 @@ func (e *Engine) TrackBlocked(ctx context.Context, rec Recording) (string, error
 			rec.ID).Scan(&holder)
 		switch {
 		case err == nil:
-			return fmt.Sprintf("item %d already owns this recording and is still being processed", holder), nil
+			return fmt.Sprintf("Item %d is already working on this song.", holder), nil
 		case !errors.Is(err, sql.ErrNoRows):
 			return "", fmt.Errorf("looking for an active item on recording %d: %w", rec.ID, err)
 		}
@@ -233,18 +233,18 @@ func (e *Engine) TrackBlocked(ctx context.Context, rec Recording) (string, error
 	}
 	switch {
 	case f.winner != nil:
-		return fmt.Sprintf("already in the library as %s (%s)", f.winner.cand.path, describeFacts(f.winner.res)), nil
+		return fmt.Sprintf("Already in your library as %s (%s)", f.winner.cand.path, describeFacts(f.winner.res)), nil
 	case f.flawed != nil:
 		// Placing beside it would leave two copies. Turning it into a swap is a recorded plan
 		// deferral (the album flow has no item to swap for).
-		return fmt.Sprintf("the library already has a lossy or flagged copy %s (%s); not placed beside it, swapping it is deferred",
+		return fmt.Sprintf("Your library already has a lossy or flagged copy, %s (%s), so this track was not added next to it. Replacing it is not done for album downloads yet.",
 			f.flawed.cand.path, f.flawed.res.Verdict), nil
 	case f.blind != "":
-		return "a library copy could not be checked: " + f.blind, nil
+		return "Couldn't check the copy in your library: " + f.blind, nil
 	case f.unreadable != "":
-		return "a library file could not be read: " + f.unreadable, nil
+		return f.unreadable, nil
 	case len(f.unsettled) > 0:
-		return fmt.Sprintf("library file %s may be this recording; tags cannot settle it", f.unsettled[0].path), nil
+		return fmt.Sprintf("Your library file %s may be this song, but its tags can't settle it.", f.unsettled[0].path), nil
 	case f.truncated:
 		return truncatedReason(rec), nil
 	}
@@ -332,7 +332,7 @@ func (e *Engine) retryLibraryCheck(ctx context.Context, it Item, reason string) 
 	attempts := cur.Attempts + 1
 	if attempts >= maxBlindAttempts {
 		return e.raiseAndWait(ctx, cur, "blind_library",
-			fmt.Sprintf("the library copy stayed unreadable after %d tries: %s", attempts, reason),
+			fmt.Sprintf("Couldn't read the copy in your library after %d tries: %s", attempts, reason),
 			[]string{OptionRetry, OptionDrop})
 	}
 	interval := time.Duration(cur.RetryIntervalS) * time.Second * 2
@@ -347,7 +347,7 @@ func (e *Engine) retryLibraryCheck(ctx context.Context, it Item, reason string) 
 		`UPDATE mus_items SET attempts = ?, retry_interval_s = ?, next_attempt_at = ?, last_reason = ?, updated_at = ?
 		 WHERE id = ? AND state = 'library_check'`,
 		attempts, int64(interval/time.Second), now.Add(interval).Unix(),
-		"retrying: "+clip(reason, 400), now.Unix(), it.ID)
+		"Will try again: "+clip(reason, 400), now.Unix(), it.ID)
 	if err != nil {
 		return fmt.Errorf("scheduling library check retry for item %d: %w", it.ID, err)
 	}
@@ -436,13 +436,16 @@ func (e *Engine) libraryCandidates(ctx context.Context, section string, it Item,
 	return out, truncated, nil
 }
 
+// libUnreadablePrefix starts the reason when a library file could not be looked at.
+const libUnreadablePrefix = "Couldn't read the file: "
+
 // classifyFile decides whether one library file is the pinned recording. A why starting
-// "unreadable" means the file could not be looked at (not that it is a different song).
+// with libUnreadablePrefix means the file could not be looked at (not that it is a different song).
 // An error is a transient MusicBrainz failure and retries the whole check.
 func (e *Engine) classifyFile(ctx context.Context, rec Recording, c libCand, pinnedFull **metadata.Recording) (matchResult, string, error) {
 	tags, err := e.tags.ReadTags(ctx, c.path)
 	if err != nil {
-		return matchNo, "unreadable: " + clip(err.Error(), 300), nil
+		return matchNo, libUnreadablePrefix + clip(err.Error(), 300), nil
 	}
 
 	if tags.RecordingMBID != "" {

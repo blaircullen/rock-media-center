@@ -273,7 +273,7 @@ func CheckLanes(ctx context.Context, db *sql.DB, n Notifier, now time.Time) erro
 			Kind:    AlertLaneUnavailable,
 			Key:     fmt.Sprintf("mus-lane:%s:%d", l.lane, l.since),
 			Subject: fmt.Sprintf("Music source %s has been unavailable for over a day", l.lane),
-			Body: fmt.Sprintf("The %s lane has been unavailable since %s. Reason: %s. Songs it could have found stay in the queue and are not marked as having no lossless copy.",
+			Body: fmt.Sprintf("The %s source has been unavailable since %s. Why: %s. Songs it could have found stay in the queue and are not marked as having no lossless copy.",
 				l.lane, time.Unix(l.since, 0).UTC().Format(time.RFC3339), l.reason),
 		})
 		if err != nil {

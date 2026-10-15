@@ -289,7 +289,7 @@ var errCrash = errors.New("musicengine: simulated crash")
 
 // ErrSpaceWait is matched (errors.Is) by the error returned when the space gate refused the
 // bytes a placement needs. Nothing was dropped; try again later.
-var ErrSpaceWait = errors.New("musicengine placement: waiting for disk space")
+var ErrSpaceWait = errors.New("waiting for disk space")
 
 // ErrPlaybackPending is matched (errors.Is) when a swap or undo stopped just before it would
 // replace a track Plex reports as playing. The journal row stays open for the next pass.
@@ -351,7 +351,7 @@ func (p *Placement) reserve(ctx context.Context, dest string, bytes int64) error
 		bytes = 1
 	}
 	if ok, why := p.cfg.Space.Reserve(ctx, spaceKey(dest), bytes); !ok {
-		return fmt.Errorf("%w: %s needs %d bytes: %s", ErrSpaceWait, dest, bytes, why)
+		return fmt.Errorf("%w: %s needs %d bytes (%s)", ErrSpaceWait, dest, bytes, why)
 	}
 	return nil
 }
@@ -575,9 +575,9 @@ func (p *Placement) verifyInPlace(ctx context.Context, temp, expectFP string) (s
 	case res.Verdict == audiocheck.Blind:
 		return "", res, fmt.Errorf("check of %s was blind (will retry): %s", filepath.Base(temp), res.Reason)
 	case res.Verdict == audiocheck.Corrupt || !res.Integrity.OK:
-		return "", res, &VerifyError{Reason: "integrity failed: " + clip(res.Reason+" "+res.Integrity.Detail, 300)}
+		return "", res, &VerifyError{Reason: "The file is damaged: " + clip(res.Reason+" "+res.Integrity.Detail, 300)}
 	case expectFP != "" && res.Fingerprint != expectFP:
-		return "", res, &VerifyError{Reason: "the decoded audio differs from the checked candidate's (fingerprint mismatch)"}
+		return "", res, &VerifyError{Reason: "The audio in the copy differs from the audio that was checked, so it was not used."}
 	}
 	return sha, res, nil
 }
@@ -671,10 +671,10 @@ func (p *Placement) Stage(ctx context.Context, s StageSpec) (JournalRow, error) 
 
 	srcSHA, err := placeSHA256(s.Source)
 	if err != nil {
-		return row, p.stageBad(ctx, row, fmt.Sprintf("the staged file is unreadable: %v", err))
+		return row, p.stageBad(ctx, row, fmt.Sprintf("Couldn't read the downloaded file: %v", err))
 	}
 	if s.SourceSHA != "" && srcSHA != s.SourceSHA {
-		return row, p.stageBad(ctx, row, "the staged file no longer has the checksum it was checked with")
+		return row, p.stageBad(ctx, row, "The downloaded file changed after it was checked, so it was not used.")
 	}
 	if _, err := p.jr.Record(ctx, p.m.DB(), row.ID, PhaseStaged, PhaseData{StagedSHA: srcSHA}); err != nil {
 		return row, err
@@ -765,7 +765,7 @@ func (p *Placement) losslessOrApprovedLossy(ctx context.Context, candidateID int
 			return "", nil
 		}
 	}
-	return fmt.Sprintf("the file's codec is %q, not lossless, and it is not the lossy YouTube audio Blair approved", res.Facts.Codec), nil
+	return fmt.Sprintf("The file's format is %q, which is not lossless, and it is not the lossy YouTube audio you approved.", res.Facts.Codec), nil
 }
 
 // stageBad rolls the row back for a verified-bad result and returns the *VerifyError.
@@ -966,7 +966,7 @@ func (p *Placement) toAwaiting(ctx context.Context, q store.Execer, row JournalR
 	if it.State != StatePlacing && it.State != StateSwapping {
 		return nil
 	}
-	return p.m.TransitionTx(ctx, q, row.ItemID, StateAwaitingPlexIndex, "published; waiting for Plex to index")
+	return p.m.TransitionTx(ctx, q, row.ItemID, StateAwaitingPlexIndex, "Added to your library; waiting for Plex to pick it up.")
 }
 
 func (p *Placement) recordPublished(ctx context.Context, row JournalRow, sha string) error {
@@ -989,7 +989,7 @@ func (p *Placement) publishNew(ctx context.Context, row JournalRow) (Outcome, er
 			if p.isOurs(row, destInfo) {
 				return p.finishPublished(ctx, row)
 			}
-			return p.stop(ctx, row, "collision", fmt.Sprintf("%s already exists and is not the file being placed; left untouched", row.NewPath))
+			return p.stop(ctx, row, "collision", fmt.Sprintf("%s already exists and is a different file, so it was left alone.", row.NewPath))
 		case !errors.Is(derr, os.ErrNotExist):
 			return OutcomeAdvanced, fmt.Errorf("looking at %s: %w", row.NewPath, derr)
 		}
@@ -1063,7 +1063,7 @@ func (p *Placement) quarantineIncumbent(ctx context.Context, row JournalRow) (Ou
 		return OutcomeAdvanced, row, fmt.Errorf("checksumming incumbent %s: %w", row.NewPath, err)
 	}
 	if cur != row.IncumbentSHA {
-		out, serr := p.stop(ctx, row, "collision", fmt.Sprintf("%s no longer holds the incumbent recorded for this swap; nothing changed", row.NewPath))
+		out, serr := p.stop(ctx, row, "collision", fmt.Sprintf("%s is no longer the file that was there when the swap started, so nothing was changed.", row.NewPath))
 		return out, row, serr
 	}
 	if err := p.reserve(ctx, row.NewPath, fileSize(row.NewPath)); err != nil {
@@ -1177,7 +1177,7 @@ func (p *Placement) publishReplace(ctx context.Context, row JournalRow) (Outcome
 		return p.finishPublished(ctx, row)
 	case row.IncumbentSHA:
 	default:
-		return p.stop(ctx, row, "collision", fmt.Sprintf("%s no longer holds the incumbent recorded for this swap; nothing changed", row.NewPath))
+		return p.stop(ctx, row, "collision", fmt.Sprintf("%s is no longer the file that was there when the swap started, so nothing was changed.", row.NewPath))
 	}
 	if q, qerr := placeSHA256(row.QuarantinePath); qerr != nil || q != row.QuarantineSHA {
 		if err := p.reserve(ctx, row.NewPath, fileSize(row.NewPath)); err != nil {
@@ -1287,13 +1287,13 @@ func (p *Placement) stepPlacing(ctx context.Context, it Item) error {
 		return err
 	}
 	if !ok {
-		return p.m.Transition(ctx, it.ID, StateSearching, "placement found no chosen candidate")
+		return p.m.Transition(ctx, it.ID, StateSearching, "No download was chosen to add, so the search starts again.")
 	}
 	if err := p.layout.Check(); err != nil {
 		return err // storage unreachable: the item stays in placing with this reason
 	}
 	if fi, err := os.Stat(cand.StagingPath); err != nil || !fi.Mode().IsRegular() {
-		return p.rejectAndSearch(ctx, it, cand, fmt.Sprintf("the staged file is gone: %v", err))
+		return p.rejectAndSearch(ctx, it, cand, fmt.Sprintf("The downloaded file is gone: %v", err))
 	}
 	spec, err := p.specForCandidate(ctx, it, cand)
 	if err != nil {
@@ -1332,7 +1332,7 @@ func (p *Placement) rejectAndSearch(ctx context.Context, it Item, c placeCand, r
 			`UPDATE mus_candidates SET state = 'rejected', reject_reason = ? WHERE id = ?`, clip(reason, 500), c.ID); err != nil {
 			return fmt.Errorf("rejecting candidate %d: %w", c.ID, err)
 		}
-		return p.m.TransitionTx(ctx, tx, it.ID, StateSearching, "candidate failed placement: "+clip(reason, 200))
+		return p.m.TransitionTx(ctx, tx, it.ID, StateSearching, "Couldn't add the download to your library, trying the next one: "+clip(reason, 200))
 	})
 }
 
@@ -1538,7 +1538,7 @@ func (p *Placement) stepAwaiting(ctx context.Context, it Item) error {
 	}
 	if !indexed {
 		_, err := p.m.DB().ExecContext(ctx, `UPDATE mus_items SET next_attempt_at = ?, last_reason = ?, updated_at = ? WHERE id = ? AND state = ?`,
-			p.m.Now().Add(p.cfg.RetryAfter).Unix(), "waiting for Plex to index "+filepath.Base(row.NewPath), p.m.Now().Unix(), it.ID, string(it.State))
+			p.m.Now().Add(p.cfg.RetryAfter).Unix(), "Waiting for Plex to pick up "+filepath.Base(row.NewPath), p.m.Now().Unix(), it.ID, string(it.State))
 		return err
 	}
 	if err := p.confirm(ctx, row, tags, key, p.candidateFacts(ctx, row), true); err != nil {
@@ -1632,7 +1632,7 @@ func (p *Placement) confirm(ctx context.Context, row JournalRow, tags TrackTags,
 				return fmt.Errorf("linking item %d to library track %d: %w", row.ItemID, trackID, err)
 			}
 		}
-		return p.m.TransitionTx(ctx, tx, row.ItemID, StateDone, "placed and indexed by Plex: "+filepath.Base(row.NewPath))
+		return p.m.TransitionTx(ctx, tx, row.ItemID, StateDone, "Done: added to your library and found by Plex: "+filepath.Base(row.NewPath))
 	})
 }
 

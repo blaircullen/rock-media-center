@@ -57,7 +57,7 @@ const (
 	DefaultPlaybackWait = DeadlineWaitingForPlayback
 	swapPlaybackPoll    = time.Minute
 	// swapApprovedPrefix marks the reason of an item Blair's approval moved back to swapping.
-	swapApprovedPrefix = "swap approved by Blair, decision "
+	swapApprovedPrefix = "You approved the swap, decision #"
 )
 
 // SwapsConfig wires Swaps.
@@ -268,7 +268,8 @@ func swapBlocked(ctx context.Context, q store.Execer, recordingID int64, fingerp
 
 // swapApproved reports whether Blair said yes to this candidate.
 func swapApproved(ctx context.Context, q store.Execer, it Item, candID int64) (bool, error) {
-	if strings.HasPrefix(it.LastReason, swapApprovedPrefix) {
+	// The older wording is still honoured for items approved before the message was reworded.
+	if strings.HasPrefix(it.LastReason, swapApprovedPrefix) || strings.HasPrefix(it.LastReason, "swap approved by Blair, decision ") {
 		return true, nil
 	}
 	var n int
@@ -329,7 +330,7 @@ func (s *Swaps) stepWaiting(ctx context.Context, m Machine, it Item) error {
 		return err
 	}
 	if !playing {
-		return m.Transition(ctx, it.ID, StateSwapping, "playback stopped; swapping now")
+		return m.Transition(ctx, it.ID, StateSwapping, "The track stopped playing; swapping the file now.")
 	}
 	waited := m.Now().Sub(time.Unix(it.EnteredAt, 0))
 	if waited < s.cfg.PlaybackWait {
@@ -337,7 +338,7 @@ func (s *Swaps) stepWaiting(ctx context.Context, m Machine, it Item) error {
 			m.Now().Add(swapPlaybackPoll).Unix(), m.Now().Unix(), it.ID, string(StateWaitingForPlayback))
 		return err
 	}
-	return s.deferSwap(ctx, m, it, track, fmt.Sprintf("the track kept playing for %s; deferred to the next sweep cycle", waited.Round(time.Minute)))
+	return s.deferSwap(ctx, m, it, track, fmt.Sprintf("The track kept playing for %s, so the swap was put off until the next scan.", waited.Round(time.Minute)))
 }
 
 // deferSwap gives the track back to the sweep: any staged temp file is removed, the item ends
@@ -442,7 +443,7 @@ func (s *Swaps) advanceRow(ctx context.Context, m Machine, it Item, track swapTr
 
 func (s *Swaps) waitForPlayback(ctx context.Context, m Machine, it Item) error {
 	return store.WithTx(ctx, m.DB(), func(tx *sql.Tx) error {
-		if err := m.TransitionTx(ctx, tx, it.ID, StateWaitingForPlayback, "the track is playing; waiting for it to stop"); err != nil {
+		if err := m.TransitionTx(ctx, tx, it.ID, StateWaitingForPlayback, "The track is playing right now; waiting for it to stop before swapping."); err != nil {
 			return err
 		}
 		_, err := tx.ExecContext(ctx, `UPDATE mus_items SET next_attempt_at = ? WHERE id = ?`, m.Now().Add(swapPlaybackPoll).Unix(), it.ID)
@@ -456,7 +457,7 @@ func (s *Swaps) startSwap(ctx context.Context, m Machine, it Item, track swapTra
 		return err
 	}
 	if !ok {
-		return m.Transition(ctx, it.ID, StateSearching, "swap found no chosen candidate")
+		return m.Transition(ctx, it.ID, StateSearching, "No download was chosen for the swap, so the search starts again.")
 	}
 	if err := s.p.layout.Check(); err != nil {
 		return err // storage unreachable: the item stays here and nothing is touched
@@ -466,11 +467,11 @@ func (s *Swaps) startSwap(ctx context.Context, m Machine, it Item, track swapTra
 		return err
 	}
 	if fi, err := os.Stat(cand.StagingPath); err != nil || !fi.Mode().IsRegular() {
-		return s.rejectCandidate(ctx, m, it, cand, fmt.Sprintf("the staged file is gone: %v", err))
+		return s.rejectCandidate(ctx, m, it, cand, fmt.Sprintf("The downloaded file is gone: %v", err))
 	}
 	if fi, err := os.Stat(local); err != nil || !fi.Mode().IsRegular() {
 		return store.WithTx(ctx, m.DB(), func(tx *sql.Tx) error {
-			if err := swapFinishItem(ctx, tx, it.ID, StateDropped, fmt.Sprintf("the library file %s is missing (%v); the next catalogue refresh will correct the track", local, err), m.Now()); err != nil {
+			if err := swapFinishItem(ctx, tx, it.ID, StateDropped, fmt.Sprintf("The file in your library, %s, is missing (%v). The next library refresh will fix the track list.", local, err), m.Now()); err != nil {
 				return err
 			}
 			return sweepMissTrack(ctx, tx, track.ID, m.Now(), s.cfg.SweepBase, s.cfg.SweepMax)
@@ -490,7 +491,7 @@ func (s *Swaps) startSwap(ctx context.Context, m Machine, it Item, track swapTra
 	if res.Verdict == audiocheck.Blind {
 		if it.Attempts+1 >= maxBlindAttempts {
 			return store.WithTx(ctx, m.DB(), func(tx *sql.Tx) error {
-				reason := fmt.Sprintf("the library file %s could not be read %d times (%s); it was not replaced", local, maxBlindAttempts, res.Reason)
+				reason := fmt.Sprintf("Couldn't read the copy you have, %s, after %d tries (%s), so it was not replaced.", local, maxBlindAttempts, res.Reason)
 				if err := s.cfg.Decisions.Raise(ctx, tx, DecisionRequest{
 					ItemID: it.ID, Kind: DecisionBlindIncumbent, Reason: reason,
 					Options: []string{OptionRetry, OptionDrop}, Now: m.Now(),
@@ -578,7 +579,7 @@ func (s *Swaps) rejectCandidate(ctx context.Context, m Machine, it Item, c swapC
 			`UPDATE mus_candidates SET state = 'rejected', reject_reason = ? WHERE id = ?`, clip(reason, 500), c.ID); err != nil {
 			return fmt.Errorf("rejecting candidate %d: %w", c.ID, err)
 		}
-		return m.TransitionTx(ctx, tx, it.ID, StateSearching, "candidate failed the swap: "+clip(reason, 200))
+		return m.TransitionTx(ctx, tx, it.ID, StateSearching, "The new download couldn't be used, trying the next one: "+clip(reason, 200))
 	})
 }
 
@@ -588,7 +589,7 @@ func (s *Swaps) rejectCandidate(ctx context.Context, m Machine, it Item, c swapC
 func (s *Swaps) keepIncumbent(ctx context.Context, m Machine, it Item, track swapTrack, c swapCand, reason string) error {
 	return store.WithTx(ctx, m.DB(), func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx,
-			`UPDATE mus_candidates SET state = 'rejected', reject_reason = ? WHERE id = ?`, clip("not an upgrade: "+reason, 500), c.ID); err != nil {
+			`UPDATE mus_candidates SET state = 'rejected', reject_reason = ? WHERE id = ?`, clip("Not an upgrade: "+reason, 500), c.ID); err != nil {
 			return fmt.Errorf("rejecting candidate %d: %w", c.ID, err)
 		}
 		var more int
@@ -596,9 +597,9 @@ func (s *Swaps) keepIncumbent(ctx context.Context, m Machine, it Item, track swa
 			return fmt.Errorf("counting remaining candidates of item %d: %w", it.ID, err)
 		}
 		if more > 0 || it.Kind != KindSweep {
-			return m.TransitionTx(ctx, tx, it.ID, StateSearching, "kept the library file: "+clip(reason, 200)+"; trying the next candidate")
+			return m.TransitionTx(ctx, tx, it.ID, StateSearching, "Kept the copy you have: "+clip(reason, 200)+" Trying the next download.")
 		}
-		if err := swapFinishItem(ctx, tx, it.ID, StateDropped, "kept the library file: "+reason, m.Now()); err != nil {
+		if err := swapFinishItem(ctx, tx, it.ID, StateDropped, "Kept the copy you have: "+reason, m.Now()); err != nil {
 			return err
 		}
 		return sweepMissTrack(ctx, tx, track.ID, m.Now(), s.cfg.SweepBase, s.cfg.SweepMax)
@@ -613,7 +614,7 @@ func (s *Swaps) askBlair(ctx context.Context, m Machine, it Item, track swapTrac
 	if v.Kind == DecisionPathChange {
 		// The journal replaces a file in place; it cannot move a track to a new file name.
 		options = []string{OptionKeep, OptionDrop}
-		reason += " (the engine cannot rename a library track; replace it by hand, or keep the current file)"
+		reason += " The engine can't rename a track in your library, so replace it by hand or keep the current file."
 	}
 	return store.WithTx(ctx, m.DB(), func(tx *sql.Tx) error {
 		if err := s.cfg.Decisions.Raise(ctx, tx, DecisionRequest{

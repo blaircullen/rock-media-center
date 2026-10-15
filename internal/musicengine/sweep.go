@@ -313,7 +313,7 @@ func (s *Sweep) insertItem(ctx context.Context, t SweepTrack) (int64, bool, erro
 			`INSERT INTO mus_items (kind, recording_id, track_id, state, entered_at, deadline_at, last_reason, priority, created_at, updated_at)
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			KindSweep, t.RecordingID, t.ID, string(StateSearching), now.Unix(), DeadlineFor(StateSearching, now),
-			"upgrade sweep: looking for a better copy", PrioritySweep, now.Unix(), now.Unix())
+			"Looking for a better copy of a song already in your library.", PrioritySweep, now.Unix(), now.Unix())
 		if err != nil {
 			return fmt.Errorf("opening sweep item for track %d: %w", t.ID, err)
 		}

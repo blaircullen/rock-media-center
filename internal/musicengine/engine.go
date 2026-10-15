@@ -192,7 +192,7 @@ func (e *Engine) resumePaused(ctx context.Context) error {
 		if !ok {
 			continue
 		}
-		if err := e.Resume(ctx, it.ID, "resumed: space available"); err != nil {
+		if err := e.Resume(ctx, it.ID, "Resumed: there is disk space again."); err != nil {
 			e.log.Warn("musicengine resume failed", "item", it.ID, "err", err)
 		}
 	}
@@ -212,7 +212,7 @@ func (e *Engine) advance(ctx context.Context, it Item) error {
 		err = e.handleLibraryCheck(ctx, it)
 	case StateSearching:
 		if ok, why := e.space.Allow(ctx, workKind(it)); !ok {
-			return e.Pause(ctx, it.ID, "paused: "+why)
+			return e.Pause(ctx, it.ID, "Paused: "+why)
 		}
 		err = e.acquirer.Step(ctx, e, it)
 	case StateLaneUnavailable, StateDownloading, StateChecking, StateFailedCheck:
@@ -290,7 +290,7 @@ func (e *Engine) CheckDeadlines(ctx context.Context) error {
 			Kind:    AlertItemPastDeadline,
 			Key:     fmt.Sprintf("mus-item:%d:%s:%d", it.ID, it.State, it.EnteredAt),
 			Subject: fmt.Sprintf("Music item %d is stuck in %s", it.ID, it.State),
-			Body: fmt.Sprintf("Item %d (%s) has been in %s since %s, past its deadline. Last reason: %s",
+			Body: fmt.Sprintf("Item %d (%s) has been in %s since %s, longer than expected. Last note: %s",
 				it.ID, it.Kind, it.State, time.Unix(it.EnteredAt, 0).UTC().Format(time.RFC3339), it.LastReason),
 			ItemID: it.ID,
 		}

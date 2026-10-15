@@ -106,7 +106,7 @@ func (g *GluetunVPN) probe(ctx context.Context, base, key string) (bool, string)
 	endpoint := base + "/v1/vpn/status"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return false, fmt.Sprintf("VPN status request to %s could not be built: %v", base, err)
+		return false, fmt.Sprintf("Couldn't build the VPN status request to %s: %v", base, err)
 	}
 	req.Header.Set("Accept", "application/json")
 	if key != "" {
@@ -114,24 +114,24 @@ func (g *GluetunVPN) probe(ctx context.Context, base, key string) (bool, string)
 	}
 	resp, err := g.cfg.HTTP.Do(req)
 	if err != nil {
-		return false, fmt.Sprintf("VPN status unreachable at %s: %v", endpoint, err)
+		return false, fmt.Sprintf("Couldn't reach the VPN status page at %s: %v", endpoint, err)
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, vpnMaxBody))
 	if err != nil {
-		return false, fmt.Sprintf("VPN status from %s could not be read (HTTP %d): %v", endpoint, resp.StatusCode, err)
+		return false, fmt.Sprintf("Couldn't read the VPN status from %s (HTTP %d): %v", endpoint, resp.StatusCode, err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Sprintf("VPN status from %s answered HTTP %d: %s", endpoint, resp.StatusCode, clip(strings.TrimSpace(string(body)), 200))
+		return false, fmt.Sprintf("The VPN status page at %s answered HTTP %d: %s", endpoint, resp.StatusCode, clip(strings.TrimSpace(string(body)), 200))
 	}
 	var st struct {
 		Status string `json:"status"`
 	}
 	if err := json.Unmarshal(body, &st); err != nil {
-		return false, fmt.Sprintf("VPN status from %s is not JSON: %v: %s", endpoint, err, clip(strings.TrimSpace(string(body)), 200))
+		return false, fmt.Sprintf("The VPN status page at %s sent something unreadable: %v: %s", endpoint, err, clip(strings.TrimSpace(string(body)), 200))
 	}
 	if st.Status != "running" {
-		return false, fmt.Sprintf("VPN is %q, not running (%s)", st.Status, endpoint)
+		return false, fmt.Sprintf("The VPN is %q, not running (%s)", st.Status, endpoint)
 	}
 	return true, ""
 }

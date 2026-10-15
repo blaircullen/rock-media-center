@@ -77,7 +77,7 @@ func TestAcquireRejectsFileTaggedWithAnotherRecording(t *testing.T) {
 	if st := h.item(id).State; st == StatePlacing {
 		t.Fatal("a file tagged as another recording was sent to placement")
 	}
-	if got := h.rejectReason(id); !strings.Contains(got, "wrong recording") {
+	if got := h.rejectReason(id); !strings.Contains(got, "Wrong song") {
 		t.Errorf("reject_reason = %q", got)
 	}
 }
@@ -154,7 +154,7 @@ func TestAcquireRejectsLengthFarFromThePinnedRecording(t *testing.T) {
 	if st := h.item(id).State; st == StatePlacing {
 		t.Fatal("a 290 s file was placed for a 200 s recording")
 	}
-	if got := h.rejectReason(id); !strings.Contains(got, "wrong length") {
+	if got := h.rejectReason(id); !strings.Contains(got, "Wrong length") {
 		t.Errorf("reject_reason = %q", got)
 	}
 }
@@ -186,7 +186,7 @@ func TestAcquireAmbiguousIdentityIsAcceptedWithTheReasonRecorded(t *testing.T) {
 	if st := h.item(id).State; st != StatePlacing {
 		t.Fatalf("state = %s (%s)", st, h.item(id).LastReason)
 	}
-	if got := h.item(id).LastReason; !strings.Contains(got, "identity not proven") {
+	if got := h.item(id).LastReason; !strings.Contains(got, "Couldn't fully confirm this is the right song") {
 		t.Errorf("last_reason = %q, want the unproven identity recorded", got)
 	}
 }

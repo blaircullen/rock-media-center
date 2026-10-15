@@ -284,7 +284,7 @@ func (a *Acquire) vpnBlock(ctx context.Context, lane string) string {
 // yet goes back to 'found' and the item to lane_unavailable, so nothing is enqueued; a
 // running job is left alone and its poll is deferred.
 func (a *Acquire) vpnHold(ctx context.Context, m Machine, it Item, c candRow, why string) error {
-	reason := "lane unavailable: " + c.Lane + ": " + clip(why, 300)
+	reason := "Can't use the " + c.Lane + " source right now: " + clip(why, 300)
 	if c.ClientJobID != "" {
 		return a.acqDefer(ctx, m, it, acqLaneRetry, reason)
 	}
@@ -293,7 +293,7 @@ func (a *Acquire) vpnHold(ctx context.Context, m Machine, it Item, c candRow, wh
 			`UPDATE mus_candidates SET state = 'found', reserved_bytes = 0 WHERE id = ? AND state = 'downloading'`, c.ID); err != nil {
 			return fmt.Errorf("returning candidate %d to the queue: %w", c.ID, err)
 		}
-		if err := m.TransitionTx(ctx, tx, it.ID, StateSearching, "VPN not confirmed; candidate kept for later"); err != nil {
+		if err := m.TransitionTx(ctx, tx, it.ID, StateSearching, "Couldn't confirm the VPN is on, so the download was put off. It will be tried again later."); err != nil {
 			return err
 		}
 		if err := m.TransitionTx(ctx, tx, it.ID, StateLaneUnavailable, reason); err != nil {
@@ -342,7 +342,7 @@ func (a *Acquire) toSearching(ctx context.Context, tx store.Execer, m Machine, i
 }
 
 func (a *Acquire) markLaneUnavailable(ctx context.Context, m Machine, it Item, pass acqPass) error {
-	reason := "lane unavailable: " + clip(strings.Join(pass.unavailable, "; "), 400)
+	reason := "Can't use these sources right now: " + clip(strings.Join(pass.unavailable, "; "), 400)
 	retry := m.Now().Add(acqLaneRetry).Unix()
 	return store.WithTx(ctx, m.DB(), func(tx *sql.Tx) error {
 		if it.State == StateLaneUnavailable {
@@ -370,16 +370,16 @@ func (a *Acquire) raiseNoGenuine(ctx context.Context, m Machine, it Item, pass a
 		`SELECT COUNT(*) FROM mus_candidates WHERE item_id = ? AND state = 'rejected'`, it.ID).Scan(&rejected); err != nil {
 		return fmt.Errorf("counting rejected candidates of item %d: %w", it.ID, err)
 	}
-	reason := "no genuine lossless copy: every lane searched (" + strings.Join(pass.searched, ", ") + ") and found nothing new"
+	reason := "No genuine lossless copy found. Searched every source (" + strings.Join(pass.searched, ", ") + ") and found nothing new."
 	if rejected > 0 {
-		reason = fmt.Sprintf("no genuine lossless copy: %d candidate(s) failed the checks and no lane has another", rejected)
+		reason = fmt.Sprintf("No genuine lossless copy found. %d download(s) failed the quality checks and no source has another.", rejected)
 	}
 	options := []string{AcquireOptionLossy, AcquireOptionWait, OptionDrop}
 	if has, err := a.hasYouTubeApproval(ctx, m.DB(), it.ID); err != nil {
 		return err
 	} else if has {
 		options = []string{AcquireOptionWait, OptionDrop} // the lossy source was already tried
-		reason += "; the official YouTube audio was tried too"
+		reason += " The official YouTube audio was tried too."
 	}
 	return store.WithTx(ctx, m.DB(), func(tx *sql.Tx) error {
 		if err := a.toSearching(ctx, tx, m, it, "searching again"); err != nil {
@@ -420,7 +420,7 @@ func (a *Acquire) AcceptLossy(ctx context.Context, m Machine, itemID int64) erro
 			itemID, LaneYouTube, m.Now().Unix()); err != nil {
 			return fmt.Errorf("queueing YouTube candidate for item %d: %w", itemID, err)
 		}
-		return m.TransitionTx(ctx, tx, itemID, StateSearching, "Blair approved a lossy copy from official YouTube audio")
+		return m.TransitionTx(ctx, tx, itemID, StateSearching, "You approved a lossy copy from official YouTube audio")
 	})
 }
 
@@ -445,7 +445,7 @@ func acqReserveBytes(c candRow) int64 {
 func (a *Acquire) startCandidate(ctx context.Context, m Machine, it Item, rec Recording, c candRow) error {
 	need := acqReserveBytes(c)
 	if ok, why := a.space.Reserve(ctx, it.ID, need); !ok {
-		reason := "waiting for space: " + clip(why, 300)
+		reason := "Waiting for disk space: " + clip(why, 300)
 		_, err := m.DB().ExecContext(ctx,
 			`UPDATE mus_items SET last_reason = ?, next_attempt_at = ?, updated_at = ? WHERE id = ? AND state = ?`,
 			reason, m.Now().Add(acqSpaceRetry).Unix(), m.Now().Unix(), it.ID, string(it.State))
@@ -493,7 +493,7 @@ func (a *Acquire) downloadStep(ctx context.Context, m Machine, it Item) error {
 		return err
 	}
 	if c == nil {
-		return m.Transition(ctx, it.ID, StateSearching, "no candidate was downloading; searching again")
+		return m.Transition(ctx, it.ID, StateSearching, "Nothing was downloading, so the search starts again.")
 	}
 	if why := a.vpnBlock(ctx, c.Lane); why != "" {
 		return a.vpnHold(ctx, m, it, *c, why)
@@ -916,7 +916,7 @@ func (a *Acquire) toChecking(ctx context.Context, m Machine, it Item, c candRow,
 			return fmt.Errorf("recording staging path of candidate %d: %w", c.ID, err)
 		}
 	}
-	if err := m.Transition(ctx, it.ID, StateChecking, "downloaded; checking "+clip(c.ReleaseName, 120)); err != nil {
+	if err := m.Transition(ctx, it.ID, StateChecking, "Downloaded; now checking "+clip(c.ReleaseName, 120)); err != nil {
 		return err
 	}
 	cur, err := getItem(ctx, m.DB(), it.ID)
@@ -935,7 +935,7 @@ func (a *Acquire) rejectDownload(ctx context.Context, m Machine, it Item, c cand
 			 WHERE id = ?`, clip(reason, 500), m.Now().Unix(), m.Now().Add(StagingExpiry).Unix(), c.ID); err != nil {
 			return fmt.Errorf("rejecting candidate %d: %w", c.ID, err)
 		}
-		return m.TransitionTx(ctx, tx, it.ID, StateSearching, "candidate failed: "+clip(reason, 200))
+		return m.TransitionTx(ctx, tx, it.ID, StateSearching, "The download failed, trying the next one: "+clip(reason, 200))
 	})
 	a.space.Release(ctx, it.ID)
 	if err != nil {
@@ -972,7 +972,7 @@ func (a *Acquire) checkStep(ctx context.Context, m Machine, it Item) error {
 		return err
 	}
 	if c == nil {
-		return m.Transition(ctx, it.ID, StateFailedCheck, "no candidate to check")
+		return m.Transition(ctx, it.ID, StateFailedCheck, "There was no download to check.")
 	}
 	_, rec, err := a.query(ctx, m.DB(), it)
 	if err != nil {
@@ -1025,7 +1025,7 @@ func (a *Acquire) checkStep(ctx context.Context, m Machine, it Item) error {
 	}
 	reason := fmt.Sprintf("%s: %s", res.Verdict, res.Reason)
 	if res.Verdict == audiocheck.Genuine && !res.Integrity.OK {
-		reason = "failed the full-file integrity check: " + res.Integrity.Detail
+		reason = "The file is damaged (it failed a full read-through): " + res.Integrity.Detail
 	}
 	return a.rejectChecked(ctx, m, it, *c, string(res.Verdict), reason, &res, target)
 }
@@ -1087,7 +1087,7 @@ func (a *Acquire) acceptChecked(ctx context.Context, m Machine, it Item, c candR
 }
 
 func acqAcceptReason(verdict string, c candRow, note string) string {
-	r := fmt.Sprintf("verified %s from %s: %s", verdict, c.Lane, clip(c.ReleaseName, 120))
+	r := fmt.Sprintf("Checked and rated %s, from %s: %s", verdict, c.Lane, clip(c.ReleaseName, 120))
 	if note != "" {
 		r += " (" + note + ")"
 	}
@@ -1113,7 +1113,7 @@ func (a *Acquire) rejectChecked(ctx context.Context, m Machine, it Item, c candR
 		if err := acqApplyResult(ctx, tx, c, "rejected", verdict, reason, res, target, m.Now()); err != nil {
 			return err
 		}
-		return m.TransitionTx(ctx, tx, it.ID, StateFailedCheck, "candidate rejected: "+clip(reason, 200))
+		return m.TransitionTx(ctx, tx, it.ID, StateFailedCheck, "This download was rejected: "+clip(reason, 200))
 	})
 	a.space.Release(ctx, it.ID)
 	if err != nil {
