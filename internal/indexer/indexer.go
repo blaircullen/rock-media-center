@@ -52,6 +52,10 @@ type Indexer struct {
 	Username string `json:"username,omitempty"`
 	Password string `json:"-"` // secret
 
+	// UserAgent is sent on every request made for this indexer (caps, search, NZB fetch).
+	// Empty = not set: the client's default is sent. Some indexers refuse requests with none.
+	UserAgent string `json:"user_agent,omitempty"`
+
 	Categories []int `json:"categories,omitempty"`
 	// MediaTypes scopes which searches use this indexer (movie | series | music).
 	// Empty = used for everything (backward compatible).

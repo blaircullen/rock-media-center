@@ -55,6 +55,9 @@ func fetchNZBPayload(ctx context.Context, idx Indexer, downloadURL string) (Fetc
 	if err != nil {
 		return FetchResult{}, fmt.Errorf("%s gave an NZB link Rock Media Center can't read", idx.Name)
 	}
+	if idx.UserAgent != "" {
+		req.Header.Set("User-Agent", idx.UserAgent)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return FetchResult{}, &nzbIndexerError{err: fmt.Errorf("couldn't download the NZB from %s: %s", idx.Name, scrubNZBError(err, idx, downloadURL))}

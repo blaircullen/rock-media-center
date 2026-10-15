@@ -88,6 +88,7 @@ function EditForm({ idx, onSaved }: { idx: Indexer; onSaved: () => void }) {
   const [seedTime, setSeedTime] = useState(initHours % 24 === 0 && initHours > 0 ? initHours / 24 : initHours);
   const [seedUnit, setSeedUnit] = useState<"hours" | "days">(initHours % 24 === 0 && initHours > 0 ? "days" : "hours");
   const [enabled, setEnabled] = useState(idx.enabled);
+  const [userAgent, setUserAgent] = useState(idx.user_agent ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -106,6 +107,7 @@ function EditForm({ idx, onSaved }: { idx: Indexer; onSaved: () => void }) {
     seed_ratio: seedEnabled ? seedRatio : 0,
     seed_hours: seedEnabled ? (seedUnit === "days" ? seedTime * 24 : seedTime) : 0,
     enabled,
+    user_agent: userAgent.trim(),
   });
   // Dirty once the form differs from how it opened.
   const [opened] = useState(() => JSON.stringify(body()));
@@ -167,6 +169,11 @@ function EditForm({ idx, onSaved }: { idx: Indexer; onSaved: () => void }) {
               <input className={field} style={fieldStyle} value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="leave blank to keep current" />
             </Labeled>
           </>
+        )}
+        {(idx.kind === "torznab" || isNewznab) && (
+          <Labeled label="User-Agent (optional)" hint="Sent on every request to this indexer. Some indexers refuse requests without one. Blank = the default." span2>
+            <input className={field} style={fieldStyle} value={userAgent} onChange={(e) => setUserAgent(e.target.value)} placeholder="e.g. Arrmada/1.0" autoComplete="off" spellCheck={false} />
+          </Labeled>
         )}
       </div>
 
@@ -265,6 +272,7 @@ export function indexerBody(idx: Indexer, change: Partial<NewIndexer>): NewIndex
     seed_ratio: idx.seed_ratio,
     seed_hours: idx.seed_hours,
     enabled: idx.enabled,
+    user_agent: idx.user_agent, // kept when only the pills change
     ...change,
   };
 }

@@ -52,6 +52,8 @@ export interface Indexer {
   seed_ratio?: number;
   seed_hours?: number;
   enabled: boolean;
+  /** Sent on every request to this indexer; absent = the default. */
+  user_agent?: string;
   /** The Prowlarr indexer this row mirrors; its name, URL and key come from Prowlarr. */
   prowlarr_id?: number;
   /** Who switched it off: "user" or "prowlarr" (a sync only turns back on its own). */
@@ -139,6 +141,8 @@ export interface NewIndexer {
   seed_ratio?: number;
   seed_hours?: number;
   enabled?: boolean;
+  /** Optional User-Agent for every request to this indexer; blank = the default. */
+  user_agent?: string;
 }
 
 export interface ParsedRelease {

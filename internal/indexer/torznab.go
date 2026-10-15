@@ -241,7 +241,7 @@ func (c *TorznabSearcher) searchPages(ctx context.Context, idx Indexer, q Search
 		if err != nil {
 			return nil, err
 		}
-		body, err := c.get(ctx, endpoint)
+		body, err := c.getUA(ctx, endpoint, idx.UserAgent)
 		if err != nil {
 			// A failure on a later page must not discard the pages already fetched —
 			// returning nil here silently threw away every release from pages 0..N-1.
@@ -328,7 +328,7 @@ func (c *TorznabSearcher) TestCaps(ctx context.Context, idx Indexer) (Caps, erro
 	if err != nil {
 		return Caps{}, err
 	}
-	body, err := c.get(ctx, endpoint)
+	body, err := c.getUA(ctx, endpoint, idx.UserAgent)
 	if err != nil {
 		return Caps{}, err
 	}
@@ -337,6 +337,11 @@ func (c *TorznabSearcher) TestCaps(ctx context.Context, idx Indexer) (Caps, erro
 }
 
 func (c *TorznabSearcher) get(ctx context.Context, endpoint string) ([]byte, error) {
+	return c.getUA(ctx, endpoint, "")
+}
+
+// getUA is get sending userAgent when it isn't blank; blank leaves the client's default.
+func (c *TorznabSearcher) getUA(ctx context.Context, endpoint, userAgent string) ([]byte, error) {
 	if err := c.queue.wait(ctx, endpoint); err != nil {
 		return nil, err
 	}
@@ -345,6 +350,9 @@ func (c *TorznabSearcher) get(ctx context.Context, endpoint string) ([]byte, err
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, sanitizeErr(endpoint, err)
+	}
+	if userAgent != "" {
+		req.Header.Set("User-Agent", userAgent)
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {

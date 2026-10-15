@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/tristenlammi/arrmada/internal/auth"
@@ -99,6 +100,7 @@ type createIndexerRequest struct {
 	APIKey      string   `json:"api_key"`
 	Username    string   `json:"username"`
 	Password    string   `json:"password"`
+	UserAgent   string   `json:"user_agent"`
 	Categories  []int    `json:"categories"`
 	MediaTypes  []string `json:"media_types"`
 	Priority    int      `json:"priority"`
@@ -177,6 +179,7 @@ func (a *api) handleCreateIndexer(w http.ResponseWriter, r *http.Request) {
 		APIKey:      req.APIKey,
 		Username:    req.Username,
 		Password:    req.Password,
+		UserAgent:   strings.TrimSpace(req.UserAgent),
 		Categories:  req.Categories,
 		MediaTypes:  req.MediaTypes,
 		Priority:    req.Priority,
@@ -258,7 +261,8 @@ func (a *api) handleUpdateIndexer(w http.ResponseWriter, r *http.Request) {
 		URL:         req.URL,
 		APIKey:      req.APIKey, // blank = keep existing
 		Username:    req.Username,
-		Password:    req.Password, // blank = keep existing
+		Password:    req.Password,                     // blank = keep existing
+		UserAgent:   strings.TrimSpace(req.UserAgent), // blank = clear
 		Categories:  req.Categories,
 		MediaTypes:  req.MediaTypes,
 		Priority:    req.Priority,
@@ -337,6 +341,7 @@ func (a *api) handleTestIndexerSettings(w http.ResponseWriter, r *http.Request) 
 	idx := indexer.Indexer{
 		Kind: indexer.Kind(req.Kind), Name: req.Name, URL: req.URL, APIKey: req.APIKey,
 		Username: req.Username, Password: req.Password, Categories: req.Categories,
+		UserAgent: strings.TrimSpace(req.UserAgent),
 	}
 	if req.ID > 0 {
 		stored, err := a.deps.Indexers.Get(r.Context(), req.ID)
