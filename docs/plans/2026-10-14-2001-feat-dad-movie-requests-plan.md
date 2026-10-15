@@ -176,6 +176,7 @@ Measured over Dad's first 30 days of requests:
 
 - Fixing Radarr's broken qBittorrent connection (its container sits only on `bridge`); that is a Beast change outside this repo, Blair's call.
 - Asynchronous bounce handling (mailbox full, address gone): the hub sees only what the mail server says at send time.
+- Measured file facts for movie and TV upgrade decisions: the fork cleanup removed Convert, which was their only source, so upgrades now judge the current file by its release name (`internal/automation/filefacts.go`). Dad's tracks are upgrade-held, so this does not affect him; restore a read-only facts source on `internal/mediainfo` before the movie and TV takeover from Radarr and Sonarr.
 
 **Considered and not built**
 
