@@ -359,7 +359,10 @@ func (e *Engine) PinToRecording(ctx context.Context, itemID int64, mbid string) 
 }
 
 // pickRelease chooses the release recorded as the recording's home: the one titled like the
-// Spotify album when there is one, else the earliest official non-live release.
+// Spotify album when there is one; else the artist's own release (official, a release group
+// with no secondary type such as Compilation, Live or Soundtrack), album before EP before
+// single, earliest first; else the earliest official non-live release. Without the middle
+// step a song landed in "Various Artists/NOW That's What I Call Music" (Beast, 2026-10-15).
 func pickRelease(c metadata.Recording, album string) (releaseMBID, groupMBID string) {
 	if len(c.Releases) == 0 {
 		return "", ""
@@ -371,10 +374,32 @@ func pickRelease(c metadata.Recording, album string) (releaseMBID, groupMBID str
 			}
 		}
 	}
+	earlier := func(a, b metadata.ReleaseRef) bool { return a.Date != "" && (b.Date == "" || a.Date < b.Date) }
+	own := -1
+	for i, r := range c.Releases {
+		if !strings.EqualFold(r.Status, "official") || len(r.Versions) > 0 || len(r.SecondaryTypes) > 0 {
+			continue
+		}
+		rank := releaseTypeRank(r.PrimaryType)
+		if rank < 0 {
+			continue
+		}
+		if own < 0 {
+			own = i
+			continue
+		}
+		cur := releaseTypeRank(c.Releases[own].PrimaryType)
+		if rank < cur || (rank == cur && earlier(r, c.Releases[own])) {
+			own = i
+		}
+	}
+	if own >= 0 {
+		return c.Releases[own].MBID, c.Releases[own].ReleaseGroupMBID
+	}
 	best := -1
 	for i, r := range c.Releases {
 		if strings.EqualFold(r.Status, "official") && len(r.Versions) == 0 {
-			if best < 0 || (r.Date != "" && (c.Releases[best].Date == "" || r.Date < c.Releases[best].Date)) {
+			if best < 0 || earlier(r, c.Releases[best]) {
 				best = i
 			}
 		}
@@ -383,6 +408,20 @@ func pickRelease(c metadata.Recording, album string) (releaseMBID, groupMBID str
 		best = 0
 	}
 	return c.Releases[best].MBID, c.Releases[best].ReleaseGroupMBID
+}
+
+// releaseTypeRank orders a release group's primary type for pickRelease; -1 is not the
+// artist's own release.
+func releaseTypeRank(primary string) int {
+	switch strings.ToLower(primary) {
+	case "album":
+		return 0
+	case "ep":
+		return 1
+	case "single":
+		return 2
+	}
+	return -1
 }
 
 // recordingRow turns a MusicBrainz recording into the stored shape.

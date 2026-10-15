@@ -290,3 +290,26 @@ func TestVersionAndNameHelpers(t *testing.T) {
 		t.Error("firstArtist")
 	}
 }
+
+// A song whose Spotify album names no release still lands on the artist's own album, not an
+// earlier compilation it also appears on.
+func TestPickReleasePrefersTheArtistsOwnAlbumOverACompilation(t *testing.T) {
+	c := metadata.Recording{Releases: []metadata.ReleaseRef{
+		{MBID: "now79", ReleaseGroupMBID: "g-now", Title: "NOW 79", Status: "Official", Date: "2021-07-01",
+			PrimaryType: "Album", SecondaryTypes: []string{"Compilation"}},
+		{MBID: "single", ReleaseGroupMBID: "g-single", Title: "Leave Before You Love Me", Status: "Official", Date: "2021-05-21", PrimaryType: "Single"},
+		{MBID: "album", ReleaseGroupMBID: "g-album", Title: "Shockwave", Status: "Official", Date: "2021-06-11", PrimaryType: "Album"},
+	}}
+	if rel, grp := pickRelease(c, "Some Playlist Album"); rel != "album" || grp != "g-album" {
+		t.Fatalf("picked %s/%s, want the artist's album", rel, grp)
+	}
+	// The Spotify album title still wins when it names one.
+	if rel, _ := pickRelease(c, "Leave Before You Love Me"); rel != "single" {
+		t.Fatalf("picked %s, want the release Spotify names", rel)
+	}
+	// Only a compilation: it is used rather than nothing.
+	only := metadata.Recording{Releases: c.Releases[:1]}
+	if rel, _ := pickRelease(only, ""); rel != "now79" {
+		t.Fatalf("picked %s, want the only release", rel)
+	}
+}
