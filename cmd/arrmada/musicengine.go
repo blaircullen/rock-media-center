@@ -180,7 +180,7 @@ func buildMusicEngine(d musicEngineDeps) (*httpapi.MusicEngineAPI, error) {
 		Space:       space,
 		VPN:         vpn.Check,
 		Staging:     staging,
-		SoulseekDir: filepath.Join(dlRoot, "slskd"),
+		SoulseekDir: filepath.Join(dlRoot, "slskd", "complete"), // slskd.yml directories.downloads on Beast; incomplete/ is beside it
 		Log:         modLog(log, "musicengine"),
 	})
 	if err != nil {

@@ -40,7 +40,7 @@ makes that placement fail with a clear reason instead of writing elsewhere.
    - `ssh beast 'docker run --rm --user 1000:100 -v /mnt/nas/downloads/beast-qbt:/d alpine sh -c "mkdir -p /d/rmc/staging /d/rmc/quarantine && touch /d/rmc/.probe && rm /d/rmc/.probe && echo ok"'`
    - `ssh beast 'docker run --rm --user 1000:100 -v /mnt/nas/music:/m:ro alpine sh -c "ls /m >/dev/null && echo ok"'`
    - If either fails, stop and ask Blair before changing any NAS permission.
-3. Create the data directory on local disk: `ssh beast 'sudo install -d -o 1024 -g 100 -m 750 /var/lib/rock-media-center'`
+3. Create the data directory on local disk: `ssh beast 'sudo install -d -o 1000 -g 100 -m 750 /var/lib/rock-media-center'` (the entrypoint chowns it to PUID:PGID anyway)
 4. Create `.env` next to the compose file (mode 600, never committed): `ssh beast 'cd /home/olares/projects/rock-media-center/deploy/beast && install -m 600 /dev/null .env'`
    Variables it may hold (all optional, the compose file has defaults; set values only by editing the file on Beast):
    - `RMC_LAN_IP` (default 10.0.0.13), `RMC_TS_IP` (default 100.114.152.41), `RMC_PORT` (default 8787): where the web port is published.
@@ -57,8 +57,8 @@ Use the UI; each item is stored in the app's database under `/var/lib/rock-media
 
 1. SABnzbd: in SABnzbd (`http://10.0.0.13:8085`, Config, Categories) add category `rmc-music` with no special folder. In the app add SABnzbd at `http://10.0.0.13:8085` with its API key and set the engine's download category to `rmc-music`.
 2. NZBgeek indexer row (newznab, search categories 3040 then 3000), with a browser User-Agent in the row's User-Agent field (U17), for example a current desktop Chrome string. Do not add it through Prowlarr; Prowlarr's NZBgeek search returned 0 results. Check: a manual search in the app returns results.
-3. qBittorrent client: `http://gluetun:8090`, category `rmc-music`.
-4. slskd client: `http://gluetun:5030`, with its API key from slskd's config.
+3. qBittorrent client: `http://gluetun:8090`, category `rmc-music`, with the same path mapping as SABnzbd (`/downloads` -> `/mnt/nas/downloads/beast-qbt`): qBittorrent also sees that folder as `/downloads`.
+4. slskd client: `http://gluetun:5030`, with its API key from slskd's config. slskd saves finished files under `beast-qbt/slskd/complete/<remote folder>/` (`directories.downloads: /downloads/complete` in `/var/docker-stacks/droppedneedle/slskd/slskd.yml`); the engine looks there. slskd runs as root and leaves root-owned 755 folders, so the engine cannot move its files and copies them into staging instead, leaving slskd's original in `complete/` (checked 2026-10-15). Running slskd as 1000:1000 would make it a move; that changes the droppedneedle stack, so it is Blair's call.
 5. Spotify: Client ID and secret of the existing developer app (currently hard-coded in `spotify-sync.py` on Beast; copy from there, do not paste them into any repo file). Watched playlist: "My Shazam Tracks".
 6. Plex: URL `http://10.0.0.13:32400`, token entered in the UI, music section 5.
 7. Telegram alerts: add one Apprise URL in the app's notification settings in the form `tgram://<bot-token>/<chat-id>` (Apprise's Telegram scheme; confirm against the Apprise page if the test message does not arrive). Use the test button; a message must arrive.
@@ -78,7 +78,7 @@ Do not drop the tunnel to watch traffic stop: Sonarr shares that qBittorrent. Ne
 
 ## Watchdog (KTD13)
 
-The script reads `GET /api/v1/musicengine/heartbeat` (assumed to return `{"last_tick": <unix seconds>}`, no session needed; the code currently names the field `last_tick_at` and the script accepts either) and sends one Telegram message per outage and one on recovery. Needs `curl` and `jq` (both on Beast).
+The script reads `GET /api/v1/musicengine/heartbeat` (returns `{"last_tick": <unix seconds>}` with no session; 503 while the engine is switched off) and sends one Telegram message per outage and one on recovery. Needs `curl` and `jq` (both on Beast).
 
 1. Install the script: `scp deploy/beast/rmc-watchdog.sh beast:/home/olares/bin/rmc-watchdog.sh` (from the repo root on Goat), then `ssh beast 'chmod 755 /home/olares/bin/rmc-watchdog.sh'`.
 2. Create the env file with mode 600 and put two lines in it, `TELEGRAM_BOT_TOKEN=...` and `TELEGRAM_CHAT_ID=...` (reuse the Telegram bot Blair already uses for Beast alerts; do not paste values into chat or the repo): `ssh beast 'install -m 600 /dev/null /home/olares/.config/rmc-watchdog.env'` then edit it on Beast.

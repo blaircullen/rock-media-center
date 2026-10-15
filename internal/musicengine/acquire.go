@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/tristenlammi/arrmada/internal/audiocheck"
@@ -648,9 +650,9 @@ func acqAlreadyAdopted(c candRow, dir string) bool {
 func (a *Acquire) adopt(ctx context.Context, m Machine, c candRow, src, dir string) error {
 	src, dir = filepath.Clean(src), filepath.Clean(dir)
 	if acqAlreadyAdopted(c, dir) {
-		if _, err := os.Lstat(src); errors.Is(err, fs.ErrNotExist) {
-			return nil
-		}
+		// dst only ever appears whole (a rename, or a copy renamed into place), so an existing
+		// dst is done work even when the client's original is still there (a copy).
+		return nil
 	}
 	dst := filepath.Join(dir, filepath.Base(src))
 	if stagingInside(dir, src) {
@@ -662,7 +664,8 @@ func (a *Acquire) adopt(ctx context.Context, m Machine, c candRow, src, dir stri
 	}); err != nil {
 		return fmt.Errorf("recording adoption of candidate %d: %w", c.ID, err)
 	}
-	if _, err := acqAdopt(src, dir); err != nil {
+	_, copied, err := acqAdopt(src, dir)
+	if err != nil {
 		if _, serr := os.Lstat(src); errors.Is(serr, fs.ErrNotExist) {
 			if _, derr := os.Lstat(dst); derr == nil {
 				return nil // moved by an earlier attempt
@@ -670,22 +673,75 @@ func (a *Acquire) adopt(ctx context.Context, m Machine, c candRow, src, dir stri
 		}
 		return err
 	}
+	if copied {
+		a.log.Info("musicengine: copied a finished download into staging; the client's original is left in place",
+			"candidate", c.ID, "source", src)
+	}
 	return nil
 }
 
-// acqAdopt makes src part of dir: already inside it, or renamed into it. A rename across
-// filesystems fails with an error naming both paths; the deployment keeps the client's
-// completed folder on the same volume as staging (U16), so it is a cheap rename.
-func acqAdopt(src, dir string) (string, error) {
+// acqAdopt makes src part of dir: already inside it, or renamed into it. The deployment keeps
+// the clients' completed folders on the same volume as staging (U16), so it is normally a
+// cheap rename. When the rename is refused because this process may not write the client's
+// folder (on Beast slskd runs as root and leaves root-owned 755 folders) or the folders are on
+// different filesystems, the file is copied instead: to a temporary name in dir, synced,
+// size-checked, then renamed into place, so dst exists only once it is whole. The client's
+// original is then left where it is (copied reports true) for the client's own clean-up.
+func acqAdopt(src, dir string) (dst string, copied bool, err error) {
 	src, dir = filepath.Clean(src), filepath.Clean(dir)
 	if stagingInside(dir, src) {
-		return src, nil
+		return src, false, nil
 	}
-	dst := filepath.Join(dir, filepath.Base(src))
-	if err := os.Rename(src, dst); err != nil {
-		return "", fmt.Errorf("renaming %s to %s: %w", src, dst, err)
+	dst = filepath.Join(dir, filepath.Base(src))
+	rerr := os.Rename(src, dst)
+	if rerr == nil {
+		return dst, false, nil
 	}
-	return dst, nil
+	if !errors.Is(rerr, fs.ErrPermission) && !errors.Is(rerr, syscall.EXDEV) {
+		return "", false, fmt.Errorf("renaming %s to %s: %w", src, dst, rerr)
+	}
+	if err := acqCopyWhole(src, dst); err != nil {
+		return "", false, fmt.Errorf("renaming %s to %s failed (%v), and copying it failed: %w", src, dst, rerr, err)
+	}
+	return dst, true, nil
+}
+
+// acqCopyWhole copies src to dst through a temporary file beside dst, so a crash never leaves
+// a partial file under dst's name.
+func acqCopyWhole(src, dst string) (err error) {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	info, err := in.Stat()
+	if err != nil {
+		return err
+	}
+	tmp := dst + ".adopting"
+	out, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = os.Remove(tmp)
+		}
+	}()
+	n, err := io.Copy(out, in)
+	if err == nil && n != info.Size() {
+		err = fmt.Errorf("copied %d of %d bytes", n, info.Size())
+	}
+	if err == nil {
+		err = out.Sync()
+	}
+	if cerr := out.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		return err
+	}
+	return os.Rename(tmp, dst)
 }
 
 func (a *Acquire) soulseekDownload(ctx context.Context, m Machine, it Item, c candRow, dir string) error {
