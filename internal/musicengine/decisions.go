@@ -166,6 +166,18 @@ func (d *Decisions) Answer(ctx context.Context, decisionID int64, option, note s
 		return res, d.closeIgnored(ctx, dec, option, note, res.Reason)
 	}
 
+	// A song removed from the playlist after its download began keeps its item (R4), so its
+	// decision stays open and waiting_blair; the answer must not act on it (KTD12, Astra 20).
+	// Dropping is the one answer that is still safe, so it goes through.
+	if option != OptionDrop {
+		if ignored, err := d.ignoreIfUnwanted(ctx, dec, it, option, note); err != nil {
+			return res, err
+		} else if ignored != "" {
+			res.Ignored, res.State, res.Reason = true, it.State, ignored
+			return res, nil
+		}
+	}
+
 	switch {
 	case option == OptionDrop:
 		return d.finish(ctx, dec, it, res, note, StateDropped, "dropped by Blair", 0)
@@ -207,6 +219,53 @@ func (d *Decisions) Answer(ctx context.Context, decisionID int64, option, note s
 		return d.viaHook(ctx, dec, it, res, option, note, d.hooks.TreatAsMatch)
 	}
 	return res, fmt.Errorf("%w: %q has no handler", ErrInvalidOption, option)
+}
+
+// ignoreIfUnwanted re-checks, in one transaction, that the item still has a reason to exist
+// and closes the decision as ignored when it does not. It returns the reason when it closed
+// the decision, "" when the answer may go ahead.
+func (d *Decisions) ignoreIfUnwanted(ctx context.Context, dec Decision, it Item, option, note string) (string, error) {
+	var reason string
+	err := store.WithTx(ctx, d.e.db, func(tx *sql.Tx) error {
+		cur, err := getItem(ctx, tx, it.ID)
+		if err != nil {
+			return err
+		}
+		wanted, why, err := itemWantedTx(ctx, tx, cur)
+		if err != nil {
+			return err
+		}
+		if wanted {
+			return nil
+		}
+		reason = why
+		text := "ignored: " + why
+		if strings.TrimSpace(note) != "" {
+			text += " | " + note
+		}
+		return d.mark(ctx, tx, dec.ID, option, text)
+	})
+	return reason, err
+}
+
+// itemWantedTx reports whether an item is still wanted: a sweep item has no playlist entry
+// by design; any other item needs at least one present entry. When it is not wanted the
+// string says why.
+func itemWantedTx(ctx context.Context, q store.Execer, it Item) (bool, string, error) {
+	if it.Kind == KindSweep {
+		return true, "", nil
+	}
+	// Entries are never deleted, only marked absent, so "no row at all" is a fixture or a
+	// hand-made item rather than a removed song; only rows that are all absent count as removed.
+	var total, present int
+	if err := q.QueryRowContext(ctx,
+		`SELECT COUNT(*), COALESCE(SUM(present), 0) FROM mus_playlist_entries WHERE item_id = ?`, it.ID).Scan(&total, &present); err != nil {
+		return false, "", fmt.Errorf("checking that item %d still has a playlist entry: %w", it.ID, err)
+	}
+	if total > 0 && present == 0 {
+		return false, fmt.Sprintf("the song was removed from the Spotify playlist (item is %s)", it.State), nil
+	}
+	return true, "", nil
 }
 
 func (d *Decisions) viaHook(ctx context.Context, dec Decision, it Item, res AnswerResult, option, note string,

@@ -35,7 +35,7 @@ func newAlbumFix(t *testing.T, s placeSeed, sub func(context.Context, AlbumRelea
 	r := newPlaceRig(t)
 	seeded := r.seed(s)
 	r.drive(seeded.ItemID, 5) // the single is placed first
-	a, err := NewAlbum(AlbumConfig{Placement: r.pl, Releases: placeFakeReleases{rel: placeRelease(4)}, Substitute: sub})
+	a, err := NewAlbum(AlbumConfig{Placement: r.pl, Releases: placeFakeReleases{rel: placeRelease(4)}, Substitute: sub, Library: albumFakeLibrary{}})
 	if err != nil {
 		t.Fatal(err)
 	}

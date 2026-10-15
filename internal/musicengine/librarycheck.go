@@ -68,33 +68,43 @@ func isLossless(codec string) bool {
 	return false
 }
 
-func (e *Engine) handleLibraryCheck(ctx context.Context, it Item) error {
-	if it.RecordingID == 0 {
-		return fmt.Errorf("item %d reached library_check with no pinned recording", it.ID)
-	}
+// libraryFinding is what looking for a recording in the library found. truncated says the
+// search stopped at a limit (too many candidate files, or more than maxMatchedChecks
+// matches) before every candidate was looked at, so "no adequate copy" cannot be trusted.
+type libraryFinding struct {
+	matched    int
+	winner     *checkedFile // a genuine lossless copy
+	flawed     *checkedFile // first matched copy that is lossy or flagged
+	unsettled  []libCand
+	unreadable string // why a candidate could not be looked at ("" when all could)
+	blind      string // why a matched copy could not be checked ("" when all could)
+	truncated  bool
+}
+
+// lookupLibrary is the one library search: candidates, tag classification, audio check. The
+// request flow and full-album placement both go through it.
+func (e *Engine) lookupLibrary(ctx context.Context, it Item, rec Recording) (libraryFinding, error) {
+	var f libraryFinding
 	if e.plex == nil || e.checker == nil || e.tags == nil || e.mb == nil {
-		return errors.New("musicengine: library check needs Plex, MusicBrainz, a tag reader and the audio checker")
+		return f, errors.New("musicengine: library check needs Plex, MusicBrainz, a tag reader and the audio checker")
 	}
 	section := e.settings().PlexSection
 	if section == "" {
-		return errors.New("musicengine: no Plex music section configured")
-	}
-	rec, err := getRecording(ctx, e.db, it.RecordingID)
-	if err != nil {
-		return err
+		return f, errors.New("musicengine: no Plex music section configured")
 	}
 	mctx := metadata.WithMBClass(ctx, mbClass(it))
 
-	cands, err := e.libraryCandidates(ctx, section, it, rec)
+	cands, truncated, err := e.libraryCandidates(ctx, section, it, rec)
 	if err != nil {
-		return err
+		return f, err
 	}
+	f.truncated = truncated
 
-	var matched, unsettled []libCand
-	unreadable := ""
+	var matched []libCand
 	var pinnedFull *metadata.Recording // fetched once, only if a fallback needs release titles
 	for _, c := range cands {
 		if len(matched) >= maxMatchedChecks {
+			f.truncated = true // candidates i.. were never classified
 			break
 		}
 		if c.known {
@@ -103,59 +113,88 @@ func (e *Engine) handleLibraryCheck(ctx context.Context, it Item) error {
 		}
 		res, why, err := e.classifyFile(mctx, rec, c, &pinnedFull)
 		if err != nil {
-			return err
+			return f, err
 		}
 		switch res {
 		case matchYes:
 			matched = append(matched, c)
 		case matchUnsettled:
-			unsettled = append(unsettled, c)
+			f.unsettled = append(f.unsettled, c)
 		default:
 			if why != "" && strings.HasPrefix(why, "unreadable") {
-				unreadable = why
+				f.unreadable = why
 			}
 		}
 	}
+	f.matched = len(matched)
 
-	if len(matched) == 0 {
-		switch {
-		case unreadable != "":
-			// A file that could not be read might be the copy; calling the song missing
-			// would download a duplicate.
-			return e.retryLibraryCheck(ctx, it, unreadable)
-		case len(unsettled) > 0:
-			return e.raiseAndWait(ctx, it, "ambiguous",
-				fmt.Sprintf("library file %s may be %s - %s but the tags cannot settle it", unsettled[0].path, rec.Artist, rec.Title),
-				[]string{OptionTreatAsMatch, OptionNotAMatch, OptionDrop})
-		}
-		return e.Transition(ctx, it.ID, StateSearching, "not in the library")
-	}
-
-	var winner, flawed *checkedFile
-	blind := ""
 	for _, c := range matched {
 		res := e.checker.Check(ctx, c.path)
 		cf := &checkedFile{cand: c, res: res}
 		switch {
 		case res.Verdict == audiocheck.Blind:
-			blind = fmt.Sprintf("library file %s could not be read: %s", c.path, res.Reason)
+			f.blind = fmt.Sprintf("library file %s could not be read: %s", c.path, res.Reason)
 		case res.Verdict == audiocheck.Genuine && isLossless(res.Facts.Codec):
-			winner = cf
+			f.winner = cf
 		default:
-			if flawed == nil {
-				flawed = cf
+			if f.flawed == nil {
+				f.flawed = cf
 			}
 		}
-		if winner != nil {
+		if f.winner != nil {
 			break
 		}
 	}
+	return f, nil
+}
+
+// truncatedReason is the text of the ambiguity decision raised when the search was cut short.
+func truncatedReason(rec Recording) string {
+	return fmt.Sprintf("the library search for %s - %s stopped at its limit (%d candidate files, %d matches) before every copy was looked at, so a missing or lossy copy cannot be trusted",
+		rec.Artist, rec.Title, maxLibraryCandidates, maxMatchedChecks)
+}
+
+func (e *Engine) handleLibraryCheck(ctx context.Context, it Item) error {
+	if it.RecordingID == 0 {
+		return fmt.Errorf("item %d reached library_check with no pinned recording", it.ID)
+	}
+	rec, err := getRecording(ctx, e.db, it.RecordingID)
+	if err != nil {
+		return err
+	}
+	f, err := e.lookupLibrary(ctx, it, rec)
+	if err != nil {
+		return err
+	}
+
+	// Only a positively found adequate copy ends the request; a search that hit a limit
+	// without finding one never authorizes a download (Astra 23).
+	noMatchSeen := f.matched == 0 && f.unreadable == "" && len(f.unsettled) == 0
+	if f.winner == nil && f.truncated && (f.flawed != nil || noMatchSeen) {
+		return e.raiseAndWait(ctx, it, "ambiguous", truncatedReason(rec),
+			[]string{OptionNotAMatch, OptionDrop})
+	}
+
+	if f.matched == 0 {
+		switch {
+		case f.unreadable != "":
+			// A file that could not be read might be the copy; calling the song missing
+			// would download a duplicate.
+			return e.retryLibraryCheck(ctx, it, f.unreadable)
+		case len(f.unsettled) > 0:
+			return e.raiseAndWait(ctx, it, "ambiguous",
+				fmt.Sprintf("library file %s may be %s - %s but the tags cannot settle it", f.unsettled[0].path, rec.Artist, rec.Title),
+				[]string{OptionTreatAsMatch, OptionNotAMatch, OptionDrop})
+		}
+		return e.Transition(ctx, it.ID, StateSearching, "not in the library")
+	}
 
 	switch {
-	case winner != nil:
-		return e.finishFromLibrary(ctx, it, rec, *winner, StateDone, "",
-			fmt.Sprintf("already in the library as %s (%s)", winner.cand.path, describeFacts(winner.res)))
-	case flawed != nil:
+	case f.winner != nil:
+		return e.finishFromLibrary(ctx, it, rec, *f.winner, StateDone, "",
+			fmt.Sprintf("already in the library as %s (%s)", f.winner.cand.path, describeFacts(f.winner.res)))
+	case f.flawed != nil:
+		flawed := f.flawed
 		why := fmt.Sprintf("library copy %s is %s (%s): upgrade", flawed.cand.path, flawed.res.Verdict, flawed.res.Reason)
 		if flawed.res.Verdict == audiocheck.Genuine {
 			why = fmt.Sprintf("library copy %s is lossy (%s): upgrade", flawed.cand.path, flawed.res.Facts.Codec)
@@ -166,7 +205,49 @@ func (e *Engine) handleLibraryCheck(ctx context.Context, it Item) error {
 		}
 		return e.finishFromLibrary(ctx, it, rec, *flawed, StateSearching, upgrade, why)
 	}
-	return e.retryLibraryCheck(ctx, it, blind)
+	return e.retryLibraryCheck(ctx, it, f.blind)
+}
+
+// TrackBlocked says why a full-album track must not be placed: a copy of the same recording
+// is already in the library (adequate, or lossy/flagged, which is a swap and not a second
+// file), another item already owns the recording, or the search could not settle it. ""
+// means the track is free to place. Unreadable results block too: placing beside a copy that
+// could not be looked at would risk a duplicate.
+func (e *Engine) TrackBlocked(ctx context.Context, rec Recording) (string, error) {
+	if rec.ID != 0 {
+		var holder int64
+		err := e.db.QueryRowContext(ctx,
+			`SELECT id FROM mus_items WHERE recording_id = ? AND state NOT IN ('done','cancelled','dropped') LIMIT 1`,
+			rec.ID).Scan(&holder)
+		switch {
+		case err == nil:
+			return fmt.Sprintf("item %d already owns this recording and is still being processed", holder), nil
+		case !errors.Is(err, sql.ErrNoRows):
+			return "", fmt.Errorf("looking for an active item on recording %d: %w", rec.ID, err)
+		}
+	}
+	f, err := e.lookupLibrary(ctx, Item{}, rec)
+	if err != nil {
+		return "", err
+	}
+	switch {
+	case f.winner != nil:
+		return fmt.Sprintf("already in the library as %s (%s)", f.winner.cand.path, describeFacts(f.winner.res)), nil
+	case f.flawed != nil:
+		// Placing beside it would leave two copies. Turning it into a swap is a recorded plan
+		// deferral (the album flow has no item to swap for).
+		return fmt.Sprintf("the library already has a lossy or flagged copy %s (%s); not placed beside it, swapping it is deferred",
+			f.flawed.cand.path, f.flawed.res.Verdict), nil
+	case f.blind != "":
+		return "a library copy could not be checked: " + f.blind, nil
+	case f.unreadable != "":
+		return "a library file could not be read: " + f.unreadable, nil
+	case len(f.unsettled) > 0:
+		return fmt.Sprintf("library file %s may be this recording; tags cannot settle it", f.unsettled[0].path), nil
+	case f.truncated:
+		return truncatedReason(rec), nil
+	}
+	return "", nil
 }
 
 func describeFacts(r audiocheck.Result) string {
@@ -275,11 +356,16 @@ func (e *Engine) retryLibraryCheck(ctx context.Context, it Item, reason string) 
 // libraryCandidates lists the library files that might be the recording: the item's own
 // track when the sweep named one, files already tied to the recording, and Plex search
 // results for the artist and title as MusicBrainz and Spotify spell them.
-func (e *Engine) libraryCandidates(ctx context.Context, section string, it Item, rec Recording) ([]libCand, error) {
+func (e *Engine) libraryCandidates(ctx context.Context, section string, it Item, rec Recording) ([]libCand, bool, error) {
 	var out []libCand
+	truncated := false
 	seen := map[string]bool{}
 	add := func(c libCand) {
-		if c.path == "" || seen[c.path] || len(out) >= maxLibraryCandidates {
+		if c.path == "" || seen[c.path] {
+			return
+		}
+		if len(out) >= maxLibraryCandidates {
+			truncated = true // a further distinct file that was not looked at
 			return
 		}
 		seen[c.path] = true
@@ -297,24 +383,24 @@ func (e *Engine) libraryCandidates(ctx context.Context, section string, it Item,
 	}
 	rows, err := e.db.QueryContext(ctx, q, args...)
 	if err != nil {
-		return nil, fmt.Errorf("reading library tracks for item %d: %w", it.ID, err)
+		return nil, false, fmt.Errorf("reading library tracks for item %d: %w", it.ID, err)
 	}
 	for rows.Next() {
 		var c libCand
 		if err := rows.Scan(&c.dbID, &c.ratingKey, &c.path, &c.title, &c.artist, &c.album); err != nil {
 			_ = rows.Close()
-			return nil, fmt.Errorf("scanning library track: %w", err)
+			return nil, false, fmt.Errorf("scanning library track: %w", err)
 		}
 		c.known = true
 		add(c)
 	}
 	if err := rows.Err(); err != nil {
 		_ = rows.Close()
-		return nil, err
+		return nil, false, err
 	}
 	_ = rows.Close()
 	if it.TrackID != 0 {
-		return out, nil
+		return out, truncated, nil
 	}
 
 	type q2 struct{ artist, title string }
@@ -331,14 +417,14 @@ func (e *Engine) libraryCandidates(ctx context.Context, section string, it Item,
 	}
 	addQ(rec.Artist, rec.Title)
 	if en, ok, err := entryForItem(ctx, e.db, it.ID); err != nil {
-		return nil, err
+		return nil, false, err
 	} else if ok {
 		addQ(en.Artist, en.Title)
 	}
 	for _, s := range searches {
 		tracks, err := e.plex.SearchTracks(ctx, section, s.artist, s.title)
 		if err != nil {
-			return nil, fmt.Errorf("searching Plex for %q - %q: %w", s.artist, s.title, err)
+			return nil, false, fmt.Errorf("searching Plex for %q - %q: %w", s.artist, s.title, err)
 		}
 		for _, t := range tracks {
 			for _, f := range t.Files {
@@ -346,7 +432,7 @@ func (e *Engine) libraryCandidates(ctx context.Context, section string, it Item,
 			}
 		}
 	}
-	return out, nil
+	return out, truncated, nil
 }
 
 // classifyFile decides whether one library file is the pinned recording. A why starting
@@ -397,6 +483,9 @@ func (e *Engine) classifyFile(ctx context.Context, rec Recording, c libCand, pin
 	}
 	if normName(title) != normName(rec.Title) || !artistsOverlap(artist, rec.Artist) {
 		return matchNo, "title or artist differs", nil
+	}
+	if rec.MBID == "" {
+		return matchUnsettled, "title, artist and duration agree but the recording has no id to compare releases", nil
 	}
 	if *pinnedFull == nil {
 		full, err := e.mb.GetRecording(ctx, rec.MBID)

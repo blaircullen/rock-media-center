@@ -52,6 +52,16 @@ type AlbumConfig struct {
 	// Substitute, when set, names the release that would be fetched if the pinned one is no
 	// longer in staging. Nil means the pinned release itself is fetched again.
 	Substitute func(ctx context.Context, pinned AlbumRelease) (*AlbumRelease, error)
+	// Library is the engine's library check (Engine.TrackBlocked). Required: without it no
+	// album track other than the single can be placed safely (Astra 9).
+	Library AlbumLibrary
+}
+
+// AlbumLibrary says whether an album track may be placed. It is satisfied by *Engine, which
+// answers through the same library search the request flow uses and the active-item claim
+// on the recording. A non-empty reason means the track must not be placed.
+type AlbumLibrary interface {
+	TrackBlocked(ctx context.Context, rec Recording) (reason string, err error)
 }
 
 // Album places full albums.
@@ -318,6 +328,9 @@ func (a *Album) placeFrom(ctx context.Context, itemID int64, dir string, res Alb
 	if err != nil {
 		return res, err
 	}
+	if a.cfg.Library == nil {
+		return res, errors.New("musicengine album: no library check is wired, so no album track can be placed without risking a duplicate")
+	}
 	var errs []error
 	for _, f := range files {
 		switch {
@@ -347,6 +360,18 @@ func (a *Album) placeFrom(ctx context.Context, itemID int64, dir string, res Alb
 			res.Skipped = append(res.Skipped, AlbumSkip{Path: f.Path, Reason: plan.Path + " is already used by a different file; left untouched"})
 			continue
 		}
+		// A track whose recording the library already holds (or another item is getting) is
+		// not placed again; a lossy or flagged copy there would need a swap, which the album
+		// flow defers, so it is recorded rather than placed beside.
+		blocked, err := a.trackBlocked(ctx, f)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("checking the library for %s: %w", f.Path, err))
+			continue
+		}
+		if blocked != "" {
+			res.Skipped = append(res.Skipped, AlbumSkip{Path: f.Path, Reason: blocked})
+			continue
+		}
 		out, err := a.placeOne(ctx, f, plan.Path, num, rec)
 		switch {
 		case err != nil:
@@ -365,6 +390,26 @@ func (a *Album) placeFrom(ctx context.Context, itemID int64, dir string, res Alb
 		}
 	}
 	return res, errors.Join(errs...)
+}
+
+// trackBlocked identifies the album track's recording (the tag's MusicBrainz id, matched to a
+// known recording row when there is one) and asks the library check whether it may be placed.
+func (a *Album) trackBlocked(ctx context.Context, f albumFile) (string, error) {
+	rec := Recording{
+		MBID: f.Tags.RecordingMBID, Title: f.Tags.Title, Artist: firstNonEmpty(f.Tags.Artist, f.Tags.AlbumArtist),
+		LengthMs:    int(f.Res.Facts.DurationSec * 1000),
+		VersionHint: versionHintString(versionHints(f.Tags.Title)),
+	}
+	if rec.MBID != "" {
+		known, err := scanRecording(a.db().QueryRowContext(ctx, `SELECT `+recCols+` FROM mus_recordings WHERE mbid = ?`, rec.MBID))
+		switch {
+		case err == nil:
+			rec = known
+		case !errors.Is(err, sql.ErrNoRows):
+			return "", fmt.Errorf("looking up recording %s: %w", rec.MBID, err)
+		}
+	}
+	return a.cfg.Library.TrackBlocked(ctx, rec)
 }
 
 type albumPlaced struct {

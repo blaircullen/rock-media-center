@@ -458,14 +458,20 @@ func (e *Engine) applyPin(ctx context.Context, it Item, en entryRow, c metadata.
 	})
 }
 
+// mergeInto folds `from` into the holder. A holder that is a sweep item becomes an upgrade
+// (Astra 24): it keeps its track and swap path, but an intake request is now attached, so
+// the sweep must not close its "no genuine copy" decision as a miss, and it uses the
+// intake space policy. It does not become a request: that would place a duplicate.
 func (e *Engine) mergeInto(ctx context.Context, tx store.Execer, from Item, holder, recID int64, mbid string) error {
 	if _, err := tx.ExecContext(ctx,
 		`UPDATE mus_playlist_entries SET item_id = ?, recording_id = ? WHERE item_id = ?`, holder, recID, from.ID); err != nil {
 		return fmt.Errorf("pointing entries of item %d at item %d: %w", from.ID, holder, err)
 	}
 	if _, err := tx.ExecContext(ctx,
-		`UPDATE mus_items SET priority = MAX(priority, ?), updated_at = ? WHERE id = ?`,
-		from.Priority, e.now().Unix(), holder); err != nil {
+		`UPDATE mus_items SET priority = MAX(priority, ?), updated_at = ?,
+		        kind = CASE WHEN kind = ? THEN ? ELSE kind END
+		 WHERE id = ?`,
+		from.Priority, e.now().Unix(), KindSweep, KindUpgrade, holder); err != nil {
 		return fmt.Errorf("raising priority of item %d: %w", holder, err)
 	}
 	return e.TransitionTx(ctx, tx, from.ID, StateCancelled,
