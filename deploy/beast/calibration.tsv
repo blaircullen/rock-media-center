@@ -1,0 +1,30 @@
+# PROPOSED - Blair confirms before the R13 run. Do not treat any row as final until he has.
+# Columns: path<TAB>expected_verdict<TAB>why. Lines starting with # are comments.
+# Source: Beast /home/olares/library-audit/scan.log (getmusic flac-check.py v3 audit, 2026-10-11,
+# 65,740 files; 621 FAKE = 514 "FAKE (128k-class shelf)" + 107 "FAKE bit depth"). Every path was
+# stat'ed on Beast 2026-10-15 and exists with an mtime before the audit, so the file audited
+# is the file listed. "top" = the audit's "content to X kHz", "floor" = top-band floor in dB
+# relative to peak. Verdict names follow internal/audiocheck (GENUINE, FAKE, UPSAMPLED, FAKE_BIT_DEPTH).
+/mnt/nas/music/The Beatles/Let It Be/08 - I’ve Got a Feeling.flac	GENUINE	audit OK; 96 kHz 24-bit, 2852 kbps, top 31.3 kHz of 48.0, floor -93 dB, true LSBs active (hi-res)
+/mnt/nas/music/38 Special/Special Delivery/03 - Travelin' Man.flac	GENUINE	audit OK; 96 kHz 24-bit, 3002 kbps, top 45.3 kHz of 48.0, floor -84 dB, true LSBs active (hi-res)
+/mnt/nas/music/The Chicks/Wide Open Spaces/12 - Give It Up Or Let Me Go.flac	GENUINE	audit OK; 96 kHz 24-bit, 3201 kbps, top 43.3 kHz of 48.0, floor -119 dB, true LSBs active (hi-res)
+/mnt/nas/music/Rihanna/Anti/09 - Same Ol' Mistakes.flac	GENUINE	audit OK; 44.1 kHz 24-bit, 1629 kbps, top 22.1 kHz (full), floor -77 dB, true LSBs active
+/mnt/nas/music/Bon Jovi/The Circle/05 - Bullet.flac	GENUINE	audit OK; 44.1 kHz 16-bit CD rip, 1039 kbps, top 22.1 kHz (full), floor -66 dB
+/mnt/nas/music/Faith No More/The Real Thing/03 - Falling To Pieces.flac	GENUINE	audit OK; 44.1 kHz 16-bit CD rip, 1092 kbps, top 22.1 kHz (full), floor -65 dB
+/mnt/nas/music/Stone Temple Pilots/Purple/01 - Meatplow.flac	GENUINE	audit OK; 44.1 kHz 16-bit CD rip, 1011 kbps, top 22.1 kHz (full), floor -58 dB
+/mnt/nas/music/Nightwish/Yesterwynde/08 - Something Whispered Follow Me.flac	GENUINE	audit OK; 44.1 kHz 16-bit, 995 kbps, top 22.1 kHz (full), floor -57 dB
+/mnt/nas/music/Kate Bush/Aerial/15 - Nocturn.flac	GENUINE	REQUIRED quiet-intro 24-bit case. audit OK; 44.1 kHz 24-bit, 1539 kbps, top 21.7 kHz, floor -71 dB, true LSBs active. ffmpeg volumedetect over the first 30 s on Beast: mean -41.3 dB, max -24.9 dB (quiet, not silent)
+/mnt/nas/music/John Williams/The Berlin Concert/10 - Marion’s Theme (From “Indiana Jones and the Raiders of the Lost Ark”).flac	GENUINE	second quiet-intro 24-bit case. audit OK; 192 kHz 24-bit, 4943 kbps, top 96.0 kHz, floor -74 dB, true LSBs active. First 30 s: mean -33.6 dB, max -16.4 dB
+/mnt/nas/music/Ludovico Einaudi/I Giorni/04 - Melodia africana II.flac	GENUINE	REQUIRED quiet genuine sub-400 kbps FLAC. audit said SUSPECT (low bitrate): 44.1 kHz 16-bit, 365 kbps, top 22.1 kHz (full spectrum, >= 21 kHz), floor -75 dB. Solo piano; low bitrate is the music, not a transcode
+/mnt/nas/music/Jim Croce/Facets/05 - The Ballad of Gunga Din.flac	GENUINE	second quiet low-bitrate case. audit said SUSPECT (low bitrate): 44.1 kHz 16-bit, 368 kbps, top 22.1 kHz (full spectrum), floor -75 dB
+/mnt/nas/music/Green Day/Legends of Rock - 90's (Live)/Basket Case.flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 16-bit, 741 kbps, top 14.3 kHz of 22.1, floor -100 dB
+/mnt/nas/music/M83/Fantasy/12 - Sunny Boy Part 2.flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 16-bit, 516 kbps, top 10.9 kHz of 22.1, floor -93 dB
+/mnt/nas/music/Halsey/The Great Impersonator/04 - Letter To God (1974).flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 16-bit, 625 kbps, top 9.3 kHz of 22.1, floor -100 dB
+/mnt/nas/music/Alabama Shakes/21-alabama_shakes-rise_to_the_sun.flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 16-bit, 826 kbps, top 14.4 kHz of 22.1, floor -107 dB
+/mnt/nas/music/Andrew Bird/Echolocations River/08 - The Green Heron.flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 16-bit, 595 kbps, top 13.6 kHz of 22.1, floor -98 dB
+/mnt/nas/music/Simon Westman/Diamonds and Pearls/Diamonds and Pearls.flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 24-bit, 1024 kbps, top 11.5 kHz of 22.1, floor -96 dB, LSBs active (24-bit container does not rescue it)
+/mnt/nas/music/Vidar Arvidsson/Leave The Door Open/Leave The Door Open.flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 16-bit, 503 kbps, top 6.2 kHz of 22.1, floor -87 dB
+/mnt/nas/music/Jorelyn Ariza/We Don't Need Another Hero/We Don't Need Another Hero.flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 24-bit, 1097 kbps, top 4.3 kHz of 22.1, floor -98 dB, LSBs active
+/mnt/nas/music/Bae Bee/Beatles Lullabies/02 - Let It Be.flac	FAKE_BIT_DEPTH	audit FAKE bit depth (padded 24-bit container, no LSB content); 44.1 kHz 24-bit, 326 kbps, top 7.5 kHz, floor -96 dB, true LSBs ALL ZERO. Top is also low, so the checker may report FAKE; Blair decides which label is accepted for this row
+/mnt/nas/music/RAYE/WHERE IS MY HUSBAND!/WHERE IS MY HUSBAND!.flac	UPSAMPLED	audit UPSAMPLED (44.1k source in hi-res container); 48 kHz 24-bit, 1802 kbps, top 22.1 kHz of nyquist 24.0, floor -85 dB, LSBs active
+/mnt/nas/music/Empress Of/For Your Consideration/08 - Fácil.flac	UPSAMPLED	audit UPSAMPLED (44.1k source in hi-res container); 48 kHz 24-bit, 1676 kbps, top 22.1 kHz of nyquist 24.0, floor -112 dB, LSBs active

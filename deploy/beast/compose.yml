@@ -1,0 +1,68 @@
+# Rock Media Center on Beast (unit U16). Lives beside the existing stack and changes none of it.
+#
+# Start:  docker compose --env-file .env -f compose.yml up -d --build
+# Stop and remove (rollback): docker compose -f compose.yml down
+#
+# Beast facts this file relies on (verified read-only 2026-10-15, see README.md):
+#   LAN IP 10.0.0.13 (enp129s0), Tailscale IP 100.114.152.41, host port 8787 free,
+#   network lidarr-stack_default holds gluetun (qBittorrent :8090, slskd :5030 both live in
+#   gluetun's network namespace), SABnzbd published on host :8085, Plex native on :32400,
+#   /var is a 1.2T local volume (/ has 46G), music + downloads are NFS mounts on the host.
+#
+# .env sits next to this file, is NOT committed, and holds the secrets. Variables are listed
+# in README.md; values never go in this file.
+services:
+  rock-media-center:
+    image: rock-media-center:local
+    build:
+      context: ../..            # the repo checkout on Beast (Dockerfile at its root)
+      args:
+        VERSION: "${RMC_VERSION:-beast}"
+        COMMIT: "${RMC_COMMIT:-unknown}"
+    container_name: rock-media-center
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # docker/entrypoint.sh reads PUID/PGID, chowns /data, then drops to that user with gosu.
+      # 1000:100 because the two trees it writes have different owners (checked 2026-10-15):
+      # /mnt/nas/music dirs are 1024:100 mode 775 (group 100 may write), and
+      # /mnt/nas/downloads/beast-qbt is 1000:1000 mode 755, where SABnzbd and slskd (uid 1000)
+      # leave finished downloads. Placed files end up 1000:100 mode 664.
+      PUID: "1000"
+      PGID: "100"
+      TZ: "America/New_York"
+      ARRMADA_LOG_LEVEL: "info"
+      ARRMADA_DATA_DIR: "/data"
+      ARRMADA_MUSIC_DIR: "/mnt/nas/music"
+      # Engine staging and quarantine live under rmc/ here, on the same NFS export as the
+      # clients' finished downloads, so moving a download into staging is a rename.
+      ARRMADA_DOWNLOADS_DIR: "/mnt/nas/downloads/beast-qbt"
+      # Clients and Plex by address. Settings made in the app's UI (indexers, clients, Spotify,
+      # Plex token, Apprise URL) are stored in /data, not here.
+      ARRMADA_PLEX_URL: "http://10.0.0.13:32400"
+      ARRMADA_SABNZBD_URL: "http://10.0.0.13:8085"
+      ARRMADA_QBITTORRENT_URL: "http://gluetun:8090"
+    extra_hosts:
+      # Name for the host in case an app setting prefers a hostname over the LAN IP.
+      - "beast-host:10.0.0.13"
+    networks:
+      - lidarr-stack_default
+    ports:
+      # LAN and Tailscale only, never 0.0.0.0. The app listens on 7878 inside the container.
+      # 8787 is free on Beast (8080 is zigbee2mqtt, 8091 is Strata, 8765/8766/8791 are NOC).
+      - "${RMC_LAN_IP:-10.0.0.13}:${RMC_PORT:-8787}:7878"
+      - "${RMC_TS_IP:-100.114.152.41}:${RMC_PORT:-8787}:7878"
+    volumes:
+      # App state (SQLite, config, staging scratch, backups) on local disk, not NFS.
+      - /var/lib/rock-media-center:/data
+      # Same path inside and outside so Plex, Navidrome and this app agree on file paths.
+      - /mnt/nas/music:/mnt/nas/music
+      # Only the subfolder the clients use: /mnt/nas/downloads itself is root-only (mode 000).
+      # SABnzbd sees this folder as /downloads; set a path mapping /downloads ->
+      # /mnt/nas/downloads/beast-qbt in the app's SABnzbd client settings.
+      - /mnt/nas/downloads/beast-qbt:/mnt/nas/downloads/beast-qbt
+
+networks:
+  lidarr-stack_default:
+    external: true
