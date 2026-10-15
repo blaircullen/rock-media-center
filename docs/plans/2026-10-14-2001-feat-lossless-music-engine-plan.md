@@ -192,6 +192,8 @@ Measured over the first 30 days on the requests created in that window:
 - Retiring `spotify-sync.py`, the repair campaign scripts and Lidarr on Beast once F1 and F3 run cleanly.
 - An iMessage or AI Command Center alert channel through an Apprise `json://` webhook; this plan delivers through Telegram.
 - Rotating the secrets hard-coded in `spotify-sync.py` and the `getmusic` scripts (Blair's call; R33 keeps new secrets out of scripts).
+- Carrying out a path-changing swap Blair approves (for example a lossy `.m4a` upgraded to `.flac`): the journal replaces a file in place and cannot rename it, so such a decision offers only keep or drop for now (R22 still holds: nothing moves automatically).
+- Turning a strictly better album copy of an already-placed single (reported by the full-album step) into a swap candidate.
 
 **Considered and not built**
 

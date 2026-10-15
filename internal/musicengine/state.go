@@ -92,11 +92,11 @@ var transitions = map[State][]State{
 	StateLaneUnavailable:    {StateSearching},
 	StateDownloading:        {StateChecking, StateSearching}, // (+) searching: a failed download tries the next candidate
 	StateChecking:           {StateFailedCheck, StatePlacing, StateSwapping, StateWaitingBlair},
-	StateFailedCheck:        {StateSearching, StateWaitingBlair}, // (+) waiting_blair: every candidate failed
-	StateSwapping:           {StateWaitingForPlayback, StateAwaitingPlexIndex, StateWaitingBlair, StateSearching},
-	StateWaitingForPlayback: {StateSwapping},
-	StatePlacing:            {StateAwaitingPlexIndex, StateWaitingBlair, StateSearching}, // (+) both
-	StateAwaitingPlexIndex:  {StateDone, StateWaitingBlair},                              // (+) waiting_blair: remap
+	StateFailedCheck:        {StateSearching, StateWaitingBlair},                                                                // (+) waiting_blair: every candidate failed
+	StateSwapping:           {StateWaitingForPlayback, StateAwaitingPlexIndex, StateWaitingBlair, StateSearching, StateDropped}, // (+) dropped: the sweep keeps the incumbent
+	StateWaitingForPlayback: {StateSwapping, StateDropped},                                                                      // (+) dropped: deferred after the playback wait
+	StatePlacing:            {StateAwaitingPlexIndex, StateWaitingBlair, StateSearching},                                        // (+) both
+	StateAwaitingPlexIndex:  {StateDone, StateWaitingBlair},                                                                     // (+) waiting_blair: remap
 	// (+) pinning and library_check: Blair settled an ambiguous recording or file.
 	StateWaitingBlair: {StateSearching, StatePlacing, StateSwapping, StateDropped, StatePinning, StateLibraryCheck},
 }
