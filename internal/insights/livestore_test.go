@@ -250,7 +250,7 @@ func TestFlushAllEmptiesSavedStreams(t *testing.T) {
 		now, sess := at(time.Duration(i)*time.Second, int64(i*1000), "playing")
 		s1.reconcile(ctx, s1.plex, []plex.Session{sess}, now)
 	}
-	s2 := rig.boot() // monitoring was switched off while Arrmada was down
+	s2 := rig.boot() // monitoring was switched off while Rock Media Center was down
 	s2.flushAll(ctx, s2.plex)
 	if len(rig.rows()) != 1 || rig.saved() != 0 || len(s2.plex.live) != 0 {
 		t.Fatalf("rows %d, saved %d, live %d; want the play recorded and nothing left", len(rig.rows()), rig.saved(), len(s2.plex.live))

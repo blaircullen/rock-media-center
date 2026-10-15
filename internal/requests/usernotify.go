@@ -145,12 +145,12 @@ func (s *Service) checkUserApprise(ctx context.Context, userID int64, url string
 
 func (s *Service) sendUserApprise(ctx context.Context, url, body string) error {
 	if s.userApprise.send != nil {
-		return s.userApprise.send(ctx, url, "Arrmada", body)
+		return s.userApprise.send(ctx, url, "Rock Media Center", body)
 	}
 	if s.appriseBin == "" {
 		return nil // no apprise in this build: the inbox and Web Push still went out
 	}
-	return notify.Send(ctx, s.appriseBin, "Arrmada", body, url)
+	return notify.Send(ctx, s.appriseBin, "Rock Media Center", body, url)
 }
 
 // AppriseStatus is the owner's view of their personal URL: whether one is saved, a

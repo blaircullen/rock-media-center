@@ -27,7 +27,7 @@ const ROLE: Record<UserRole, string> = {
   readonly: "Can browse",
 };
 
-// Me is the one page about you: who you're signed in as, how Arrmada reaches you, and the
+// Me is the one page about you: who you're signed in as, how Rock Media Center reaches you, and the
 // places that don't get a tab of their own. It's the phone's last tab, the avatar menu's
 // first item and the staff sidebar's name. Each part is its own MeSection, in this order,
 // so later work slots in without a second account page:

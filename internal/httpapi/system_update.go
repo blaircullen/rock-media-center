@@ -18,7 +18,7 @@ func (a *api) updateStatus(ctx context.Context) *updatecheck.Status {
 }
 
 // handleSetUpdateCheck — PUT /api/v1/system/update-check {enabled} (admin): switches the
-// check on or off. While it's off Arrmada asks GitHub nothing at all.
+// check on or off. While it's off Rock Media Center asks GitHub nothing at all.
 func (a *api) handleSetUpdateCheck(w http.ResponseWriter, r *http.Request) {
 	if a.deps.Updates == nil || a.deps.Settings == nil {
 		a.writeError(w, http.StatusServiceUnavailable, "the update check isn't available")

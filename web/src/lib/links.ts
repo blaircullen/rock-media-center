@@ -11,7 +11,7 @@ export const LINKS = {
   libraryReview: "/settings/library#needs-review",
   users: "/settings/users",
   // Each media server's connection is its card on Connections (a link opens its editor
-  // there); how Arrmada uses them — library updates, watch monitoring, sign-in, linked
+  // there); how Rock Media Center uses them — library updates, watch monitoring, sign-in, linked
   // accounts — is Settings → Media servers, one group per server.
   plexConnection: "/settings/connections#plex",
   jellyfinConnection: "/settings/connections#jellyfin",

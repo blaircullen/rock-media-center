@@ -16,7 +16,7 @@ import (
 )
 
 // INT-25: per-client path mappings are saved, checked and refused through the client API,
-// the client Test reports which paths Arrmada can see, and health names a client whose
+// the client Test reports which paths Rock Media Center can see, and health names a client whose
 // finished downloads aren't visible.
 
 // fakePathQbit is an httptest qBittorrent that saves to save and reports torrents (JSON).
@@ -88,7 +88,7 @@ func TestClientPathMapsSavedAndRefused(t *testing.T) {
 		t.Fatalf("not cleared: %+v", got.PathMaps)
 	}
 
-	// The bundled qBittorrent shares Arrmada's folders and takes none.
+	// The bundled qBittorrent shares Rock Media Center's folders and takes none.
 	if err := dl.EnsureBundled(ctx, bundledQbitURL); err != nil {
 		t.Fatal(err)
 	}

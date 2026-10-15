@@ -2,8 +2,8 @@
 // JS challenge on protected trackers (e.g. TorrentLeech). FlareSolverr solves
 // the challenge in a headless browser and returns the cf_clearance cookie plus
 // the exact User-Agent it used. Because Cloudflare binds cf_clearance to the
-// public egress IP + UA — and Arrmada and FlareSolverr share the host's IP —
-// Arrmada can then make direct requests (login/search/download) carrying that
+// public egress IP + UA — and Rock Media Center and FlareSolverr share the host's IP —
+// Rock Media Center can then make direct requests (login/search/download) carrying that
 // clearance, no per-request browser round-trip needed.
 package flaresolverr
 

@@ -64,7 +64,7 @@ type Movie struct {
 	Acquisition *Acquisition `json:"acquisition,omitempty"`
 }
 
-// Acquisition is what Arrmada will do about a movie, from the same facts the sweeps act on.
+// Acquisition is what Rock Media Center will do about a movie, from the same facts the sweeps act on.
 // The last search and the next automatic try are added by the search-outcome work (MOV-04)
 // as fields on Movie, not here.
 type Acquisition struct {

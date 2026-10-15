@@ -9,7 +9,7 @@ export function retryDelay(attempt: number): number {
   return DELAYS[attempt] ?? 30_000;
 }
 
-// Unreachable is the boot screen when Arrmada doesn't answer at all. It keeps
+// Unreachable is the boot screen when Rock Media Center doesn't answer at all. It keeps
 // retrying in the background (and straight away when the device comes back
 // online); the first success boots the app normally.
 export function Unreachable() {
@@ -48,7 +48,7 @@ export function Unreachable() {
           <FleetMark className="h-6 w-6" />
         </span>
         <div className="rounded-2xl border border-line bg-panel p-5 shadow-panel">
-          <h1 className="m-0 text-xl font-bold">Can't reach Arrmada</h1>
+          <h1 className="m-0 text-xl font-bold">Can't reach Rock Media Center</h1>
           <p className="m-0 mt-1.5 text-base text-ink-dim">
             The server isn't answering. It may be restarting, or this device may be offline.
           </p>
@@ -61,7 +61,7 @@ export function Unreachable() {
           >
             {busy ? "Retrying…" : "Retry"}
           </button>
-          <p className="m-0 mt-2.5 text-xs text-ink-faint">Arrmada keeps trying by itself and opens as soon as it answers.</p>
+          <p className="m-0 mt-2.5 text-xs text-ink-faint">Rock Media Center keeps trying by itself and opens as soon as it answers.</p>
         </div>
       </div>
     </div>

@@ -56,7 +56,7 @@ func (a *api) securityHeaders(next http.Handler) http.Handler {
 		h.Set("X-Frame-Options", "SAMEORIGIN")     // clickjacking: no foreign framing
 		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		// same-origin-allow-popups, not same-origin: a cross-origin page that opens
-		// Arrmada still gets no handle to it, but Arrmada keeps the handle to the Plex
+		// Rock Media Center still gets no handle to it, but Rock Media Center keeps the handle to the Plex
 		// sign-in popup it opens. Plain same-origin severed that handle the moment the
 		// popup reached plex.tv, so Sign in with Plex couldn't tell a closed window from
 		// one still open, nor close it when done.

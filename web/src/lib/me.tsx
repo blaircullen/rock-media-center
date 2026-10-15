@@ -11,10 +11,10 @@ interface MeState {
   // Module toggles (from /status) so nav + Discover can hide disabled modules live.
   musicEnabled: boolean;
   setMusicEnabled: (v: boolean) => void;
-  // The boot calls got no answer from Arrmada (network down, server restarting, a
-  // proxy's 502), so App shows "Can't reach Arrmada" rather than the login form.
+  // The boot calls got no answer from Rock Media Center (network down, server restarting, a
+  // proxy's 502), so App shows "Can't reach Rock Media Center" rather than the login form.
   unreachable: boolean;
-  // retry re-runs the boot calls and resolves true once Arrmada answered.
+  // retry re-runs the boot calls and resolves true once Rock Media Center answered.
   retry: () => Promise<boolean>;
   // Whether a TMDB key is set. Movies, Series and Discover show one role-aware "not set up"
   // message instead of failing feed by feed; saving the key flips it back without a reload.
@@ -73,8 +73,8 @@ export function MeProvider({ children }: { children: ReactNode }) {
   return <MeContext.Provider value={{ user, loading, signedOut, external, musicEnabled, setMusicEnabled, unreachable, retry: boot, metadataReady, setMetadataReady }}>{children}</MeContext.Provider>;
 }
 
-// bootUnreachable decides between "show Login" and "Can't reach Arrmada". A 401 or
-// 403 from /me is Arrmada answering "not signed in", so Login is right. Anything
+// bootUnreachable decides between "show Login" and "Can't reach Rock Media Center". A 401 or
+// 403 from /me is Rock Media Center answering "not signed in", so Login is right. Anything
 // else (a fetch TypeError, a 5xx, a proxy's 502 or HTML error page) means no real
 // answer came back; /status is public, so any failure there counts the same way.
 export function bootUnreachable(me: PromiseSettledResult<unknown>, status: PromiseSettledResult<unknown>): boolean {

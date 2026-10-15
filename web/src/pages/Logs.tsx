@@ -113,7 +113,7 @@ function DebugSwitch({ onEnabled }: { onEnabled: () => void }) {
   );
 }
 
-// Logs — a live view of Arrmada's application log (also on stdout/docker logs). Filter by
+// Logs — a live view of Rock Media Center's application log (also on stdout/docker logs). Filter by
 // level and search text; auto-refreshes so you can watch things happen.
 export function Logs() {
   const [entries, setEntries] = useState<LogEntry[] | null>(null);

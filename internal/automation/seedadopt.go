@@ -104,7 +104,7 @@ func (c *Coordinator) AdoptTorrentHashes(ctx context.Context, queue []download.I
 // its key: a grab whose add answer was lost (a timeout after SABnzbd took the NZB) knows
 // no key, and without one nothing finds its job but its name.
 //
-// Stricter than the torrent pairing, because it can be: Arrmada names every job it adds
+// Stricter than the torrent pairing, because it can be: Rock Media Center names every job it adds
 // after the release (nzbname), so the job's name normalises to exactly its grab's title.
 // Exactly one key-less usenet grab must match; two is ambiguous and nothing is written.
 // A torrent grab is never a candidate.
@@ -137,7 +137,7 @@ func (c *Coordinator) adoptUsenetKey(ctx context.Context, grabs []grab, it downl
 }
 
 // rekeyRetriedUsenetJobs follows a usenet job SABnzbd re-created under a new id. Retrying a
-// failed job (Arrmada's Retry, or SABnzbd's own button) re-adds it from its saved NZB as a
+// failed job (Rock Media Center's Retry, or SABnzbd's own button) re-adds it from its saved NZB as a
 // new job, and the old id leaves the history: the grab would be judged vanished, and the
 // retried job — the one a person fixed a full disk for — untracked.
 //

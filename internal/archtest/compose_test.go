@@ -223,7 +223,7 @@ func TestComposeExampleMatchesCompose(t *testing.T) {
 	main := readCompose(t, filepath.Join(root, "docker-compose.yml"))
 	ex := readCompose(t, filepath.Join(root, "docker-compose.example.yml"))
 
-	const published = "ghcr.io/tristenlammi/arrmada:stable"
+	const published = "ghcr.io/blaircullen/rock-media-center:stable"
 	if !strings.HasSuffix(main["arrmada-app"].image, published+"}") {
 		t.Errorf("docker-compose.yml's app image %q no longer defaults to %s", main["arrmada-app"].image, published)
 	}

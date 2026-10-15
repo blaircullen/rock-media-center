@@ -111,7 +111,7 @@ func TestAuthorizationHeader(t *testing.T) {
 	}
 	r, _ := f.last()
 	got := authParts(t, r.Header.Get("Authorization"))
-	want := map[string]string{"Token": "the-api-key", "Client": "Arrmada", "Device": "Arrmada", "DeviceId": "dev-1", "Version": "0.9.1"}
+	want := map[string]string{"Token": "the-api-key", "Client": "Rock Media Center", "Device": "Rock Media Center", "DeviceId": "dev-1", "Version": "0.9.1"}
 	for k, v := range want {
 		if got[k] != v {
 			t.Errorf("%s = %q, want %q (header %q)", k, got[k], v, r.Header.Get("Authorization"))
@@ -323,7 +323,7 @@ func TestSessionsDirectPlayFixture(t *testing.T) {
 	if !s.Playing() || ss[1].Playing() {
 		t.Fatalf("playing = %v / %v", s.Playing(), ss[1].Playing())
 	}
-	if s.UserName != "ituser" || s.UserID == "" || s.Client != "Arrmada" || s.DeviceName != "Arrmada" || s.RemoteEndPoint != "172.21.0.3" || s.ID == "" {
+	if s.UserName != "ituser" || s.UserID == "" || s.Client != "Rock Media Center" || s.DeviceName != "Rock Media Center" || s.RemoteEndPoint != "172.21.0.3" || s.ID == "" {
 		t.Errorf("identity = %+v", s)
 	}
 	ps := s.PlayState

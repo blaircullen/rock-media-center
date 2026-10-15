@@ -106,7 +106,7 @@ func (a *api) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		// When a release is on both Usenet and torrents: best (the better release wins,
 		// the default), usenet or torrent (preferred between releases that score the same).
 		"download_network_preference": quality.NormalizeNetwork(a.deps.Settings.Get(ctx, quality.KeyNetworkPreference, quality.NetworkBest)),
-		// The address people reach Arrmada at from outside (https://arrmada.example.com):
+		// The address people reach Rock Media Center at from outside (https://arrmada.example.com):
 		// alerts link back with it and the calendar feed's link is built from it.
 		"app_public_url": a.deps.Settings.PublicURL(ctx),
 	})
@@ -207,7 +207,7 @@ func (a *api) adminSettingChange(ctx context.Context, req *settingsUpdate) strin
 	case req.QualityRanking != nil && strings.TrimSpace(*req.QualityRanking) != a.qualityRanking(ctx):
 		return "how releases are ranked"
 	case req.PublicURL != nil && publicURLChanged(*req.PublicURL, st.PublicURL(ctx)):
-		return "Arrmada's outside address"
+		return "Rock Media Center's outside address"
 	}
 	return ""
 }

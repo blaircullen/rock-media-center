@@ -349,9 +349,9 @@ func TestNormalizeState(t *testing.T) {
 	}
 }
 
-// The category sent to qBittorrent is the one Arrmada asked for, never the client's stored
+// The category sent to qBittorrent is the one Rock Media Center asked for, never the client's stored
 // one: a stored "movies" used to fill in for a blank category, and the movie importer only
-// reads Arrmada's own, so those movies downloaded and never imported.
+// reads Rock Media Center's own, so those movies downloaded and never imported.
 func TestAddCategoryComesFromTheRequestOnly(t *testing.T) {
 	var logins int32
 	var mu sync.Mutex

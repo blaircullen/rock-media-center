@@ -1,4 +1,4 @@
-// Package apikeys manages the external service credentials Arrmada uses — letting them be
+// Package apikeys manages the external service credentials Rock Media Center uses — letting them be
 // set inside the app rather than only through environment variables at install time.
 //
 // The resolution order is settings-first, env-fallback: a value saved in the settings menu
@@ -50,7 +50,7 @@ type Key struct {
 // ordinary preference.
 func (k Key) settingKey() string { return "apikey:" + k.ID }
 
-// Catalog is every credential Arrmada knows how to use, in display order.
+// Catalog is every credential Rock Media Center knows how to use, in display order.
 var Catalog = []Key{
 	{
 		ID: "tmdb", Label: "TMDB", Purpose: "Movie and TV metadata, artwork, and discovery. Required.",

@@ -67,7 +67,7 @@ type Options struct {
 	// or sent while it's false.
 	Configured func(ctx context.Context) bool
 	Settings   Settings
-	// Roots returns Arrmada's library folder per kind (KindMovie, KindShow), read live.
+	// Roots returns Rock Media Center's library folder per kind (KindMovie, KindShow), read live.
 	Roots func(ctx context.Context) map[string]string
 	Log   *slog.Logger
 	// Keys are the settings for the switch and the mappings (Plex's when empty).
@@ -100,7 +100,7 @@ type pending struct {
 
 type target struct{ section, path string }
 
-// Status is the last scan Arrmada asked Plex for.
+// Status is the last scan Rock Media Center asked Plex for.
 type Status struct {
 	At      time.Time `json:"at"`
 	Kind    string    `json:"kind,omitempty"`
@@ -229,7 +229,7 @@ func (s *Scanner) Save(ctx context.Context, enabled bool, maps []PathMap) error 
 			continue
 		}
 		if f == "" || t == "" {
-			return fmt.Errorf("each mapping needs both an Arrmada folder and a %s folder", s.server)
+			return fmt.Errorf("each mapping needs both a Rock Media Center folder and a %s folder", s.server)
 		}
 		if !Absolute(f) || !Absolute(t) {
 			return fmt.Errorf("%q → %q: both sides must be full paths, like /movies or D:\\Media\\Movies", f, t)
@@ -257,7 +257,7 @@ func (s *Scanner) Save(ctx context.Context, enabled bool, maps []PathMap) error 
 	return nil
 }
 
-// Request asks for a scan of dir, a folder as Arrmada sees it, in a library of kind
+// Request asks for a scan of dir, a folder as Rock Media Center sees it, in a library of kind
 // (KindMovie or KindShow). It returns at once: the scan goes out from Run once the folder
 // has been quiet for the debounce window. A request inside a folder already waiting is
 // covered by it; a request for a parent folder replaces the waiting ones inside it.
@@ -645,7 +645,7 @@ func (s *Scanner) recordFailure(st Status, msg string, err error, attrs ...any) 
 		s.log.Debug(msg, attrs...)
 		return
 	}
-	s.log.Warn(msg+" (Arrmada will retry; imports are unaffected)", attrs...)
+	s.log.Warn(msg+" (Rock Media Center will retry; imports are unaffected)", attrs...)
 }
 
 func (s *Scanner) logOnce(key, msg string, attrs ...any) {
@@ -719,7 +719,7 @@ func (s *Scanner) Pending() int {
 	return len(s.pending)
 }
 
-// RootView is one Arrmada library folder and where its scans go.
+// RootView is one Rock Media Center library folder and where its scans go.
 type RootView struct {
 	Kind        string `json:"kind"`
 	ArrmadaRoot string `json:"arrmada_root"`

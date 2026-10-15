@@ -47,7 +47,7 @@ func (s *Service) invalidateTransports() {
 	s.transports.mu.Unlock()
 }
 
-// HasTransport reports whether an enabled client of transport t exists that Arrmada can
+// HasTransport reports whether an enabled client of transport t exists that Rock Media Center can
 // talk to (its kind has an implementation) — whether a release of that transport can be
 // downloaded at all. The answer is cached until a client is created, edited or deleted.
 // An unreadable client list answers false: nothing is offered that can't be sent.
@@ -457,7 +457,7 @@ func (s *Service) AddDownload(ctx context.Context, req AddRequest) (Added, error
 			unreachable = append(unreachable, fmt.Errorf("%s: no downloader for kind %q", c.Name, c.Kind))
 			continue
 		}
-		// The save path is Arrmada's downloads folder; a client that sees it under another
+		// The save path is Rock Media Center's downloads folder; a client that sees it under another
 		// path is sent its own name for it (no mappings: unchanged).
 		creq := req
 		creq.SavePath = c.PathMaps.ToRemote(req.SavePath)
@@ -537,7 +537,7 @@ func (s *Service) Remove(ctx context.Context, key string, deleteData bool) error
 	return s.onKey(ctx, key, func(impl Downloader, c Client) error { return impl.Remove(ctx, c, key, deleteData) })
 }
 
-// portManager is implemented by clients whose incoming port Arrmada manages.
+// portManager is implemented by clients whose incoming port Rock Media Center manages.
 type portManager interface {
 	SetListenPort(ctx context.Context, dc Client, port int) error
 	ListenPort(ctx context.Context, dc Client) (int, error)
@@ -556,13 +556,13 @@ func (s *Service) SetBundledPort(ctx context.Context, port int) error {
 	return nil // client kind has no managed port
 }
 
-// savePathManager is implemented by clients whose default save path Arrmada manages.
+// savePathManager is implemented by clients whose default save path Rock Media Center manages.
 type savePathManager interface {
 	SetSavePath(ctx context.Context, dc Client, savePath string) error
 }
 
 // SetBundledSavePath points the bundled client at the given downloads dir, so the client
-// and Arrmada agree on where files land (and stay on the shared volume for hardlinking).
+// and Rock Media Center agree on where files land (and stay on the shared volume for hardlinking).
 // No-op for client kinds without a managed save path; ErrBundledInactive when it's
 // switched off or removed.
 func (s *Service) SetBundledSavePath(ctx context.Context, savePath string) error {
@@ -610,7 +610,7 @@ func (s *Service) Pause(ctx context.Context, key string) error {
 var ErrNoCategories = errors.New("the download client can't change a torrent's category")
 
 // SetCategory files a download under another category on the client holding it. The
-// caller decides which categories are allowed (Arrmada's own); this only moves it.
+// caller decides which categories are allowed (Rock Media Center's own); this only moves it.
 func (s *Service) SetCategory(ctx context.Context, hash, category string) error {
 	defer s.invalidateSnapshot()
 	tried := false

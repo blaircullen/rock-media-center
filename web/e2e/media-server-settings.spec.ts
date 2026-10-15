@@ -124,7 +124,7 @@ test.describe("admin", () => {
     await expect(updates.getByText("/media/movies", { exact: true })).toBeVisible();
     await expect(updates.getByText(/library Films \(your mapping\)/)).toBeVisible();
     await updates.getByRole("button", { name: "Add mapping" }).click();
-    await updates.getByLabel("Arrmada folder").nth(1).fill("/tv");
+    await updates.getByLabel("Rock Media Center folder").nth(1).fill("/tv");
     await updates.getByLabel("Jellyfin folder").nth(1).fill("/media/tv");
     await updates.getByRole("button", { name: "Save mappings" }).click();
     await expect(updates.getByText("Saved.")).toBeVisible();

@@ -3,7 +3,7 @@ package jellyfinsvc
 // Live tests against a real Jellyfin, run by scripts/jellyfin-it.sh (ARRMADA_JELLYFIN_IT=1)
 // with the rig's synthetic library. Every test name contains "IT" so the script selects
 // them with -run IT. The rig mounts its media volume at /media (where Jellyfin sees it)
-// and again at ARRMADA_JELLYFIN_ARR (/arr), which plays Arrmada's own spelling of the same
+// and again at ARRMADA_JELLYFIN_ARR (/arr), which plays Rock Media Center's own spelling of the same
 // folders, so path mappings are exercised for real.
 
 import (
@@ -41,7 +41,7 @@ func liveRig(t *testing.T) itRig {
 	return r
 }
 
-// liveService is a connected service over in-memory settings, with Arrmada's folders at
+// liveService is a connected service over in-memory settings, with Rock Media Center's folders at
 // root (movies, TV).
 func liveService(t *testing.T, r itRig, movies, tv string) (*Service, *memSettings) {
 	t.Helper()
@@ -109,7 +109,7 @@ func TestIT_SvcIndexLocates(t *testing.T) {
 	}
 	find("series", mediaserver.ExternalIDs{Folder: r.media + "/TV/Breaking Bad (2008) {tvdb-81189}"})
 	if r.arr != "" {
-		// Arrmada's /arr/Movies is Jellyfin's /media/Movies: guessed from the folder name…
+		// Rock Media Center's /arr/Movies is Jellyfin's /media/Movies: guessed from the folder name…
 		s.roots = func(context.Context) map[string]string {
 			return map[string]string{plexscan.KindMovie: r.arr + "/Movies", plexscan.KindShow: r.arr + "/TV"}
 		}
@@ -140,8 +140,8 @@ func TestIT_SvcIndexLocates(t *testing.T) {
 	}
 }
 
-// A newly imported folder, reported through the scanner with a path mapping (Arrmada's
-// /arr is Jellyfin's /media), becomes locatable once Jellyfin's wait is over; an Arrmada
+// A newly imported folder, reported through the scanner with a path mapping (Rock Media Center's
+// /arr is Jellyfin's /media), becomes locatable once Jellyfin's wait is over; a Rock Media Center
 // recycle bin and a hidden-folder marker in the same report never show up.
 func TestIT_SvcScanNewFolder(t *testing.T) {
 	r := liveRig(t)
@@ -164,14 +164,14 @@ func TestIT_SvcScanNewFolder(t *testing.T) {
 
 	base := 910_000_000 + int(time.Now().Unix()%1_000_000)*10
 	visible := writeMovie(t, r.arr+"/Movies", "Arrival Five", base)
-	// A recycle bin made the way Arrmada makes it, with a deleted film in it…
+	// A recycle bin made the way Rock Media Center makes it, with a deleted film in it…
 	bins := &library.RootBins{Roots: func() []libroots.Root { return []libroots.Root{{Name: "movies", Path: r.arr + "/Movies"}} }}
 	bin, err := bins.For(filepath.Join(r.arr, "Movies", "x", "x.mkv"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	binned := writeMovie(t, bin, "Binned Six", base+1)
-	// …and a movie folder hidden by Arrmada's marker files alone (no dot in its name).
+	// …and a movie folder hidden by Rock Media Center's marker files alone (no dot in its name).
 	held := filepath.Join(r.arr, "Movies", fmt.Sprintf("Held Seven (2016) {tmdb-%d}", base+2))
 	if err := os.Mkdir(held, 0o755); err != nil {
 		t.Fatal(err)
@@ -199,7 +199,7 @@ func TestIT_SvcScanNewFolder(t *testing.T) {
 		t.Errorf("last scan %+v", st)
 	}
 	if _, ok := s.Locate(ctx, "movie", mediaserver.ExternalIDs{Folder: visible}); !ok {
-		t.Error("the new movie isn't found by its Arrmada folder")
+		t.Error("the new movie isn't found by its Rock Media Center folder")
 	}
 	// The hidden ones: not in Jellyfin even after a scan of every library.
 	c := s.Client(ctx)

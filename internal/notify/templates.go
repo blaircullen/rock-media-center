@@ -12,7 +12,7 @@ import (
 )
 
 // Message templates. Every alert's text is a template: by default "{message}\n{link}" —
-// the catalog's own wording, then a link that opens the item in Arrmada when the outside
+// the catalog's own wording, then a link that opens the item in Rock Media Center when the outside
 // address is set (Settings → System). A connection can override any event's template
 // with its own words ("🎬 {title} ({year}) is ready — {link}").
 //

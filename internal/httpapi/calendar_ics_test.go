@@ -49,7 +49,7 @@ func TestICSFormat(t *testing.T) {
 	}
 	unfolded := strings.ReplaceAll(out, "\r\n ", "")
 	for _, want := range []string{
-		"X-WR-CALNAME:Arrmada",
+		"X-WR-CALNAME:Rock Media Center",
 		"UID:arrmada-ep-11-2x5@arrmada.example.com",
 		"UID:arrmada-movie-21@arrmada.example.com",
 		"DTSTAMP:20261013T093000Z",

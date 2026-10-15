@@ -51,7 +51,7 @@ test.describe("admin", () => {
       { method: "GET", path: "/api/v1/setup/checklist", body: halfDone },
     ]);
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Welcome to Arrmada" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Welcome to Rock Media Center" })).toBeVisible();
     // No TMDB key at hand: the step says what that means and moves on to the folders, it
     // doesn't end setup.
     await expect(page.getByText(/No key yet\? Movies, TV and Discover find nothing until one is added/)).toBeVisible();
@@ -94,12 +94,12 @@ test.describe("admin", () => {
       { method: "POST", path: "/api/v1/setup/complete", body: { status: "ok" } },
     ]);
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Welcome to Arrmada" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Welcome to Rock Media Center" })).toBeVisible();
     await page.getByRole("button", { name: "Finish setup later" }).click();
     const dialog = page.getByRole("dialog", { name: "Finish setup later?" });
     await expect(dialog.getByText(/The TMDB key, library folders, a media server and indexers aren't set up yet/)).toBeVisible();
     await dialog.getByRole("button", { name: "Keep going" }).click();
-    await expect(page.getByRole("heading", { name: "Welcome to Arrmada" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Welcome to Rock Media Center" })).toBeVisible();
     expect(api.callsTo("POST", "/api/v1/setup/complete")).toHaveLength(0);
 
     await page.getByRole("button", { name: "Finish setup later" }).click();
@@ -118,7 +118,7 @@ test.describe("admin", () => {
       { method: "PUT", path: "/api/v1/system/library", body: blank },
     ]);
     await page.goto("/");
-    const optional = page.getByRole("region", { name: "Optional keys — Arrmada works without them" });
+    const optional = page.getByRole("region", { name: "Optional keys — Rock Media Center works without them" });
     await expect(optional).toBeVisible();
     await expect(optional.getByText("Optional", { exact: true })).toHaveCount(2);
     await expect(optional.getByRole("link", { name: /Get a free TheTVDB key/ })).toHaveAttribute("href", "https://thetvdb.com/api-information");

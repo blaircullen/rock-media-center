@@ -1,6 +1,6 @@
 import { test, expect } from "./mockApi";
 
-// MOV-08: Movies → Wanted says what Arrmada is still looking for and why, and Search all
+// MOV-08: Movies → Wanted says what Rock Media Center is still looking for and why, and Search all
 // queues the lot through the throttled movie search queue after a confirmation.
 test.describe("manager", () => {
   test.use({ persona: "manager" });

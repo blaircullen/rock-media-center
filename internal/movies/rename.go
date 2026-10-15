@@ -382,7 +382,7 @@ func (s *Service) moveTrackFile(ctx context.Context, m Movie, versions []Version
 }
 
 // folderSidecars are the files a movie folder holds for the film as a whole — the
-// metadata and artwork Arrmada (and Kodi/Jellyfin tools) write — which follow the film to
+// metadata and artwork Rock Media Center (and Kodi/Jellyfin tools) write — which follow the film to
 // its new folder. Anything else stays where it is.
 var folderSidecars = []string{
 	"movie.nfo", "poster.jpg", "fanart.jpg", "folder.jpg", "backdrop.jpg", "landscape.jpg",

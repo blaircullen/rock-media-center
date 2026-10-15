@@ -1,4 +1,4 @@
-// Package backup keeps regular copies of Arrmada's database: a nightly one on a schedule,
+// Package backup keeps regular copies of Rock Media Center's database: a nightly one on a schedule,
 // a manual one on request, and the safety copies other features take before something
 // they can't undo (deleting a user). Every copy is the store's checked VACUUM INTO
 // snapshot, kept next to the database under <data>/backups with a per-kind retention.
@@ -245,7 +245,7 @@ var ErrStaged = errors.New("this backup is staged to be restored at the next sta
 
 // StageRestore validates the backup called name and stages it to replace the database at
 // the next start. Nothing is staged for a backup that fails validation (damaged, not an
-// Arrmada database, or from a newer Arrmada).
+// Rock Media Center database, or from a newer Rock Media Center).
 func (s *Service) StageRestore(name, requestedBy string) (store.BackupInfo, error) {
 	if !validName(name) {
 		return store.BackupInfo{}, ErrBadName

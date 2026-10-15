@@ -255,7 +255,7 @@ func QueueItemFor(a Acquisition, byHash map[string]download.Item, queue []downlo
 }
 
 // untrackedQueue is the unfinished torrents in queue that no grab knows by info hash:
-// added by hand in the client, or by another tool. Arrmada's own downloads are matched
+// added by hand in the client, or by another tool. Rock Media Center's own downloads are matched
 // through the acquisition record; these are the only ones the sweeps still recognise by
 // name (untrackedMovie, seriesInFlightScope), so a title the user is already fetching
 // isn't grabbed a second time on top. An unreadable grabs table is an error — the callers

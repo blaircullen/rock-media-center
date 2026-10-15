@@ -6,7 +6,7 @@ import { Field } from "../../ui/Field";
 import { importApi } from "../../lib/importApi";
 import { TautulliImport } from "./TautulliImport";
 
-// Settings → Import & migrate (admin only): every one-time migration from the apps Arrmada
+// Settings → Import & migrate (admin only): every one-time migration from the apps Rock Media Center
 // replaces, in one place — request history from Overseerr and watch history from Tautulli.
 // Each is safe to run again.
 export function ImportSettings() {
@@ -19,7 +19,7 @@ export function ImportSettings() {
 }
 
 // OverseerrImport is the one-time migration: pull an existing Overseerr/Jellyseerr
-// request history into Arrmada's Requests. Runs in the background on the server.
+// request history into Rock Media Center's Requests. Runs in the background on the server.
 function OverseerrImport() {
   const [url, setUrl] = useState("");
   const [key, setKey] = useState("");
@@ -41,7 +41,7 @@ function OverseerrImport() {
   };
 
   return (
-    <Section id="overseerr-import" title="Import from Overseerr / Jellyseerr" subtitle="Migrating in? Pull your existing request history into Arrmada's Requests, then retire the old container. Approved/available titles are added to the library for the regular searches to pick up; pending ones become pending requests here. It's quiet: nobody gets a notification for an old request. Each request is attributed to its Plex requester — a Plex-linked account is created for them, so when they Sign in with Plex they see their own history. Safe to run more than once — anything already requested is skipped.">
+    <Section id="overseerr-import" title="Import from Overseerr / Jellyseerr" subtitle="Migrating in? Pull your existing request history into Rock Media Center's Requests, then retire the old container. Approved/available titles are added to the library for the regular searches to pick up; pending ones become pending requests here. It's quiet: nobody gets a notification for an old request. Each request is attributed to its Plex requester — a Plex-linked account is created for them, so when they Sign in with Plex they see their own history. Safe to run more than once — anything already requested is skipped.">
       <Field label="Overseerr / Jellyseerr URL">
         <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="http://192.168.50.247:5055" className={input} style={inputStyle} autoComplete="off" />
       </Field>

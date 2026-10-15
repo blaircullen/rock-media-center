@@ -19,7 +19,7 @@ func (a *api) handleCheckFormats(w http.ResponseWriter, r *http.Request) {
 	a.writeJSON(w, http.StatusOK, quality.CheckFormats(req.CustomFormats))
 }
 
-// handleImportTrash converts pasted TRaSH custom-format JSON into Arrmada formats, with a
+// handleImportTrash converts pasted TRaSH custom-format JSON into Rock Media Center formats, with a
 // warning for everything that couldn't be carried over. Nothing is saved: the editor adds
 // the chosen formats to the profile being edited, and saving the profile keeps them.
 func (a *api) handleImportTrash(w http.ResponseWriter, r *http.Request) {

@@ -53,7 +53,7 @@ func fetchNZBPayload(ctx context.Context, idx Indexer, downloadURL string) (Fetc
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
-		return FetchResult{}, fmt.Errorf("%s gave an NZB link Arrmada can't read", idx.Name)
+		return FetchResult{}, fmt.Errorf("%s gave an NZB link Rock Media Center can't read", idx.Name)
 	}
 	resp, err := client.Do(req)
 	if err != nil {

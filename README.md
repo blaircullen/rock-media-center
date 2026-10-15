@@ -2,22 +2,22 @@
 
 <img src="web/public/icon-512.png" alt="" width="96" height="96">
 
-# Arrmada
+# Rock Media Center
 
 **Your whole media server in one app — movies, TV, music and requests, without the `*arr` stack.**
 
-[Install](#install) · [Features](docs/features.md) · [Docs](#documentation) · [Issues](https://github.com/tristenlammi/Arrmada/issues)
+[Install](#install) · [Features](docs/features.md) · [Docs](#documentation) · [Issues](https://github.com/blaircullen/rock-media-center/issues)
 
-<img src="docs/images/series-detail.png" alt="A TV series in Arrmada: seasons, episodes and what it's searching for" width="900">
+<img src="docs/images/series-detail.png" alt="A TV series in Rock Media Center: seasons, episodes and what it's searching for" width="900">
 
 </div>
 
-Arrmada finds, downloads and organises your movies and TV, lets your
+Rock Media Center finds, downloads and organises your movies and TV, lets your
 household request what they want to watch, and keeps your Plex or Jellyfin library tidy — with one
 database and one web page instead of half a dozen apps. qBittorrent comes with it, already
 set up.
 
-> **Early days:** Arrmada is under active development (v0.x). Expect rough edges, and keep
+> **Early days:** Rock Media Center is under active development (v0.x). Expect rough edges, and keep
 > backups.
 
 ## What it does
@@ -37,10 +37,10 @@ You need a Linux server with Docker and Docker Compose (on Unraid: the **Docker 
 Manager** plugin). On the server, run:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/blaircullen/rock-media-center/main/install.sh | sh
 ```
 
-It asks where to keep Arrmada's files and where your media lives (press Enter to accept the
+It asks where to keep Rock Media Center's files and where your media lives (press Enter to accept the
 suggestions), then starts everything. Open the address it prints —
 **`http://<your-server>:7878`** — create your admin account, and a short setup walks you
 through the rest in the browser: your free TMDB key, your library folders, your media server (Plex, Jellyfin or both) and indexers.
@@ -52,7 +52,7 @@ through the rest in the browser: your free TMDB key, your library folders, your 
 In an empty folder on the server:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/docker-compose.example.yml -o docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/blaircullen/rock-media-center/main/docker-compose.example.yml -o docker-compose.yml
 ```
 
 Edit the lines marked `←` (your media folder, the user and group, your timezone, the port),
@@ -68,11 +68,11 @@ Using Portainer? The same file works as a stack: [Using Portainer →](docs/inst
 Run the same line again:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/blaircullen/rock-media-center/main/install.sh | sh
 ```
 
-It backs up the database, updates, and checks Arrmada comes back — if the new version doesn't
-start, it goes back to the one you had. (In Arrmada's folder, `sh update.sh` does the same.)
+It backs up the database, updates, and checks Rock Media Center comes back — if the new version doesn't
+start, it goes back to the one you had. (In Rock Media Center's folder, `sh update.sh` does the same.)
 
 Installs follow the **stable** channel: updates bring the latest published release, never
 unreleased code. Developers can follow **main** instead, the newest code compiled on the
@@ -118,13 +118,13 @@ server ([Following main](docs/updating.md#following-main-developers)).
 | [Configuration](docs/configuration.md) | Ports, `.env`, media folders and hardlinks, recycle bin, reverse proxies |
 | [Backups](docs/backups.md) | Backups, restoring, a forgotten admin password |
 | [Troubleshooting](docs/troubleshooting.md) | Common problems and fixes |
-| [Features](docs/features.md) | Everything Arrmada does |
+| [Features](docs/features.md) | Everything Rock Media Center does |
 | [Development](docs/development.md) | Building and testing it yourself |
 | [Releasing](docs/releasing.md) | For maintainers |
 
 ## Contributing
 
-Bug reports and ideas are welcome in [Issues](https://github.com/tristenlammi/Arrmada/issues).
+Bug reports and ideas are welcome in [Issues](https://github.com/blaircullen/rock-media-center/issues).
 For code, see [Development](docs/development.md) — please open an issue before a big change.
 
 ## License

@@ -179,7 +179,7 @@ test.describe("title addresses on a phone", () => {
     await poster.tap();
     await expect(page).toHaveURL(/\/discover\/movie\/1004$/);
     await expect(page.getByRole("dialog", { name: "Iron Tide" })).toBeVisible();
-    await expect(page).toHaveTitle("Iron Tide · Arrmada");
+    await expect(page).toHaveTitle("Iron Tide · Rock Media Center");
 
     await page.goBack();
     await expect(page.getByRole("dialog")).toHaveCount(0);

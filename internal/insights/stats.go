@@ -430,7 +430,7 @@ type WatchedTitle struct {
 // RecentlyWatchedByUser returns the distinct titles a person has recently watched, most
 // recent first — the watch-history seed for the personalized "Recommended for you" row.
 // userIDs are the person's ids on the media servers: the numeric Plex account id (what the
-// Plex-login flow stores on the Arrmada user as plex_id) and/or their Jellyfin user id,
+// Plex-login flow stores on the Rock Media Center user as plex_id) and/or their Jellyfin user id,
 // which is what sessions key on; plays on either count. Episodes collapse to their show
 // title so one binge is one seed.
 func (s *Service) RecentlyWatchedByUser(ctx context.Context, limit int, userIDs ...string) ([]WatchedTitle, error) {

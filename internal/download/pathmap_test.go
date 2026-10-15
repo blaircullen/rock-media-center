@@ -234,7 +234,7 @@ func TestServiceAppliesPathMaps(t *testing.T) {
 	}
 }
 
-// TestPaths reads qBittorrent's preferences and says which paths Arrmada can see, with a
+// TestPaths reads qBittorrent's preferences and says which paths Rock Media Center can see, with a
 // mapping that would fix the ones it can't.
 func TestTestPathsReportsAndSuggests(t *testing.T) {
 	ctx := context.Background()
@@ -280,7 +280,7 @@ func TestTestPathsReportsAndSuggests(t *testing.T) {
 	if !rep.OK || rep.Suggestion != nil || !rep.Checks[0].Visible || rep.Checks[0].Local != downloads {
 		t.Fatalf("mapped report = %+v", rep)
 	}
-	if !strings.Contains(rep.Summary, "Arrmada sees it as "+downloads+" ✓") {
+	if !strings.Contains(rep.Summary, "Rock Media Center sees it as "+downloads+" ✓") {
 		t.Fatalf("summary = %q", rep.Summary)
 	}
 }
@@ -299,12 +299,12 @@ func TestSuggestMapping(t *testing.T) {
 	if rep.Suggestion == nil || rep.Suggestion.Remote != "/srv/torrents" {
 		t.Fatalf("suggestion = %+v", rep.Suggestion)
 	}
-	// Arrmada's downloads folder inside the data dir is never suggested.
+	// Rock Media Center's downloads folder inside the data dir is never suggested.
 	rep = checkPaths(c, "/srv/torrents", newest, PathEnv{Downloads: downloads, DataDir: root})
 	if rep.Suggestion != nil {
 		t.Fatalf("suggested a mapping into the data dir: %+v", rep.Suggestion)
 	}
-	// A newest download missing from a folder Arrmada can see was moved or deleted: shown,
+	// A newest download missing from a folder Rock Media Center can see was moved or deleted: shown,
 	// but no mapping problem.
 	saveDir := filepath.Join(root, "seen")
 	if err := os.MkdirAll(saveDir, 0o755); err != nil {

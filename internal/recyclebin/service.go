@@ -1,4 +1,4 @@
-// Package recyclebin manages Arrmada's recycle bins — the folders deleted/replaced files are
+// Package recyclebin manages Rock Media Center's recycle bins — the folders deleted/replaced files are
 // moved to instead of being hard-deleted (movie & episode deletes). There
 // can be several: one on each library folder, so recycling is a rename on the same drive, plus
 // the old shared bin while it still holds files. It reports how much they're holding, empties

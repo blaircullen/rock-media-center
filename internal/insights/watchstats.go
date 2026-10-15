@@ -29,7 +29,7 @@ type WatchStats struct {
 }
 
 // WatchStats sums up a title's plays. media is "movie" or "series"; ids find the title's
-// Plex rating key through the library index; title and year are Arrmada's names for it,
+// Plex rating key through the library index; title and year are Rock Media Center's names for it,
 // used (with Plex's own, when the index knows it) for plays recorded under another key.
 //
 // Jellyfin plays count too: the Jellyfin library index finds the title's item id, which is

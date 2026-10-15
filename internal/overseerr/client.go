@@ -1,5 +1,5 @@
 // Package overseerr is a read-only client for Overseerr / Jellyseerr, used to
-// migrate an existing request history into Arrmada's own Requests module. The two
+// migrate an existing request history into Rock Media Center's own Requests module. The two
 // apps share the same REST API shape, so one client covers both.
 package overseerr
 
@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// Item is one migrated request, mapped to Arrmada's model.
+// Item is one migrated request, mapped to Rock Media Center's model.
 type Item struct {
 	MediaType      string // "movie" | "series"
 	TMDBID         int

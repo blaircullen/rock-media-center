@@ -57,9 +57,9 @@ type SyncResult struct {
 
 // ProwlarrSync is what a sync needs.
 type ProwlarrSync struct {
-	URL    string // must be reachable from the Arrmada server, e.g. http://arrmada-prowlarr:9696
+	URL    string // must be reachable from the Rock Media Center server, e.g. http://arrmada-prowlarr:9696
 	APIKey string
-	// FlareSolverrURL is Arrmada's FlareSolverr, to add to Prowlarr as a proxy. Blank adds
+	// FlareSolverrURL is Rock Media Center's FlareSolverr, to add to Prowlarr as a proxy. Blank adds
 	// nothing.
 	FlareSolverrURL string
 	// AddFlareSolverrProxy adds the proxy to a Prowlarr that isn't the bundled one. An
@@ -77,7 +77,7 @@ const (
 // prowlarrNamePrefix starts the name of every row a sync creates.
 const prowlarrNamePrefix = "Prowlarr · "
 
-// bundledProwlarrHost is the compose service name of the Prowlarr Arrmada ships with.
+// bundledProwlarrHost is the compose service name of the Prowlarr Rock Media Center ships with.
 const bundledProwlarrHost = "arrmada-prowlarr"
 
 // errProwlarrEmpty is a sync that got an empty list while rows from Prowlarr exist. A
@@ -162,7 +162,7 @@ func (s *Service) BackfillProwlarrIDs(ctx context.Context, prowlarrURL string) (
 }
 
 // booksOnly is the scope a synced indexer whose only categories are books (7000s, and 3030
-// audiobooks) gets. Arrmada searches no books, so the indexer is never asked — scoping it
+// audiobooks) gets. Rock Media Center searches no books, so the indexer is never asked — scoping it
 // to nothing would read as "used for everything" and send it every movie search.
 const booksOnly = "book"
 
@@ -212,7 +212,7 @@ func mediaTypesFor(cats []prowlarrCategory) []string {
 	return out
 }
 
-// SyncProwlarr mirrors a Prowlarr's indexers into Arrmada as Torznab sources, so Arrmada
+// SyncProwlarr mirrors a Prowlarr's indexers into Rock Media Center as Torznab sources, so Rock Media Center
 // searches through Prowlarr's API instead of scraping sites itself.
 //
 // A sync owns only what it can know: a row's name, feed address, key and Prowlarr id.
@@ -265,17 +265,17 @@ func (s *Service) SyncProwlarr(ctx context.Context, o ProwlarrSync) (SyncResult,
 		s.resetStatus(ctx, id, false)
 	}
 
-	// FlareSolverr: the bundled Prowlarr is Arrmada's own, so it's pointed at Arrmada's
+	// FlareSolverr: the bundled Prowlarr is Rock Media Center's own, so it's pointed at Rock Media Center's
 	// FlareSolverr; any other Prowlarr only when asked. A failure here never undoes the
 	// indexer sync.
 	switch {
 	case o.FlareSolverrURL != "" && (isBundledProwlarr(base) || o.AddFlareSolverrProxy):
 		if err := s.ensureFlareSolverrProxy(ctx, base, o.APIKey, o.FlareSolverrURL); err != nil {
 			s.log.Warn("prowlarr: could not add the FlareSolverr proxy", "err", err)
-			res.Notes = append(res.Notes, "Couldn't add Arrmada's FlareSolverr to Prowlarr: "+err.Error())
+			res.Notes = append(res.Notes, "Couldn't add Rock Media Center's FlareSolverr to Prowlarr: "+err.Error())
 		}
 	case o.AddFlareSolverrProxy:
-		res.Notes = append(res.Notes, "FlareSolverr isn't set up in Arrmada, so it wasn't added to Prowlarr. Add its URL in Settings → Connections.")
+		res.Notes = append(res.Notes, "FlareSolverr isn't set up in Rock Media Center, so it wasn't added to Prowlarr. Add its URL in Settings → Connections.")
 	}
 	res.FlareSolverrReady = s.prowlarrHasFlareSolverr(ctx, base, o.APIKey)
 	return res, nil
@@ -437,7 +437,7 @@ func (s *Service) syncOff(ctx context.Context, tx *sql.Tx, e Indexer, note strin
 	return nil
 }
 
-// isBundledProwlarr reports whether base is the Prowlarr that ships with Arrmada.
+// isBundledProwlarr reports whether base is the Prowlarr that ships with Rock Media Center.
 func isBundledProwlarr(base string) bool {
 	u, err := url.Parse(base)
 	return err == nil && strings.EqualFold(u.Hostname(), bundledProwlarrHost)
@@ -464,7 +464,7 @@ func (s *Service) prowlarrHasFlareSolverr(ctx context.Context, base, key string)
 }
 
 // ensureFlareSolverrProxy makes sure Prowlarr has a FlareSolverr indexer proxy
-// pointing at flareURL (Arrmada's bundled FlareSolverr), creating the required
+// pointing at flareURL (Rock Media Center's bundled FlareSolverr), creating the required
 // tag and proxy if absent. Idempotent.
 func (s *Service) ensureFlareSolverrProxy(ctx context.Context, base, key, flareURL string) error {
 	if s.prowlarrHasFlareSolverr(ctx, base, key) {
@@ -503,7 +503,7 @@ func (s *Service) ensureFlareSolverrProxy(ctx context.Context, base, key, flareU
 			}
 		}
 	}
-	proxy["name"] = "FlareSolverr (Arrmada)"
+	proxy["name"] = "FlareSolverr (Rock Media Center)"
 	proxy["tags"] = []int{tagID}
 	_, err = prowlarrDo(ctx, base, key, http.MethodPost, "/api/v1/indexerproxy", proxy)
 	return err

@@ -76,6 +76,6 @@ func TestFailOverNowRefusesOthersTorrents(t *testing.T) {
 		t.Errorf("err = %v, want ErrNotOurDownload", err)
 	}
 	if h.ix.searchCount() != 0 {
-		t.Errorf("searched for a torrent Arrmada didn't grab")
+		t.Errorf("searched for a torrent Rock Media Center didn't grab")
 	}
 }

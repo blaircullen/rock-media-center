@@ -7,12 +7,12 @@ import (
 	"strings"
 )
 
-// A Jellyfin link is the Plex link's twin: the Jellyfin user's id (from the server Arrmada
+// A Jellyfin link is the Plex link's twin: the Jellyfin user's id (from the server Rock Media Center
 // is connected to) on the account, so "Sign in with Jellyfin" finds it, and the name it was
 // made with, for "Linked as <name>". Jellyfin passwords are never stored: signing in proves
 // who someone is once, and only the id is kept.
 
-// ErrJellyfinAlreadyLinked: the Jellyfin user is linked to another Arrmada account.
+// ErrJellyfinAlreadyLinked: the Jellyfin user is linked to another Rock Media Center account.
 type ErrJellyfinAlreadyLinked struct {
 	UserID   int64
 	Username string

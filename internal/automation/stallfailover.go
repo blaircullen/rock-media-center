@@ -242,7 +242,7 @@ func (c *Coordinator) judgeStall(ctx context.Context, g grab, queue []download.I
 	if ev := stallEvidenceOf(item, found); ev != "" && !settled {
 		return
 	}
-	// Gone for good — but if Arrmada already settled this download under another row (it
+	// Gone for good — but if Rock Media Center already settled this download under another row (it
 	// seeded out, was imported, removed or failed over), that is the answer: close quietly.
 	if !found && c.settleVanished(ctx, g, tick) {
 		return

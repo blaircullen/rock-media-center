@@ -9,7 +9,7 @@ export function titlePath(media: "movie" | "series", tmdbId: number): string {
 
 // refToPath is where a notification's reference leads: the exact title, or the request
 // itself. null for a reference it doesn't know (an old notice from before refs were
-// structured, or about a kind of title Arrmada no longer has), which leads nowhere.
+// structured, or about a kind of title Rock Media Center no longer has), which leads nowhere.
 //
 //   movie:603, movie:603:approved:1700000000      → /discover/movie/603
 //   series:1399, series:1399:r12:s3                → /discover/series/1399

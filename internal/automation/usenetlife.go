@@ -26,7 +26,7 @@ import (
 //     and another searched for on the stall check that sees it; a problem where SABnzbd
 //     writes is left for a person (Needs you), with nothing blocklisted.
 //   - It never seeds. Once imported, the job is archived in SABnzbd and the folder it was
-//     unpacked into deleted (ManageSeeding) — only inside the folders Arrmada may tidy.
+//     unpacked into deleted (ManageSeeding) — only inside the folders Rock Media Center may tidy.
 //   - A job that leaves SABnzbd's history before it was imported (archived by hand, or by
 //     another tool) is a vanished download, judged exactly as a vanished torrent is.
 
@@ -44,7 +44,7 @@ type usenetWatch struct {
 	// idle is, per usenet client, since when its waiting jobs have moved nothing.
 	idle map[int64]*usenetIdle
 	// leftovers are, per usenet client, the finished jobs whose folders were left behind
-	// since the last one Arrmada could tidy up.
+	// since the last one Rock Media Center could tidy up.
 	leftovers map[int64][]UsenetLeftover
 }
 
@@ -89,7 +89,7 @@ func (c *Coordinator) judgeUsenetJob(ctx context.Context, g grab, item download.
 }
 
 // reportUsenetFailure logs a failed usenet job once per grab and reason. A reason in no
-// wording Arrmada knows is logged with SABnzbd's own text: it is treated as the release's
+// wording Rock Media Center knows is logged with SABnzbd's own text: it is treated as the release's
 // fault, and the text is how a translated or new wording gets noticed.
 func (c *Coordinator) reportUsenetFailure(g grab, item download.Item, f UsenetFailure) {
 	c.usenet.mu.Lock()
@@ -107,7 +107,7 @@ func (c *Coordinator) reportUsenetFailure(g grab, item download.Item, f UsenetFa
 		c.log.Warn("automation: SABnzbd couldn't save a download — left for a person to fix, nothing blocklisted",
 			"release", g.Title, "reason", f.Reason, "sabnzbd_says", item.FailMessage)
 	case !f.Known:
-		c.log.Warn("automation: SABnzbd failed a download for a reason Arrmada doesn't recognise — treating it as a bad release. If SABnzbd isn't set to English its reasons are translated; English works best (SABnzbd → Config → General)",
+		c.log.Warn("automation: SABnzbd failed a download for a reason Rock Media Center doesn't recognise — treating it as a bad release. If SABnzbd isn't set to English its reasons are translated; English works best (SABnzbd → Config → General)",
 			"release", g.Title, "sabnzbd_says", item.FailMessage)
 	}
 }
@@ -259,7 +259,7 @@ func (c *Coordinator) UsenetIdle() []UsenetIdleClient {
 	return out
 }
 
-// UsenetLeftover is a finished job whose folder Arrmada left in place after archiving it.
+// UsenetLeftover is a finished job whose folder Rock Media Center left in place after archiving it.
 type UsenetLeftover struct {
 	Name   string
 	Detail string // why, as the client said it (the folder and the guard it failed)
@@ -293,7 +293,7 @@ func (c *Coordinator) clearUsenetLeftovers(clientID int64) {
 }
 
 // UsenetLeftoverReport is a usenet client whose finished jobs' folders keep being left
-// behind: Count of them since the last one Arrmada could tidy, the latest as Example.
+// behind: Count of them since the last one Rock Media Center could tidy, the latest as Example.
 type UsenetLeftoverReport struct {
 	ClientID int64
 	Count    int
@@ -321,7 +321,7 @@ func (c *Coordinator) UsenetLeftovers() []UsenetLeftoverReport {
 
 // cleanUpUsenetJob is seed clean-up for a finished usenet job: archive it in SABnzbd and,
 // once imported (deleteData), delete the folder it was unpacked into. A dismissed one's
-// files are kept: Arrmada never imported them.
+// files are kept: Rock Media Center never imported them.
 func (c *Coordinator) cleanUpUsenetJob(ctx context.Context, it download.Item, g grab, deleteData bool) {
 	kept, err := c.removeUsenetJob(ctx, it, deleteData)
 	if err != nil {
@@ -335,7 +335,7 @@ func (c *Coordinator) cleanUpUsenetJob(ctx context.Context, it download.Item, g 
 	case !deleteData:
 		what = "its files kept in the downloads folder"
 	case kept:
-		what = "its folder left in place (outside where Arrmada tidies up)"
+		what = "its folder left in place (outside where Rock Media Center tidies up)"
 	}
 	c.log.Info("seeding: cleared a usenet download from SABnzbd", "release", g.Title, "delete_data", deleteData, "folder_kept", kept)
 	c.addMediaEvent(ctx, &g, "removed", g.Title+" — usenet download cleared from SABnzbd after import, "+what)
@@ -354,7 +354,7 @@ func (c *Coordinator) clearFailedUsenetJob(ctx context.Context, it download.Item
 
 // removeUsenetJob takes a finished (or failed) usenet job out of its client for seed
 // clean-up. A finished job's folder goes with it when deleteData — but only from where
-// Arrmada may tidy up: a folder outside those is left (and noted), and the job archived
+// Rock Media Center may tidy up: a folder outside those is left (and noted), and the job archived
 // anyway, so it doesn't come round again every pass. kept reports a folder left behind.
 func (c *Coordinator) removeUsenetJob(ctx context.Context, it download.Item, deleteData bool) (kept bool, err error) {
 	err = c.dropTorrent(ctx, it.Hash, deleteData)

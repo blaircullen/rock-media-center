@@ -13,7 +13,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/library"
 )
 
-// History is one log of what Arrmada did to every title — grabs, imports, upgrades,
+// History is one log of what Rock Media Center did to every title — grabs, imports, upgrades,
 // failures, blocklists, removals, seed clean-ups — read from the per-title event tables
 // (movie_events, series_events, artist_events) that each detail page already shows on its
 // own. The Dashboard's "Recent activity" is the newest slice of the same feed. These are

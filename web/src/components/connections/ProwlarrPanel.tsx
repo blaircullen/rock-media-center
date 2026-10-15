@@ -8,7 +8,7 @@ import { useQuery } from "../../lib/query";
 // feeds (and from then on every hour). Re-syncing keeps what was set here; indexers
 // disabled or removed in Prowlarr are turned off. A blank key reuses the saved one.
 
-// isBundledProwlarr: the Prowlarr that ships with Arrmada, by its compose service name.
+// isBundledProwlarr: the Prowlarr that ships with Rock Media Center, by its compose service name.
 function isBundledProwlarr(u: string): boolean {
   try {
     return new URL(u).hostname.toLowerCase() === "arrmada-prowlarr";
@@ -29,7 +29,7 @@ export function ProwlarrPanel({ onSynced }: { onSynced: () => void }) {
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [uiUrl, setUiUrl] = useState("");
   const [uiMsg, setUiMsg] = useState<{ ok: boolean; msg: string } | null>(null);
-  // The bundled Prowlarr is Arrmada's own and always gets Arrmada's FlareSolverr; any other
+  // The bundled Prowlarr is Rock Media Center's own and always gets Rock Media Center's FlareSolverr; any other
   // Prowlarr is someone's own setup and is only changed when this box is ticked.
   const bundled = isBundledProwlarr(url);
   // Re-read after a sync (clicked or the hourly one) so "Last synced" stays current.
@@ -73,7 +73,7 @@ export function ProwlarrPanel({ onSynced }: { onSynced: () => void }) {
   };
 
   // Prowlarr's own UI as the user's browser reaches it (this host on the port Prowlarr is
-  // published on, or a saved address), not the internal name Arrmada uses to talk to it.
+  // published on, or a saved address), not the internal name Rock Media Center uses to talk to it.
   const prowlarrUI = prowlarrUILink(info.data, window.location);
   const port = info.data?.ui_port || "9696";
   const last = prowlarrLastSyncLine(info.data?.last_sync);
@@ -103,7 +103,7 @@ export function ProwlarrPanel({ onSynced }: { onSynced: () => void }) {
         </label>
       </div>
       <p className="mt-2.5 text-xs text-ink-faint">
-        The URL must be reachable from the Arrmada server. With the bundled Prowlarr (<code className="font-mono">docker compose --profile prowlarr up -d</code>) the default above works.
+        The URL must be reachable from the Rock Media Center server. With the bundled Prowlarr (<code className="font-mono">docker compose --profile prowlarr up -d</code>) the default above works.
       </p>
 
       <div className="mt-3 flex flex-col gap-1.5 rounded-lg p-3 text-sm" style={{ background: "var(--panel)", border: "1px solid var(--line)" }}>
@@ -135,7 +135,7 @@ export function ProwlarrPanel({ onSynced }: { onSynced: () => void }) {
       {!bundled && (
         <label className="mt-2.5 flex items-center gap-2 text-sm text-ink-dim">
           <input type="checkbox" checked={addProxy} onChange={(e) => setAddProxy(e.target.checked)} />
-          Add Arrmada's FlareSolverr to this Prowlarr
+          Add Rock Media Center's FlareSolverr to this Prowlarr
         </label>
       )}
 

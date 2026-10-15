@@ -53,7 +53,7 @@ export function PushPrompt({ onDone }: { onDone: () => void }) {
             <ol className="m-0 mt-1 list-decimal pl-5">
               <li>Tap the Share button in Safari.</li>
               <li>Choose <b>Add to Home Screen</b>.</li>
-              <li>Open Arrmada from the new icon and turn on notifications under Me.</li>
+              <li>Open Rock Media Center from the new icon and turn on notifications under Me.</li>
             </ol>
           </div>
         ) : (

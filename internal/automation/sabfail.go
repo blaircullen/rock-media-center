@@ -3,7 +3,7 @@ package automation
 import "strings"
 
 // A usenet job SABnzbd gave up on comes with its reason in plain text (fail_message), and
-// the reason decides what Arrmada does (docs/roadmap/USENET.md, decision 3):
+// the reason decides what Rock Media Center does (docs/roadmap/USENET.md, decision 3):
 //
 //   - Something wrong with the release — articles the provider doesn't have, damage the
 //     repair blocks can't cover, an archive that won't unpack or wants a password, a
@@ -33,7 +33,7 @@ type UsenetFailure struct {
 	Kind string // UsenetFailBadRelease | UsenetFailEnvironment
 	// Reason is the cause in a few plain words ("articles are missing from your provider").
 	Reason string
-	// Fix is what to do about an environment failure; "" for a bad release (Arrmada deals
+	// Fix is what to do about an environment failure; "" for a bad release (Rock Media Center deals
 	// with those itself).
 	Fix string
 	// Known is false when the reason matched none of SABnzbd's English wordings.

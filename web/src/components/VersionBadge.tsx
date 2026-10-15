@@ -35,7 +35,7 @@ export function VersionBadge({ onNavigate }: { onNavigate?: () => void }) {
           {badge.update && <span data-testid="update-dot" aria-hidden className="h-1.5 w-1.5 flex-none rounded-full" style={{ background: "var(--accent)" }} />}
         </Link>
       ) : (
-        <span title={badge.title} className={face}><span className="sr-only">Arrmada </span><span className="truncate">{badge.label}</span></span>
+        <span title={badge.title} className={face}><span className="sr-only">Rock Media Center </span><span className="truncate">{badge.label}</span></span>
       ))}
     </div>
   );

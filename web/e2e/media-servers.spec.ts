@@ -46,7 +46,7 @@ test.describe("admin", () => {
     const jf = section.locator("#jellyfin");
     await expect(plex.getByText("Connected", { exact: true })).toBeVisible();
     await expect(plex.getByText("Basement · watch monitoring on")).toBeVisible();
-    await expect(plex.getByRole("list", { name: "What Arrmada uses Plex for" })).toContainText("Watch links");
+    await expect(plex.getByRole("list", { name: "What Rock Media Center uses Plex for" })).toContainText("Watch links");
     await expect(jf.getByText("Not connected")).toBeVisible();
     await expect(jf.getByRole("button", { name: "Connect Jellyfin" })).toBeVisible();
     // Side by side: same row, Jellyfin to the right.
@@ -65,7 +65,7 @@ test.describe("admin", () => {
     await page.reload();
     await expect(jf.getByText("Attic · Jellyfin 10.10.3")).toBeVisible();
     await expect(jf.getByText("Connected", { exact: true })).toBeVisible();
-    await expect(jf.getByRole("list", { name: "What Arrmada uses Jellyfin for" })).toHaveText("Watch linksLibrary updatesInsights");
+    await expect(jf.getByRole("list", { name: "What Rock Media Center uses Jellyfin for" })).toHaveText("Watch linksLibrary updatesInsights");
     await jf.getByRole("button", { name: "Test" }).click();
     await expect(jf.getByRole("status")).toHaveText("✓ Connected");
     expect(api.callsTo("POST", "/api/v1/connections/jellyfin/default/test")).toHaveLength(1);

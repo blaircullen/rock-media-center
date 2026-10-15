@@ -23,7 +23,7 @@ import (
 // every indexer, download client, Prowlarr, FlareSolverr, metadata key, Plex and the alert
 // connections, each with how it has been answering. The list is
 // read from what's already known (the integration status tracker, Plex's poll record,
-// the alert delivery log) — loading the page never calls anything outside Arrmada. Only
+// the alert delivery log) — loading the page never calls anything outside Rock Media Center. Only
 // Test does, for the one connection asked about.
 
 // Kinds the status tracker doesn't define itself; connstatus has indexer, download_client,
@@ -73,7 +73,7 @@ type connectionItem struct {
 	Testable            bool              `json:"testable"`
 	ManagedBy           string            `json:"managed_by,omitempty"`
 	FixPath             string            `json:"fix_path,omitempty"` // where it's edited, when that isn't its card
-	// UsedFor is what Arrmada uses a media server for right now (watch, library, signin,
+	// UsedFor is what Rock Media Center uses a media server for right now (watch, library, signin,
 	// insights): only what's switched on and built, so the card's chips are true.
 	UsedFor []string `json:"used_for,omitempty"`
 }
@@ -325,7 +325,7 @@ func (a *api) downloadConnections(ctx context.Context, now time.Time) ([]connect
 		it.withState(st, now)
 		var notes []string
 		if c.Bundled {
-			notes = append(notes, "Comes with Arrmada")
+			notes = append(notes, "Comes with Rock Media Center")
 		}
 		if len(list) > 1 {
 			notes = append(notes, fmt.Sprintf("Order %d", c.Priority))
@@ -412,7 +412,7 @@ func (a *api) plexItem(ctx context.Context) connectionItem {
 		it.State, it.ConsecutiveFailures = connstatus.PhaseFailing, h.Consecutive
 		it.LastError, it.LastErrorAt, it.FailingSince = connstatus.Redact(h.LastErr), timePtr(h.LastErrAt), timePtr(h.FailingSince)
 		if h.Unauthorized {
-			it.Detail = "Plex rejected Arrmada's token; reconnect Plex"
+			it.Detail = "Plex rejected Rock Media Center's token; reconnect Plex"
 		}
 	case !h.LastOKAt.IsZero():
 		it.State = connstatus.PhaseOK
@@ -443,7 +443,7 @@ const (
 	useInsights = "insights" // what's played there is recorded
 )
 
-// plexUses is what Plex does for Arrmada right now.
+// plexUses is what Plex does for Rock Media Center right now.
 func (a *api) plexUses(ctx context.Context, monitoring bool) []string {
 	uses := []string{useWatch}
 	if a.deps.PlexScan != nil && a.deps.PlexScan.Enabled(ctx) {
@@ -474,7 +474,7 @@ func (a *api) jellyfinItem(ctx context.Context) connectionItem {
 		it.State, it.ConsecutiveFailures = connstatus.PhaseFailing, h.Consecutive
 		it.LastError, it.LastErrorAt, it.FailingSince = connstatus.Redact(h.LastErr), timePtr(h.LastErrAt), timePtr(h.FailingSince)
 		if h.Unauthorized {
-			it.Detail = "Jellyfin rejected Arrmada's API key; paste a new one"
+			it.Detail = "Jellyfin rejected Rock Media Center's API key; paste a new one"
 		}
 	case !h.LastOKAt.IsZero():
 		it.State = connstatus.PhaseOK
@@ -608,7 +608,7 @@ func (a *api) testConnection(ctx context.Context, kind, ref string) (detail stri
 		if err != nil {
 			return "", err, true
 		}
-		// Connected: now whether Arrmada can see where it saves. A client that can't
+		// Connected: now whether Rock Media Center can see where it saves. A client that can't
 		// report its paths (or whose preferences can't be read) is just "Connected".
 		rep, perr := a.clientPaths(ctx, id)
 		if perr != nil {

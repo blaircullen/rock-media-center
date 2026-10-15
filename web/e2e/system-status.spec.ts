@@ -25,7 +25,7 @@ test.describe("admin", () => {
     await expect(card.getByText("3 commits behind main.")).toBeVisible();
     await card.getByText("Newest release: v1.3.0").click();
     await expect(card.getByText("• Faster imports by @someone")).toBeVisible();
-    await expect(card.getByRole("link", { name: "v1.3.0 on GitHub →" })).toHaveAttribute("href", "https://github.com/tristenlammi/Arrmada/releases/tag/v1.3.0");
+    await expect(card.getByRole("link", { name: "v1.3.0 on GitHub →" })).toHaveAttribute("href", "https://github.com/blaircullen/rock-media-center/releases/tag/v1.3.0");
     await card.getByRole("switch", { name: "Check for updates" }).click();
     await expect(card.getByText("The update check is off.")).toBeVisible();
     await expect(card.getByRole("button", { name: "Check now" })).toBeDisabled();

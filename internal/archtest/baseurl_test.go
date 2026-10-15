@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// TestNoBaseURLSetting: Arrmada is served at the root of its own hostname or port. The
+// TestNoBaseURLSetting: Rock Media Center is served at the root of its own hostname or port. The
 // ARRMADA_BASE_URL sub-path option was removed (CFG-08) and FE-29 settled on keeping it
 // removed rather than finishing it: a sub-path would have to reach ~500 hard-coded
 // /api/v1 paths in the web app, the websocket, the service worker and manifest scope,
@@ -58,7 +58,7 @@ func TestNoBaseURLSetting(t *testing.T) {
 			return err
 		}
 		if strings.Contains(string(b), "ARRMADA_BASE_URL") {
-			t.Errorf("%s mentions ARRMADA_BASE_URL — sub-path hosting isn't supported; serve Arrmada at the root of its own hostname", rel)
+			t.Errorf("%s mentions ARRMADA_BASE_URL — sub-path hosting isn't supported; serve Rock Media Center at the root of its own hostname", rel)
 		}
 		return nil
 	})

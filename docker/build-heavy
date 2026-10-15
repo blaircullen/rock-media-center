@@ -57,12 +57,12 @@ fi
 rm -f "$log"
 cat >&2 <<EOF
 
-✗ This machine ran out of memory building Arrmada: the compiler was killed.
+✗ This machine ran out of memory building Rock Media Center: the compiler was killed.
   Building the image needs about 2 GB of memory free while it runs (4 GB is comfortable);
   this machine has ${total_mb} MB in all, ${avail_mb} MB of it free when this step began.
   You don't need to build at all — run the published image instead:
     a checkout started with plain compose:   docker compose up -d   (without --build)
-    an install made by install.sh:           ARRMADA_IMAGE=ghcr.io/tristenlammi/arrmada:stable
+    an install made by install.sh:           ARRMADA_IMAGE=ghcr.io/blaircullen/rock-media-center:stable
                                              in .env, then sh update.sh
   Or free some memory (stop other containers, add swap) and build again.
 

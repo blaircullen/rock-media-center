@@ -15,7 +15,7 @@ import (
 // The update to a build with fail-over on by default met months of rows still 'grabbed':
 // series grabs were never stall-checked before, and an older build re-grabbed a release
 // every day its import couldn't be matched, writing a new row each time. Their torrents had
-// long left the client — removed by Arrmada at their seed goal, by hand, or never imported
+// long left the client — removed by Rock Media Center at their seed goal, by hand, or never imported
 // at all — and every row failed over on its own, three every two minutes for hours: The
 // Expanse's complete pack nine times over, each with a blocklist line, a "failed" history
 // line and a search, for episodes that were already in the library.
@@ -115,7 +115,7 @@ func findQueuedGroup(queue []download.Item, g grab) (download.Item, bool) {
 
 // settleVanished settles a grab whose torrent has left the client the way another row for
 // the same download of the same title was already settled, and reports whether it did
-// (or must wait). That other row is what Arrmada knows about the torrent: it seeded out and
+// (or must wait). That other row is what Rock Media Center knows about the torrent: it seeded out and
 // was removed at its goal, was imported, was removed by the user, or was failed over
 // already. None of those is a download that disappeared, and failing it over again would
 // blocklist a release that did its job and search for what it already brought.

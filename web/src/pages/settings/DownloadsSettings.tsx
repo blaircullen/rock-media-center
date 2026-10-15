@@ -324,7 +324,7 @@ function DiskGuardSection() {
             </div>
           ) : (
             <div className="mt-1 text-sm" style={{ color: "var(--reject-text)" }}>
-              Arrmada can't read this folder's disk usage, so the guard will do nothing. Check the
+              Rock Media Center can't read this folder's disk usage, so the guard will do nothing. Check the
               path exists and is mounted into the container.
             </div>
           )}
@@ -340,7 +340,7 @@ function DiskGuardSection() {
 
       <AutoToggle
         label="Pause downloads when the disk gets full"
-        hint="Checked every minute. Only torrents Arrmada paused are resumed — anything you paused by hand stays paused."
+        hint="Checked every minute. Only torrents Rock Media Center paused are resumed — anything you paused by hand stays paused."
         save={on}
       />
       {on.value && (
@@ -396,7 +396,7 @@ function StallSection() {
     <Section
       id="stalled-downloads"
       title="Stalled downloads"
-      subtitle="When a download makes no progress for this long, Arrmada looks for another release. The stalled one is only removed once a replacement has been grabbed — with nothing else available it's left to keep trying. Time spent paused, queued by the client, rechecking or held by the disk guard doesn't count."
+      subtitle="When a download makes no progress for this long, Rock Media Center looks for another release. The stalled one is only removed once a replacement has been grabbed — with nothing else available it's left to keep trying. Time spent paused, queued by the client, rechecking or held by the disk guard doesn't count."
     >
       <AutoText label="Give up on a download with no progress after (hours)" save={hours} mono={false} inputMode="decimal" filter={(v) => v.replace(/[^0-9.]/g, "").slice(0, 5)}>
         <span className="text-xs text-ink-faint">0 = never. Quality profiles can set their own time, or turn it off.</span>

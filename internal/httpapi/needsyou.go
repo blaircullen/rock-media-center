@@ -18,7 +18,7 @@ import (
 // the TV category. Held imports keep Review's own actions (/api/v1/reviews/...).
 
 // handleRetryImport drops a failing import's back-off so the next import sweep tries the
-// download again at once — once the cause (a folder Arrmada can't write, a full disk) is
+// download again at once — once the cause (a folder Rock Media Center can't write, a full disk) is
 // fixed. 404 when the download isn't failing any more.
 //
 //	POST /api/v1/imports/{hash}/retry
@@ -93,11 +93,11 @@ func failOverMessage(out automation.FailOverResult) string {
 	return "No other release of " + out.Title + " was found — the download was left as it is."
 }
 
-// handleSetCategory files a finished download under one of Arrmada's own categories, so
+// handleSetCategory files a finished download under one of Rock Media Center's own categories, so
 // the import sweep for that kind picks it up: Needs you's "Move to TV" for a TV download
 // sitting where the series import never looks. Only a download the series sweep found
 // misfiled (a TV release matching a show in the library) can be moved, and only into
-// Arrmada's categories.
+// Rock Media Center's categories.
 //
 //	POST /api/v1/queue/{hash}/category  {category}
 func (a *api) handleSetCategory(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +113,7 @@ func (a *api) handleSetCategory(w http.ResponseWriter, r *http.Request) {
 	}
 	cats := download.FixedCategories(a.deps.Config.DownloadCategory)
 	if req.Category != cats.TV {
-		a.writeError(w, http.StatusBadRequest, "a download can only be moved into Arrmada's TV category ("+cats.TV+")")
+		a.writeError(w, http.StatusBadRequest, "a download can only be moved into Rock Media Center's TV category ("+cats.TV+")")
 		return
 	}
 	misfiled := false

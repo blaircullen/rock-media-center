@@ -1,6 +1,6 @@
 {
-  "name": "Arrmada",
-  "short_name": "Arrmada",
+  "name": "Rock Media Center",
+  "short_name": "Rock Media",
   "description": "Discover, request and listen",
   "start_url": "/discover",
   "scope": "/",

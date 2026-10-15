@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // Sign in with Plex, shared by the login page, the Plex card on Settings → Connections
-// (connecting the server) and linking a Plex account. Plex's sign-in is a PIN: Arrmada
-// starts one, the person approves it on plex.tv, and Arrmada polls the PIN until plex.tv
+// (connecting the server) and linking a Plex account. Plex's sign-in is a PIN: Rock Media Center
+// starts one, the person approves it on plex.tv, and Rock Media Center polls the PIN until plex.tv
 // says yes.
 //
 // Getting the person to plex.tv is the hard part on phones. Safari only allows a popup

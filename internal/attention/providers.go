@@ -162,7 +162,7 @@ func reviewReason(code string) string {
 // --- downloads -----------------------------------------------------------------------
 
 // StalledAfter is how long a download must have had nobody sending it data before it
-// needs someone. The stall fail-over replaces Arrmada's own grabs on a longer clock; this
+// needs someone. The stall fail-over replaces Rock Media Center's own grabs on a longer clock; this
 // is the earlier "worth a look".
 const StalledAfter = time.Hour
 
@@ -170,7 +170,7 @@ type downloadsProvider struct {
 	mu sync.Mutex
 	// stalledSince is when each torrent was first seen stalled in this run, by lowercased
 	// hash. The acquisition record's stall clock (progress_at) can push it earlier, so a
-	// restart doesn't reset an Arrmada grab's hour.
+	// restart doesn't reset a Rock Media Center grab's hour.
 	stalledSince map[string]time.Time
 }
 
@@ -243,12 +243,12 @@ func (p *downloadsProvider) Collect(_ context.Context, f *Frame) ([]Item, error)
 	return out, nil
 }
 
-// usenetFailure is the item for a usenet job SABnzbd failed. One Arrmada grabbed that
+// usenetFailure is the item for a usenet job SABnzbd failed. One Rock Media Center grabbed that
 // failed for the release's sake has none: the next stall check blocklists it and searches
 // for another on its own, and an alert in between would only announce what's already being
 // handled. One that failed where SABnzbd writes (a full disk, a folder it can't write) is
 // an error with the fix in plain words — nothing retries it until someone does. Anything
-// else (a job Arrmada didn't grab) is shown with SABnzbd's own reason.
+// else (a job Rock Media Center didn't grab) is shown with SABnzbd's own reason.
 func usenetFailure(it download.Item, name, h string, f *Frame) (Item, bool) {
 	fail := automation.ClassifyUsenetFailure(it.FailMessage)
 	grabbed := f.grabbed(h)
@@ -267,7 +267,7 @@ func usenetFailure(it download.Item, name, h string, f *Frame) (Item, bool) {
 	return x, true
 }
 
-// grabbed reports whether an Arrmada grab recorded the torrent (lowercased hash h) and
+// grabbed reports whether a Rock Media Center grab recorded the torrent (lowercased hash h) and
 // is still downloading it — what Needs you can try another release for.
 func (f *Frame) grabbed(h string) bool {
 	a, ok := f.Acq[h]
@@ -392,8 +392,8 @@ func (p wrongCatProvider) Collect(_ context.Context, f *Frame) ([]Item, error) {
 		}
 		x := Item{Key: KindWrongCat + ":" + h, Kind: KindWrongCat, Level: LevelWarning, Name: it.Name, Hash: h, Grabbed: f.grabbed(h),
 			Title: it.Name + " finished in " + cat,
-			Detail: "Arrmada only imports TV from “" + download.CategoryTV + "”: set the category in qBittorrent, " +
-				"or grab it again through Arrmada"}
+			Detail: "Rock Media Center only imports TV from “" + download.CategoryTV + "”: set the category in qBittorrent, " +
+				"or grab it again through Rock Media Center"}
 		linkTo(&x, health.FixWrongCategory)
 		out = append(out, x)
 	}

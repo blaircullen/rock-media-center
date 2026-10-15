@@ -22,13 +22,13 @@ export const SECTIONS: readonly SettingsSection[] = [
   { id: "downloads", label: "Downloads", adminOnly: true },
   // Managers see the alert connections read-only; only admins change them.
   { id: "alerts", label: "Alerts", adminOnly: false },
-  // How Arrmada uses each media server (Plex, Jellyfin): library updates and watch
+  // How Rock Media Center uses each media server (Plex, Jellyfin): library updates and watch
   // monitoring for managers, sign-in and linked accounts for admins. The connections
   // themselves are the media server cards on Connections. It was "Plex" (/settings/plex).
   { id: "media-servers", label: "Media servers", adminOnly: false },
   // The old Users section: one list of everyone with their access (CFG-18).
   { id: "users", label: "People & access", adminOnly: true },
-  // Every one-time migration from the apps Arrmada replaces.
+  // Every one-time migration from the apps Rock Media Center replaces.
   { id: "import", label: "Import & migrate", adminOnly: true },
   { id: "system", label: "System", adminOnly: true },
   // Slot for System → Status (pages/settings/Status.tsx, built by the health work).

@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// A Quick Connect sign-in: Arrmada asks Jellyfin for a code, the person types it into a
+// A Quick Connect sign-in: Rock Media Center asks Jellyfin for a code, the person types it into a
 // Jellyfin app they're already signed in to, and the request's secret then trades for a
 // sign-in. The secret is the credential — Jellyfin keeps honouring an approved one until
 // it expires — so it never leaves the server: the browser gets the code to show and a

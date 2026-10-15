@@ -80,7 +80,7 @@ const OPTIONAL_KEYS: OptionalKey[] = [
 ];
 
 // The answer to a pre-save key check, for the value it was asked about. unasked: the check
-// itself couldn't be made (Arrmada unreachable, no test for that key here), which says
+// itself couldn't be made (Rock Media Center unreachable, no test for that key here), which says
 // nothing about the key, so it never stands in the way of saving.
 interface KeyCheck { value: string; ok: boolean; detail: string; busy?: boolean; unasked?: boolean }
 type Answer = { ok: boolean; detail: string };
@@ -238,7 +238,7 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
     // Passing this step with no library folder at all is allowed, but never by accident.
     if (folders && !folders.movies.trim() && !folders.tv.trim() && !folders.downloads.trim() && !(await confirm({
       title: "Continue without library folders?",
-      body: "Arrmada can't find, download or import anything until Movies, TV and Downloads each have a folder. You can pick them later in Settings → Library.",
+      body: "Rock Media Center can't find, download or import anything until Movies, TV and Downloads each have a folder. You can pick them later in Settings → Library.",
       confirmLabel: "Continue without them",
       cancelLabel: "Pick folders",
     }))) return;
@@ -316,7 +316,7 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
 
       {step === "keys" && (
         <>
-          <h1 className="m-0 text-2xl font-bold">{rerun ? "Run setup again" : "Welcome to Arrmada"}</h1>
+          <h1 className="m-0 text-2xl font-bold">{rerun ? "Run setup again" : "Welcome to Rock Media Center"}</h1>
           <p className="mb-4 mt-1 text-md text-ink-dim">
             {rerun ? "What's already set is shown; change anything, or carry on to the next step." : "A few quick steps and you're ready. Everything here can be changed later in Settings."}
           </p>
@@ -336,7 +336,7 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
           <CheckLine provider="TMDB" check={checks.tmdb} value={typed("tmdb")} />
 
           <section aria-labelledby="setup-optional-keys" className="mt-5 border-t pt-4" style={{ borderColor: "var(--line)" }}>
-            <h2 id="setup-optional-keys" className="m-0 text-md font-bold">Optional keys — Arrmada works without them</h2>
+            <h2 id="setup-optional-keys" className="m-0 text-md font-bold">Optional keys — Rock Media Center works without them</h2>
             <p className="mb-3 mt-0.5 text-sm text-ink-dim">Add them now or later in Settings → Connections.</p>
             <div className="flex flex-col gap-3">
               {OPTIONAL_KEYS.map((k) => (
@@ -380,7 +380,7 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
           </p>
           {managedOnly && (
             <div className="mb-3 rounded-lg p-2.5 text-sm" style={{ border: "1px solid var(--avoid)", color: "var(--avoid-text)" }}>
-              Arrmada is using its own managed storage — no media folder was given at install. To use your existing library, run the install line again on the server with <code className="font-mono">--media</code> and your media folder, for example <code className="font-mono">… | sh -s -- --media /mnt/user/data</code>. It mounts the folder and restarts Arrmada; then pick each library here.
+              Rock Media Center is using its own managed storage — no media folder was given at install. To use your existing library, run the install line again on the server with <code className="font-mono">--media</code> and your media folder, for example <code className="font-mono">… | sh -s -- --media /mnt/user/data</code>. It mounts the folder and restarts Rock Media Center; then pick each library here.
             </div>
           )}
           <div className="flex flex-col gap-2.5">
@@ -468,7 +468,7 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
           {usesPlex(choice) && (
             <section aria-labelledby="setup-plex-title" className="mt-5 flex flex-col gap-1">
               <h2 id="setup-plex-title" className="m-0 flex items-center gap-2 text-md font-bold"><ServerTile server="plex" size={22} /> Plex</h2>
-              <p className="m-0 text-sm text-ink-dim">Sign in with Plex and Arrmada finds your own server — never one someone else shared with you.</p>
+              <p className="m-0 text-sm text-ink-dim">Sign in with Plex and Rock Media Center finds your own server — never one someone else shared with you.</p>
               {state.plex_connected && (
                 <p role="status" className="m-0 text-base font-semibold" style={{ color: "var(--good-text)" }}>
                   ✓ Connected{state.plex_server ? ` to ${state.plex_server}` : ""}
@@ -525,7 +525,7 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
         <>
           <h1 className="m-0 text-2xl font-bold">Where releases come from</h1>
           <p className="mb-3 mt-1 text-md text-ink-dim">
-            Arrmada searches indexers — your trackers — for releases. Sync them all from Prowlarr in one go, or add one tracker now and test it before it's saved. You can add more any time in Settings → Connections.
+            Rock Media Center searches indexers — your trackers — for releases. Sync them all from Prowlarr in one go, or add one tracker now and test it before it's saved. You can add more any time in Settings → Connections.
           </p>
           {(state.indexers_enabled ?? 0) > 0 && (
             <p role="status" className="m-0 mb-3 text-base font-semibold" style={{ color: "var(--good-text)" }}>
@@ -577,8 +577,8 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
           <h1 className="m-0 text-2xl font-bold">{state.restart_needed ? "One restart to go" : "Here's where you are"}</h1>
           {state.restart_needed ? (
             <p className="mt-1 text-md text-ink-dim">
-              Arrmada needs to restart to start using the new folders for downloads and imports.
-              {state.can_restart ? " It takes a few seconds." : " Restart the Arrmada container the way you started it (for example docker compose restart arrmada-app)."}
+              Rock Media Center needs to restart to start using the new folders for downloads and imports.
+              {state.can_restart ? " It takes a few seconds." : " Restart the Rock Media Center container the way you started it (for example docker compose restart arrmada-app)."}
             </p>
           ) : (
             <p className="mt-1 text-md text-ink-dim">
@@ -598,7 +598,7 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
             {restartFirst ? (
               <Button variant="primary" onClick={restart} busy={busy} busyLabel={restarting ? "Restarting…" : "Saving…"}>Restart and finish</Button>
             ) : (
-              <Button variant="primary" onClick={() => finish()} busy={busy} busyLabel="Saving…">{rerun ? "Done" : "Open Arrmada"}</Button>
+              <Button variant="primary" onClick={() => finish()} busy={busy} busyLabel="Saving…">{rerun ? "Done" : "Open Rock Media Center"}</Button>
             )}
           </div>
         </>
@@ -632,7 +632,7 @@ function Frame({ children, after }: { children: React.ReactNode; after?: ReactNo
           <span className="grid h-[30px] w-[30px] place-items-center rounded-lg" style={{ background: "linear-gradient(150deg, var(--accent), var(--accent-deep))", color: "var(--accent-ink)" }}>
             <FleetMark className="h-[17px] w-[17px]" />
           </span>
-          <span className="text-lg font-extrabold tracking-[0.12em]">ARRMADA</span>
+          <span className="text-lg font-extrabold tracking-[0.12em]">ROCK MEDIA</span>
         </div>
         <div className="rounded-2xl p-6" style={{ background: "var(--panel)", border: "1px solid var(--line)", boxShadow: "var(--shadow)" }}>{children}</div>
         {after && <div className="mt-3 flex justify-center">{after}</div>}

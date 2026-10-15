@@ -24,7 +24,7 @@ func TestUnwantedItemStates(t *testing.T) {
 		avoidName        string // what the avoided list calls it
 		rejectPrefix     string
 	}{
-		{UnwantedFullDisc, "Film.2020.1080p.Blu-ray.AVC.DTS-HD.MA.5.1-GRP", "", "Full disc image", "A full Blu-ray disc image — Arrmada can't import these"},
+		{UnwantedFullDisc, "Film.2020.1080p.Blu-ray.AVC.DTS-HD.MA.5.1-GRP", "", "Full disc image", "A full Blu-ray disc image — Rock Media Center can't import these"},
 		{UnwantedThreeD, "Film.2020.1080p.BluRay.Half-SBS.x264-GRP", "", "3D", "A 3D release"},
 		{UnwantedExtras, "Film.2020.EXTRAS.1080p.BluRay.x264-GRP", "", "Extras", "Extras or bonus material"},
 		{UnwantedUpscaled, "Film.2020.2160p.UPSCALED.WEB-DL.x265-GRP", "", "Upscaled", "Upscaled from a lower resolution"},

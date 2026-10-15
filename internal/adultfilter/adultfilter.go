@@ -1,6 +1,6 @@
-// Package adultfilter is Arrmada's shared adult-content safety net.
+// Package adultfilter is Rock Media Center's shared adult-content safety net.
 //
-// Arrmada is a family media manager: porn must never surface in indexer results,
+// Rock Media Center is a family media manager: porn must never surface in indexer results,
 // discovery rows, or search — on any source. This is a hardcoded, always-on
 // filter (not a toggle) so it can't be switched off by accident. It errs toward
 // blocking: a rare legitimate title that trips it can still be added by exact

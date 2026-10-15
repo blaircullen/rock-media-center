@@ -1,6 +1,6 @@
-# Arrmada with plain Docker Compose: no installer, no git. In an empty folder:
+# Rock Media Center with plain Docker Compose: no installer, no git. In an empty folder:
 #
-#   curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/docker-compose.example.yml -o docker-compose.yml
+#   curl -fsSL https://raw.githubusercontent.com/blaircullen/rock-media-center/main/docker-compose.example.yml -o docker-compose.yml
 #
 # change the lines marked ←, then `docker compose up -d` and open http://<server>:7878.
 # The first-run setup in the browser takes care of the rest (TMDB key, library folders,
@@ -21,7 +21,7 @@ x-you: &you
 
 services:
   arrmada-app:
-    image: ghcr.io/tristenlammi/arrmada:stable
+    image: ghcr.io/blaircullen/rock-media-center:stable
     container_name: Arrmada-app
     ports:
       - "7878:7878"        # ← the web page; change the left number if 7878 is taken (Radarr)
@@ -37,7 +37,7 @@ services:
       ARRMADA_SABNZBD_HOST_PORT: "8085"
       ARRMADA_QBIT_PORT: "6881"
     volumes:
-      # ← Where Arrmada keeps its database and settings (e.g. /mnt/user/appdata/arrmada/data
+      # ← Where Rock Media Center keeps its database and settings (e.g. /mnt/user/appdata/arrmada/data
       #   on Unraid). Its own folder, never your media. A full path: in a Portainer stack a
       #   relative one (./data) would land inside Portainer's own volume and go with the stack.
       - /path/to/arrmada/data:/data
@@ -47,7 +47,7 @@ services:
       #   mount media at /data — that's the database.
       - &media /path/to/your/media:/storage
       - arrmada-media:/media
-      # The optional SABnzbd's settings (below), read-only: Arrmada reads its API key here.
+      # The optional SABnzbd's settings (below), read-only: Rock Media Center reads its API key here.
       - arrmada-sab-config:/bundled/sabnzbd:ro
     depends_on:
       arrmada-media-init: { condition: service_completed_successfully }
@@ -55,8 +55,8 @@ services:
       arrmada-flaresolverr: { condition: service_started }
     restart: unless-stopped
 
-  # The download client, already wired up: the init container below lets Arrmada in
-  # without a password from the private Docker network, and Arrmada sets its folders.
+  # The download client, already wired up: the init container below lets Rock Media Center in
+  # without a password from the private Docker network, and Rock Media Center sets its folders.
   arrmada-qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:5.2.3
     container_name: Arrmada-qbittorrent
@@ -69,10 +69,10 @@ services:
       - arrmada-media:/media
     ports:
       # BitTorrent; forward it on your router (TCP and UDP). If you change it, change
-      # ARRMADA_QBIT_PORT above to match — Arrmada sets the same port inside qBittorrent.
+      # ARRMADA_QBIT_PORT above to match — Rock Media Center sets the same port inside qBittorrent.
       - "6881:6881"
       - "6881:6881/udp"
-      # qBittorrent's own web page isn't needed (Arrmada drives it); to peek, add
+      # qBittorrent's own web page isn't needed (Rock Media Center drives it); to peek, add
       # - "8080:8080"
     depends_on:
       arrmada-qbittorrent-init: { condition: service_completed_successfully }
@@ -88,7 +88,7 @@ services:
       LOG_LEVEL: "info"
     restart: unless-stopped
 
-  # One-shot: Arrmada's own downloads/library folders, owned by the user above.
+  # One-shot: Rock Media Center's own downloads/library folders, owned by the user above.
   arrmada-media-init:
     image: alpine:3.20
     container_name: Arrmada-media-init
@@ -135,7 +135,7 @@ services:
       - arrmada-qbt-config:/config
     restart: "no"
 
-  # Optional: Prowlarr, to manage indexers in one place ("Sync from Prowlarr" in Arrmada).
+  # Optional: Prowlarr, to manage indexers in one place ("Sync from Prowlarr" in Rock Media Center).
   # arrmada-prowlarr:
   #   image: lscr.io/linuxserver/prowlarr:2.6.5
   #   container_name: Arrmada-prowlarr
@@ -147,9 +147,9 @@ services:
   #   restart: unless-stopped
 
   # Optional: SABnzbd, for Usenet. You need your own Usenet provider and Newznab indexers.
-  # Uncomment both services; Arrmada adds SABnzbd by itself. Then open
+  # Uncomment both services; Rock Media Center adds SABnzbd by itself. Then open
   # http://<server>:8085 → Config → Servers to add your provider, and add your indexers
-  # in Arrmada (Settings → Connections).
+  # in Rock Media Center (Settings → Connections).
   # arrmada-sabnzbd:
   #   image: lscr.io/linuxserver/sabnzbd:5.1.3
   #   container_name: Arrmada-sabnzbd

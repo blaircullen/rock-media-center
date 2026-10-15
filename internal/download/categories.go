@@ -1,6 +1,6 @@
 package download
 
-// Arrmada owns the download-client categories. Each importer only looks at its own
+// Rock Media Center owns the download-client categories. Each importer only looks at its own
 // category, so a torrent filed anywhere else downloads and is never imported — which is
 // why there is no per-client category setting: a free-text one silently stranded every
 // movie on installs that typed something other than the movie category into it.
@@ -15,14 +15,14 @@ const (
 	CategoryMusic = "arrmada-music"
 )
 
-// Categories is the fixed set Arrmada files downloads under, for showing to the owner.
+// Categories is the fixed set Rock Media Center files downloads under, for showing to the owner.
 type Categories struct {
 	Movies string `json:"movies"`
 	TV     string `json:"tv"`
 	Music  string `json:"music"`
 }
 
-// FixedCategories is Arrmada's categories with the configured movie one ("" means the
+// FixedCategories is Rock Media Center's categories with the configured movie one ("" means the
 // default).
 func FixedCategories(movie string) Categories {
 	if movie == "" {

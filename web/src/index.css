@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Arrmada design tokens — warm terracotta. Single source of truth for both
+/* Rock Media Center design tokens — warm terracotta. Single source of truth for both
    themes. prefers-color-scheme is the default; the header toggle stamps
    data-theme on <html> and must win in both directions.
 

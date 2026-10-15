@@ -1,4 +1,4 @@
-// Package langs is Arrmada's one language table: every ISO 639-1 language with its
+// Package langs is Rock Media Center's one language table: every ISO 639-1 language with its
 // 639-2/B and /T codes and English name, plus the regional variants people actually ask
 // subtitles for (pt-br, zh-tw, es-419…). The importer and the quality parser read
 // language tags through it, so "fre", "fra", "fr" and "French" are the same language

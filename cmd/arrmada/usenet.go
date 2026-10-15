@@ -30,7 +30,7 @@ func wireUsenet(indexers *indexer.Service, downloads *download.Service) {
 type bundledSAB struct {
 	url, config string
 	downloads   *download.Service
-	// downloadsDir is Arrmada's downloads folder, read live.
+	// downloadsDir is Rock Media Center's downloads folder, read live.
 	downloadsDir func(ctx context.Context) string
 	// added runs when a new bundled row was made (the Prowlarr sync, which brings usenet
 	// indexers in only while a usenet client exists).
@@ -116,7 +116,7 @@ func (b *bundledSAB) tune(ctx context.Context, last bool) bool {
 
 func (b *bundledSAB) logTuned(got download.SABTuned, folder string) {
 	if len(got.Categories) > 0 {
-		b.log.Info("bundled SABnzbd: added Arrmada's categories", "categories", strings.Join(got.Categories, ", "))
+		b.log.Info("bundled SABnzbd: added Rock Media Center's categories", "categories", strings.Join(got.Categories, ", "))
 	}
 	if got.Folders != "" {
 		b.log.Info("bundled SABnzbd: downloads now go to the "+folder, "folder", got.Folders)

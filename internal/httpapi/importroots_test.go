@@ -17,7 +17,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/config"
 )
 
-// importTestDirs lays out downloads, a library and Arrmada's data folder side by side in
+// importTestDirs lays out downloads, a library and Rock Media Center's data folder side by side in
 // a temp dir — never anything real.
 func importTestDirs(t *testing.T) (cfg config.Config, outside string) {
 	t.Helper()

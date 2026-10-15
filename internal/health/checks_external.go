@@ -181,7 +181,7 @@ const prowlarrSyncFailedRuns = 2
 // ProwlarrCheck reports Prowlarr being down: its trackers failing together with one
 // error collapse into one line ("Prowlarr is unreachable (12 indexers)") rather than
 // twelve, and an hourly sync that keeps failing says that indexers added or switched off
-// in Prowlarr aren't reaching Arrmada. Quiet when Prowlarr was never synced.
+// in Prowlarr aren't reaching Rock Media Center. Quiet when Prowlarr was never synced.
 func ProwlarrCheck(state func(ctx context.Context) ProwlarrState) Check {
 	return prowlarrCheck(state, time.Now)
 }
@@ -208,7 +208,7 @@ func prowlarrCheck(state func(ctx context.Context) ProwlarrState, now func() tim
 			}
 			return []Finding{{
 				Key: "prowlarr.sync", Level: LevelWarning, Fix: FixProwlarr,
-				Message: fmt.Sprintf("The hourly Prowlarr sync has failed %d times in a row (last at %s): %s. Indexers added or switched off in Prowlarr aren't reaching Arrmada.",
+				Message: fmt.Sprintf("The hourly Prowlarr sync has failed %d times in a row (last at %s): %s. Indexers added or switched off in Prowlarr aren't reaching Rock Media Center.",
 					st.FailedRuns, clock(st.LastSyncAt, now()), st.LastSyncErr),
 			}}
 		},

@@ -159,7 +159,7 @@ func TestSeriesReviewImportClosesOutTheGrab(t *testing.T) {
 	}
 }
 
-// A dismissed download leaves the client at its goal, but its files stay: Arrmada never
+// A dismissed download leaves the client at its goal, but its files stay: Rock Media Center never
 // imported them and the user said they'd handle them.
 func TestDismissedReviewSeedsOutKeepingFiles(t *testing.T) {
 	h := newLifecycleHarness(t)

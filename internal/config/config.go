@@ -1,4 +1,4 @@
-// Package config loads Arrmada's runtime configuration. For M0 this is a small
+// Package config loads Rock Media Center's runtime configuration. For M0 this is a small
 // env-driven struct with sensible defaults; file-based config and a settings UI
 // arrive in later M0 workstreams.
 package config
@@ -18,7 +18,7 @@ type Config struct {
 	// Port is the HTTP port. One port serves both the API and the web UI.
 	Port int
 	// BaseURLIgnored holds ARRMADA_BASE_URL when a deployment still sets it to a sub-path.
-	// The option is gone — Arrmada is served at the root of its own hostname — so this
+	// The option is gone — Rock Media Center is served at the root of its own hostname — so this
 	// only exists for the startup warning; nothing routes by it.
 	BaseURLIgnored string
 	// DataDir holds the database, config and logs, plus backups/, where a snapshot
@@ -38,7 +38,7 @@ type Config struct {
 	// GeoIPDB is an optional MaxMind GeoLite2-City.mmdb for IP geolocation in
 	// Insights. Empty → geolocation shows LAN as "Local" and public IPs raw.
 	GeoIPDB string
-	// QbittorrentURL, when set, is the bundled qBittorrent companion; Arrmada
+	// QbittorrentURL, when set, is the bundled qBittorrent companion; Rock Media Center
 	// auto-registers it as a download client on startup.
 	QbittorrentURL string
 	// QbittorrentPort is the incoming BitTorrent port to enforce on the bundled
@@ -61,7 +61,7 @@ type Config struct {
 	MoviesDir string
 	TVDir     string
 	MusicDir  string
-	// DownloadCategory is the download-client category Arrmada imports from.
+	// DownloadCategory is the download-client category Rock Media Center imports from.
 	DownloadCategory string
 	// DownloadsDir is where the download client writes files (shared volume);
 	// used as the default scan location for manual import.
@@ -85,10 +85,10 @@ type Config struct {
 	// snapshot. Only for a data disk too full to hold the copy; the app refuses to
 	// upgrade otherwise rather than risk the only copy.
 	SkipMigrationSnapshot bool
-	// AllowNewerSchema starts the app on a database a newer Arrmada has upgraded, which
+	// AllowNewerSchema starts the app on a database a newer Rock Media Center has upgraded, which
 	// it otherwise refuses (old code on a newer schema can damage it). A last resort.
 	AllowNewerSchema bool
-	// Channel is which Arrmada this install's updates bring (ARRMADA_CHANNEL, written by
+	// Channel is which Rock Media Center this install's updates bring (ARRMADA_CHANNEL, written by
 	// install.sh and update.sh): "stable" (the published releases) or "main" (the newest
 	// code, compiled on the server). "" when it isn't set (a plain `go run`, or a container
 	// from before the setting). The update check compares the build with the same thing.
@@ -166,7 +166,7 @@ func (c Config) Addr() string {
 }
 
 // ignoredBaseURL returns a leftover ARRMADA_BASE_URL worth warning about. Empty and "/"
-// both meant the root, which is where Arrmada runs, so they need no warning.
+// both meant the root, which is where Rock Media Center runs, so they need no warning.
 func ignoredBaseURL(v string) string {
 	v = strings.TrimSpace(v)
 	if strings.Trim(v, "/") == "" {

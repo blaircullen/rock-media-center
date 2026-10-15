@@ -49,7 +49,7 @@ async function mockBuilder(page: Page, api: MockedApi) {
             suggested_score: 1800,
             warnings: ["The release-group pattern \"Weird group\" is matched against the whole release name, not just the group."],
           }],
-          warnings: ["\"BR-DISK\" wasn't imported: its required specification \"BR-DISK\" uses a lookaround ((?= (?! (?<= (?<!), which Arrmada's regex engine can't run — without it the format would match far more than it should"],
+          warnings: ["\"BR-DISK\" wasn't imported: its required specification \"BR-DISK\" uses a lookaround ((?= (?! (?<= (?<!), which Rock Media Center's regex engine can't run — without it the format would match far more than it should"],
         });
     }
     return route.fallback();

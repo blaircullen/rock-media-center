@@ -8,7 +8,7 @@ import { restartAppAndWait } from "../../lib/restart";
 import { useSetting } from "../../lib/useSettings";
 import { Backups } from "./Backups";
 
-// Settings → System (admin only): which modules are on, restarting Arrmada and the
+// Settings → System (admin only): which modules are on, restarting Rock Media Center and the
 // database backups. The API keys live with the other integrations on Settings → Connections.
 export function SystemSettings() {
   // A module switch shows in the nav and Discover as soon as it's saved.
@@ -27,7 +27,7 @@ export function SystemSettings() {
 }
 
 // The outside address: what alerts link back to, and what the calendar feed's link is
-// built from. Arrmada is served at the root of its own hostname, so it's just the address.
+// built from. Rock Media Center is served at the root of its own hostname, so it's just the address.
 const ADDRESS_RE = /^https?:\/\/[^/\s?#@]+\/?$/i;
 
 function PublicURLSection() {
@@ -35,13 +35,13 @@ function PublicURLSection() {
     validate: (v) => (v.trim() === "" || ADDRESS_RE.test(v.trim()) ? null : "Give just the address, like https://arrmada.example.com"),
   });
   return (
-    <Section id="public-url" title="Outside address" subtitle="The address people use to reach Arrmada from outside your home, such as your tunnel's. Alerts link back to the app with it, and calendar feed links are built from it. Leave it blank if Arrmada is only used at home.">
+    <Section id="public-url" title="Outside address" subtitle="The address people use to reach Rock Media Center from outside your home, such as your tunnel's. Alerts link back to the app with it, and calendar feed links are built from it. Leave it blank if Rock Media Center is only used at home.">
       <AutoText label="Address" save={address} placeholder="https://arrmada.example.com" />
     </Section>
   );
 }
 
-// RestartSection restarts Arrmada on demand — the same restart the folder banner offers,
+// RestartSection restarts Rock Media Center on demand — the same restart the folder banner offers,
 // for any change that only applies at startup — and points at the log.
 function RestartSection() {
   const [st, setSt] = useState<PendingRestart | null>(null);
@@ -60,9 +60,9 @@ function RestartSection() {
   };
 
   return (
-    <Section id="restart" title="Restart" subtitle="Restart Arrmada, for example after a change that only applies at startup. This page reloads once it's back, usually in a few seconds.">
+    <Section id="restart" title="Restart" subtitle="Restart Rock Media Center, for example after a change that only applies at startup. This page reloads once it's back, usually in a few seconds.">
       {st && !st.can_restart && (
-        <p className="m-0 text-sm text-ink-dim">Arrmada can't restart itself here. Restart the Arrmada container the way you started it.</p>
+        <p className="m-0 text-sm text-ink-dim">Rock Media Center can't restart itself here. Restart the Rock Media Center container the way you started it.</p>
       )}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         {st?.can_restart && (
@@ -72,11 +72,11 @@ function RestartSection() {
       </div>
       {confirming && (
         <ConfirmDialog
-          title="Restart Arrmada now?"
+          title="Restart Rock Media Center now?"
           tone="accent"
           body={
             <div className="flex flex-col gap-1.5">
-              <span>This page reloads once Arrmada is back, usually in a few seconds.</span>
+              <span>This page reloads once Rock Media Center is back, usually in a few seconds.</span>
             </div>
           }
           confirmLabel="Restart now"

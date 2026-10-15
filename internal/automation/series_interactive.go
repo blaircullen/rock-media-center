@@ -519,7 +519,7 @@ func (c *Coordinator) RescanSeries(ctx context.Context, seriesID int64) error {
 	// disk can claim the same episode — three copies of every Solo Leveling season 2
 	// episode, say, left by re-imports under different names. Marking inside the walk made
 	// the LAST file the directory happened to yield the winner, silently overwrote the
-	// others' paths, and reported nothing: the extra copies became invisible to Arrmada
+	// others' paths, and reported nothing: the extra copies became invisible to Rock Media Center
 	// while still filling the disk and showing up as duplicates in Plex.
 	byEpisode := map[[2]int][]library.FoundVideo{}
 	for _, v := range c.imp.SeriesLibraryVideos(folder, s.Title, s.Year) {
@@ -691,7 +691,7 @@ func (c *Coordinator) ManualImportSeries(ctx context.Context, seriesID int64, pa
 	// quality inherited from the release name, the upgrade gate, multi-episode files —
 	// rather than the single-file shortcut below.
 	//
-	// This is also the way to re-run an import Arrmada has already processed. The
+	// This is also the way to re-run an import Rock Media Center has already processed. The
 	// automatic sweep won't revisit a download it recorded as imported unless the season
 	// still has gaps, so when a fix changes what WOULD have imported, pointing manual
 	// import at the folder is what applies it.
@@ -808,7 +808,7 @@ type DuplicateCopy struct {
 // and for a while the episode title. When that derivation changes (a source re-classified
 // WEBRip vs WEB-DL, an episode title added or dropped) a re-import writes to a NEW path,
 // and SupersedeEpisodeFile only recycles the ONE file the database was tracking. Every
-// earlier copy is orphaned: invisible to Arrmada, still filling the disk, and showing up as
+// earlier copy is orphaned: invisible to Rock Media Center, still filling the disk, and showing up as
 // a duplicate episode in Plex.
 //
 // Read-only — it reports what it finds and never deletes anything on its own.

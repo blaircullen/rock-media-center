@@ -14,16 +14,16 @@ import (
 )
 
 // "Recently added": what just arrived in the library, for every role. The source is
-// Arrmada's own import history, so the row fills with Plex disconnected; when the Plex
+// Rock Media Center's own import history, so the row fills with Plex disconnected; when the Plex
 // index is built, Plex's own recently added list is merged in (mapped to TMDB ids), so a
-// title the owner added outside Arrmada shows up too. Nothing about Plex leaves the
+// title the owner added outside Rock Media Center shows up too. Nothing about Plex leaves the
 // server: no library names, paths or users, only the titles as cards.
 
 const (
 	recentDays       = 30              // how far back an import counts as recent
 	recentMax        = 40              // cards in the row
 	recentPlexScan   = 60              // Plex rows read before mapping
-	recentLookups    = 12              // TMDB lookups for Plex titles Arrmada doesn't manage
+	recentLookups    = 12              // TMDB lookups for Plex titles Rock Media Center doesn't manage
 	recentTTL        = 2 * time.Minute // the row is the same for everyone, so it's shared
 	recentPlexBudget = 6 * time.Second // Plex and the lookups together; the row never waits longer
 )
@@ -105,7 +105,7 @@ func (a *api) plexRecent(ctx context.Context) ([]insights.RecentTMDB, bool) {
 	return items, true
 }
 
-// recentLookup finds the card for a Plex title: from the library when Arrmada has it,
+// recentLookup finds the card for a Plex title: from the library when Rock Media Center has it,
 // else from TMDB (the detail record is disk-cached), at most recentLookups times per
 // build. A title TMDB flags adult is never returned.
 func (a *api) recentLookup(ctx context.Context) func(media string, tmdb int) (metadata.DiscoverItem, bool) {
@@ -153,7 +153,7 @@ func (a *api) recentLookup(ctx context.Context) func(media string, tmdb int) (me
 	}
 }
 
-// mergeRecent joins Arrmada's recent imports with Plex's recently added titles: one card
+// mergeRecent joins Rock Media Center's recent imports with Plex's recently added titles: one card
 // per title (its newest arrival), newest first, nothing older than since, no adult titles
 // and no posterless cards, at most recentMax.
 func mergeRecent(local []recentTitle, plexItems []insights.RecentTMDB, lookup func(media string, tmdb int) (metadata.DiscoverItem, bool), since int64) []metadata.DiscoverItem {

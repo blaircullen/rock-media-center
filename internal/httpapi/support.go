@@ -110,7 +110,7 @@ func (a *api) handleSupportBundle(w http.ResponseWriter, r *http.Request) {
 	a.deps.Log.Info("support bundle downloaded", "log_lines", lines)
 }
 
-const bundleReadme = `Arrmada support bundle
+const bundleReadme = `Rock Media Center support bundle
 
 What's here: the application log (logs/), the version, System status and health as the
 app reported them, and the settings that are plainly safe to share (settings.json lists

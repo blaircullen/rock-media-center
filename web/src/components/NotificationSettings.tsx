@@ -26,19 +26,19 @@ export function NotificationSettings() {
 // What to say when push can't be switched on here, and what to do instead.
 const HELP: Partial<Record<PushStatus, ReactNode>> = {
   unavailable: "Push isn’t set up on this server yet — ask the admin. Your bell still gets every notice.",
-  insecure: "Notifications need the secure address — open Arrmada from your https link, then turn them on there.",
+  insecure: "Notifications need the secure address — open Rock Media Center from your https link, then turn them on there.",
   "needs-install": (
     <>
       On iPhone and iPad, notifications only work from the Home Screen app:
       <ol className="mt-1 list-decimal pl-5">
         <li>Tap the Share button in Safari.</li>
         <li>Choose <b>Add to Home Screen</b>.</li>
-        <li>Open Arrmada from the new icon and come back here.</li>
+        <li>Open Rock Media Center from the new icon and come back here.</li>
       </ol>
     </>
   ),
   unsupported: "This browser can’t show notifications. Try Chrome, Edge, Firefox, or Safari from the Home Screen.",
-  blocked: "Notifications are blocked for this site. Allow them in your browser’s site settings (on a phone: Settings → Notifications → Arrmada), then reload this page.",
+  blocked: "Notifications are blocked for this site. Allow them in your browser’s site settings (on a phone: Settings → Notifications → Rock Media Center), then reload this page.",
 };
 
 // PushSetting is the per-device Web Push switch, with a plain answer when it can't be on:
@@ -105,7 +105,7 @@ function PushSetting() {
           </button>
         )}
       </div>
-      {toggleable && !on && <p className="m-0 mt-1.5 text-xs text-ink-faint">Turn it on to hear when something you asked for is ready, without opening Arrmada.</p>}
+      {toggleable && !on && <p className="m-0 mt-1.5 text-xs text-ink-faint">Turn it on to hear when something you asked for is ready, without opening Rock Media Center.</p>}
       {help && <div role="note" className="mt-2 rounded-lg px-3 py-2 text-sm leading-relaxed text-ink-dim" style={{ background: "var(--panel-2)", border: "1px solid var(--line-soft)" }}>{help}</div>}
       {error && <div role="alert" className="mt-1.5 text-xs font-medium" style={{ color: "var(--reject-text)" }}>{error}</div>}
     </div>

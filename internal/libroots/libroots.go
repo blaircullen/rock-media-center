@@ -2,7 +2,7 @@
 // one place, so the folder settings, the folder picker, the health panel and manual
 // import all draw the same line.
 //
-// The first rule is the standing one: media never lives in Arrmada's data folder (the
+// The first rule is the standing one: media never lives in Rock Media Center's data folder (the
 // database, logs and backups). An import into it would mix media with
 // app state, and the hourly housekeeping and the backups would then treat media as
 // theirs.
@@ -50,7 +50,7 @@ func UnderDataDir(p, dataDir string) bool {
 	return false
 }
 
-// dataDirs lists the folders that count as Arrmada's data folder.
+// dataDirs lists the folders that count as Rock Media Center's data folder.
 func dataDirs(dataDir string) []string {
 	out := []string{containerDataDir}
 	if dataDir != "" {

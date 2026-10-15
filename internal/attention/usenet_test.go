@@ -9,8 +9,8 @@ import (
 	"github.com/tristenlammi/arrmada/internal/download"
 )
 
-// A usenet job SABnzbd failed: a full disk is an error with the fix in plain words, Arrmada's
-// own grab or not; a bad release Arrmada grabbed is left to the stall check, which replaces
+// A usenet job SABnzbd failed: a full disk is an error with the fix in plain words, Rock Media Center's
+// own grab or not; a bad release Rock Media Center grabbed is left to the stall check, which replaces
 // it on its own; a job nobody grabbed shows with SABnzbd's reason.
 func TestUsenetFailuresInNeedsYou(t *testing.T) {
 	u := download.TransportUsenet
@@ -41,7 +41,7 @@ func TestUsenetFailuresInNeedsYou(t *testing.T) {
 		t.Errorf("full disk = %+v", disk)
 	}
 	if _, ok := items[KindDownload+":sab-bad"]; ok {
-		t.Error("a bad release Arrmada is replacing on its own shouldn't need anyone")
+		t.Error("a bad release Rock Media Center is replacing on its own shouldn't need anyone")
 	}
 	if other := items[KindDownload+":sab-other"]; other.Title != "Film.Other failed in SABnzbd" || other.Detail != "Duplicate NZB" || other.Grabbed {
 		t.Errorf("a job nobody grabbed = %+v", other)

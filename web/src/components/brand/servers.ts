@@ -1,4 +1,4 @@
-// The media servers Arrmada hands the library to, and how each is drawn: its name, its
+// The media servers Rock Media Center hands the library to, and how each is drawn: its name, its
 // brand fill and the ink that reads on that fill (index.css --plex / --jellyfin tokens,
 // contrast-checked in contrast.test.ts).
 

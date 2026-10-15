@@ -173,7 +173,7 @@ func TestBundledClientRemoveAndRestore(t *testing.T) {
 	}
 }
 
-// The list carries Arrmada's fixed categories (the movie one from the config), and a
+// The list carries Rock Media Center's fixed categories (the movie one from the config), and a
 // category sent on create is accepted but never stored or echoed back.
 func TestDownloadClientCategoriesAreArrmadas(t *testing.T) {
 	var dl *download.Service

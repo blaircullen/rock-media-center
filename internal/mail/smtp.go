@@ -1,4 +1,4 @@
-// Package mail is Arrmada's one way to send email: a plain SMTP client over the owner's
+// Package mail is Rock Media Center's one way to send email: a plain SMTP client over the owner's
 // own mail account (an app password from Gmail, Fastmail, iCloud…). Alerts go through
 // Apprise, which can't carry a per-person attachment cleanly; a per-person email needs exactly
 // that, so this sends a message with at most one attached file.
@@ -56,7 +56,7 @@ type Config struct {
 	Port     int
 	Security string // starttls | tls | none
 	Username string // "" = the server takes mail without signing in
-	From     string // "Arrmada <arrmada@example.com>" or a bare address
+	From     string // "Rock Media Center <arrmada@example.com>" or a bare address
 }
 
 // ErrNotConfigured is a send with no server or From address saved.

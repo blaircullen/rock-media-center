@@ -11,7 +11,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/quality"
 )
 
-// Movies → Wanted: what Arrmada is still looking for among the films, why it hasn't found
+// Movies → Wanted: what Rock Media Center is still looking for among the films, why it hasn't found
 // it, and when it tries next. Two tabs:
 //
 //   - missing: the cross-media Wanted view's movie rows (buildWanted) — monitored films

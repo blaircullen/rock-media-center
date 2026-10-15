@@ -14,10 +14,10 @@ import (
 	"github.com/tristenlammi/arrmada/internal/plex"
 )
 
-const plexLoginProduct = "Arrmada"
+const plexLoginProduct = "Rock Media Center"
 
 // plexClientID returns this instance's stable X-Plex-Client-Identifier, shared with Insights so
-// there's one Plex identity for Arrmada. Generated + persisted on first use.
+// there's one Plex identity for Rock Media Center. Generated + persisted on first use.
 func (a *api) plexClientID(ctx context.Context) string {
 	id := a.deps.Settings.Get(ctx, "insights_plex_client_id", "")
 	if id == "" {

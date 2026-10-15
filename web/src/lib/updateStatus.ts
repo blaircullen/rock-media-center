@@ -53,7 +53,7 @@ export function versionBadge(version: string, commit: string, update?: UpdateSta
   const label = channel === "release" ? version
     : channel === "main" || channel === "build" ? `main · ${commit.slice(0, 7)}${dirty}`
       : "dev";
-  const name = `Arrmada ${label}`;
+  const name = `Rock Media Center ${label}`;
   if (!update?.enabled || !update.checked_at) return { label, update: false, title: name };
   const tone = updateHeadline(update).tone;
   if (tone === "update") {
@@ -67,7 +67,7 @@ export function versionBadge(version: string, commit: string, update?: UpdateSta
 
 // The install line: run again on the server, it finds the install and updates it the way
 // its channel says (the latest release, or main compiled there).
-export const INSTALL_LINE = "curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/install.sh | sh";
+export const INSTALL_LINE = "curl -fsSL https://raw.githubusercontent.com/blaircullen/rock-media-center/main/install.sh | sh";
 
 // updateHint is how this server gets the update on offer, for the channel it follows (the
 // words, and the command or line to use), or null when there's nothing to do.
@@ -87,7 +87,7 @@ export function updateHint(u: UpdateStatus): { text: string; command: string } |
   }
   if (u.channel === "build" && (u.ahead ?? 0) > 0) {
     return {
-      text: "Updates keep this build until a release includes it. To follow main instead, add this line to .env in Arrmada's folder, then run the install line again:",
+      text: "Updates keep this build until a release includes it. To follow main instead, add this line to .env in Rock Media Center's folder, then run the install line again:",
       command: "ARRMADA_CHANNEL=main",
     };
   }

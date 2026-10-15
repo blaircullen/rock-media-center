@@ -126,7 +126,7 @@ func TestScheduledProwlarrSyncRecordsOutcome(t *testing.T) {
 	}
 }
 
-// Disabling an indexer in Prowlarr reaches Arrmada on the next scheduled run, with no
+// Disabling an indexer in Prowlarr reaches Rock Media Center on the next scheduled run, with no
 // click.
 func TestScheduledProwlarrSyncReflectsUpstreamDisable(t *testing.T) {
 	f := newFakeProwlarr(t)

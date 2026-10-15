@@ -30,7 +30,7 @@ const ago = (min: number) => NOW - min * 60_000;
 export const STALLED_HASH = "abc1230000000000000000000000000000000001";
 export const FAILING_HASH = "abc1230000000000000000000000000000000002";
 export const MISFILED_HASH = "abc1230000000000000000000000000000000003";
-// Finished torrents Arrmada didn't grab, for Needs you's Not managed section.
+// Finished torrents Rock Media Center didn't grab, for Needs you's Not managed section.
 export const unmanaged: { unmanaged: UnmanagedDownload[]; ignored: number } = {
   unmanaged: [
     { hash: "e2e0000000000000000000000000000000000005", name: "Some.Linux.Distro.ISO-FIXTURE", size_bytes: 3_000_000_000, category: "linux", kind: "movie", title: "Some Linux Distro ISO" },
@@ -73,7 +73,7 @@ export const attention: Attention = {
     { key: "review:4", kind: "review", level: "warning", title: "Alien is held: it looks like a different title", link: "/activity/needs-you", link_key: "review", since: ago(240) },
     { key: "stalled:abc123", kind: "stalled", level: "warning", title: "Old.Film.1080p has stalled", detail: "Nobody has sent it any data for 2h", link: "/activity/needs-you#stalled", link_key: "downloadProblems", since: ago(120), hash: STALLED_HASH, grabbed: true },
     { key: `import:${FAILING_HASH}`, kind: "import", level: "warning", title: "Importing Heat.1995.1080p keeps failing (3 tries)", detail: "permission denied", link: "/activity/needs-you#import-failures", link_key: "importProblems", since: ago(45), hash: FAILING_HASH, grabbed: true },
-    { key: `wrongcat:${MISFILED_HASH}`, kind: "wrongcat", level: "warning", title: "Harbour.Lights.S03E01.1080p finished in “linux”", detail: "Arrmada only imports TV from “arrmada-tv”", link: "/activity/needs-you#wrong-category", link_key: "wrongCategory", since: ago(20), hash: MISFILED_HASH },
+    { key: `wrongcat:${MISFILED_HASH}`, kind: "wrongcat", level: "warning", title: "Harbour.Lights.S03E01.1080p finished in “linux”", detail: "Rock Media Center only imports TV from “arrmada-tv”", link: "/activity/needs-you#wrong-category", link_key: "wrongCategory", since: ago(20), hash: MISFILED_HASH },
     { key: "search:stuck", kind: "search", level: "warning", title: "3 titles still haven't found a release", link: "/activity/wanted", link_key: "downloadsSearching", since: ago(2000), count: 3 },
   ],
 };
@@ -256,7 +256,7 @@ export const systemStatus: SystemStatus = {
   update: {
     enabled: true, current: "2026.10.08", channel: "main", checked_at: new Date(NOW - 2 * 3_600_000).toISOString(),
     latest: {
-      tag: "v1.3.0", name: "v1.3.0", url: "https://github.com/tristenlammi/Arrmada/releases/tag/v1.3.0",
+      tag: "v1.3.0", name: "v1.3.0", url: "https://github.com/blaircullen/rock-media-center/releases/tag/v1.3.0",
       notes: "## What's Changed\n* Faster imports by @someone", notes_truncated: false, published_at: "2026-10-01T10:00:00Z",
     },
     available: false, behind: 3,

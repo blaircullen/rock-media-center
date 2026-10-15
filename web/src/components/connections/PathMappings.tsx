@@ -5,9 +5,9 @@ import { clientKindName } from "../../lib/network";
 import { Button } from "../../ui";
 
 // PathMappings sits in a download client's editor: the folders it sees under another path
-// than Arrmada does (a seedbox, or qBittorrent or SABnzbd on another machine), and a check
-// of which of its paths Arrmada can actually see. Adding or removing a mapping saves at
-// once; there is no Save button. The bundled qBittorrent shares Arrmada's folders, so it
+// than Rock Media Center does (a seedbox, or qBittorrent or SABnzbd on another machine), and a check
+// of which of its paths Rock Media Center can actually see. Adding or removing a mapping saves at
+// once; there is no Save button. The bundled qBittorrent shares Rock Media Center's folders, so it
 // only gets the check.
 
 const field = "w-full min-w-0 rounded-lg px-3 py-2 font-mono text-sm";
@@ -21,9 +21,9 @@ export function pathCheckName(c: PathCheck): string {
   return c.category ? `${what} ${c.category}` : what;
 }
 
-// PathCheckLine is one path a client reported and whether Arrmada sees it: ✓ where it is,
-// – for a download that's gone, ✕ for a folder Arrmada can't see. The usenet card's
-// completed folder uses it too (seesAt: "Arrmada sees it at …"), so both say it alike.
+// PathCheckLine is one path a client reported and whether Rock Media Center sees it: ✓ where it is,
+// – for a download that's gone, ✕ for a folder Rock Media Center can't see. The usenet card's
+// completed folder uses it too (seesAt: "Rock Media Center sees it at …"), so both say it alike.
 export function PathCheckLine({ c, seesAt }: { c: PathCheck; seesAt?: boolean }) {
   const tone = c.visible ? "var(--good-text)" : c.gone ? "var(--avoid-text)" : "var(--reject-text)";
   const mark = c.visible ? "✓" : c.gone ? "–" : "✕";
@@ -31,7 +31,7 @@ export function PathCheckLine({ c, seesAt }: { c: PathCheck; seesAt?: boolean })
     return (
       <div className="break-all text-sm" style={{ color: tone }}>
         {mark} <span className="text-ink-dim">{pathCheckName(c)}</span> <span className="font-mono">{c.remote}</span>
-        <span className="text-ink-dim">{c.visible ? " · Arrmada sees it at " : " · Arrmada can't see it at "}</span>
+        <span className="text-ink-dim">{c.visible ? " · Rock Media Center sees it at " : " · Rock Media Center can't see it at "}</span>
         <span className="font-mono">{c.local}</span>
       </div>
     );
@@ -41,7 +41,7 @@ export function PathCheckLine({ c, seesAt }: { c: PathCheck; seesAt?: boolean })
       {mark} <span className="text-ink-dim">{pathCheckName(c)}:</span>{" "}
       <span className="font-mono">{c.remote}</span>
       {c.local !== c.remote && <> <span className="text-ink-faint">→</span> <span className="font-mono">{c.local}</span></>}
-      {!c.visible && <span className="text-ink-dim">{c.gone ? " (not there any more: moved or deleted)" : " (Arrmada can't see it)"}</span>}
+      {!c.visible && <span className="text-ink-dim">{c.gone ? " (not there any more: moved or deleted)" : " (Rock Media Center can't see it)"}</span>}
     </div>
   );
 }
@@ -113,7 +113,7 @@ export function PathMappings({ client, body, onChanged }: {
       {!client.bundled && (
         <>
           <p className="mb-0 mt-1 text-xs text-ink-faint">
-            Only for a {who} that sees its downloads under another path than Arrmada, such as a seedbox or another machine. Left, the folder as {who} names it; right, the same folder inside the Arrmada container.
+            Only for a {who} that sees its downloads under another path than Rock Media Center, such as a seedbox or another machine. Left, the folder as {who} names it; right, the same folder inside the Rock Media Center container.
           </p>
           {maps.length > 0 && (
             <ul className="m-0 mt-2.5 flex list-none flex-col gap-1.5 p-0">
@@ -139,7 +139,7 @@ export function PathMappings({ client, body, onChanged }: {
               <input className={field} style={fieldStyle} value={remote} onChange={(e) => setRemote(e.target.value)} placeholder="/downloads" autoComplete="off" />
             </label>
             <label className="flex min-w-0 flex-col gap-1">
-              <span className="font-mono text-2xs font-bold uppercase tracking-[0.1em] text-ink-faint">Arrmada's path</span>
+              <span className="font-mono text-2xs font-bold uppercase tracking-[0.1em] text-ink-faint">Rock Media Center's path</span>
               <input className={field} style={fieldStyle} value={local} onChange={(e) => setLocal(e.target.value)} placeholder="/media/downloads" autoComplete="off" />
             </label>
             <Button type="submit" size="md" disabled={saving || !remote.trim() || !local.trim()} busy={saving} busyLabel="Saving…">Add mapping</Button>

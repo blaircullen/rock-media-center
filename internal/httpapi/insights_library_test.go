@@ -39,7 +39,7 @@ func TestInsightsLibraryRoute(t *testing.T) {
 	}
 }
 
-// Titles the library index knows by TMDB id link to their Arrmada page.
+// Titles the library index knows by TMDB id link to their Rock Media Center page.
 func TestLinkLibraryItems(t *testing.T) {
 	var a *api
 	s := newRouteServer(t, func(d *Deps) {

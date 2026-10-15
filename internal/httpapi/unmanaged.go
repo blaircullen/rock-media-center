@@ -13,7 +13,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/parser"
 )
 
-// Unmanaged completed torrents: finished downloads nothing in Arrmada grabbed or imported,
+// Unmanaged completed torrents: finished downloads nothing in Rock Media Center grabbed or imported,
 // outside its categories (added by hand in the client, or left from another tool). They
 // sit in Seeding as "Not managed"; Needs you lists them so each can be imported into a
 // library title the user picks, or ignored for good.
@@ -44,7 +44,7 @@ type unmanagedState struct {
 }
 
 // readUnmanaged finds the unmanaged torrents now. It fails rather than guess when the
-// client or the record can't be read: offering to import one of Arrmada's own downloads
+// client or the record can't be read: offering to import one of Rock Media Center's own downloads
 // as a stranger's would file it twice.
 func (a *api) readUnmanaged(ctx context.Context) (unmanagedState, error) {
 	if a.deps.Automation == nil || a.deps.Downloads == nil {
@@ -196,7 +196,7 @@ func (a *api) unmanagedItem(w http.ResponseWriter, r *http.Request) (download.It
 			return it, true
 		}
 	}
-	a.writeError(w, http.StatusNotFound, "that isn't a finished download Arrmada doesn't manage (any more)")
+	a.writeError(w, http.StatusNotFound, "that isn't a finished download Rock Media Center doesn't manage (any more)")
 	return download.Item{}, false
 }
 
@@ -279,7 +279,7 @@ func (a *api) handleImportUnmanaged(w http.ResponseWriter, r *http.Request) {
 	}
 	src, err := a.checkImportPath(r.Context(), it.ContentPath)
 	if err != nil {
-		a.writeError(w, http.StatusBadRequest, "its files are outside your downloads and library folders, so Arrmada won't import them — "+err.Error())
+		a.writeError(w, http.StatusBadRequest, "its files are outside your downloads and library folders, so Rock Media Center won't import them — "+err.Error())
 		return
 	}
 	if err := a.deps.Automation.ImportUnmanaged(r.Context(), it, src, req.Kind, req.TargetID); err != nil {

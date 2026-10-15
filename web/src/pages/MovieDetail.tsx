@@ -323,7 +323,7 @@ function ClearedNotice({ movie, flash, onDismiss }: { movie: Movie; flash: (m: s
     <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl p-3.5 text-sm text-ink-dim" style={{ border: "1px solid var(--line)", background: "var(--panel)" }}>
       <span className="min-w-0 flex-1">
         Record cleared — nothing on disk was touched.
-        {movie.monitored ? " Arrmada will look for it on its next sweep, or search now." : " Turn on Monitor for Arrmada to look for it."}
+        {movie.monitored ? " Rock Media Center will look for it on its next sweep, or search now." : " Turn on Monitor for Rock Media Center to look for it."}
       </span>
       {movie.monitored && <Button size="sm" variant="primary" onClick={search} busy={busy} busyLabel="Searching…">Search now</Button>}
       <Button size="sm" variant="ghost" onClick={onDismiss}>Dismiss</Button>
@@ -337,10 +337,10 @@ function trackLine(movie: Movie, version: MovieVersion): string {
   const dl = movie.download;
   if (dl && (dl.version_id ?? 0) === version.id) return `Downloading — ${Math.round(dl.progress * 100)}%`;
   if (version.has_file) return "";
-  if (!version.monitored) return "Not monitored — Arrmada won't look for it.";
+  if (!version.monitored) return "Not monitored — Rock Media Center won't look for it.";
   // The movie's searches cover every track at once, so its last one speaks for this too.
   const last = movie.last_search?.latest;
-  const why = last ? `${attemptLine(last)}.` : "Arrmada looks for it on its sweeps.";
+  const why = last ? `${attemptLine(last)}.` : "Rock Media Center looks for it on its sweeps.";
   const tail = version.edition ? ` Only releases named as the ${version.edition} count.` : "";
   return `Wanted. ${why}${tail}`;
 }
@@ -424,7 +424,7 @@ function VersionCard({ movie, version, onChange, onCleared, flash, profileName }
         <FileDeleteDialog
           title={<>Delete the “{version.label}” file?</>}
           file={f}
-          note="The version stays, so Arrmada looks for it again while it's monitored."
+          note="The version stays, so Rock Media Center looks for it again while it's monitored."
           confirmLabel="Delete file"
           run={() => api.deleteVersionFile(movieId, version.id)}
           onDone={() => { setConfirm(null); onChange(); }}
@@ -435,7 +435,7 @@ function VersionCard({ movie, version, onChange, onCleared, flash, profileName }
         <FileDeleteDialog
           title={<>Remove the “{version.label}” version?</>}
           file={f}
-          note="Arrmada stops looking for this version."
+          note="Rock Media Center stops looking for this version."
           confirmLabel="Remove version"
           run={() => api.deleteVersion(movieId, version.id)}
           onDone={() => { setConfirm(null); onChange(); flash(`Removed "${version.label}" version.`); }}
@@ -520,7 +520,7 @@ function ClearRecordDialog({ movieId, versionId, file, onDone, onCancel }: {
       body={
         <>
           <div className="mt-1 break-all font-mono text-sm" style={{ color: "var(--ink)" }}>{file.filename || file.path}</div>
-          <p className="mb-0 mt-1.5">Nothing on disk is touched — the file is already gone. The movie stays, so Arrmada searches for it again while it's monitored.</p>
+          <p className="mb-0 mt-1.5">Nothing on disk is touched — the file is already gone. The movie stays, so Rock Media Center searches for it again while it's monitored.</p>
         </>
       }
       confirmLabel="Clear record"
@@ -926,7 +926,7 @@ interface AcquisitionSearchInfo {
   nextAt?: string;
 }
 
-// AcquisitionStatus says what Arrmada will do about this movie, built only from the facts
+// AcquisitionStatus says what Rock Media Center will do about this movie, built only from the facts
 // the sweeps act on (movie.acquisition, from the server): a scanned-in or unmonitored film
 // is never upgraded, a profile with upgrades off keeps its file, a missing film is searched
 // for once it's available, and a recorded file that's gone is never "you have this movie".
@@ -961,7 +961,7 @@ function AcquisitionStatus({ movie, onChange, flash, searchInfo }: {
 
   if (acq.file_missing) {
     tone = "var(--reject-text)";
-    msg = "Arrmada has a record of this file but it isn't on disk. Refresh & rescan to look again; if it's really gone, clear the record and Arrmada will search for it (when monitored).";
+    msg = "Rock Media Center has a record of this file but it isn't on disk. Refresh & rescan to look again; if it's really gone, clear the record and Rock Media Center will search for it (when monitored).";
     actions = (
       <>
         <Button size="sm" onClick={() => run("rescan", async () => { await api.refreshMovie(movie.id); onChange(); flash("Refreshed metadata and rescanned disk."); })} busy={busy === "rescan"} busyLabel="Rescanning…" disabled={busy !== null}>Refresh & rescan</Button>
@@ -985,7 +985,7 @@ function AcquisitionStatus({ movie, onChange, flash, searchInfo }: {
   } else if (movie.has_file && !acq.monitored) {
     tone = "var(--good-text)";
     msg = acq.scanned_in
-      ? "Found in your library and not monitored, so it won't be upgraded. Monitor it with a profile to let Arrmada look for better releases."
+      ? "Found in your library and not monitored, so it won't be upgraded. Monitor it with a profile to let Rock Media Center look for better releases."
       : "You have this movie. It isn't monitored, so it won't be upgraded.";
     actions = <MonitorWithProfile movie={movie} onDone={onChange} onDowngrade={setDowngrade} flash={flash} />;
   } else if (movie.has_file && !acq.upgrades_allowed) {
@@ -996,10 +996,10 @@ function AcquisitionStatus({ movie, onChange, flash, searchInfo }: {
     msg = "You have this movie. Its file was kept as it is when its profile changed, so upgrades won't replace it until you resume them.";
   } else if (movie.has_file) {
     tone = "var(--good-text)";
-    msg = `You have this movie. Arrmada looks for a clearly better release every 6 hours and grabs it automatically.${noProfile}`;
+    msg = `You have this movie. Rock Media Center looks for a clearly better release every 6 hours and grabs it automatically.${noProfile}`;
   } else if (!acq.monitored) {
     tone = "var(--avoid-text)";
-    msg = "Not monitored, so Arrmada won't search for it.";
+    msg = "Not monitored, so Rock Media Center won't search for it.";
     actions = (
       <Button size="sm" variant="primary" disabled={busy !== null} busy={busy === "monitor"} busyLabel="Monitoring…"
         onClick={() => run("monitor", async () => { await api.setMonitored(movie.id, true); onChange(); })}>Monitor</Button>
@@ -1007,10 +1007,10 @@ function AcquisitionStatus({ movie, onChange, flash, searchInfo }: {
   } else if (!acq.available) {
     tone = "var(--accent-text)";
     const from = acq.available_from ? ` (expected ${fmtDate(acq.available_from)})` : "";
-    msg = `Monitored and missing. Arrmada starts searching once it's "${avail}"${from}, and grabs the best release for your quality profile.${noProfile}`;
+    msg = `Monitored and missing. Rock Media Center starts searching once it's "${avail}"${from}, and grabs the best release for your quality profile.${noProfile}`;
   } else {
     tone = "var(--accent-text)";
-    msg = `Monitored and missing — Arrmada searches automatically and grabs the best release for your quality profile.${noProfile}`;
+    msg = `Monitored and missing — Rock Media Center searches automatically and grabs the best release for your quality profile.${noProfile}`;
   }
 
   return (
@@ -1064,7 +1064,7 @@ function MonitorWithProfile({ movie, onDone, onDowngrade, flash }: {
         const d = downgradeOf(res);
         if (d) onDowngrade(d);
       }
-      flash("Monitored — Arrmada now looks for better releases under this profile.");
+      flash("Monitored — Rock Media Center now looks for better releases under this profile.");
       onDone();
     } catch (e) {
       flash((e as Error).message, true);
@@ -1295,7 +1295,7 @@ function FilePanel({ file, movieId, onChange, onCleared }: { file: MovieFile; mo
         <FileDeleteDialog
           title="Delete this file?"
           file={file}
-          note="The movie stays, so Arrmada looks for it again while it's monitored."
+          note="The movie stays, so Rock Media Center looks for it again while it's monitored."
           confirmLabel="Delete file"
           run={() => api.deleteMovieFile(movieId)}
           onDone={() => { setConfirming(false); onChange(); }}

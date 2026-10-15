@@ -131,7 +131,7 @@ test.describe("desktop", () => {
       },
     });
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Welcome to Arrmada" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Welcome to Rock Media Center" })).toBeVisible();
     await settle(page, api);
     await page.screenshot({ path: `${OUT}/setup-wizard.png`, animations: "disabled", caret: "hide" });
   });

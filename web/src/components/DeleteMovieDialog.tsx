@@ -68,7 +68,7 @@ export function DeleteMovieDialog({ movie, onClose, onDeleted }: {
               <img src={movie.poster_url} alt="" className="h-full w-full object-cover" />
             </div>
           )}
-          <p className="m-0">It'll be removed from your library and Arrmada will stop monitoring it. Its files stay on disk unless you tick the box below.</p>
+          <p className="m-0">It'll be removed from your library and Rock Media Center will stop monitoring it. Its files stay on disk unless you tick the box below.</p>
         </div>
       }
       extra={
@@ -150,7 +150,7 @@ export function DeleteMoviesDialog({ movies, onClose, onDone }: {
   return (
     <ConfirmDialog
       title={<>Remove {plural(movies.length, "movie")}?</>}
-      body={<p className="m-0">They'll be removed from your library and Arrmada will stop monitoring them. Files stay on disk unless you tick the box below.</p>}
+      body={<p className="m-0">They'll be removed from your library and Rock Media Center will stop monitoring them. Files stay on disk unless you tick the box below.</p>}
       extra={
         <>
           <label className="flex items-start gap-2.5 rounded-lg p-3 text-base" style={box(deleteFiles)}>

@@ -47,8 +47,8 @@ var (
 	ErrNotSQLite = errors.New("not a SQLite database")
 	// ErrCorrupt means SQLite's integrity check didn't pass.
 	ErrCorrupt = errors.New("the database is damaged")
-	// ErrNotArrmada means a sound SQLite file that isn't an Arrmada database.
-	ErrNotArrmada = errors.New("not an Arrmada database")
+	// ErrNotArrmada means a sound SQLite file that isn't a Rock Media Center database.
+	ErrNotArrmada = errors.New("not a Rock Media Center database")
 	// ErrTooLarge means an imported backup is over the size it may grow to.
 	ErrTooLarge = errors.New("the backup is too large")
 )
@@ -77,7 +77,7 @@ func versionsIn(fsys fs.FS) []string {
 	return out
 }
 
-// ValidateBackup checks that the file at path is a sound Arrmada database this build can
+// ValidateBackup checks that the file at path is a sound Rock Media Center database this build can
 // run on: SQLite's header, a full integrity_check, the users and schema_migrations tables,
 // and no applied migration missing from embedded. It opens the file read-only and never
 // reads anything but those tables' names and the migration versions.
@@ -499,13 +499,13 @@ func readJSONFile(path string, v any) (ok bool, err error) {
 	return true, nil
 }
 
-// backupNewerError means the backup was written by a newer Arrmada than this one;
+// backupNewerError means the backup was written by a newer Rock Media Center than this one;
 // restoring it would run this build against tables it doesn't understand. It is an
 // ErrNewerSchema (schema.go), the same refusal the boot gives a newer database.
 type backupNewerError struct{ unknown []string }
 
 func (e backupNewerError) Error() string {
-	return fmt.Sprintf("this backup is from a newer version of Arrmada (it has %s); update Arrmada first", strings.Join(e.unknown, ", "))
+	return fmt.Sprintf("this backup is from a newer version of Rock Media Center (it has %s); update Rock Media Center first", strings.Join(e.unknown, ", "))
 }
 
 func (e backupNewerError) Unwrap() error { return ErrNewerSchema }

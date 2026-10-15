@@ -30,8 +30,8 @@ func (a *api) handleDownloadsFeed(w http.ResponseWriter, r *http.Request) {
 	// torrent was grabbed for and under which profile, whatever the torrent is called,
 	// and the seed goal recorded at grab time (so the Seeding tab can show each torrent's
 	// target ratio / time and whether it's set to seed at all). Matching torrent names
-	// against titles mislabelled prettified names and called Arrmada's own downloads "Not
-	// managed by Arrmada". Cached in the coordinator until a grab is written, so a
+	// against titles mislabelled prettified names and called Rock Media Center's own downloads "Not
+	// managed by Rock Media Center". Cached in the coordinator until a grab is written, so a
 	// refresh on every queue event doesn't re-read the record.
 	var links automation.QueueLinks
 	// How each in-flight grab stands against its stall window, so the page can say how
@@ -166,7 +166,7 @@ func (a *api) handleDownloadsFeed(w http.ResponseWriter, r *http.Request) {
 		}
 		// The network, so the page can mark a usenet job and leave out what only a torrent
 		// has (seeds, ratio, reannounce). A failed usenet job's reason, and whether it's the
-		// release (Arrmada replaces it) or where SABnzbd writes (a person must fix it).
+		// release (Rock Media Center replaces it) or where SABnzbd writes (a person must fix it).
 		entry["transport"] = it.Transport
 		entry["remaining_bytes"] = it.RemainingBytes
 		if in.Usenet && phase == "error" {
@@ -191,7 +191,7 @@ func (a *api) handleDownloadsFeed(w http.ResponseWriter, r *http.Request) {
 		}
 		// By info hash: the indexer's listing title is often a prettified rendering of the
 		// actual torrent, so matching on the name missed entire trackers and labelled
-		// genuinely-managed torrents "Not managed by Arrmada". Only a legacy grab without a
+		// genuinely-managed torrents "Not managed by Rock Media Center". Only a legacy grab without a
 		// hash is still keyed by its release name.
 		p, ok := seedPolicies[strings.ToLower(it.Hash)]
 		if !ok {
@@ -235,7 +235,7 @@ func (a *api) handleDownloadsFeed(w http.ResponseWriter, r *http.Request) {
 
 // finishing is what the feed needs to tell where a finished torrent stands, each keyed by
 // lowercased hash: pending reviews, imports being retried, misfiled TV downloads, and
-// Arrmada's own categories (which the import sweeps read without a grab).
+// Rock Media Center's own categories (which the import sweeps read without a grab).
 type finishing struct {
 	reviews  map[string]pipeline.Review
 	failures map[string]pipeline.Failure
@@ -286,7 +286,7 @@ func (a *api) importFailures() []library.FailureInfo {
 
 // queueMediaType is what a queued torrent is by its download category — each kind is
 // grabbed into its own (download.Categories). It labels a torrent no grab knows; one
-// Arrmada grabbed takes its media type and profile from the acquisition record.
+// Rock Media Center grabbed takes its media type and profile from the acquisition record.
 func queueMediaType(category string) string {
 	switch category {
 	case download.CategoryTV:

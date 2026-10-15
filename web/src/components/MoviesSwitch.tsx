@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 // MoviesSwitch is the Library | Wanted switch in the Movies header: the library grid, or
-// what Arrmada is still looking for among the films (Missing and Cutoff unmet).
+// what Rock Media Center is still looking for among the films (Missing and Cutoff unmet).
 export function MoviesSwitch({ active }: { active: "library" | "wanted" }) {
   const items = [
     { key: "library", label: "Library", to: "/movies" },

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormatCheck, ParsedRelease, QualityExplain, StoredProfile } from "../../lib/api";
 import { qualityApi } from "../../lib/qualityApi";
 
-// TestName is the builder's "Test a release name" card: paste a name and see what Arrmada
+// TestName is the builder's "Test a release name" card: paste a name and see what Rock Media Center
 // reads from it and what this profile — as edited, saved or not — makes of it. It answers
 // "why does this release never match my format?" and "why is it rejected?" without a search.
 

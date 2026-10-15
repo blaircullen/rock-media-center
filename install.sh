@@ -1,34 +1,34 @@
 #!/usr/bin/env sh
-# Arrmada installer. One line, on the server that will run it:
+# Rock Media Center installer. One line, on the server that will run it:
 #
-#   curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/blaircullen/rock-media-center/main/install.sh | sh
 #
-# It checks Docker, asks two things (where Arrmada keeps its files, and where your media
+# It checks Docker, asks two things (where Rock Media Center keeps its files, and where your media
 # lives — Enter accepts the suggestion), works out the rest (free ports, the user to run
-# as, your timezone), starts Arrmada and prints the address to open. Everything
+# as, your timezone), starts Rock Media Center and prints the address to open. Everything
 # else — the TMDB key, each library folder, Plex, indexers, people — is set up in the
 # app's first-run setup, in the browser.
 #
-# Run the same line again later and it updates Arrmada instead (it finds the install and
+# Run the same line again later and it updates Rock Media Center instead (it finds the install and
 # runs its update.sh). From a git checkout, ./install.sh does the same in that folder.
 #
 # Options (after `| sh -s --`, or after ./install.sh):
-#   --dir DIR          where Arrmada keeps its files (default: /mnt/user/appdata/arrmada on
+#   --dir DIR          where Rock Media Center keeps its files (default: /mnt/user/appdata/arrmada on
 #                      Unraid, ~/arrmada otherwise, /opt/arrmada as root)
 #   --media DIR        the folder that holds your libraries and downloads, mounted at /storage
-#   --no-media         use Arrmada's own managed storage instead of a media folder
+#   --no-media         use Rock Media Center's own managed storage instead of a media folder
 #   --tz ZONE          timezone, e.g. Europe/London (default: this machine's)
 #   --puid N --pgid N  run as this user and group (default: your media folder's owner;
 #                      99/100 on Unraid)
 #   --with-prowlarr    also run the optional Prowlarr indexer manager
 #   --with-sabnzbd     also run SABnzbd, for Usenet (you need your own Usenet provider and
-#                      indexers); Arrmada sets it up and connects to it by itself
-#   --channel CHANNEL  which Arrmada to run and update to: stable (the default) is the
+#                      indexers); Rock Media Center sets it up and connects to it by itself
+#   --channel CHANNEL  which Rock Media Center to run and update to: stable (the default) is the
 #                      published releases, downloaded; main is the newest code, compiled on
 #                      this server every update (for developers)
 #   --build            the same as --channel main
 #   --image REF        on the stable channel, run this published image instead of
-#                      ghcr.io/tristenlammi/arrmada:stable
+#                      ghcr.io/blaircullen/rock-media-center:stable
 #   -y, --yes          don't ask anything; take the suggestions and the options given
 #
 # On an existing install, --media changes its mounts, --with-prowlarr and
@@ -38,13 +38,13 @@
 # Nothing secret is asked or written here: API keys and passwords go in the app.
 set -eu
 
-REPO="tristenlammi/Arrmada"
+REPO="blaircullen/rock-media-center"
 # Overridable for forks (and the installer's own tests); everyone else leaves them be.
 REPO_URL="${ARRMADA_REPO_URL:-https://github.com/$REPO}"
 BRANCH="${ARRMADA_BRANCH:-main}"
 API_URL="${ARRMADA_API_URL:-https://api.github.com/repos/$REPO}"
 TARBALL_BASE="${ARRMADA_TARBALL_BASE:-https://codeload.github.com/$REPO/tar.gz}"
-DEFAULT_IMAGE="ghcr.io/tristenlammi/arrmada:stable"
+DEFAULT_IMAGE="ghcr.io/blaircullen/rock-media-center:stable"
 # The line people run, printed in messages.
 ONE_LINER="curl -fsSL https://raw.githubusercontent.com/$REPO/main/install.sh | sh"
 
@@ -174,15 +174,15 @@ profiles_with() {
   printf '%s' "$_list"
 }
 
-# sabnzbd_note PORT: where to add the Usenet provider. Arrmada connects to SABnzbd by
-# itself; the provider's login goes into SABnzbd, never Arrmada.
+# sabnzbd_note PORT: where to add the Usenet provider. Rock Media Center connects to SABnzbd by
+# itself; the provider's login goes into SABnzbd, never Rock Media Center.
 sabnzbd_note() {
-  say "  SABnzbd (Usenet): Arrmada connects to it by itself. Add your Usenet provider there:"
+  say "  SABnzbd (Usenet): Rock Media Center connects to it by itself. Add your Usenet provider there:"
   say "    open http://$(host_ip):$1 → Config → Servers (its setup wizard opens on the first visit)"
-  say "  then add your Newznab indexers in Arrmada (Settings → Connections)."
+  say "  then add your Newznab indexers in Rock Media Center (Settings → Connections)."
   # The app looks for SABnzbd's settings every 30 seconds and logs when it has added it. An
-  # Arrmada older than the bundled SABnzbd never does: say what to do then.
-  printf '  Waiting for Arrmada to add SABnzbd' >&2
+  # Rock Media Center older than the bundled SABnzbd never does: say what to do then.
+  printf '  Waiting for Rock Media Center to add SABnzbd' >&2
   _i=0
   while [ "$_i" -lt 45 ]; do
     if docker logs Arrmada-app 2>&1 | grep -q 'SABnzbd (bundled)'; then
@@ -193,9 +193,9 @@ sabnzbd_note() {
     _i=$((_i + 1)); sleep 2
   done
   printf '\n' >&2
-  say "  ! Arrmada hasn't added SABnzbd yet. If Settings → Connections doesn't list \"SABnzbd (bundled)\""
+  say "  ! Rock Media Center hasn't added SABnzbd yet. If Settings → Connections doesn't list \"SABnzbd (bundled)\""
   say "    in a minute: removed there before? Use its Restore bundled SABnzbd button. Otherwise this"
-  say "    Arrmada is older than the bundled SABnzbd: update it (sh update.sh), or add SABnzbd there"
+  say "    Rock Media Center is older than the bundled SABnzbd: update it (sh update.sh), or add SABnzbd there"
   say "    yourself with its API key from SABnzbd → Config → General."
 }
 
@@ -205,7 +205,7 @@ sabnzbd_note() {
 wait_healthy() {
   _i=0
   _restarts0=""
-  printf 'Waiting for Arrmada to start' >&2
+  printf 'Waiting for Rock Media Center to start' >&2
   while [ "$_i" -lt 150 ]; do
     _state=$(docker inspect -f '{{.State.Status}} {{.RestartCount}}' Arrmada-app 2>/dev/null || echo "missing 0")
     case "$_state" in
@@ -230,7 +230,7 @@ wait_healthy() {
 # fail_start prints why the app didn't come up and exits non-zero.
 fail_start() {
   err ""
-  err "✗ Arrmada didn't start. The last lines of its log:"
+  err "✗ Rock Media Center didn't start. The last lines of its log:"
   docker compose logs --tail 40 arrmada-app >&2 </dev/null || true
   err ""
   err "  Fix what the log says, then run the installer again. Full log (in $(pwd)):"
@@ -239,14 +239,14 @@ fail_start() {
 }
 
 usage() {
-  say "Install Arrmada, or update the install that's already here."
+  say "Install Rock Media Center, or update the install that's already here."
   say ""
   say "  $ONE_LINER"
   say "  $ONE_LINER -s -- [options]"
   say ""
-  say "  --dir DIR          where Arrmada keeps its files (Unraid: /mnt/user/appdata/arrmada)"
+  say "  --dir DIR          where Rock Media Center keeps its files (Unraid: /mnt/user/appdata/arrmada)"
   say "  --media DIR        the folder holding your libraries and downloads (mounted at /storage)"
-  say "  --no-media         use Arrmada's own managed storage instead"
+  say "  --no-media         use Rock Media Center's own managed storage instead"
   say "  --tz ZONE          timezone, e.g. Europe/London (default: this machine's)"
   say "  --puid N --pgid N  run as this user and group (default: the media folder's owner)"
   say "  --with-prowlarr    also run the optional Prowlarr indexer manager"
@@ -263,10 +263,10 @@ usage() {
 }
 
 # ── where an install already is ─────────────────────────────────────────────────
-# is_install DIR -> 0 if DIR holds an Arrmada install (its .env and compose file).
+# is_install DIR -> 0 if DIR holds a Rock Media Center install (its .env and compose file).
 is_install() { [ -f "$1/.env" ] && [ -f "$1/docker-compose.yml" ]; }
 
-# existing_dir -> the folder of the Arrmada already on this server, or nothing. The
+# existing_dir -> the folder of the Rock Media Center already on this server, or nothing. The
 # running container says where it was started from; the usual folders are checked too.
 existing_dir() {
   _wd=$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' Arrmada-app 2>/dev/null || true)
@@ -293,12 +293,12 @@ default_dir() {
 get_files() {
   _dir="$1"
   if have git; then
-    say "Downloading Arrmada (git clone)…"
-    git clone --quiet --branch "$BRANCH" "$REPO_URL" "$_dir" </dev/null || die "Couldn't download Arrmada from $REPO_URL."
+    say "Downloading Rock Media Center (git clone)…"
+    git clone --quiet --branch "$BRANCH" "$REPO_URL" "$_dir" </dev/null || die "Couldn't download Rock Media Center from $REPO_URL."
     return
   fi
   have tar || die "This server has neither git nor tar, so the files can't be unpacked. Install either, then run the installer again."
-  say "Downloading Arrmada…"
+  say "Downloading Rock Media Center…"
   # The exact commit, so a build from source says which code it is (the update check
   # compares it with main). Without an answer it takes the branch as it is.
   _json=$(fetch "$API_URL/commits/$BRANCH" 2>/dev/null || true)
@@ -312,7 +312,7 @@ get_files() {
   fi
   _top=$(find "$_tmp" -mindepth 1 -maxdepth 1 -type d | head -n 1)
   if [ -z "$_top" ] || [ ! -f "$_top/docker-compose.yml" ]; then
-    rm -rf "$_tmp"; die "The download from $_url didn't contain Arrmada."
+    rm -rf "$_tmp"; die "The download from $_url didn't contain Rock Media Center."
   fi
   mkdir -p "$_dir"
   # cp -R of "dir/." brings the hidden files too (.dockerignore, .gitattributes…).
@@ -349,7 +349,7 @@ write_override() {
       say "  arrmada-qbittorrent:"
       say "    volumes:"
       say "      - \"$_m:/storage\""
-      # The optional SABnzbd sees the media folder at the same path, so Arrmada can put its
+      # The optional SABnzbd sees the media folder at the same path, so Rock Media Center can put its
       # downloads in the downloads folder there. Nothing starts it unless it's switched on.
       say "  arrmada-sabnzbd:"
       say "    volumes:"
@@ -372,7 +372,7 @@ override_value() {
 # pull_image REF -> 0 once REF is downloaded and tagged arrmada:dev (the name
 # docker-compose.yml runs, as update.sh does it).
 pull_image() {
-  say "Downloading the Arrmada image ($1)…"
+  say "Downloading the Rock Media Center image ($1)…"
   docker pull "$1" </dev/null && docker image tag "$1" arrmada:dev
 }
 
@@ -423,7 +423,7 @@ stamp_build() {
 existing_install() {
   _dir="$1"
   cd "$_dir"
-  say "Arrmada is already installed in $_dir."
+  say "Rock Media Center is already installed in $_dir."
   ensure_app_image
 
   _changed=""
@@ -460,7 +460,7 @@ existing_install() {
     fi
     {
       say ""
-      say "# Which Arrmada updates bring: stable = the published releases, downloaded; main = the"
+      say "# Which Rock Media Center updates bring: stable = the published releases, downloaded; main = the"
       say "# newest code, compiled here on every update (for developers). See docs/updating.md."
       say "ARRMADA_CHANNEL=$_ch"
       if [ -n "$IMAGE_ARG" ]; then say "ARRMADA_IMAGE=$IMAGE_ARG"; fi
@@ -479,7 +479,7 @@ existing_install() {
       env_set ARRMADA_SABNZBD_PORT "$(free_port 8085 8086 8087)" "# SABnzbd's web page (where your Usenet provider goes), picked free by install.sh."
       _changed=1
     fi
-    # It sees the media folder where Arrmada does: the generated override gets the mount;
+    # It sees the media folder where Rock Media Center does: the generated override gets the mount;
     # one written by hand is left alone, with a word on what to add.
     _m=$(override_value /storage)
     if [ -n "$_m" ] && override_generated && ! grep -q '^  arrmada-sabnzbd:' docker-compose.override.yml; then
@@ -489,7 +489,7 @@ existing_install() {
     elif ! override_generated && ! grep -q 'arrmada-sabnzbd' docker-compose.override.yml; then
       say "! docker-compose.override.yml was written by hand. If it mounts your media folder into"
       say "  arrmada-app, mount it into arrmada-sabnzbd at the same path too, so SABnzbd's downloads"
-      say "  can go in your downloads folder (until then they stay in Arrmada's own storage)."
+      say "  can go in your downloads folder (until then they stay in Rock Media Center's own storage)."
     fi
   fi
   _want=""
@@ -516,11 +516,11 @@ existing_install() {
       esac
       if [ -n "$_img" ]; then pull_image "$_img" || die "Couldn't download $_img."; else stamp_build; fi
     fi
-    say "Starting Arrmada…"
+    say "Starting Rock Media Center…"
     docker compose up -d </dev/null || fail_start
     wait_healthy || fail_start
     say ""
-    say "✓ Arrmada is running.  Open http://$(host_ip):$(env_get ARRMADA_PORT)"
+    say "✓ Rock Media Center is running.  Open http://$(host_ip):$(env_get ARRMADA_PORT)"
     if [ -n "$SABNZBD" ]; then
       _sp=$(env_get ARRMADA_SABNZBD_PORT)
       say ""
@@ -557,13 +557,13 @@ new_install() {
   # 1. Where the files go (asked only when piped in; a checkout installs where it is).
   if [ -z "$_from_checkout" ]; then
     if [ -z "$DIR_SET" ]; then
-      tell "1/2  Where should Arrmada keep its settings and database?"
+      tell "1/2  Where should Rock Media Center keep its settings and database?"
       _dir=$(ask "     Folder [Enter = $_dir]: " "$_dir")
       tell ""
     fi
     case "$_dir" in /*) ;; *) _dir="$(pwd)/$_dir" ;; esac
     if [ -f "$_dir/arrmada.db" ]; then
-      die "$_dir holds an Arrmada database (an older install's data folder). Pick another folder with --dir."
+      die "$_dir holds a Rock Media Center database (an older install's data folder). Pick another folder with --dir."
     fi
     # A run that stopped after downloading (no .env yet) carries on with those files.
     if [ -f "$_dir/docker-compose.yml" ] && [ -f "$_dir/update.sh" ]; then
@@ -589,7 +589,7 @@ new_install() {
     if [ -n "$_suggest" ]; then
       MEDIA=$(ask "     Media folder [Enter = $_suggest, \"none\" = managed storage]: " "$_suggest")
     else
-      MEDIA=$(ask "     Media folder [Enter = Arrmada's own managed storage]: " "")
+      MEDIA=$(ask "     Media folder [Enter = Rock Media Center's own managed storage]: " "")
     fi
     [ "$MEDIA" = none ] && MEDIA=""
     # On Unraid, managed storage is a Docker volume inside docker.img (20 GB by default),
@@ -663,7 +663,7 @@ new_install() {
   IMAGE_REF="$IMAGE_ARG"
   [ -z "$IMAGE_REF" ] && [ -z "$BUILD" ] && IMAGE_REF="$DEFAULT_IMAGE"
 
-  say "Ready to install Arrmada:"
+  say "Ready to install Rock Media Center:"
   if [ -n "$DATA_VOLUME" ]; then
     say "   • Folder:        $_dir   (database: the Docker volume $DATA_VOLUME it already has)"
   else
@@ -672,7 +672,7 @@ new_install() {
   if [ -n "$MEDIA" ]; then
     say "   • Media:         $MEDIA → /storage inside the app"
   else
-    say "   • Media:         Arrmada's own managed storage (no media folder)"
+    say "   • Media:         Rock Media Center's own managed storage (no media folder)"
   fi
   say "   • Web UI port:   $WEBPORT"
   say "   • Timezone:      $TZONE"
@@ -704,17 +704,17 @@ new_install() {
       die "Couldn't download $IMAGE_REF. Check the name, or run without --image."
     fi
     say ""
-    say "! The published image couldn't be downloaded, so Arrmada will be compiled on this server."
+    say "! The published image couldn't be downloaded, so Rock Media Center will be compiled on this server."
     say "  That takes 30–60 minutes. This install still follows the published releases: update.sh"
     say "  moves it to the release image once one includes the code compiled now."
     IMAGE_REF=""
   fi
 
   {
-    say "# ─── Arrmada settings ─── change a value, then run update.sh to apply ───"
+    say "# ─── Rock Media Center settings ─── change a value, then run update.sh to apply ───"
     say "# API keys and passwords are entered in the app, never here."
     say ""
-    say "# Which Arrmada updates bring: stable = the published releases, downloaded; main = the"
+    say "# Which Rock Media Center updates bring: stable = the published releases, downloaded; main = the"
     say "# newest code, compiled here on every update (for developers). See docs/updating.md."
     if [ -n "$BUILD" ]; then
       say "ARRMADA_CHANNEL=main"
@@ -743,7 +743,7 @@ new_install() {
     say "# Full list: en.wikipedia.org/wiki/List_of_tz_database_time_zones"
     say "TZ=$TZONE"
     say ""
-    say "# The user and group Arrmada and qBittorrent run as."
+    say "# The user and group Rock Media Center and qBittorrent run as."
     say "ARRMADA_PUID=$PUID"
     say "ARRMADA_PGID=$PGID"
     say ""
@@ -775,17 +775,17 @@ new_install() {
   ARRMADA_APP_IMAGE=arrmada:dev
   export ARRMADA_APP_IMAGE
   if [ -n "$IMAGE_REF" ]; then
-    say "Starting Arrmada…"
+    say "Starting Rock Media Center…"
     docker compose up -d --no-build </dev/null || fail_start
   else
     stamp_build
-    say "Compiling and starting Arrmada… (the first build compiles everything — this takes a while)"
+    say "Compiling and starting Rock Media Center… (the first build compiles everything — this takes a while)"
     docker compose up -d --build </dev/null || fail_start
   fi
   wait_healthy || fail_start
 
   say ""
-  say "✓ Arrmada is running.  Open http://$(host_ip):$WEBPORT"
+  say "✓ Rock Media Center is running.  Open http://$(host_ip):$WEBPORT"
   say ""
   say "  Create your admin account there; the setup then walks you through the rest"
   say "  (TMDB key, library folders, Plex, indexers)."
@@ -848,13 +848,13 @@ main() {
   [ -n "$BUILD" ] && [ -n "$IMAGE_ARG" ] && die "--image is for the stable channel; it doesn't go with --channel main (or --build)."
   tty_init
 
-  say "⛵ Arrmada installer"
+  say "⛵ Rock Media Center installer"
   say ""
 
   # Prerequisites, each with what to do about it.
   case "$(uname -m)" in
     x86_64 | amd64) ;;
-    *) die "Arrmada runs on 64-bit Intel/AMD (x86-64) servers; this one is $(uname -m)." ;;
+    *) die "Rock Media Center runs on 64-bit Intel/AMD (x86-64) servers; this one is $(uname -m)." ;;
   esac
   if ! have docker; then
     if is_unraid; then die "Docker isn't running. Enable it in Settings → Docker, then run the installer again."; fi
@@ -903,11 +903,11 @@ main() {
   if docker inspect Arrmada-app >/dev/null 2>&1; then
     _wd=$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' Arrmada-app 2>/dev/null || true)
     if [ -n "$_wd" ] && is_install "$_wd"; then
-      err "✗ Arrmada is already installed in $_wd, and one server runs one Arrmada."
+      err "✗ Rock Media Center is already installed in $_wd, and one server runs one Rock Media Center."
       err "  To update it, run the install line without --dir, or:  sh $_wd/update.sh"
       exit 1
     fi
-    err "✗ Arrmada is already installed here (container Arrmada-app${_wd:+, started from $_wd}),"
+    err "✗ Rock Media Center is already installed here (container Arrmada-app${_wd:+, started from $_wd}),"
     err "  but its folder wasn't found. Run update.sh in that folder to update it, or point"
     err "  the installer at it:  $ONE_LINER -s -- --dir /path/to/it"
     exit 1

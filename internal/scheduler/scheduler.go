@@ -1,4 +1,4 @@
-// Package scheduler runs Arrmada's recurring background jobs (session cleanup,
+// Package scheduler runs Rock Media Center's recurring background jobs (session cleanup,
 // RSS sync, library refresh, the nightly database backup and the like). M0 provides
 // fixed-interval scheduling; cron expressions can layer on without changing callers.
 //

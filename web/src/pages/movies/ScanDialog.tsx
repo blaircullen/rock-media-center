@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button, Modal } from "../../ui";
 
 // ScanDialog asks how a library scan should catalog the films it finds. By default they're
-// added unmonitored, so Arrmada never searches for or upgrades them; monitoring them on a
+// added unmonitored, so Rock Media Center never searches for or upgrades them; monitoring them on a
 // profile lets the upgrade sweep replace their files. Films already in the library get the
 // file found either way.
 export function ScanDialog({ profiles, onScan, onClose }: {
@@ -25,13 +25,13 @@ export function ScanDialog({ profiles, onScan, onClose }: {
       }
     >
       <p className="m-0 text-base text-ink-dim">
-        Arrmada adds the films it finds in your movies folder, and gives films already in your library the file it finds for them.
+        Rock Media Center adds the films it finds in your movies folder, and gives films already in your library the file it finds for them.
       </p>
       <label className="mt-4 flex items-start gap-2.5 text-base">
         <input type="checkbox" className="mt-0.5" checked={monitor} onChange={(e) => setMonitor(e.target.checked)} />
         <span>
           Monitor them so they can be upgraded
-          <span className="mt-0.5 block text-sm text-ink-faint">Unmonitored films are never searched for or upgraded — Arrmada only catalogs them.</span>
+          <span className="mt-0.5 block text-sm text-ink-faint">Unmonitored films are never searched for or upgraded — Rock Media Center only catalogs them.</span>
         </span>
       </label>
       {monitor && (

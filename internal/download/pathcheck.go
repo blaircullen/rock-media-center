@@ -13,15 +13,15 @@ import (
 	"github.com/tristenlammi/arrmada/internal/diskspace"
 )
 
-// The path half of a download client's Test: where the client saves, whether Arrmada can
+// The path half of a download client's Test: where the client saves, whether Rock Media Center can
 // see that folder (after the client's path mappings), whether it can see the newest
 // finished download, and whether the save folder shares a filesystem with the libraries
-// (hardlinks need that). A client that downloads fine but whose paths Arrmada can't see
+// (hardlinks need that). A client that downloads fine but whose paths Rock Media Center can't see
 // never imports anything, and nothing said so until now.
 
-// PathEnv is where Arrmada keeps things, for a path check.
+// PathEnv is where Rock Media Center keeps things, for a path check.
 type PathEnv struct {
-	// Downloads is Arrmada's own downloads folder: where a missing mapping most likely points.
+	// Downloads is Rock Media Center's own downloads folder: where a missing mapping most likely points.
 	Downloads string
 	// Libraries are the library folders imports go to, for the same-filesystem check.
 	Libraries []string
@@ -29,7 +29,7 @@ type PathEnv struct {
 	DataDir string
 }
 
-// PathCheck is one path the client reported and what Arrmada made of it.
+// PathCheck is one path the client reported and what Rock Media Center made of it.
 type PathCheck struct {
 	// What is "save_folder" (the client's default save path) or "newest_download" (the
 	// content of its most recently added finished torrent).
@@ -52,7 +52,7 @@ type PathReport struct {
 	// imports into them are copied, not hardlinked.
 	OtherDrive []string `json:"other_drive,omitempty"`
 	// Suggestion is a mapping that would make the unseen paths visible, when one can be
-	// worked out from what Arrmada can see.
+	// worked out from what Rock Media Center can see.
 	Suggestion *PathMap `json:"suggestion,omitempty"`
 	// OK is true when every reported path is visible.
 	OK      bool   `json:"ok"`
@@ -86,7 +86,7 @@ func (s *Service) TestPaths(ctx context.Context, id int64, env PathEnv) (PathRep
 	if err != nil {
 		return PathReport{}, err
 	}
-	// The newest finished torrent shows whether real downloads land where Arrmada looks;
+	// The newest finished torrent shows whether real downloads land where Rock Media Center looks;
 	// a list that can't be read only costs the report that line.
 	var newest *Item
 	if items, err := impl.List(ctx, c); err == nil {
@@ -94,7 +94,7 @@ func (s *Service) TestPaths(ctx context.Context, id int64, env PathEnv) (PathRep
 	}
 	rep := checkPaths(c, save, newest, env)
 	// SABnzbd saves into its completed folder (save above), except for categories given a
-	// folder of their own: each of Arrmada's must be visible too.
+	// folder of their own: each of Rock Media Center's must be visible too.
 	if cfr, ok := impl.(categoryFolderReader); ok {
 		folders, err := cfr.CategoryFolders(ctx, c)
 		if err != nil {
@@ -112,7 +112,7 @@ type categoryFolderReader interface {
 }
 
 // addCategoryFolders adds a check per category folder to the report, in name order; one
-// Arrmada can't see makes the report not OK.
+// Rock Media Center can't see makes the report not OK.
 func addCategoryFolders(rep *PathReport, c Client, folders map[string]string) {
 	names := make([]string, 0, len(folders))
 	for name := range folders {
@@ -133,7 +133,7 @@ func addCategoryFolders(rep *PathReport, c Client, folders map[string]string) {
 	}
 	rep.OK = false
 	rep.Summary = strings.TrimSuffix(strings.TrimSuffix(rep.Summary, "."), " ✓")
-	rep.Summary += fmt.Sprintf(". Arrmada can't see the category %s %s. Mount %s into the Arrmada container, or add a path mapping.",
+	rep.Summary += fmt.Sprintf(". Rock Media Center can't see the category %s %s. Mount %s into the Rock Media Center container, or add a path mapping.",
 		plural(len(unseen), "folder", "folders"), strings.Join(unseen, ", "), plural(len(unseen), "it", "them"))
 }
 
@@ -193,9 +193,9 @@ func checkPaths(c Client, save string, newest *Item, env PathEnv) PathReport {
 }
 
 // suggestMapping works out a mapping that would make the unseen paths visible. From the
-// newest download: the longest tail of its path that exists under Arrmada's downloads
+// newest download: the longest tail of its path that exists under Rock Media Center's downloads
 // folder ("/downloads/complete/Movie" with /media/downloads/complete/Movie present gives
-// /downloads → /media/downloads). Otherwise the save folder → Arrmada's downloads folder,
+// /downloads → /media/downloads). Otherwise the save folder → Rock Media Center's downloads folder,
 // the usual shape of a seedbox mount. Nil when nothing fits or the mapping would be refused.
 func suggestMapping(c Client, save PathCheck, dl *PathCheck, env PathEnv) *PathMap {
 	if env.Downloads == "" || !isDir(env.Downloads) {
@@ -245,26 +245,26 @@ func summarise(name string, save PathCheck, dl *PathCheck, rep PathReport) strin
 	var b strings.Builder
 	switch {
 	case save.Visible && save.Local == save.Remote:
-		fmt.Fprintf(&b, "%s saves to %s, which Arrmada can see ✓", name, save.Remote)
+		fmt.Fprintf(&b, "%s saves to %s, which Rock Media Center can see ✓", name, save.Remote)
 	case save.Visible:
-		fmt.Fprintf(&b, "%s saves to %s; Arrmada sees it as %s ✓", name, save.Remote, save.Local)
+		fmt.Fprintf(&b, "%s saves to %s; Rock Media Center sees it as %s ✓", name, save.Remote, save.Local)
 	case save.Local != save.Remote:
-		fmt.Fprintf(&b, "%s saves to %s (mapped to %s), which Arrmada can't see", name, save.Remote, save.Local)
+		fmt.Fprintf(&b, "%s saves to %s (mapped to %s), which Rock Media Center can't see", name, save.Remote, save.Local)
 	default:
-		fmt.Fprintf(&b, "%s saves to %s, which Arrmada can't see", name, save.Remote)
+		fmt.Fprintf(&b, "%s saves to %s, which Rock Media Center can't see", name, save.Remote)
 	}
 	if dl != nil && !dl.Visible && !dl.Gone {
 		fmt.Fprintf(&b, ". Its newest finished download, %s, isn't visible either", dl.Local)
 		if save.Visible {
 			b.Reset()
-			fmt.Fprintf(&b, "%s's newest finished download is at %s, which Arrmada can't see", name, dl.Local)
+			fmt.Fprintf(&b, "%s's newest finished download is at %s, which Rock Media Center can't see", name, dl.Local)
 		}
 	}
 	if !rep.OK {
 		if rep.Suggestion != nil {
 			fmt.Fprintf(&b, ". Add the path mapping %s → %s", rep.Suggestion.Remote, rep.Suggestion.Local)
 		} else {
-			b.WriteString(". Mount that folder into the Arrmada container, or add a path mapping to where it's mounted")
+			b.WriteString(". Mount that folder into the Rock Media Center container, or add a path mapping to where it's mounted")
 		}
 	}
 	if len(rep.OtherDrive) > 0 {

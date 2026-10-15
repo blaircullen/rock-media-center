@@ -235,7 +235,7 @@ function ImportedFiles({ kind }: { kind: string }) {
   const load = useCallback(() => api.importedFiles().then((xs) => { setItems(xs); setError(null); }).catch((e: Error) => setError(e)), []);
   useEffect(() => { void load(); }, [load]);
   if (items === null) return error ? <ErrorState what="imported files" message={error.message} onRetry={() => void load()} /> : <Skeleton variant="list" count={6} />;
-  if (items.length === 0) return <EmptyState title="Nothing imported yet" body="When a download finishes, Arrmada files it into your library and it's listed here." />;
+  if (items.length === 0) return <EmptyState title="Nothing imported yet" body="When a download finishes, Rock Media Center files it into your library and it's listed here." />;
   return (
     <div className="flex flex-col gap-2">
       {kind && <p className="m-0 text-sm text-ink-faint">Imported files aren't split by kind; this list has every one.</p>}

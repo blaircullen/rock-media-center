@@ -95,7 +95,7 @@ export function TautulliImport() {
       body: (
         <>
           Deletes the {plays} the import from {when(r.started_at)} brought in, and nothing else: plays
-          Arrmada recorded live and plays from other imports stay.
+          Rock Media Center recorded live and plays from other imports stay.
           <p className="mb-0 mt-2">A database backup is taken first (Settings → System → Backups), so this can be undone by restoring it.</p>
         </>
       ),
@@ -107,7 +107,7 @@ export function TautulliImport() {
 
   const busy = starting || job.running;
   return (
-    <Section id="tautulli-import" title="Import from Tautulli" subtitle="Backfill Insights with your existing Tautulli watch history so your stats and graphs aren't empty on day one. Sessions are attributed to their Plex account (matching Sign in with Plex). Plays Arrmada already recorded live are skipped; re-running only adds what's missing.">
+    <Section id="tautulli-import" title="Import from Tautulli" subtitle="Backfill Insights with your existing Tautulli watch history so your stats and graphs aren't empty on day one. Sessions are attributed to their Plex account (matching Sign in with Plex). Plays Rock Media Center already recorded live are skipped; re-running only adds what's missing.">
       <Field label="Tautulli URL">
         <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="http://192.168.50.247:8181" className={input} style={inputStyle} autoComplete="off" />
       </Field>
@@ -117,7 +117,7 @@ export function TautulliImport() {
       {firstLive > 0 && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={onlyBefore} onChange={(e) => setOnlyBefore(e.target.checked)} />
-          Only import plays from before {day(firstLive)}, when Arrmada started recording
+          Only import plays from before {day(firstLive)}, when Rock Media Center started recording
         </label>
       )}
       <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ function RunRow({ run: r, busy, onRetry, onRemove }: { run: ImportRun; busy: boo
   );
 }
 
-// DoubleCounts offers to remove imported plays that repeat plays Arrmada recorded live —
+// DoubleCounts offers to remove imported plays that repeat plays Rock Media Center recorded live —
 // left by imports from before the importer skipped those. The server backs the database
 // up first and deletes nothing if the count changed since this was shown.
 function DoubleCounts({ count, firstLive }: { count: number; firstLive: number }) {
@@ -181,7 +181,7 @@ function DoubleCounts({ count, firstLive }: { count: number; firstLive: number }
       title: `Remove ${plays}?`,
       body: (
         <>
-          These plays came in from Tautulli but Arrmada had already recorded them live
+          These plays came in from Tautulli but Rock Media Center had already recorded them live
           {firstLive > 0 ? ` (it has been recording since ${day(firstLive)})` : ""}, so each one is counted twice.
           Only the imported copies are removed; plays recorded live and plays only Tautulli saw stay.
           <p className="mb-0 mt-2">A database backup is taken first (Settings → System → Backups), so this can be undone by restoring it.</p>

@@ -1,4 +1,4 @@
-// Package store owns Arrmada's persistence: a SQLite database (pure-Go driver,
+// Package store owns Rock Media Center's persistence: a SQLite database (pure-Go driver,
 // so the binary stays cgo-free and cross-compiles cleanly) with an embedded
 // migration runner. PostgreSQL support arrives in a later phase behind the same
 // surface.

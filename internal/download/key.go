@@ -2,7 +2,7 @@ package download
 
 import "strings"
 
-// A download key is how Arrmada names one download in a client, and it is what grabs,
+// A download key is how Rock Media Center names one download in a client, and it is what grabs,
 // imports and reviews store in their hash columns (grabs.info_hash, imports.download_hash,
 // import_reviews.hash). A torrent's key is its info hash, as it always was. A usenet job's
 // key is "sab-" plus SABnzbd's nzo_id, lowercased: the columns are compared with lower()
@@ -84,7 +84,7 @@ func KeyTransport(key string) Transport {
 	return ""
 }
 
-// Transport is the transport this kind of client handles, "" for a kind Arrmada doesn't
+// Transport is the transport this kind of client handles, "" for a kind Rock Media Center doesn't
 // know (such a client is sent nothing new).
 func (k Kind) Transport() Transport {
 	switch k {

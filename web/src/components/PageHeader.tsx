@@ -5,7 +5,7 @@ import { useTitle } from "../lib/title";
 // The breadcrumb comes from the sidebar (crumbFor), so moving a page in nav.ts moves its
 // crumb too. tail adds a level below the sidebar entry ("Library / Series / Season"); crumb
 // overrides the whole thing and null hides it. The header names the browser tab as well,
-// so a detail page's tab reads "Dune · Arrmada" rather than the route's generic "Movie".
+// so a detail page's tab reads "Dune · Rock Media Center" rather than the route's generic "Movie".
 export function PageHeader({ title, crumb, tail }: { title: string; crumb?: string | null; tail?: string }) {
   useTitle(title);
   const { pathname } = useLocation();

@@ -25,8 +25,8 @@ func LatestMigration() string {
 	return strings.TrimSuffix(names[len(names)-1], ".sql")
 }
 
-// ErrNewerSchema means the database was upgraded by a newer Arrmada than this one.
-var ErrNewerSchema = errors.New("the database was upgraded by a newer Arrmada")
+// ErrNewerSchema means the database was upgraded by a newer Rock Media Center than this one.
+var ErrNewerSchema = errors.New("the database was upgraded by a newer Rock Media Center")
 
 // NewerSchemaError is the refusal to start on a database with migrations this build
 // doesn't have. Its message is what the owner reads in the log, so it names the way out.
@@ -43,7 +43,7 @@ func (e *NewerSchemaError) Error() string {
 	}
 	return fmt.Sprintf("%v: it has migrations this build doesn't know (%s; this build stops at %s). "+
 		"Running older code on it could damage it, so nothing was changed. "+
-		"Update Arrmada again (./update.sh), or roll back together with the database from before that upgrade "+
+		"Update Rock Media Center again (./update.sh), or roll back together with the database from before that upgrade "+
 		"(./update.sh --rollback --with-db; the copies are in %s). "+
 		"Set ARRMADA_ALLOW_NEWER_SCHEMA=1 only to start anyway",
 		ErrNewerSchema, strings.Join(shown, ", "), e.Latest, BackupsDir(e.DataDir))
@@ -70,7 +70,7 @@ func (s *Store) refuseNewerSchema(ctx context.Context, fsys fs.FS, opt Options, 
 	if !opt.AllowNewerSchema {
 		return &NewerSchemaError{Unknown: unknown, Latest: latest, DataDir: s.dataDir}
 	}
-	log.Warn("ARRMADA_ALLOW_NEWER_SCHEMA is set: starting on a database a NEWER Arrmada upgraded. "+
+	log.Warn("ARRMADA_ALLOW_NEWER_SCHEMA is set: starting on a database a NEWER Rock Media Center upgraded. "+
 		"This build doesn't know its newest tables and columns; update again or restore a backup from before that upgrade as soon as you can",
 		"unknown_migrations", unknown, "this_build", latest)
 	return nil

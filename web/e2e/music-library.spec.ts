@@ -46,7 +46,7 @@ test.describe("Music on the kit", () => {
     await page.getByRole("button", { name: "Select", exact: true }).click();
     await page.getByRole("button", { name: /The Quiet Harbours/ }).click();
     await page.getByRole("button", { name: "Remove", exact: true }).click();
-    const ask = page.getByRole("dialog", { name: "Remove 1 artist from Arrmada?" });
+    const ask = page.getByRole("dialog", { name: "Remove 1 artist from Rock Media Center?" });
     await expect(ask.getByText("Files on disk are kept.")).toBeVisible();
     await ask.getByRole("button", { name: "Cancel" }).click();
     await expect(ask).toHaveCount(0);

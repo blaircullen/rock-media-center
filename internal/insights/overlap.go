@@ -9,7 +9,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/store"
 )
 
-// Deciding whether an imported play is the same play Arrmada recorded live.
+// Deciding whether an imported play is the same play Rock Media Center recorded live.
 //
 // Tautulli and the live poller watch the same Plex server, so every play from the period
 // both were running exists twice — but never with the same start second: the poller's
@@ -76,7 +76,7 @@ func liveOverlapSQL(end string) string {
 		      > MIN(l.stopped_at - l.started_at, ` + end + ` - i.started_at))`
 }
 
-// overlapsLive reports whether Arrmada already recorded this play live.
+// overlapsLive reports whether Rock Media Center already recorded this play live.
 func (r *repo) overlapsLive(ctx context.Context, w playWindow) (bool, error) {
 	if w.UserID == "" {
 		return false, nil // no user to match on; the live recorder always has one

@@ -64,7 +64,7 @@ export function Login({ signedOut = false }: { signedOut?: boolean }) {
           <span className="grid h-12 w-12 place-items-center rounded-2xl" style={{ background: "linear-gradient(150deg, var(--accent), var(--accent-deep))", color: "var(--accent-ink)" }}>
             <FleetMark className="h-6 w-6" />
           </span>
-          <h1 className="m-0 text-2xl font-extrabold tracking-[0.14em]">ARRMADA</h1>
+          <h1 className="m-0 text-2xl font-extrabold tracking-[0.14em]">ROCK MEDIA CENTER</h1>
           <p className="m-0 text-base text-ink-dim">{mode === "loading" ? "…" : setup ? "Create your admin account to get started." : "Sign in to discover and request."}</p>
         </div>
 

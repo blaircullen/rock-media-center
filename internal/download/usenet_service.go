@@ -8,7 +8,7 @@ import (
 // The service's side of the usenet client: the settings it needs from the app, and the
 // card's facts and "Add missing categories".
 
-// usenetSetup is a client that needs to know Arrmada's movie category and folders.
+// usenetSetup is a client that needs to know Rock Media Center's movie category and folders.
 type usenetSetup interface {
 	SetMovieCategory(movie string)
 	SetFolders(fn func(ctx context.Context) PathEnv)
@@ -30,7 +30,7 @@ func (s *Service) SetMovieCategory(movie string) {
 	}
 }
 
-// SetFolders wires where Arrmada keeps things (read on every use) for the clients that
+// SetFolders wires where Rock Media Center keeps things (read on every use) for the clients that
 // tidy up after themselves: SABnzbd's finished-job folder is deleted only inside them.
 func (s *Service) SetFolders(fn func(ctx context.Context) PathEnv) {
 	for _, impl := range s.registry.impls {
@@ -69,7 +69,7 @@ func (s *Service) UsenetFacts(ctx context.Context, id int64) (UsenetFacts, error
 	return ui.Facts(ctx, c)
 }
 
-// AddMissingCategories creates Arrmada's categories in a usenet client that lacks them and
+// AddMissingCategories creates Rock Media Center's categories in a usenet client that lacks them and
 // names the ones it created. Only ever on the owner's click.
 func (s *Service) AddMissingCategories(ctx context.Context, id int64) ([]string, error) {
 	c, ui, err := s.inspector(ctx, id)

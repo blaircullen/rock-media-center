@@ -5,9 +5,9 @@ import type { Tone } from "../ui";
 //   Downloaded    a file is on disk (a movie, a movie version)                      good
 //   Complete      every monitored episode or track is downloaded (series, albums)  good
 //   Partial       some downloaded, more wanted                                     avoid
-//   Wanted        monitored and no file yet: Arrmada is searching for it           avoid
-//   Unmonitored   Arrmada won't search for it (a paused series or artist too)      faint
-//   File missing  Arrmada recorded a file but it is gone from disk                 reject
+//   Wanted        monitored and no file yet: Rock Media Center is searching for it           avoid
+//   Unmonitored   Rock Media Center won't search for it (a paused series or artist too)      faint
+//   File missing  Rock Media Center recorded a file but it is gone from disk                 reject
 //
 // "Searching" and "Upcoming" belong to Downloads' live tabs and request cards only.
 // Library filters use the same words: "Wanted" (not "Missing") means monitored with no

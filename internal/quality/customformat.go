@@ -451,7 +451,7 @@ func regexProblem(pattern string, err error) string {
 	msg := strings.TrimPrefix(err.Error(), "error parsing regexp: ")
 	for _, look := range []string{"(?=", "(?!", "(?<=", "(?<!"} {
 		if strings.Contains(pattern, look) {
-			return msg + " — lookarounds like (?= and (?! aren't supported (Arrmada uses Go's RE2 engine, which never backtracks)"
+			return msg + " — lookarounds like (?= and (?! aren't supported (Rock Media Center uses Go's RE2 engine, which never backtracks)"
 		}
 	}
 	return msg
@@ -474,7 +474,7 @@ func FormatWarnings(formats []CustomFormat) []FormatProblem {
 					continue
 				}
 				out = append(out, FormatProblem{Format: f.Name, Index: i, Condition: j,
-					Message: fmt.Sprintf("condition %d: %q isn't a %s Arrmada reads from release names, so it never matches", j+1, v, conditionNoun(c.Type))})
+					Message: fmt.Sprintf("condition %d: %q isn't a %s Rock Media Center reads from release names, so it never matches", j+1, v, conditionNoun(c.Type))})
 			}
 		}
 	}

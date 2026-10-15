@@ -3,7 +3,7 @@ import { test, expect } from "./mockApi";
 import { mockUsenet, SAB_ID, SAB_KEY, USENET_DOWNLOADING, USENET_FAILED } from "./fixtures/usenet";
 
 // Usenet U4: SABnzbd sits beside qBittorrent. It's added on Settings → Connections with its
-// URL and API key (sent once, never shown back), its card says what Arrmada needs from it,
+// URL and API key (sent once, never shown back), its card says what Rock Media Center needs from it,
 // and usenet releases and downloads carry a small Usenet chip — with no seeds or ratio, and
 // Retry for a job SABnzbd failed. The network preference shows only with a usenet client.
 
@@ -58,8 +58,8 @@ test.describe("admin, desktop", () => {
     const facts = card.getByRole("region", { name: "SABnzbd" });
     const cats = facts.getByRole("list", { name: "Categories" });
     await expect(cats.getByRole("listitem")).toHaveText(["✓ arrmada (movies)", "✓ arrmada-tv (TV)", "✕ arrmada-music (music)"]);
-    await expect(facts.getByText("Arrmada sees it at", { exact: false })).toBeVisible();
-    await expect(facts).toContainText("✓ Completed folder /downloads/complete · Arrmada sees it at /media/downloads/complete");
+    await expect(facts.getByText("Rock Media Center sees it at", { exact: false })).toBeVisible();
+    await expect(facts).toContainText("✓ Completed folder /downloads/complete · Rock Media Center sees it at /media/downloads/complete");
     await expect(facts).toContainText("Usenet servers: 1 server, working");
     await expect(facts.getByRole("list", { name: "Needs a look" })).toContainText('language is "de"');
     expect(api.callsTo("POST", `/api/v1/downloadclients/${SAB_ID}/categories`)).toHaveLength(0);

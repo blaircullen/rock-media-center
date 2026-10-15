@@ -99,7 +99,7 @@ type libraryCounts struct {
 	Albums          int `json:"albums"`
 }
 
-// activityEvent is one line of "what Arrmada actually did", drawn from the per-media
+// activityEvent is one line of "what Rock Media Center actually did", drawn from the per-media
 // event tables the detail pages already write. They were only ever readable one title
 // at a time; this is the same record, unified and newest-first.
 type activityEvent struct {

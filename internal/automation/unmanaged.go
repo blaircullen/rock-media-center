@@ -8,7 +8,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/download"
 )
 
-// Torrents Arrmada didn't grab — added by hand in the client, or left over from another
+// Torrents Rock Media Center didn't grab — added by hand in the client, or left over from another
 // tool — that finished and sit outside its categories. Needs you lists them and offers
 // "Import into…": the same per-kind import a review's "Choose a different title" runs,
 // into a library item the user picks.
@@ -17,8 +17,8 @@ import (
 var ErrAlreadyImported = errors.New("that download has already been imported")
 
 // GrabbedHashes is every info hash a grab ever recorded, lowercased — whatever became of
-// the grab. A torrent outside it is one Arrmada never grabbed. Unreadable is an error:
-// callers mustn't treat Arrmada's own downloads as strangers.
+// the grab. A torrent outside it is one Rock Media Center never grabbed. Unreadable is an error:
+// callers mustn't treat Rock Media Center's own downloads as strangers.
 func (c *Coordinator) GrabbedHashes(ctx context.Context) (map[string]bool, error) {
 	rows, err := c.db.QueryContext(ctx, `SELECT DISTINCT lower(info_hash) FROM grabs WHERE info_hash != ''`)
 	if err != nil {
@@ -39,7 +39,7 @@ func (c *Coordinator) GrabbedHashes(ctx context.Context) (map[string]bool, error
 	return known, nil
 }
 
-// ImportUnmanaged imports a finished torrent Arrmada didn't grab into library item
+// ImportUnmanaged imports a finished torrent Rock Media Center didn't grab into library item
 // targetID of kind (movie | series | music). contentPath is where its files are,
 // already vetted by the caller to lie inside the download or library folders. Its hash is
 // then recorded as imported, so the queue shows it in the library and the import sweeps
@@ -62,6 +62,6 @@ func (c *Coordinator) ImportUnmanaged(ctx context.Context, it download.Item, con
 		return err
 	}
 	c.recordImportedHash(ctx, r.Hash, r.Name, r.SizeBytes)
-	c.log.Info("imported a download Arrmada didn't grab", "kind", kind, "id", targetID, "release", it.Name)
+	c.log.Info("imported a download Rock Media Center didn't grab", "kind", kind, "id", targetID, "release", it.Name)
 	return nil
 }

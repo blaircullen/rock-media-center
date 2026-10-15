@@ -49,7 +49,7 @@ export function Series() {
   const refreshAll = async () => {
     const ok = await confirm({
       title: `Refresh all ${list?.length ?? 0} series?`,
-      body: "Arrmada re-pulls each show's metadata and rescans its files. This runs in the background and can take a while.",
+      body: "Rock Media Center re-pulls each show's metadata and rescans its files. This runs in the background and can take a while.",
       confirmLabel: "Refresh all",
     });
     if (!ok) return;

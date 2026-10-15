@@ -10,8 +10,8 @@ import (
 )
 
 // Checks on a usenet client (SABnzbd). The client answering at all is DownloadClientsCheck's;
-// these are what can be wrong with one that answers: nothing to download from, Arrmada's
-// categories missing, folders Arrmada can't see, failure reasons it can't read — and a
+// these are what can be wrong with one that answers: nothing to download from, Rock Media Center's
+// categories missing, folders Rock Media Center can't see, failure reasons it can't read — and a
 // queue that isn't moving, which is almost always the provider. Each links to the client's
 // card on Settings → Connections, where it's fixed.
 
@@ -78,21 +78,21 @@ func usenetFindings(c UsenetClient) []Finding {
 		if len(f.Missing) == 1 {
 			cats = "category"
 		}
-		add("categories", LevelWarning, fmt.Sprintf("%s is missing Arrmada's %s %s, so those downloads can't be sent to it. Use \"Add missing categories\" on its card.",
+		add("categories", LevelWarning, fmt.Sprintf("%s is missing Rock Media Center's %s %s, so those downloads can't be sent to it. Use \"Add missing categories\" on its card.",
 			c.Name, strings.Join(f.Missing, ", "), cats))
 	}
 	if f.CompleteFolder.Remote != "" && !f.CompleteFolder.Visible {
-		add("complete", LevelWarning, fmt.Sprintf("Arrmada can't see %s's completed folder %s (it looked at %s), so finished downloads won't import. Mount it into Arrmada or add a path mapping on its card.",
+		add("complete", LevelWarning, fmt.Sprintf("Rock Media Center can't see %s's completed folder %s (it looked at %s), so finished downloads won't import. Mount it into Rock Media Center or add a path mapping on its card.",
 			c.Name, f.CompleteFolder.Remote, f.CompleteFolder.Local))
 	}
 	for _, cat := range f.Categories {
 		if cat.Folder != nil && !cat.Folder.Visible {
-			add("category."+cat.Name, LevelWarning, fmt.Sprintf("Arrmada can't see the folder %s files %s downloads in (%s), so they won't import. Mount it into Arrmada or add a path mapping on its card.",
+			add("category."+cat.Name, LevelWarning, fmt.Sprintf("Rock Media Center can't see the folder %s files %s downloads in (%s), so they won't import. Mount it into Rock Media Center or add a path mapping on its card.",
 				c.Name, cat.Name, cat.Folder.Remote))
 		}
 	}
 	if f.NotEnglish {
-		add("language", LevelWarning, fmt.Sprintf("%s's language is %q. Its failure reasons are translated, so Arrmada can't tell a full disk from a bad release and treats every failure as a bad release. Set it to English in SABnzbd → Config → General.",
+		add("language", LevelWarning, fmt.Sprintf("%s's language is %q. Its failure reasons are translated, so Rock Media Center can't tell a full disk from a bad release and treats every failure as a bad release. Set it to English in SABnzbd → Config → General.",
 			c.Name, f.Language))
 	}
 	return out
@@ -122,7 +122,7 @@ type UsenetIdle struct {
 }
 
 // UsenetProgressCheck warns about a usenet client that has downloaded nothing for a while
-// although downloads are waiting (automation.UsenetIdle decides when). Arrmada never
+// although downloads are waiting (automation.UsenetIdle decides when). Rock Media Center never
 // replaces a usenet release for that — it's nearly always the provider or the account,
 // which every release would hit — so this is what says it.
 func UsenetProgressCheck(idle func(ctx context.Context) []UsenetIdle, now func() time.Time) Check {
@@ -157,7 +157,7 @@ func idleSpan(d time.Duration) string {
 	return fmt.Sprintf("%d hours", int(d/time.Hour))
 }
 
-// UsenetLeftovers is a usenet client whose finished downloads Arrmada keeps leaving in
+// UsenetLeftovers is a usenet client whose finished downloads Rock Media Center keeps leaving in
 // place after archiving them: Count in a row, the latest Name and why (Detail).
 type UsenetLeftovers struct {
 	ClientID   int64
@@ -168,8 +168,8 @@ type UsenetLeftovers struct {
 }
 
 // UsenetLeftoversCheck warns when finished usenet downloads keep being left behind: their
-// folders are outside where Arrmada may delete (its downloads folder and SABnzbd's
-// completed folder, as Arrmada sees them), so they pile up. One is left alone (a job moved
+// folders are outside where Rock Media Center may delete (its downloads folder and SABnzbd's
+// completed folder, as Rock Media Center sees them), so they pile up. One is left alone (a job moved
 // by hand); it takes a repeat to report.
 func UsenetLeftoversCheck(list func(ctx context.Context) []UsenetLeftovers) Check {
 	return Check{
@@ -183,7 +183,7 @@ func UsenetLeftoversCheck(list func(ctx context.Context) []UsenetLeftovers) Chec
 				}
 				out = append(out, Finding{
 					Key: fmt.Sprintf("downloads.usenet.%d.leftovers", l.ClientID), Level: LevelWarning, Fix: usenetFix(l.ClientID, l.ClientName),
-					Message: fmt.Sprintf("Arrmada imported %d downloads from %s but had to leave their folders in place, most recently %s (%s). Map SABnzbd's completed folder into Arrmada, inside its downloads folder or with a path mapping on the card, so it can tidy up after imports.",
+					Message: fmt.Sprintf("Rock Media Center imported %d downloads from %s but had to leave their folders in place, most recently %s (%s). Map SABnzbd's completed folder into Rock Media Center, inside its downloads folder or with a path mapping on the card, so it can tidy up after imports.",
 						l.Count, l.ClientName, l.Name, detail),
 				})
 			}

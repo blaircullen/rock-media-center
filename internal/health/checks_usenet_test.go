@@ -44,7 +44,7 @@ func TestUsenetClientsCheck(t *testing.T) {
 	got := findingsByKey(check.Run(context.Background()))
 	want := map[string]struct{ level, says string }{
 		"downloads.usenet.3.servers":          {LevelError, "None of SAB's news servers is working (Provider: 502 Authentication failed)"},
-		"downloads.usenet.3.categories":       {LevelWarning, "missing Arrmada's arrmada-tv category"},
+		"downloads.usenet.3.categories":       {LevelWarning, "missing Rock Media Center's arrmada-tv category"},
 		"downloads.usenet.3.complete":         {LevelWarning, "can't see SAB's completed folder /downloads/complete"},
 		"downloads.usenet.3.category.arrmada": {LevelWarning, "files arrmada downloads in (/films)"},
 		"downloads.usenet.3.language":         {LevelWarning, `language is "nl"`},

@@ -18,11 +18,11 @@ func TestUpdateCheckRoutes(t *testing.T) {
 	var hits atomic.Int32
 	gh := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits.Add(1)
-		if r.URL.Path != "/repos/tristenlammi/Arrmada/releases/latest" {
+		if r.URL.Path != "/repos/blaircullen/rock-media-center/releases/latest" {
 			http.NotFound(w, r)
 			return
 		}
-		_, _ = w.Write([]byte(`{"tag_name":"v1.3.0","html_url":"https://github.com/tristenlammi/Arrmada/releases/tag/v1.3.0","body":"* Faster"}`))
+		_, _ = w.Write([]byte(`{"tag_name":"v1.3.0","html_url":"https://github.com/blaircullen/rock-media-center/releases/tag/v1.3.0","body":"* Faster"}`))
 	}))
 	defer gh.Close()
 

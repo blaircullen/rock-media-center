@@ -45,7 +45,7 @@ export function UserLayout() {
           <span className="grid h-[28px] w-[28px] flex-none place-items-center rounded-lg" style={{ background: "linear-gradient(150deg, var(--accent), var(--accent-deep))", color: "var(--accent-ink)" }}>
             <FleetMark className="h-[16px] w-[16px]" />
           </span>
-          <span className="hidden text-lg font-extrabold tracking-[0.12em] md:inline">ARRMADA</span>
+          <span className="hidden text-lg font-extrabold tracking-[0.12em] md:inline">ROCK MEDIA</span>
           {/* A phone has no inline links, so the header says where you are instead. */}
           {section && <span className="truncate text-lg font-bold sm:hidden">{section.label}</span>}
         </div>

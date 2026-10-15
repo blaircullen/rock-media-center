@@ -15,7 +15,7 @@ export interface PathCheck {
   category?: string;
 }
 
-/** A client Test's path check: which paths Arrmada can see, and a mapping that would fix the rest. */
+/** A client Test's path check: which paths Rock Media Center can see, and a mapping that would fix the rest. */
 export interface PathReport {
   checks: PathCheck[];
   other_drive?: string[];
@@ -32,13 +32,13 @@ export interface DownloadClientTest {
   paths_error?: string;
 }
 
-/** One of Arrmada's categories in a usenet client, and whether it has it. */
+/** One of Rock Media Center's categories in a usenet client, and whether it has it. */
 export interface UsenetCategory {
   name: string;
-  /** What Arrmada files under it: movies, tv, music. */
+  /** What Rock Media Center files under it: movies, tv, music. */
   for: string;
   present: boolean;
-  /** Set when the category has a folder of its own, with whether Arrmada sees it. */
+  /** Set when the category has a folder of its own, with whether Rock Media Center sees it. */
   folder?: PathCheck;
 }
 
@@ -92,10 +92,10 @@ export const downloadClientApi = {
   /** For a usenet client this asks SABnzbd four or five things: read it once, never poll. */
   downloadClientStatus: (id: number) =>
     req<DownloadClientLiveStatus>(`/api/v1/downloadclients/${id}/status`),
-  /** Logs in and checks which of its paths Arrmada can see. */
+  /** Logs in and checks which of its paths Rock Media Center can see. */
   testDownloadClient: (id: number) =>
     req<DownloadClientTest>(`/api/v1/downloadclients/${id}/test`, { method: "POST" }),
-  /** Creates the Arrmada categories a usenet client lacks; only ever on the owner's click. */
+  /** Creates the Rock Media Center categories a usenet client lacks; only ever on the owner's click. */
   addMissingCategories: (id: number) =>
     req<{ created: string[]; usenet?: UsenetFacts }>(`/api/v1/downloadclients/${id}/categories`, { method: "POST" }),
 };

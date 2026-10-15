@@ -55,8 +55,8 @@ func TestRetryImportClearsTheBackoff(t *testing.T) {
 	}
 }
 
-// Move to TV files a misfiled download under Arrmada's TV category through the client,
-// and refuses any other category — a torrent can't be pushed into a category Arrmada
+// Move to TV files a misfiled download under Rock Media Center's TV category through the client,
+// and refuses any other category — a torrent can't be pushed into a category Rock Media Center
 // doesn't own, or into one that would import it as something else.
 func TestSetCategoryOnlyArrmadasTV(t *testing.T) {
 	var mu sync.Mutex
@@ -101,7 +101,7 @@ func TestSetCategoryOnlyArrmadasTV(t *testing.T) {
 		t.Errorf("into the movie category = %d, want 400", code)
 	}
 	if code := call(hash, `{"category":"linux"}`); code != http.StatusBadRequest {
-		t.Errorf("into a category Arrmada doesn't own = %d, want 400", code)
+		t.Errorf("into a category Rock Media Center doesn't own = %d, want 400", code)
 	}
 	// The TV category, but the sweep never found this one misfiled.
 	if code := call(hash, `{"category":"`+download.CategoryTV+`"}`); code != http.StatusConflict {

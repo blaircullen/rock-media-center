@@ -1,4 +1,4 @@
-// Package health answers "are the folders Arrmada was given actually usable?" for the
+// Package health answers "are the folders Rock Media Center was given actually usable?" for the
 // health panel, the disk guard panel and the startup log, so all three judge the same
 // folders the same way.
 //

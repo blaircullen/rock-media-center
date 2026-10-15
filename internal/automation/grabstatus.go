@@ -19,7 +19,7 @@ const (
 	grabStatusImported = "imported" // its file is in the library (may still be seeding)
 	// grabStatusDismissed: its review was dismissed — the user is handling the files
 	// themselves. Seed cleanup removes the torrent at its goal but keeps the files, since
-	// Arrmada never imported them and they may be the only copy.
+	// Rock Media Center never imported them and they may be the only copy.
 	grabStatusDismissed = "dismissed"
 	grabStatusFailed    = "failed" // stalled, blocklisted, rejected in review or thrown away as junk
 	// grabStatusRemoved: the user removed the torrent from the client themselves. Not a

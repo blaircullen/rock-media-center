@@ -1,4 +1,4 @@
-// Arrmada service worker — enables PWA install + a resilient app shell.
+// Rock Media Center service worker — enables PWA install + a resilient app shell.
 // Strategy: network-first for navigations (so the SPA always gets fresh HTML when
 // online, and the cached shell when offline); cache-first only for the hashed build
 // assets under /assets/; network-first for everything else.
@@ -75,7 +75,7 @@ self.addEventListener("fetch", (e) => {
 // address) and watch_label that server's name; plex_url is Plex's page alone, which a
 // server from before Jellyfin sends instead.
 self.addEventListener("push", (e) => {
-  let data = { title: "Arrmada", body: "", url: "/discover" };
+  let data = { title: "Rock Media Center", body: "", url: "/discover" };
   try { data = { ...data, ...e.data.json() }; } catch { /* body may be empty */ }
   const watch = watchLink(data);
   e.waitUntil(
@@ -87,7 +87,7 @@ self.addEventListener("push", (e) => {
       badge: "/badge-96.png",
       data: { url: data.url, watch_url: watch ? watch.url : "" },
       // Where the platform shows actions (Android, desktop Chrome): Watch on <server>, or
-      // the request in Arrmada. Elsewhere a plain tap is all there is, and opens the server.
+      // the request in Rock Media Center. Elsewhere a plain tap is all there is, and opens the server.
       ...(watch ? { actions: [{ action: "watch", title: "Watch on " + watch.label }, { action: "open", title: "Details" }] } : {}),
       tag: data.body || data.title, // collapse duplicate pings for the same item
     })
@@ -125,7 +125,7 @@ function watchLink(data) {
 }
 
 // Tapping the notification opens what it's about (the server sends the exact title's
-// address): it focuses an open Arrmada tab and takes it there, or opens one. Only a page
+// address): it focuses an open Rock Media Center tab and takes it there, or opens one. Only a page
 // this worker controls can be navigated; for any other (one opened before the worker
 // took over) navigate() rejects, and a fresh window opens instead. Only same-origin
 // paths are followed.

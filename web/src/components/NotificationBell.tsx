@@ -109,7 +109,7 @@ export function NotificationBell({ placement = "down" }: { placement?: "down" | 
   // Mark read (badge only drops when the server call succeeds), then jump to what it's
   // about, by its reference: the exact title (Dune 2021, not 1984) or a staff "New
   // request". Only an old notice whose reference says nothing falls back to searching
-  // Discover for the quoted title; a leftover notice about a book (a module Arrmada no
+  // Discover for the quoted title; a leftover notice about a book (a module Rock Media Center no
   // longer has) just marks read.
   const markRead = async (n: UserNotification) => {
     if (n.read) return;

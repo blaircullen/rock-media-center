@@ -67,14 +67,14 @@ var folderLabel = map[string]string{
 	"music": "Music", "downloads": "Downloads",
 }
 
-// dataDirConflict refuses a media folder in, at or above Arrmada's data folder. The
+// dataDirConflict refuses a media folder in, at or above Rock Media Center's data folder. The
 // folder settings, the picker, the health panel and manual import all draw that line
 // through libroots, so they can't disagree.
 func (a *api) dataDirConflict(label, p string) error {
 	if strings.TrimSpace(p) == "" || !libroots.UnderDataDir(p, a.deps.Config.DataDir) {
 		return nil
 	}
-	return fmt.Errorf("%s folder can't be inside or contain Arrmada's data folder (%s). Media must live on its own mount, e.g. /storage or /media.",
+	return fmt.Errorf("%s folder can't be inside or contain Rock Media Center's data folder (%s). Media must live on its own mount, e.g. /storage or /media.",
 		label, a.dataDirShown())
 }
 
@@ -165,7 +165,7 @@ func (a *api) handleSetLibraryPaths(w http.ResponseWriter, r *http.Request) {
 			}
 			create = append(create, *f.value)
 		case err != nil:
-			a.writeFolderError(w, f.name, fmt.Sprintf("%s: Arrmada can't open %s (%v).", label, *f.value, err), false)
+			a.writeFolderError(w, f.name, fmt.Sprintf("%s: Rock Media Center can't open %s (%v).", label, *f.value, err), false)
 			return
 		case !fi.IsDir():
 			a.writeFolderError(w, f.name, folderNotDir(label, *f.value), false)
@@ -229,7 +229,7 @@ func resolvedFolder(c config.Config, name string) string {
 }
 
 // handleBrowse lists the sub-directories of a path, for the in-app folder picker. Admin-only,
-// read-only directory listing (no file contents). Arrmada's data folder is never offered.
+// read-only directory listing (no file contents). Rock Media Center's data folder is never offered.
 func (a *api) handleBrowse(w http.ResponseWriter, r *http.Request) {
 	p := strings.TrimSpace(r.URL.Query().Get("path"))
 	if p == "" {

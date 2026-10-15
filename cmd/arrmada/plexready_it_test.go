@@ -2,7 +2,7 @@ package main
 
 // A live test against a real Jellyfin, run by scripts/jellyfin-it.sh
 // (JELLYFIN_IT_PKGS=./cmd/arrmada/ scripts/jellyfin-it.sh -run IT_Ready): the rig's
-// throwaway server, its synthetic library, and its second mount (/arr) playing Arrmada's
+// throwaway server, its synthetic library, and its second mount (/arr) playing Rock Media Center's
 // own folders. Skipped everywhere else.
 
 import (
@@ -72,7 +72,7 @@ func TestIT_ReadyWhenJellyfinHasIt(t *testing.T) {
 	go jf.RunIndex(ctx)
 	loc := mediaReadyLocator{mediaserver.NewRegistry(jf)}
 
-	// The film: a fresh TMDB id, its folder in Arrmada's spelling, nothing reported yet.
+	// The film: a fresh TMDB id, its folder in Rock Media Center's spelling, nothing reported yet.
 	tmdb := 920_000_000 + int(time.Now().Unix()%1_000_000)*10
 	title := "Ready Eight"
 	dir := filepath.Join(arr, "Movies", fmt.Sprintf("%s (2016) {tmdb-%d}", title, tmdb))
@@ -131,7 +131,7 @@ func TestIT_ReadyWhenJellyfinHasIt(t *testing.T) {
 		t.Fatalf("waiting request = %+v", list[0].Tracking)
 	}
 
-	// Arrmada reports the folder; the ready check (every two minutes in the app, after
+	// Rock Media Center reports the folder; the ready check (every two minutes in the app, after
 	// every index rebuild too) runs until Jellyfin has it.
 	start := time.Now()
 	sc.Request(plexscan.KindMovie, dir)

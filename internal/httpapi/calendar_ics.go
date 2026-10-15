@@ -237,10 +237,10 @@ func writeICS(w io.Writer, items []CalendarItem, host string, now time.Time) err
 	stamp := now.UTC().Format("20060102T150405Z")
 	line("BEGIN:VCALENDAR")
 	line("VERSION:2.0")
-	line("PRODID:-//Arrmada//Calendar//EN")
+	line("PRODID:-//Rock Media Center//Calendar//EN")
 	line("CALSCALE:GREGORIAN")
 	line("METHOD:PUBLISH")
-	line("X-WR-CALNAME:Arrmada")
+	line("X-WR-CALNAME:Rock Media Center")
 	line("X-PUBLISHED-TTL:PT1H")
 	for _, it := range items {
 		day, err := time.Parse("2006-01-02", it.Date)

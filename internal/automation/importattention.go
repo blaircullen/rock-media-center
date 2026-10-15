@@ -141,7 +141,7 @@ func (c *Coordinator) noteWrongCategory(items []download.Item) {
 	}
 	n.mu.Unlock()
 	for _, it := range logNow {
-		c.log.Warn("series import: a completed TV download is in the wrong category — it won't import; re-grab via Arrmada or set its qBittorrent category to "+seriesCategory,
+		c.log.Warn("series import: a completed TV download is in the wrong category — it won't import; re-grab via Rock Media Center or set its qBittorrent category to "+seriesCategory,
 			"release", it.Name, "category", it.Category)
 	}
 }

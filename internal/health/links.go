@@ -24,7 +24,7 @@ var (
 	FixJellyfinConnection = &Fix{Key: "jellyfinConnection", Path: "/settings/connections#jellyfin", Label: "Jellyfin connection"}
 	// Both media server cards on Connections (Plex and Jellyfin side by side), for "connect
 	// a media server" when either will do.
-	// (How Arrmada uses them is Settings → Media servers, /settings/media-servers: LINKS.mediaServers.)
+	// (How Rock Media Center uses them is Settings → Media servers, /settings/media-servers: LINKS.mediaServers.)
 	FixMediaServerCards = &Fix{Key: "mediaServerCards", Path: "/settings/connections#media-servers", Label: "Media servers"}
 
 	// Where the Needs-you feed (internal/attention) sends each kind of item. Pending

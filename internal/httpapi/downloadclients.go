@@ -65,7 +65,7 @@ func (a *api) handleListDownloadClients(w http.ResponseWriter, r *http.Request) 
 			bundled[c.Kind] = true
 		}
 	}
-	// The categories are Arrmada's, not the client's: the page lists them read-only so
+	// The categories are Rock Media Center's, not the client's: the page lists them read-only so
 	// the owner can see what to expect in qBittorrent. can_restore_bundled offers the
 	// bundled qBittorrent back when this install has one and its row is gone, and
 	// can_restore_bundled_sabnzbd the same for the optional bundled SABnzbd (switched on,
@@ -119,7 +119,7 @@ type createClientRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	// Category is accepted so an older page's request still parses, and ignored:
-	// Arrmada picks the category for every download (download/categories.go).
+	// Rock Media Center picks the category for every download (download/categories.go).
 	Category string `json:"category"`
 	Enabled  *bool  `json:"enabled"`
 	// Priority is the client's place in the order new downloads try (1 = first); left
@@ -131,7 +131,7 @@ type createClientRequest struct {
 }
 
 // clientPathMaps checks the mappings in a request. A client that is the bundled
-// qBittorrent shares Arrmada's own folders, so it takes none.
+// qBittorrent shares Rock Media Center's own folders, so it takes none.
 func (a *api) clientPathMaps(req createClientRequest, bundled bool, keep download.PathMaps) (download.PathMaps, error) {
 	if req.PathMaps == nil {
 		return keep, nil
@@ -141,7 +141,7 @@ func (a *api) clientPathMaps(req createClientRequest, bundled bool, keep downloa
 		return nil, err
 	}
 	if bundled && len(maps) > 0 {
-		return nil, errors.New("the bundled qBittorrent shares Arrmada's folders, so it needs no path mapping")
+		return nil, errors.New("the bundled qBittorrent shares Rock Media Center's folders, so it needs no path mapping")
 	}
 	return maps, nil
 }
@@ -325,8 +325,8 @@ func (a *api) handleRestoreBundledClient(w http.ResponseWriter, r *http.Request)
 }
 
 // handleTestDownloadClient logs in to a client and, once that works, checks its paths:
-// where it saves, whether Arrmada can see that and its newest finished download, and a
-// mapping that would fix it. ok is the connection; paths.ok is whether Arrmada can see
+// where it saves, whether Rock Media Center can see that and its newest finished download, and a
+// mapping that would fix it. ok is the connection; paths.ok is whether Rock Media Center can see
 // what it downloads.
 func (a *api) handleTestDownloadClient(w http.ResponseWriter, r *http.Request) {
 	id, ok := a.pathID(w, r)
@@ -351,7 +351,7 @@ func (a *api) handleTestDownloadClient(w http.ResponseWriter, r *http.Request) {
 	a.writeJSON(w, http.StatusOK, out)
 }
 
-// clientPaths runs a client's path check against Arrmada's folders as they are now.
+// clientPaths runs a client's path check against Rock Media Center's folders as they are now.
 func (a *api) clientPaths(ctx context.Context, id int64) (download.PathReport, error) {
 	roots := a.roots()
 	env := download.PathEnv{Downloads: roots.Downloads(ctx), DataDir: a.deps.Config.DataDir}
@@ -363,7 +363,7 @@ func (a *api) clientPaths(ctx context.Context, id int64) (download.PathReport, e
 
 // handleDownloadClientStatus reports live client info: the incoming BitTorrent port, so the
 // UI can tell the user which port to forward, and for a usenet client what its card shows
-// (usenet: categories present, completed folder and whether Arrmada sees it, news servers,
+// (usenet: categories present, completed folder and whether Rock Media Center sees it, news servers,
 // language; usenet_error when it couldn't be read). Only reads.
 func (a *api) handleDownloadClientStatus(w http.ResponseWriter, r *http.Request) {
 	id, ok := a.pathID(w, r)
@@ -388,8 +388,8 @@ func (a *api) handleDownloadClientStatus(w http.ResponseWriter, r *http.Request)
 	a.writeJSON(w, http.StatusOK, out)
 }
 
-// handleAddUsenetCategories creates the Arrmada categories a usenet client lacks. It's the
-// card's "Add missing categories" button and nothing else calls it: Arrmada never changes
+// handleAddUsenetCategories creates the Rock Media Center categories a usenet client lacks. It's the
+// card's "Add missing categories" button and nothing else calls it: Rock Media Center never changes
 // a SABnzbd it was pointed at on its own. Answers the categories it added and the card's
 // facts as they are now.
 func (a *api) handleAddUsenetCategories(w http.ResponseWriter, r *http.Request) {
@@ -436,7 +436,7 @@ const unseenSample = 20
 
 // unseenDownloads is, per client other than the bundled one, the finished downloads in
 // the shared queue snapshot whose (mapped) path isn't on disk here. The bundled client
-// saves into Arrmada's own downloads folder and is left out; a torrent the client itself
+// saves into Rock Media Center's own downloads folder and is left out; a torrent the client itself
 // says has lost its files is too, since no mapping would bring it back.
 func (a *api) unseenDownloads(ctx context.Context) ([]health.UnseenDownloads, error) {
 	clients, err := a.deps.Downloads.List(ctx)

@@ -62,7 +62,7 @@ type UnwantedItem struct {
 
 // unwantedItems are the items in the order they're checked and shown.
 var unwantedItems = []UnwantedItem{
-	{UnwantedFullDisc, "Full disc image (BR-DISK)", "An untouched Blu-ray folder or ISO — Arrmada can't import these", UnwantedReject},
+	{UnwantedFullDisc, "Full disc image (BR-DISK)", "An untouched Blu-ray folder or ISO — Rock Media Center can't import these", UnwantedReject},
 	{UnwantedThreeD, "3D", "Side-by-side or over-under 3D releases", UnwantedReject},
 	{UnwantedExtras, "Extras", "Featurettes and bonus material, not the film or episode", UnwantedReject},
 	{UnwantedUpscaled, "Upscaled", "Blown up from a lower resolution to look like 4K", UnwantedAvoid},
@@ -189,7 +189,7 @@ func (p Profile) unwantedHits(c Candidate) []unwantedHit {
 	r := c.Release
 	var out []unwantedHit
 	if r.FullDisc {
-		out = append(out, unwantedHit{UnwantedFullDisc, "A full Blu-ray disc image — Arrmada can't import these", "Full disc image"})
+		out = append(out, unwantedHit{UnwantedFullDisc, "A full Blu-ray disc image — Rock Media Center can't import these", "Full disc image"})
 	}
 	if r.ThreeD {
 		out = append(out, unwantedHit{UnwantedThreeD, "A 3D release — this profile never grabs those", "3D"})

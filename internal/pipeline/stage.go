@@ -21,14 +21,14 @@ const (
 	PausedByGuard    = "paused_by_guard"   // paused by the disk guard until space frees up
 	Failed           = "failed"            // the client reports an error
 	Unpacking        = "unpacking"         // a usenet download being verified, repaired and unpacked
-	Downloaded       = "downloaded"        // finished, not grabbed by Arrmada, in one of its categories
+	Downloaded       = "downloaded"        // finished, not grabbed by Rock Media Center, in one of its categories
 	Importing        = "importing"         // finished; waiting for (or in) the import
 	ImportRetrying   = "import_retrying"   // the import failed and will be tried again
 	NeedsReview      = "needs_review"      // held for a person to decide
-	WrongCategory    = "wrong_category"    // finished in a category Arrmada never imports from
+	WrongCategory    = "wrong_category"    // finished in a category Rock Media Center never imports from
 	Imported         = "imported"          // in the library; no longer sharing
 	Seeding          = "seeding"           // in the library and sharing
-	NotManaged       = "not_managed"       // finished; nothing in Arrmada grabbed or imported it
+	NotManaged       = "not_managed"       // finished; nothing in Rock Media Center grabbed or imported it
 	Removed          = "removed"           // gone from the client
 )
 
@@ -103,16 +103,16 @@ type Input struct {
 	Usenet bool
 	// FailMessage is a failed usenet job's reason as its client gave it, and FailFix what
 	// to do when the failure is where the client writes rather than the release (a full
-	// disk): Arrmada retries nothing then, a person has to.
+	// disk): Rock Media Center retries nothing then, a person has to.
 	FailMessage string
 	FailFix     string
-	// Linked: an Arrmada grab recorded this torrent's hash (the acquisition record).
+	// Linked: a Rock Media Center grab recorded this torrent's hash (the acquisition record).
 	Linked bool
 	// GrabStatus is that grab's status word (grabbed, held, imported, dismissed).
 	GrabStatus string
 	// Imported: the imports table has the hash — it's in the library (or was settled).
 	Imported bool
-	// OwnCategory: it sits in one of Arrmada's download categories, so the import sweep
+	// OwnCategory: it sits in one of Rock Media Center's download categories, so the import sweep
 	// considers it even without a grab.
 	OwnCategory bool
 	Review      *Review
@@ -177,7 +177,7 @@ func Describe(in Input) (stage, why string) {
 	case in.OwnCategory:
 		return Downloaded, "Finished — it imports if it matches a title in the library"
 	}
-	return NotManaged, "Not managed by Arrmada"
+	return NotManaged, "Not managed by Rock Media Center"
 }
 
 // usenetFailWhy is a failed usenet job's reason: the client's own words, and what to do
@@ -194,7 +194,7 @@ func usenetFailWhy(in Input) string {
 		return why + " — " + in.FailFix
 	}
 	if in.Linked && in.GrabStatus == "grabbed" {
-		return why + " — Arrmada blocklists it and tries another release"
+		return why + " — Rock Media Center blocklists it and tries another release"
 	}
 	return why
 }

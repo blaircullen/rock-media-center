@@ -1,4 +1,4 @@
-// Package applog captures Arrmada's structured logs into an in-memory ring buffer so
+// Package applog captures Rock Media Center's structured logs into an in-memory ring buffer so
 // they can be viewed inside the app (the Logs page), in addition to stdout/docker logs.
 package applog
 

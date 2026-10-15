@@ -69,7 +69,7 @@ func SeriesInFlightScope(acqs []Acquisition, untracked []download.Item, s series
 	return seriesInFlightScope(acqs, untracked, s)
 }
 
-// UntrackedMovieItem is the torrent nobody grabbed through Arrmada that the movie sweep
+// UntrackedMovieItem is the torrent nobody grabbed through Rock Media Center that the movie sweep
 // takes to be fetching m already (untrackedMovie), "" for none: the sweep leaves m alone
 // while it is there, so the Wanted view says it is waiting on it.
 func (c *Coordinator) UntrackedMovieItem(ctx context.Context, untracked []download.Item, m movies.Movie) string {

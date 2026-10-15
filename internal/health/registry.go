@@ -12,7 +12,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/safego"
 )
 
-// The health registry answers "is everything Arrmada depends on working?" from results
+// The health registry answers "is everything Rock Media Center depends on working?" from results
 // kept in memory. Each check runs in the background on its own interval and under its
 // own timeout, driven by the health-check scheduled task, so the polled health endpoint
 // never waits on qBittorrent, Plex or TMDB — before, every Dashboard poll ran every check

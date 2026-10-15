@@ -222,7 +222,7 @@ export function Music() {
                 disabled={selected.size === 0 || bulkBusy}
                 onClick={async () => {
                   const ok = await confirm({
-                    title: `Remove ${selected.size} artist${selected.size === 1 ? "" : "s"} from Arrmada?`,
+                    title: `Remove ${selected.size} artist${selected.size === 1 ? "" : "s"} from Rock Media Center?`,
                     body: "Files on disk are kept.",
                     confirmLabel: "Remove",
                     tone: "danger",

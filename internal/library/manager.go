@@ -25,7 +25,7 @@ type Candidate struct {
 }
 
 // TitleResolver maps a finished download to the movie and the track it belongs to, so
-// imports are named from the metadata record (deterministic, matches the movie Arrmada
+// imports are named from the metadata record (deterministic, matches the movie Rock Media Center
 // tracks) instead of the scene release, and the track is settled before the file is
 // placed. ok=false → name from the release.
 type TitleResolver interface {

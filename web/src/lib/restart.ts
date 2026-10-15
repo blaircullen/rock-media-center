@@ -1,6 +1,6 @@
 import { api } from "./api";
 
-// Waiting out a restart. Docker's restart policy brings Arrmada back on its own; the page
+// Waiting out a restart. Docker's restart policy brings Rock Media Center back on its own; the page
 // knows it's back when /api/v1/status reports a different started_at. (Polling for any
 // answer isn't enough: the old process keeps answering for a moment while it shuts down.)
 
@@ -50,9 +50,9 @@ export function announceFoldersSaved() {
   window.dispatchEvent(new Event(FOLDERS_SAVED_EVENT));
 }
 
-export const RESTART_TIMEOUT_MESSAGE = "Arrmada hasn't come back — check docker compose logs arrmada-app";
+export const RESTART_TIMEOUT_MESSAGE = "Rock Media Center hasn't come back — check docker compose logs arrmada-app";
 
-// restartAppAndWait restarts Arrmada (the app restarts itself in Docker) and, once the NEW
+// restartAppAndWait restarts Rock Media Center (the app restarts itself in Docker) and, once the NEW
 // process is answering, runs `then` (default: reload the page). Rejects with
 // RESTART_TIMEOUT_MESSAGE when it hasn't come back within the timeout.
 export async function restartAppAndWait(opts: { then?: () => void | Promise<void>; intervalMs?: number; timeoutMs?: number } = {}): Promise<void> {

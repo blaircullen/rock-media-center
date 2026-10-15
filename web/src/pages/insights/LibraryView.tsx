@@ -6,7 +6,7 @@ import { useSearchParamState } from "../../lib/useSearchState";
 import { Chip, FilterGroup, ImportedNotice, RowServer, SetupState, fmtDay, fmtHours, type Metric } from "./shared";
 
 // Library: what's watched most, what has sat unwatched since it was added, and which
-// titles keep making Plex transcode — linked to the title in Arrmada.
+// titles keep making Plex transcode — linked to the title in Rock Media Center.
 
 const WINDOWS = ["30", "90", "365"] as const;
 type Win = (typeof WINDOWS)[number];
@@ -15,7 +15,7 @@ const METRICS = ["plays", "duration"] as const;
 const card = { border: "1px solid var(--line)", background: "var(--panel)" };
 const linkStyle = { color: "var(--accent-text)" };
 
-// arrmadaPath is the title's page in Arrmada, when Arrmada has it.
+// arrmadaPath is the title's page in Rock Media Center, when Rock Media Center has it.
 export function arrmadaPath(it: LibraryItem): string | null {
   if (!it.arrmada_id) return null;
   return it.media === "series" ? `/series/${it.arrmada_id}` : `/movies/${it.arrmada_id}`;
@@ -94,7 +94,7 @@ export function LibraryView({ connected, server }: { connected: boolean; server?
                 <div className="flex flex-none flex-col items-end gap-1 text-sm">
                   {arrmadaPath(h) ? (
                     <Link to={arrmadaPath(h)!} className="font-semibold" style={linkStyle}>Open</Link>
-                  ) : <span className="text-xs text-ink-faint">Not in Arrmada</span>}
+                  ) : <span className="text-xs text-ink-faint">Not in Rock Media Center</span>}
                 </div>
               </li>
             ))}

@@ -26,7 +26,7 @@ func IndexersCheck(enabled func(ctx context.Context) (int, error)) Check {
 			}
 			return []Finding{{
 				Key: "indexers.none", Level: LevelError, Fix: FixIndexers,
-				Message: "No indexers are enabled — Arrmada can't search for releases.",
+				Message: "No indexers are enabled — Rock Media Center can't search for releases.",
 			}}
 		},
 	}
@@ -124,7 +124,7 @@ func indexerNames(ts []TroubledIndexer) string {
 
 // LibraryState is what the library-folders check judges: the folders in use (only the
 // modules that are on), every folder setting (for the data-folder test, which applies
-// whether or not the module is on), and Arrmada's data folder.
+// whether or not the module is on), and Rock Media Center's data folder.
 type LibraryState struct {
 	Folders []Folder
 	All     []Folder
@@ -155,7 +155,7 @@ func LibraryFoldersCheck(src func(ctx context.Context) LibraryState, probes *Pro
 					underData[f.Path] = true
 					out = append(out, Finding{
 						Key: "library." + f.Role, Level: LevelError, Fix: FixLibraryFolders,
-						Message: fmt.Sprintf("The %s folder (%s) is inside (or contains) Arrmada's data folder — move it to its own mount.", f.Label, f.Path),
+						Message: fmt.Sprintf("The %s folder (%s) is inside (or contains) Rock Media Center's data folder — move it to its own mount.", f.Label, f.Path),
 					})
 				}
 			}
@@ -181,17 +181,17 @@ func LibraryFoldersCheck(src func(ctx context.Context) LibraryState, probes *Pro
 func FolderProblem(f Folder, st FolderState) (level, msg string) {
 	switch {
 	case !st.Exists && st.Err != nil:
-		return LevelError, fmt.Sprintf("Arrmada can't look at the %s folder %s: %v.", f.Label, f.Path, st.Err)
+		return LevelError, fmt.Sprintf("Rock Media Center can't look at the %s folder %s: %v.", f.Label, f.Path, st.Err)
 	case !st.Exists && st.ParentExists && st.ParentWritable:
-		return LevelWarning, fmt.Sprintf("The %s folder %s doesn't exist yet. Arrmada will create it when it's first needed; if it should be an existing share, check the container's volume mapping.", f.Label, f.Path)
+		return LevelWarning, fmt.Sprintf("The %s folder %s doesn't exist yet. Rock Media Center will create it when it's first needed; if it should be an existing share, check the container's volume mapping.", f.Label, f.Path)
 	case !st.Exists && st.ParentExists:
-		return LevelError, fmt.Sprintf("The %s folder %s doesn't exist, and Arrmada can't create it (check the container's volume mapping and the share's permissions).", f.Label, f.Path)
+		return LevelError, fmt.Sprintf("The %s folder %s doesn't exist, and Rock Media Center can't create it (check the container's volume mapping and the share's permissions).", f.Label, f.Path)
 	case !st.Exists:
 		return LevelError, fmt.Sprintf("The %s folder %s isn't there — the share isn't mounted.", f.Label, f.Path)
 	case !st.IsDir:
 		return LevelError, fmt.Sprintf("The %s folder %s is a file, not a folder.", f.Label, f.Path)
 	case !st.Writable:
-		return LevelError, fmt.Sprintf("Arrmada can't write to the %s folder %s (check PUID/PGID and the share's permissions).", f.Label, f.Path)
+		return LevelError, fmt.Sprintf("Rock Media Center can't write to the %s folder %s (check PUID/PGID and the share's permissions).", f.Label, f.Path)
 	}
 	return "", ""
 }

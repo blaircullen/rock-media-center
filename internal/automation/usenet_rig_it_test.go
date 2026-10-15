@@ -191,7 +191,7 @@ func sabArchivedFailMessage(t *testing.T, base, key, nzoID string) string {
 }
 
 // About 3% of a release's articles gone from the provider, the par2 set to cover it: SABnzbd
-// fetches the repair blocks, repairs, and Arrmada imports the episode as if nothing happened.
+// fetches the repair blocks, repairs, and Rock Media Center imports the episode as if nothing happened.
 func TestUsenetPar2RepairLive(t *testing.T) {
 	r := newUsenetRig(t, "arrmada-u5-repair")
 	run := rigRun()
@@ -257,7 +257,7 @@ func (r *usenetRig) usenetFailure(t *testing.T, title string) (string, bool) {
 }
 
 // A password-protected archive whose NZB carries no password: SABnzbd can't unpack it, and
-// Arrmada treats that as a bad release — blocklisted with the reason, and searched again.
+// Rock Media Center treats that as a bad release — blocklisted with the reason, and searched again.
 func TestUsenetPasswordedLive(t *testing.T) {
 	r := newUsenetRig(t, "arrmada-u5-pw")
 	run := rigRun()

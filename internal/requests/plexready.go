@@ -31,7 +31,7 @@ const (
 	plexGrace = 30 * time.Minute
 	// plexSettle: an index can only say a show is on the server, not which episodes, so
 	// for a show the server already had (an earlier season) it counts as there only in an
-	// index read at least this long after the files landed — by then Arrmada's partial
+	// index read at least this long after the files landed — by then Rock Media Center's partial
 	// scan has gone out and the index has been read again (~90 s after the scan).
 	plexSettle = 2 * time.Minute
 	// plexRelook is how often a waiting request asks for the indexes to be read again
@@ -45,7 +45,7 @@ type PlexIDs struct {
 	TMDB int
 	TVDB int
 	IMDB string
-	// Folder is the title's library folder as Arrmada sees it: Jellyfin finds a title it
+	// Folder is the title's library folder as Rock Media Center sees it: Jellyfin finds a title it
 	// matched no id for (each file of a multi-version movie folder) by it. Plex ignores it.
 	Folder string
 }
@@ -251,7 +251,7 @@ func (s *Service) plexJudge(ctx context.Context, l plexLookup, since time.Time) 
 	}
 	switch {
 	case l.built.Before(settled):
-		// The next read must come after the scan Arrmada sent has had its time.
+		// The next read must come after the scan Rock Media Center sent has had its time.
 		s.plex.Refresh(max(settled.Sub(now), 0) + 5*time.Second)
 	case now.Sub(l.built) >= plexRelook:
 		s.plex.Refresh(0)

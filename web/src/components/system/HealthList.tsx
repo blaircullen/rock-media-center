@@ -63,7 +63,7 @@ export function HealthList() {
       </div>
       {err && <p className="m-0 text-sm" style={{ color: "var(--reject-text)" }}>Couldn't load the health checks: {err}</p>}
       {data === null && !err && <p className="m-0 text-sm text-ink-dim">Loading…</p>}
-      {data && checks.length === 0 && <p className="m-0 text-sm text-ink-dim">No checks have run yet. They start within half a minute of Arrmada starting.</p>}
+      {data && checks.length === 0 && <p className="m-0 text-sm text-ink-dim">No checks have run yet. They start within half a minute of Rock Media Center starting.</p>}
 
       {groups.map((g) => (
         <div key={g.cat} className="flex flex-col gap-1.5">

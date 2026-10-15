@@ -8,8 +8,8 @@ import type { SystemStatus, UpdateStatus } from "../src/lib/api";
 // channel; a link to System → Status's Updates card. Runs at desktop width (the sidebar is
 // always open) and phone width (it's the drawer behind the menu button).
 
-const v020 = { tag: "v0.2.0", name: "v0.2.0", url: "https://github.com/tristenlammi/Arrmada/releases/tag/v0.2.0", notes: "## What's Changed\n* Version badge", notes_truncated: false, published_at: "2026-10-14T10:00:00Z" };
-const v021 = { ...v020, tag: "v0.2.1", name: "v0.2.1", url: "https://github.com/tristenlammi/Arrmada/releases/tag/v0.2.1" };
+const v020 = { tag: "v0.2.0", name: "v0.2.0", url: "https://github.com/blaircullen/rock-media-center/releases/tag/v0.2.0", notes: "## What's Changed\n* Version badge", notes_truncated: false, published_at: "2026-10-14T10:00:00Z" };
+const v021 = { ...v020, tag: "v0.2.1", name: "v0.2.1", url: "https://github.com/blaircullen/rock-media-center/releases/tag/v0.2.1" };
 
 function releaseBuild(update: Partial<UpdateStatus>): SystemStatus {
   return {
@@ -42,7 +42,7 @@ test.describe("admin", () => {
     await serveStatus(page, releaseBuild({}));
     await page.goto("/movies");
     await openNav(page);
-    const link = badge(page).getByRole("link", { name: "Arrmada v0.2.0 — up to date" });
+    const link = badge(page).getByRole("link", { name: "Rock Media Center v0.2.0 — up to date" });
     await expect(link).toBeVisible();
     await expect(link).toHaveText("v0.2.0");
     await expect(link).toHaveAttribute("href", "/settings/status#updates");
@@ -53,7 +53,7 @@ test.describe("admin", () => {
     await serveStatus(page, releaseBuild({ available: true, latest: v021 }));
     await page.goto("/movies");
     await openNav(page);
-    const link = badge(page).getByRole("link", { name: "Arrmada v0.2.0 — update available (v0.2.1)" });
+    const link = badge(page).getByRole("link", { name: "Rock Media Center v0.2.0 — update available (v0.2.1)" });
     await expect(link).toBeVisible();
     await expect(link).toHaveText("v0.2.0");
     await expect(link.getByTestId("update-dot")).toBeVisible();
@@ -63,7 +63,7 @@ test.describe("admin", () => {
     // The default fixture: 2026.10.08 at abc1234, three commits behind main.
     await page.goto("/movies");
     await openNav(page);
-    const link = badge(page).getByRole("link", { name: "Arrmada main · abc1234 — update available (3 commits behind main)" });
+    const link = badge(page).getByRole("link", { name: "Rock Media Center main · abc1234 — update available (3 commits behind main)" });
     await expect(link).toHaveText("main · abc1234");
     await expect(link.getByTestId("update-dot")).toBeVisible();
     await link.click();
@@ -146,7 +146,7 @@ test.describe("manager", () => {
   test("sees the build as plain text, without asking for the admin status", async ({ page, api }) => {
     await page.goto("/movies");
     await openNav(page);
-    await expect(badge(page)).toHaveText("Arrmada main · e2e0000");
+    await expect(badge(page)).toHaveText("Rock Media Center main · e2e0000");
     await expect(badge(page).getByRole("link")).toHaveCount(0);
     expect(api.callsTo("GET", "/api/v1/system/status")).toHaveLength(0);
   });

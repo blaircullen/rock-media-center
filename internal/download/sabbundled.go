@@ -77,7 +77,7 @@ func parseSABAPIKey(r io.Reader) (string, error) {
 
 // SABTuned is what TuneBundledSAB changed in the bundled SABnzbd.
 type SABTuned struct {
-	Categories []string // Arrmada categories it created
+	Categories []string // Rock Media Center categories it created
 	Folders    string   // the folder downloads now go under ("" when unchanged)
 }
 
@@ -88,10 +88,10 @@ type bundledSABTuner interface {
 	MakeCategoryFolders(ctx context.Context, dc Client, root string) error
 }
 
-// TuneBundledSAB gets the bundled SABnzbd ready for Arrmada, the way the bundled
-// qBittorrent's save path is set: Arrmada's categories (its seeded config has the default
+// TuneBundledSAB gets the bundled SABnzbd ready for Rock Media Center, the way the bundled
+// qBittorrent's save path is set: Rock Media Center's categories (its seeded config has the default
 // movie category, which ARRMADA_DOWNLOAD_CATEGORY can rename), and its incomplete and
-// completed folders under usenet/ in Arrmada's downloads folder, so a finished job sits on
+// completed folders under usenet/ in Rock Media Center's downloads folder, so a finished job sits on
 // the same filesystem as the library and imports by a rename rather than a copy. Only the
 // bundled SABnzbd is ever changed like this; someone's own SABnzbd is theirs.
 // ErrBundledInactive when there's none, or it's switched off.
@@ -126,9 +126,9 @@ func (s *Service) TuneBundledSAB(ctx context.Context, downloadsRoot string) (SAB
 	return out, nil
 }
 
-// MakeCategoryFolders creates the folders Arrmada's categories have of their own, inside
-// root (Arrmada's downloads folder) only. SABnzbd makes one when its first job finishes;
-// until then Arrmada can't see it, and the card and the health list would say so.
+// MakeCategoryFolders creates the folders Rock Media Center's categories have of their own, inside
+// root (Rock Media Center's downloads folder) only. SABnzbd makes one when its first job finishes;
+// until then Rock Media Center can't see it, and the card and the health list would say so.
 func (s *SABnzbd) MakeCategoryFolders(ctx context.Context, dc Client, root string) error {
 	if root == "" || !filepath.IsAbs(root) {
 		return nil
@@ -153,14 +153,14 @@ func (s *SABnzbd) MakeCategoryFolders(ctx context.Context, dc Client, root strin
 	return nil
 }
 
-// ErrSABCantSee means SABnzbd doesn't see Arrmada's downloads folder, so its folders were
+// ErrSABCantSee means SABnzbd doesn't see Rock Media Center's downloads folder, so its folders were
 // left where they are rather than pointed at a path that only exists inside its container.
-var ErrSABCantSee = errors.New("SABnzbd doesn't see Arrmada's downloads folder")
+var ErrSABCantSee = errors.New("SABnzbd doesn't see Rock Media Center's downloads folder")
 
 // UseDownloadsFolder points SABnzbd's incomplete and completed folders at usenet/incomplete
-// and usenet/complete inside root (Arrmada's downloads folder, as Arrmada sees it). Before
-// changing anything it checks SABnzbd sees the same folder: Arrmada writes a marker file
-// there and asks SABnzbd to list the folder. A folder that's only mounted into Arrmada
+// and usenet/complete inside root (Rock Media Center's downloads folder, as Rock Media Center sees it). Before
+// changing anything it checks SABnzbd sees the same folder: Rock Media Center writes a marker file
+// there and asks SABnzbd to list the folder. A folder that's only mounted into Rock Media Center
 // would otherwise be created inside SABnzbd's container, and every download would vanish
 // with it. It returns the new folder SABnzbd downloads under, "" when nothing changed.
 func (s *SABnzbd) UseDownloadsFolder(ctx context.Context, dc Client, root string) (string, error) {

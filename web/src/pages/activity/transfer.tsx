@@ -100,7 +100,7 @@ export function ItemChips({ it }: { it: ActivityDownload }) {
   const item = it.item;
   const usenet = isUsenetDownload(it) ? <UsenetChip /> : null;
   if (!item) {
-    // Nothing in Arrmada grabbed it: say so once, quietly (the seeding view's stage chip
+    // Nothing in Rock Media Center grabbed it: say so once, quietly (the seeding view's stage chip
     // already does for finished ones).
     return (
       <>

@@ -14,7 +14,7 @@ import { Button, EmptyState, ErrorState, Skeleton, StaleBanner, StatusChip, useC
 import { TabPanel, Tabs } from "../ui/Tabs";
 import { Page } from "../ui/Page";
 
-// Movies → Wanted: what Arrmada is still looking for among the films, why it hasn't found
+// Movies → Wanted: what Rock Media Center is still looking for among the films, why it hasn't found
 // it, and when it tries next. The Wanted tab lists the films badged Wanted (the library's
 // Wanted filter, same count); Cutoff unmet lists files that don't meet their profile's target and
 // says whether the upgrade sweep will do anything about them. Every search here goes
@@ -122,7 +122,7 @@ function MissingTab({ q }: { q: MissingQuery }) {
         </div>
       )}
       {empty ? (
-        <EmptyState title="Nothing missing" body="Every monitored movie has its file. New ones you add show here until Arrmada finds them." />
+        <EmptyState title="Nothing missing" body="Every monitored movie has its file. New ones you add show here until Rock Media Center finds them." />
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -192,14 +192,14 @@ function CutoffTab({ q }: { q: CutoffQuery }) {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-ink-dim">
               <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
-              Also show files Arrmada won't upgrade ({wont})
+              Also show files Rock Media Center won't upgrade ({wont})
             </label>
             <Button size="sm" variant="primary" disabled={toSearch.length === 0} busy={busy} busyLabel="Queuing…" onClick={() => void searchAll()}>
               Search all ({toSearch.length})
             </Button>
           </div>
           {shown.length === 0 ? (
-            <EmptyState title="Nothing for the upgrade sweep" body={`${wont} ${wont === 1 ? "file misses" : "files miss"} the target, but Arrmada won't upgrade ${wont === 1 ? "it" : "them"} — tick the box above to see why.`} />
+            <EmptyState title="Nothing for the upgrade sweep" body={`${wont} ${wont === 1 ? "file misses" : "files miss"} the target, but Rock Media Center won't upgrade ${wont === 1 ? "it" : "them"} — tick the box above to see why.`} />
           ) : (
             <Rows rows={shown} onChange={q.refetch} cutoff />
           )}
@@ -246,7 +246,7 @@ function rowWords(r: MovieWantedRow, upcoming?: boolean, cutoff?: boolean): { ch
     return { chip: "Upgrade downloading", tone: "var(--accent-text)", line: `${parts[0]} · downloading ${r.waiting_on ?? "an upgrade"}` };
   }
   if (!r.will_upgrade) {
-    return { chip: "Won't upgrade", tone: "var(--ink-faint)", line: `${parts[0]} · ${r.why_not ?? "Arrmada won't upgrade it"}` };
+    return { chip: "Won't upgrade", tone: "var(--ink-faint)", line: `${parts[0]} · ${r.why_not ?? "Rock Media Center won't upgrade it"}` };
   }
   if (r.last_search) parts.push(`last looked: ${attemptLine(r.last_search.latest)}`);
   const next = nextTryText(r.next_search_at);

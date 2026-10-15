@@ -15,7 +15,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/netutil"
 )
 
-// A Plex sign-in is a PIN: Arrmada asks plex.tv for one, the person approves it on
+// A Plex sign-in is a PIN: Rock Media Center asks plex.tv for one, the person approves it on
 // plex.tv, and polling the PIN then hands back their Plex token. The PIN id travels in
 // URLs and plex.tv hands them out in sequence, so the id alone must never be enough to
 // collect the token — anyone polling a guessed id would get a session (or a Plex link)

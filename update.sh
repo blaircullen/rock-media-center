@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Arrmada updater — pull the latest code and rebuild in place.
+# Rock Media Center updater — pull the latest code and rebuild in place.
 #
 #   ./update.sh                       back up the database, pull, rebuild and restart the app
 #   ./update.sh --force-local         skip the pull and rebuild the code that's here
@@ -17,9 +17,9 @@
 # An install made by the one-line installer without git (it has .arrmada-source) gets its
 # newer files as a download instead of a git pull; everything else is the same.
 #
-# Which Arrmada an update brings is ARRMADA_CHANNEL in .env:
+# Which Rock Media Center an update brings is ARRMADA_CHANNEL in .env:
 #   ARRMADA_CHANNEL=stable   the published releases (the default): the image ARRMADA_IMAGE
-#                            names, ghcr.io/tristenlammi/arrmada:stable when it's unset, is
+#                            names, ghcr.io/blaircullen/rock-media-center:stable when it's unset, is
 #                            downloaded, which takes minutes. It never goes backwards: a
 #                            server running newer code than the latest release keeps it
 #                            until a release includes it.
@@ -103,7 +103,7 @@ json_str() {
 
 # Where an install downloaded without git (install.sh writes .arrmada-source then) gets
 # its newer files. Overridable for forks and the installer's own tests.
-REPO="tristenlammi/Arrmada"
+REPO="blaircullen/rock-media-center"
 API_URL="${ARRMADA_API_URL:-https://api.github.com/repos/$REPO}"
 TARBALL_BASE="${ARRMADA_TARBALL_BASE:-https://codeload.github.com/$REPO/tar.gz}"
 
@@ -151,14 +151,14 @@ refresh_download() {
   if ! fetch "$_url" | tar -xz -C "$_tmp"; then
     rm -rf "$_tmp"
     say "" >&2
-    say "✗ Couldn't download $_url. Nothing was changed; Arrmada is still running the version it was." >&2
+    say "✗ Couldn't download $_url. Nothing was changed; Rock Media Center is still running the version it was." >&2
     say "  Check this server can reach github.com, then run update.sh again." >&2
     exit 1
   fi
   _top=$(find "$_tmp" -mindepth 1 -maxdepth 1 -type d | head -n 1)
   if [ -z "$_top" ] || [ ! -f "$_top/docker-compose.yml" ] || [ ! -f "$_top/update.sh" ]; then
     rm -rf "$_tmp"
-    say "✗ The download from $_url didn't contain Arrmada. Nothing was changed." >&2
+    say "✗ The download from $_url didn't contain Rock Media Center. Nothing was changed." >&2
     exit 1
   fi
   _data=$(grep -E '^ARRMADA_DATA_HOST=' .env | tail -n 1 | cut -d= -f2- | tr -d '\r"'"'"' ')
@@ -215,7 +215,7 @@ confirm() {
 wait_healthy() {
   _i=0
   _restarts0=""
-  printf 'Waiting for Arrmada to start' >&2
+  printf 'Waiting for Rock Media Center to start' >&2
   while [ "$_i" -lt 90 ]; do
     _state=$(docker inspect -f '{{.State.Status}} {{.RestartCount}}' Arrmada-app 2>/dev/null || echo "missing 0")
     case "$_state" in
@@ -249,7 +249,7 @@ show_log() {
 # fail_start prints why the app didn't come up and exits non-zero.
 fail_start() {
   say ""
-  say "✗ Arrmada didn't start. The last lines of its log:" >&2
+  say "✗ Rock Media Center didn't start. The last lines of its log:" >&2
   show_log
   say "" >&2
   say "  Fix what the log says, then run the script again. Full log: docker compose logs arrmada-app" >&2
@@ -287,7 +287,7 @@ env_get() {
 # (compiling here, unless ARRMADA_IMAGE says otherwise). One with no arrmada:dev and no
 # ARRMADA_IMAGE has only ever run `docker compose up -d` here, which means the published
 # image, so its updates download that too rather than start compiling.
-DEFAULT_IMAGE="ghcr.io/tristenlammi/arrmada:stable"
+DEFAULT_IMAGE="ghcr.io/blaircullen/rock-media-center:stable"
 _app_image=$(env_get ARRMADA_APP_IMAGE)
 if [ -z "$_app_image" ]; then
   if [ -z "$(env_get ARRMADA_IMAGE)" ] && [ -z "$FORCE_LOCAL" ] && [ -z "$ROLLBACK" ] &&
@@ -315,7 +315,7 @@ fi
 ARRMADA_APP_IMAGE=arrmada:dev
 export ARRMADA_APP_IMAGE
 
-# ── which Arrmada this server follows ───────────────────────────────────────────
+# ── which Rock Media Center this server follows ───────────────────────────────────────────
 # ARRMADA_CHANNEL: stable downloads the published image (ARRMADA_IMAGE, or the :stable
 # release when that's unset); main compiles the code here, whatever ARRMADA_IMAGE says.
 # Without the line (an install from before it existed) ARRMADA_IMAGE decides, as it always
@@ -347,14 +347,14 @@ fi
 case "$PULL_IMAGE" in
   arrmada | arrmada:*)
     say "✗ ARRMADA_IMAGE=$PULL_IMAGE in .env names one of this script's own local images." >&2
-    say "  Set it to a published image (e.g. ghcr.io/tristenlammi/arrmada:stable), or remove the line to build here." >&2
+    say "  Set it to a published image (e.g. ghcr.io/blaircullen/rock-media-center:stable), or remove the line to build here." >&2
     exit 2 ;;
 esac
 
 # ── rollback ───────────────────────────────────────────────────────────────────
 # start_app_or_go_back CURRENT_ID -> starts whatever arrmada:dev is now and waits for
 # it. If it doesn't come up, the build it replaced (kept as arrmada:rolled-back) is put
-# back and started, so a failed rollback never leaves Arrmada down; then it exits 1.
+# back and started, so a failed rollback never leaves Rock Media Center down; then it exits 1.
 start_app_or_go_back() {
   if docker compose up -d --no-build --no-deps --force-recreate arrmada-app && wait_healthy; then
     return 0
@@ -367,7 +367,7 @@ start_app_or_go_back() {
     say "  Starting the build you rolled back from again…" >&2
     docker image tag arrmada:rolled-back arrmada:dev
     if docker compose up -d --no-build --no-deps --force-recreate arrmada-app && wait_healthy; then
-      say "  Arrmada is back on the build it was running." >&2
+      say "  Rock Media Center is back on the build it was running." >&2
     else
       say "  ✗ That didn't start either. Full log: docker compose logs arrmada-app" >&2
     fi
@@ -396,7 +396,7 @@ rollback() {
   fi
   _cur=$(image_id arrmada:dev)
   if [ "$_prev" = "$_cur" ]; then
-    say "Arrmada is already running the previous build. To go forward again, run ./update.sh"
+    say "Rock Media Center is already running the previous build. To go forward again, run ./update.sh"
     exit 0
   fi
   _prev_commit=$(image_label arrmada:previous org.arrmada.commit)
@@ -419,8 +419,8 @@ rollback() {
     fi
     say "This goes back to the previous build${_prev_commit:+ (commit $_prev_commit)} AND puts back the"
     say "database as it was before the last update ($_backup)."
-    say "Everything Arrmada recorded since then is lost: requests, watch and listening history,"
-    say "settings changes. Torrents grabbed since keep running in qBittorrent, but Arrmada won't know them."
+    say "Everything Rock Media Center recorded since then is lost: requests, watch and listening history,"
+    say "settings changes. Torrents grabbed since keep running in qBittorrent, but Rock Media Center won't know them."
     if ! confirm "Roll back the build and the database?"; then
       say "Nothing was changed."
       exit 0
@@ -509,7 +509,7 @@ rollback() {
 
   _commit=$(health_json | json_str commit)
   say ""
-  say "✓ Rolled back. Arrmada is running commit ${_commit:-unknown} again."
+  say "✓ Rolled back. Rock Media Center is running commit ${_commit:-unknown} again."
   if [ -n "$_backup" ]; then
     say "  The database is back to $_backup; everything recorded after it is gone."
   elif [ -n "$_legacy" ]; then
@@ -553,7 +553,7 @@ if [ -z "$PULLED" ]; then
     _before=$(cksum < update.sh)
     if ! git pull --ff-only; then
       say "" >&2
-      say "✗ git pull failed (see above). Nothing was rebuilt; Arrmada is still running the version it was." >&2
+      say "✗ git pull failed (see above). Nothing was rebuilt; Rock Media Center is still running the version it was." >&2
       say "  Fix the checkout ('git status' shows local changes or a diverged branch), then run ./update.sh again," >&2
       say "  or run ./update.sh --force-local to rebuild the code that's here without pulling." >&2
       exit 1
@@ -640,7 +640,7 @@ env_set() {
     { say ""; say "$3"; say "$1=$2"; } >> .env
   fi
 }
-CHANNEL_COMMENT="# Which Arrmada updates bring: stable = the published releases, main = the newest code compiled here."
+CHANNEL_COMMENT="# Which Rock Media Center updates bring: stable = the published releases, main = the newest code compiled here."
 
 # running_build sets RUN_VERSION and RUN_COMMIT to the build that's running (or, with the
 # app stopped, the one compose starts): as stamped on its image, else as the app reports
@@ -705,7 +705,7 @@ newest_tag() {
   printf '%s' "$_best"
 }
 
-# stay_put WHY: this update leaves Arrmada on the build it's running, says why, and ends
+# stay_put WHY: this update leaves Rock Media Center on the build it's running, says why, and ends
 # the script. Nothing has been changed by then (bar the .env lines added above), and the
 # next update checks again.
 REL_VERSION=""
@@ -716,19 +716,19 @@ stay_put() {
   say ""
   case "$1" in
     newer)
-      say "Arrmada stays on the build it's running ($_build): it has code the latest"
+      say "Rock Media Center stays on the build it's running ($_build): it has code the latest"
       say "release ($_release) doesn't, so moving to that would be a step back. Nothing was changed." ;;
     edits)
-      say "Arrmada stays on the build it's running ($_build): it was built with local"
+      say "Rock Media Center stays on the build it's running ($_build): it was built with local"
       say "edits no release has, so moving to a release would be a step back. Nothing was changed." ;;
     unknown)
-      say "Arrmada stays on the build it's running: it doesn't say which code it was built from, so"
+      say "Rock Media Center stays on the build it's running: it doesn't say which code it was built from, so"
       say "there's no telling whether the latest release would be a step back. Nothing was changed."
       say "  To move it to the published releases anyway, add ARRMADA_CHANNEL=stable to .env and run"
       say "  ./update.sh again (a release still never starts on a database newer than it)." ;;
     schema)
-      say "✗ The database is newer than $_release: a newer build of Arrmada has already upgraded it," >&2
-      say "  and the release can't run on it. Nothing was changed; Arrmada keeps the build it's running." >&2 ;;
+      say "✗ The database is newer than $_release: a newer build of Rock Media Center has already upgraded it," >&2
+      say "  and the release can't run on it. Nothing was changed; Rock Media Center keeps the build it's running." >&2 ;;
   esac
   if [ "$1" = schema ]; then
     say "  Every ./update.sh checks again, and moves to the published releases once one can run on this database." >&2
@@ -822,7 +822,7 @@ if [ -n "$PULL_IMAGE" ]; then
   say "Downloading $PULL_IMAGE…"
   if ! docker pull "$PULL_IMAGE"; then
     say "" >&2
-    say "✗ Couldn't download $PULL_IMAGE (see above). Nothing was changed; Arrmada is still running the version it was." >&2
+    say "✗ Couldn't download $PULL_IMAGE (see above). Nothing was changed; Rock Media Center is still running the version it was." >&2
     if [ -n "$MIGRATE" ]; then
       say "  (This update would have moved it from compiling here to the published releases. The next one tries again.)" >&2
     fi
@@ -844,7 +844,7 @@ PRE_UPDATE_BACKUP=""
 if [ -n "$NO_BACKUP" ]; then
   say "  ! Not backing up the database first (--no-backup)."
 elif [ -z "$RUNNING_IMAGE" ]; then
-  say "  ! Arrmada isn't running, so there's no pre-update backup (it still snapshots the database before any schema change)."
+  say "  ! Rock Media Center isn't running, so there's no pre-update backup (it still snapshots the database before any schema change)."
 elif [ "$(docker inspect -f '{{index .Config.Labels "org.arrmada.cli"}}' Arrmada-app 2>/dev/null || true)" != "1" ]; then
   say "  ! This build can't take a pre-update backup; continuing (it still snapshots the database before any schema change)."
 else
@@ -900,7 +900,7 @@ fi
 
 # Settings that were removed: the app never sees them now, so say so here.
 if grep -qE '^ARRMADA_BASE_URL=.*[^/[:space:]"'"'"']' .env; then
-  say "  ! ARRMADA_BASE_URL in .env is no longer supported and is ignored — Arrmada is served"
+  say "  ! ARRMADA_BASE_URL in .env is no longer supported and is ignored — Rock Media Center is served"
   say "    at the root of its own hostname. Point your reverse proxy at the root, then delete the line."
 fi
 
@@ -919,12 +919,12 @@ if [ -n "$MIGRATE" ]; then
   export ARRMADA_CHANNEL
 fi
 if [ -n "$PULL_IMAGE" ]; then
-  say "Restarting Arrmada on $PULL_IMAGE…"
+  say "Restarting Rock Media Center on $PULL_IMAGE…"
   if ! docker image tag "$PULL_IMAGE" arrmada:dev || ! docker compose up -d --no-build --no-deps arrmada-app; then
     UP_OK=""
   fi
 else
-  say "Rebuilding and restarting Arrmada…"
+  say "Rebuilding and restarting Rock Media Center…"
   docker compose up -d --build --no-deps arrmada-app || UP_OK=""
 fi
 # Whether the pull brought nothing new (already on the newest image).
@@ -953,13 +953,13 @@ fi
 
 # update_failed: the new version replaced the running one and didn't start. Go back to
 # the one that was running (kept as arrmada:previous a moment ago) rather than leave
-# Arrmada down. The rollback checks the database first: if the new version already
+# Rock Media Center down. The rollback checks the database first: if the new version already
 # upgraded it, going back also needs the backup taken at the start of this update, which
 # loses whatever happened in the last few minutes, so that is only ever done when someone
 # at the terminal says yes.
 update_failed() {
   say "" >&2
-  say "✗ The new version of Arrmada didn't start. The last lines of its log:" >&2
+  say "✗ The new version of Rock Media Center didn't start. The last lines of its log:" >&2
   show_log
   if [ -z "$RUNNING_IMAGE" ] || [ "$(image_id arrmada:previous)" != "$RUNNING_IMAGE" ] || [ "$(image_id arrmada:dev)" = "$RUNNING_IMAGE" ]; then
     say "" >&2
@@ -977,7 +977,7 @@ update_failed() {
     if [ -z "$YES" ] && [ -t 0 ]; then
       say "" >&2
       say "The new version had already upgraded the database. Going back needs the backup taken at" >&2
-      say "the start of this update ($(cat "$PREVIOUS_DB_FILE")); anything Arrmada recorded since then is lost." >&2
+      say "the start of this update ($(cat "$PREVIOUS_DB_FILE")); anything Rock Media Center recorded since then is lost." >&2
       printf 'Put it back and start the previous version? [y/N] ' >&2
       read -r _answer || _answer=""
     fi
@@ -986,14 +986,14 @@ update_failed() {
         _rc=0
         ( WITH_DB=1; YES=1; rollback ) || _rc=$? ;;
       *)
-        say "  Arrmada is down. Either go back with the database: ./update.sh --rollback --with-db" >&2
+        say "  Rock Media Center is down. Either go back with the database: ./update.sh --rollback --with-db" >&2
         say "  or fix what the log says and run ./update.sh again." >&2
         exit 1 ;;
     esac
   fi
   say "" >&2
   if [ "$_rc" = 0 ]; then
-    say "✗ The update didn't go through, so Arrmada is back on the version it was running." >&2
+    say "✗ The update didn't go through, so Rock Media Center is back on the version it was running." >&2
     say "  Nothing else was changed. The new version's log is above; please report it at" >&2
     say "  https://github.com/$REPO/issues" >&2
   else
@@ -1006,7 +1006,7 @@ update_failed() {
 if [ -z "$UP_OK" ]; then
   if [ -n "$RUNNING_IMAGE" ] && [ "$(image_id arrmada:dev)" = "$RUNNING_IMAGE" ] && app_answers; then
     say "" >&2
-    say "✗ The build failed (see above). Nothing was replaced; Arrmada is still running the version it was." >&2
+    say "✗ The build failed (see above). Nothing was replaced; Rock Media Center is still running the version it was." >&2
     exit 1
   fi
   update_failed
@@ -1057,12 +1057,12 @@ if [ -n "$PULL_IMAGE" ]; then
   ARRMADA_VERSION=$(image_label arrmada:dev org.arrmada.version)
   ARRMADA_COMMIT=$(image_label arrmada:dev org.arrmada.commit)
   if [ -n "$SAME_IMAGE" ]; then
-    say "✓ Arrmada is already on the newest $PULL_IMAGE: ${ARRMADA_VERSION:-unknown} (${ARRMADA_COMMIT:-unknown}).  Open http://${HOSTIP:-localhost}:${WEBPORT:-7878}"
+    say "✓ Rock Media Center is already on the newest $PULL_IMAGE: ${ARRMADA_VERSION:-unknown} (${ARRMADA_COMMIT:-unknown}).  Open http://${HOSTIP:-localhost}:${WEBPORT:-7878}"
   else
-    say "✓ Arrmada updated to ${ARRMADA_VERSION:-unknown} (${ARRMADA_COMMIT:-unknown}) from $PULL_IMAGE.  Open http://${HOSTIP:-localhost}:${WEBPORT:-7878}"
+    say "✓ Rock Media Center updated to ${ARRMADA_VERSION:-unknown} (${ARRMADA_COMMIT:-unknown}) from $PULL_IMAGE.  Open http://${HOSTIP:-localhost}:${WEBPORT:-7878}"
   fi
 else
-  say "✓ Arrmada updated to ${ARRMADA_VERSION} (${ARRMADA_COMMIT}).  Open http://${HOSTIP:-localhost}:${WEBPORT:-7878}"
+  say "✓ Rock Media Center updated to ${ARRMADA_VERSION} (${ARRMADA_COMMIT}).  Open http://${HOSTIP:-localhost}:${WEBPORT:-7878}"
 fi
 say "  A database snapshot is taken automatically before any schema change (<data>/backups, newest 5 kept)."
 if docker image inspect arrmada:previous >/dev/null 2>&1; then

@@ -122,7 +122,7 @@ func TestRecentlyAddedAdultFilter(t *testing.T) {
 }
 
 // Plex titles join the library's: a title both know is one card at its newest arrival,
-// one Plex added outside Arrmada is looked up, and one older than the window is left out.
+// one Plex added outside Rock Media Center is looked up, and one older than the window is left out.
 func TestRecentlyAddedMergesPlex(t *testing.T) {
 	now := time.Now().Unix()
 	local := []recentTitle{
@@ -136,7 +136,7 @@ func TestRecentlyAddedMergesPlex(t *testing.T) {
 	}
 	plexItems := []insights.RecentTMDB{
 		{Media: "series", TMDB: 2, AddedAt: now - 10},      // Plex saw it later: moves it up
-		{Media: "movie", TMDB: 3, AddedAt: now - 100},      // added outside Arrmada
+		{Media: "movie", TMDB: 3, AddedAt: now - 100},      // added outside Rock Media Center
 		{Media: "movie", TMDB: 4, AddedAt: now - 90*86400}, // too old
 	}
 	got := mergeRecent(local, plexItems, lookup, now-30*86400)
@@ -149,6 +149,6 @@ func TestRecentlyAddedMergesPlex(t *testing.T) {
 		t.Fatalf("merged = %v, want %v", keys, want)
 	}
 	if looked != 1 {
-		t.Errorf("looked up %d titles, want 1 (only the one Arrmada doesn't have)", looked)
+		t.Errorf("looked up %d titles, want 1 (only the one Rock Media Center doesn't have)", looked)
 	}
 }

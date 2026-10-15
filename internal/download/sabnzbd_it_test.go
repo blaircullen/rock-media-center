@@ -26,7 +26,7 @@ import (
 //	ARRMADA_SABNZBD_HOSTNAME_URL  optional: SABnzbd by a name it doesn't whitelist
 //	ARRMADA_SABNZBD_CAPTURE    optional: a folder to write the raw queue/history answers to
 //
-// It changes the test SABnzbd: adds Arrmada's categories and a news server (removed after).
+// It changes the test SABnzbd: adds Rock Media Center's categories and a news server (removed after).
 func TestSABnzbdLive(t *testing.T) {
 	if os.Getenv("ARRMADA_SABNZBD_IT") == "" {
 		t.Skip("set ARRMADA_SABNZBD_IT=1 (and the ARRMADA_SABNZBD_* addresses) to run against a real SABnzbd")

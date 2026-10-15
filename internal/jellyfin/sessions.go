@@ -9,7 +9,7 @@ import (
 )
 
 // Session is one client connection from /Sessions. A session with a NowPlayingItem is a
-// stream; the rest are idle apps (and Arrmada's own key shows up as one).
+// stream; the rest are idle apps (and Rock Media Center's own key shows up as one).
 type Session struct {
 	ID                 string    `json:"Id"`
 	UserID             string    `json:"UserId"`

@@ -32,8 +32,8 @@ export const sabFacts: UsenetFacts = {
   language: "de",
   not_english: true,
   warnings: [
-    'SABnzbd is missing Arrmada\'s arrmada-music category. Use "Add missing categories"',
-    'SABnzbd\'s language is "de". Its failure reasons are translated, which makes them harder for Arrmada to read; English works best (SABnzbd → Config → General)',
+    'SABnzbd is missing Rock Media Center\'s arrmada-music category. Use "Add missing categories"',
+    'SABnzbd\'s language is "de". Its failure reasons are translated, which makes them harder for Rock Media Center to read; English works best (SABnzbd → Config → General)',
   ],
 };
 

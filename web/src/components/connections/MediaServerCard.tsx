@@ -34,7 +34,7 @@ export function serverChip(it: ConnectionItem): { tone: Tone; label: string } {
 }
 
 // MediaServerCard is one media server on Settings → Connections: its mark, name, which
-// server it is, a status chip and line, what Arrmada uses it for, and Test / Edit (Fix
+// server it is, a status chip and line, what Rock Media Center uses it for, and Test / Edit (Fix
 // while it's failing). A server that isn't connected is a quiet dashed card with one
 // Connect button. The editor opens inside the card (children). Its id is the card's
 // anchor, so a health warning's link lands on it.
@@ -109,7 +109,7 @@ export function MediaServerCard({ server, item, identity, test, onTest, onEdit, 
       {uses.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <span className="font-mono text-2xs font-bold uppercase tracking-[0.1em] text-ink-faint">Used for</span>
-          <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0" aria-label={`What Arrmada uses ${name} for`}>
+          <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0" aria-label={`What Rock Media Center uses ${name} for`}>
             {uses.map((u) => (
               <li key={u} className="rounded-full px-2 py-0.5 text-xs" style={{ background: "var(--panel-2)", border: "1px solid var(--line)", color: "var(--ink-dim)" }}>
                 {USE_LABEL[u] ?? u}

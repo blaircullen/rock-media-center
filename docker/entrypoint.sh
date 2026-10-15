@@ -1,5 +1,5 @@
 #!/bin/sh
-# Run Arrmada as a configurable user (PUID/PGID) — the standard container pattern so the
+# Run Rock Media Center as a configurable user (PUID/PGID) — the standard container pattern so the
 # app owns its appdata and can read your media, whatever uid your files use. Defaults to
 # 1000:1000. The container starts as root, fixes ownership of the data dir, then drops
 # privileges to PUID:PGID via gosu (Debian's su-exec equivalent).

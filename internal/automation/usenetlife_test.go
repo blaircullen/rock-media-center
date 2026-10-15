@@ -141,7 +141,7 @@ func TestUsenetDiskFullWaitsForAPerson(t *testing.T) {
 	}
 }
 
-// A reason in no wording Arrmada knows (a SABnzbd not set to English) is a bad release, and
+// A reason in no wording Rock Media Center knows (a SABnzbd not set to English) is a bad release, and
 // its raw text is logged.
 func TestUsenetUnknownReasonIsABadRelease(t *testing.T) {
 	h := newStallHarness(t)
@@ -288,7 +288,7 @@ func TestUsenetVanishedFromHistory(t *testing.T) {
 }
 
 // Seed clean-up never waits on a usenet job: imported, it is archived with its folder
-// deleted; a folder outside where Arrmada may delete is left (the job archived anyway),
+// deleted; a folder outside where Rock Media Center may delete is left (the job archived anyway),
 // and once that happens twice in a row the health check hears of it. A tidy clean-up
 // clears that.
 func TestUsenetCleanupAfterImport(t *testing.T) {

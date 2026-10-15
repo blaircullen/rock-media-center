@@ -1,4 +1,4 @@
-// Package jellyfinsvc is Arrmada's Jellyfin connection: the saved address and API key, the
+// Package jellyfinsvc is Rock Media Center's Jellyfin connection: the saved address and API key, the
 // server's identity, how it has been answering, a library index (TMDB/TVDB/IMDb ids and
 // folders → item) for Watch links and "is it in Jellyfin yet?", and the adapter that lets
 // plexscan send Jellyfin partial scans. It's the Jellyfin side of mediaserver.Server;
@@ -32,7 +32,7 @@ const (
 	KeyServerID   = "jellyfin_server_id"
 	KeyServerName = "jellyfin_server_name"
 	KeyVersion    = "jellyfin_server_version"
-	KeyDeviceID   = "jellyfin_device_id" // made once; Jellyfin files Arrmada's sessions under it
+	KeyDeviceID   = "jellyfin_device_id" // made once; Jellyfin files Rock Media Center's sessions under it
 	// Partial scans after changes (the plexscan.Scanner built for Jellyfin keeps these).
 	KeyScanOnImport = "jellyfin_scan_on_import"
 	KeyPathMap      = "jellyfin_path_map"
@@ -65,12 +65,12 @@ type Keys interface {
 type Options struct {
 	Settings Settings
 	Keys     Keys
-	// Version is Arrmada's build, sent to Jellyfin with every call.
+	// Version is Rock Media Center's build, sent to Jellyfin with every call.
 	Version string
 	// HTTP is the client every call goes through (nil = the jellyfin package's default).
 	HTTP *http.Client
-	// Roots is Arrmada's library folder per plexscan kind (KindMovie, KindShow), read
-	// live, and PathMaps the saved Arrmada → Jellyfin path mappings: together they
+	// Roots is Rock Media Center's library folder per plexscan kind (KindMovie, KindShow), read
+	// live, and PathMaps the saved Rock Media Center → Jellyfin path mappings: together they
 	// translate a title's folder to Jellyfin's spelling for the path fallback.
 	Roots    func(ctx context.Context) map[string]string
 	PathMaps func(ctx context.Context) []plexscan.PathMap
@@ -162,8 +162,8 @@ func (s *Service) PollSeconds(ctx context.Context) int {
 	return min(max(n, 2), 60)
 }
 
-// DeviceID is Arrmada's stable device id towards Jellyfin, made on first use. Jellyfin
-// files Arrmada's sessions (and a signed-in user's token) under it.
+// DeviceID is Rock Media Center's stable device id towards Jellyfin, made on first use. Jellyfin
+// files Rock Media Center's sessions (and a signed-in user's token) under it.
 func (s *Service) DeviceID(ctx context.Context) string {
 	s.deviceMu.Lock()
 	defer s.deviceMu.Unlock()
@@ -299,7 +299,7 @@ type keyClearer interface {
 }
 
 // Disconnect forgets the server: its address, public address, API key and what it said
-// about itself, and drops the library index. How Arrmada used it (sign-in switches,
+// about itself, and drops the library index. How Rock Media Center used it (sign-in switches,
 // monitoring, path mappings) stays, so connecting it again picks up where it was; with no
 // address saved none of it does anything meanwhile. Linked accounts keep their Jellyfin
 // link too. An install-time ARRMADA_JELLYFIN_API_KEY still stands behind the cleared key,

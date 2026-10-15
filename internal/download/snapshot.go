@@ -222,7 +222,7 @@ func (s *Service) readQueue(ctx context.Context) Snapshot {
 			part[i].ClientID = dc.ID
 			part[i].Transport = dc.Kind.Transport()
 			// Every reader of the queue (imports, stall checks, review, health) gets the
-			// path as Arrmada sees it. Without mappings this changes nothing.
+			// path as Rock Media Center sees it. Without mappings this changes nothing.
 			part[i].ContentPath = dc.PathMaps.ToLocal(part[i].ContentPath)
 		}
 		snap.Items = append(snap.Items, part...)

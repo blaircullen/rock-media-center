@@ -10,7 +10,7 @@ import (
 // left out entirely when there is none (popup mode).
 func TestAuthURLForwardURL(t *testing.T) {
 	fwd := "https://arrmada.example.com/?plexpin=42&x=a b"
-	got := AuthURL("cid", "CODE", "Arrmada", fwd)
+	got := AuthURL("cid", "CODE", "Rock Media Center", fwd)
 	if !strings.HasPrefix(got, plexAuthUI) {
 		t.Fatalf("AuthURL = %q, want the app.plex.tv auth page", got)
 	}
@@ -25,7 +25,7 @@ func TestAuthURLForwardURL(t *testing.T) {
 		t.Errorf("forwardUrl isn't escaped: %q", got)
 	}
 
-	if bare := AuthURL("cid", "CODE", "Arrmada", ""); strings.Contains(bare, "forwardUrl") {
+	if bare := AuthURL("cid", "CODE", "Rock Media Center", ""); strings.Contains(bare, "forwardUrl") {
 		t.Errorf("no forward URL should leave the param out: %q", bare)
 	}
 }

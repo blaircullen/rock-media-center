@@ -270,7 +270,7 @@ func TestIT_ItemsIndex(t *testing.T) {
 	}
 }
 
-// How Jellyfin reads Arrmada's names. The rig has one folder per case; the test pins what
+// How Jellyfin reads Rock Media Center's names. The rig has one folder per case; the test pins what
 // 12.2 does so a change shows up, and logs the full picture.
 func TestIT_NamingGrouping(t *testing.T) {
 	e := liveEnv(t)
@@ -309,7 +309,7 @@ func TestIT_NamingGrouping(t *testing.T) {
 			}
 		}
 	}
-	// Arrmada's default names in a {tmdb-N} folder: the files don't start with the folder's
+	// Rock Media Center's default names in a {tmdb-N} folder: the files don't start with the folder's
 	// name, so every file is its own movie and the folder's movie.nfo and id are ignored.
 	expect("Dune (2021) {tmdb-438631}", 3, 1, 0)
 	expect("Heat (1995) {tmdb-949}", 2, 1, 0)
@@ -360,7 +360,7 @@ func TestIT_RecentlyAdded(t *testing.T) {
 	}
 }
 
-// A folder Arrmada just imported appears after LibraryMediaUpdated — with realtime
+// A folder Rock Media Center just imported appears after LibraryMediaUpdated — with realtime
 // monitoring off, so the call is what finds it — and the test logs how long it took.
 func TestIT_LibraryMediaUpdated(t *testing.T) {
 	e := liveEnv(t)
@@ -601,7 +601,7 @@ func TestIT_QuickConnect(t *testing.T) {
 		t.Error(err)
 	}
 	// 12.2 does NOT retire an approved secret after its first sign-in: it signs in again
-	// until the request expires. Arrmada has to forget the secret itself once it's used.
+	// until the request expires. Rock Media Center has to forget the secret itself once it's used.
 	if again, err := app.AuthenticateWithQuickConnect(ctx, st.Secret); err == nil {
 		t.Logf("an approved secret signs in again after first use")
 		_ = app.WithToken(again.AccessToken).Logout(ctx)

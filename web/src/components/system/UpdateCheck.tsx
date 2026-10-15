@@ -36,7 +36,7 @@ export function UpdateCheck({ update }: { update: UpdateStatus }) {
   return (
     <section id="updates" className="scroll-mt-20 rounded-xl p-5" style={{ background: "var(--panel)", border: "1px solid var(--line)" }}>
       <h2 className="m-0 text-md font-bold">Updates</h2>
-      <p className="mb-4 mt-0.5 text-sm text-ink-faint">Whether a newer Arrmada is out, and what changed.</p>
+      <p className="mb-4 mt-0.5 text-sm text-ink-faint">Whether a newer Rock Media Center is out, and what changed.</p>
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <span className="text-md font-semibold" style={{ color: TONE[head.tone] }}>{head.text}</span>
@@ -58,7 +58,7 @@ export function UpdateCheck({ update }: { update: UpdateStatus }) {
         </div>
         <AutoToggle
           label="Check for updates"
-          hint="Reads GitHub's public list of Arrmada releases every 12 hours. Nothing about this server is sent."
+          hint="Reads GitHub's public list of Rock Media Center releases every 12 hours. Nothing about this server is sent."
           save={enabled}
         />
       </div>

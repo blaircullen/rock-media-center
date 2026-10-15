@@ -838,7 +838,7 @@ func (r *Repo) SeasonExists(ctx context.Context, seriesID int64, season int) boo
 // SeasonHasMissing reports whether a season still has an aired episode with no file on
 // disk — i.e. a re-processed pack could still fill something. Monitoring is deliberately
 // NOT considered: if the file is already downloaded, it should import regardless of
-// whether Arrmada would auto-grab the episode. Unaired episodes don't count (they can't
+// whether Rock Media Center would auto-grab the episode. Unaired episodes don't count (they can't
 // be filled yet), so an ongoing show doesn't look perpetually incomplete. season <= 0
 // checks the whole series.
 func (r *Repo) SeasonHasMissing(ctx context.Context, seriesID int64, season int) bool {

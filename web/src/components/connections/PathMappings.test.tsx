@@ -7,7 +7,7 @@ import { clientBody } from "./ClientEditor";
 import { PathMappings } from "./PathMappings";
 
 // INT-25: a download client's path mappings save as they're added or removed, and "Check
-// paths" shows which of its paths Arrmada can see, with a mapping that would fix the rest.
+// paths" shows which of its paths Rock Media Center can see, with a mapping that would fix the rest.
 
 const seedbox = (over: Partial<DownloadClient> = {}): DownloadClient => ({ id: 7, name: "Seedbox", kind: "qbittorrent", url: "http://sb:8080", enabled: true, priority: 25, ...over });
 const show = (c: DownloadClient) => render(<PathMappings client={c} body={(maps: PathMap[]) => clientBody(c, { path_maps: maps })} />);
@@ -21,23 +21,23 @@ describe("path mappings", () => {
   it("adds a mapping at once, keeping the password blank (kept), and shows a refusal", async () => {
     const upd = vi.spyOn(downloadClientApi, "updateDownloadClient")
       .mockResolvedValueOnce(seedbox({ path_maps: [{ remote: "/downloads", local: "/media/downloads" }] }))
-      .mockRejectedValueOnce(new Error("/data/x is Arrmada's data folder, where its database lives"));
+      .mockRejectedValueOnce(new Error("/data/x is Rock Media Center's data folder, where its database lives"));
     show(seedbox());
     const form = screen.getByRole("form", { name: "Add a path mapping" });
     fireEvent.change(within(form).getByLabelText("qBittorrent's path"), { target: { value: "/downloads/" } });
-    fireEvent.change(within(form).getByLabelText("Arrmada's path"), { target: { value: "/media/downloads" } });
+    fireEvent.change(within(form).getByLabelText("Rock Media Center's path"), { target: { value: "/media/downloads" } });
     await act(async () => { fireEvent.click(within(form).getByRole("button", { name: "Add mapping" })); });
     expect(upd).toHaveBeenCalledWith(7, expect.objectContaining({ password: "", path_maps: [{ remote: "/downloads/", local: "/media/downloads" }] }));
     expect(screen.getByText(/\/media\/downloads$/)).toBeTruthy();
     expect((within(form).getByLabelText("qBittorrent's path") as HTMLInputElement).value).toBe("");
 
     fireEvent.change(within(form).getByLabelText("qBittorrent's path"), { target: { value: "/other" } });
-    fireEvent.change(within(form).getByLabelText("Arrmada's path"), { target: { value: "/data/x" } });
+    fireEvent.change(within(form).getByLabelText("Rock Media Center's path"), { target: { value: "/data/x" } });
     await act(async () => { fireEvent.click(within(form).getByRole("button", { name: "Add mapping" })); });
     expect(screen.getByRole("alert").textContent).toMatch(/data folder/);
     // The refused one isn't shown as saved, and what was typed stays to fix.
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
-    expect((within(form).getByLabelText("Arrmada's path") as HTMLInputElement).value).toBe("/data/x");
+    expect((within(form).getByLabelText("Rock Media Center's path") as HTMLInputElement).value).toBe("/data/x");
   });
 
   it("removes a mapping at once", async () => {
@@ -48,7 +48,7 @@ describe("path mappings", () => {
     expect(screen.queryAllByRole("listitem")).toHaveLength(0);
   });
 
-  it("Check paths lists what Arrmada can't see and offers the mapping that fixes it", async () => {
+  it("Check paths lists what Rock Media Center can't see and offers the mapping that fixes it", async () => {
     vi.spyOn(downloadClientApi, "testDownloadClient").mockResolvedValue({
       ok: true,
       paths: {
@@ -58,7 +58,7 @@ describe("path mappings", () => {
           { what: "newest_download", remote: "/downloads/Film", local: "/downloads/Film", visible: false },
         ],
         suggestion: { remote: "/downloads", local: "/media/downloads" },
-        summary: "Seedbox saves to /downloads, which Arrmada can't see. Add the path mapping /downloads → /media/downloads.",
+        summary: "Seedbox saves to /downloads, which Rock Media Center can't see. Add the path mapping /downloads → /media/downloads.",
       },
     });
     const upd = vi.spyOn(downloadClientApi, "updateDownloadClient").mockResolvedValue(seedbox({ path_maps: [{ remote: "/downloads", local: "/media/downloads" }] }));

@@ -70,10 +70,10 @@ func (a *api) handleProwlarrSettings(w http.ResponseWriter, r *http.Request) {
 	a.writeJSON(w, http.StatusOK, map[string]any{"ui_url": ui})
 }
 
-// handleProwlarrSync pulls indexers from Prowlarr and mirrors them into Arrmada.
+// handleProwlarrSync pulls indexers from Prowlarr and mirrors them into Rock Media Center.
 // Body {url, api_key} are optional — a blank URL falls back to the configured
 // default, and a blank key reuses the stored one. Successful values are saved.
-// add_flaresolverr_proxy adds Arrmada's FlareSolverr to a Prowlarr that isn't the
+// add_flaresolverr_proxy adds Rock Media Center's FlareSolverr to a Prowlarr that isn't the
 // bundled one (the bundled one always gets it).
 func (a *api) handleProwlarrSync(w http.ResponseWriter, r *http.Request) {
 	var req struct {

@@ -1,18 +1,18 @@
-# Updating Arrmada
+# Updating Rock Media Center
 
 ## The one line
 
 Run the install line again on the server:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/blaircullen/rock-media-center/main/install.sh | sh
 ```
 
-It finds your install and updates it. Or run the updater in Arrmada's folder directly —
+It finds your install and updates it. Or run the updater in Rock Media Center's folder directly —
 it's the same thing:
 
 ```sh
-sh /mnt/user/appdata/arrmada/update.sh      # wherever Arrmada is installed
+sh /mnt/user/appdata/arrmada/update.sh      # wherever Rock Media Center is installed
 ./update.sh                                 # from inside the folder (git checkouts too)
 ```
 
@@ -21,7 +21,7 @@ sh /mnt/user/appdata/arrmada/update.sh      # wherever Arrmada is installed
 `ARRMADA_CHANNEL` in `.env` says what an update brings:
 
 - **`stable`** (every new install) — the latest published release, downloaded from
-  `ghcr.io/tristenlammi/arrmada:stable` (or the image `ARRMADA_IMAGE` names). It takes
+  `ghcr.io/blaircullen/rock-media-center:stable` (or the image `ARRMADA_IMAGE` names). It takes
   minutes, and it never goes backwards: a server running newer code than the latest release
   keeps it until a release includes it, and a release never starts on a database a newer
   version has already upgraded.
@@ -39,7 +39,7 @@ every update looks again. Nothing ever puts an install on `main` by itself.
 
 ## Following main (developers)
 
-Add one line to `.env` in Arrmada's folder:
+Add one line to `.env` in Rock Media Center's folder:
 
 ```sh
 ARRMADA_CHANNEL=main
@@ -66,13 +66,13 @@ So if you update with `update.sh` or the install line, there's nothing to do: th
 added, the install gets its channel as [above](#stable-or-main), and `--rollback` works as
 before.
 
-**If something else deploys Arrmada** — Komodo, Portainer, or a script running
-`git pull && docker compose up -d --build` — add that line to `.env` in Arrmada's folder
+**If something else deploys Rock Media Center** — Komodo, Portainer, or a script running
+`git pull && docker compose up -d --build` — add that line to `.env` in Rock Media Center's folder
 **before the next pull**. (If the tool writes `.env` itself, add it to the tool's environment
 for the stack instead.) Without it the deploy stops with
 
 ```
-unable to get image 'ARRMADA_APP_IMAGE is missing from .env, see docs/updating.md (…) -- ghcr.io/tristenlammi/arrmada:stable': … invalid reference format
+unable to get image 'ARRMADA_APP_IMAGE is missing from .env, see docs/updating.md (…) -- ghcr.io/blaircullen/rock-media-center:stable': … invalid reference format
 ```
 
 and leaves the running version alone: an install that has always compiled is never switched
@@ -120,12 +120,12 @@ Status says when a newer release is out (on main: how far behind `main` the serv
 ## When an update goes wrong
 
 If the new version crashes or never answers, `update.sh` goes back to the version that was
-running a moment ago, by itself, and tells you so — Arrmada isn't left down.
+running a moment ago, by itself, and tells you so — Rock Media Center isn't left down.
 
 The one case it can't fix alone: the new version upgraded the database and *then* failed.
 The previous version can't run on the upgraded database, so going back means also putting
-back the backup taken at the start of the update — which loses anything Arrmada recorded in
-those few minutes. At a terminal it asks you first. Unattended, it leaves Arrmada stopped and
+back the backup taken at the start of the update — which loses anything Rock Media Center recorded in
+those few minutes. At a terminal it asks you first. Unattended, it leaves Rock Media Center stopped and
 prints the command:
 
 ```sh
@@ -137,14 +137,14 @@ prints the command:
 `./update.sh --rollback` starts the previous version again in a few seconds (the one you
 leave is kept as `arrmada:rolled-back`, and the next `./update.sh` goes forward again). If the
 previous version doesn't come up, the script starts the newer one again rather than leave
-Arrmada down. Keeping the old image costs one extra image of disk.
+Rock Media Center down. Keeping the old image costs one extra image of disk.
 
 An older version won't start on a database a newer one has upgraded: it stops with a message
 saying so, because running old code on tables it doesn't know can damage them. So before it
 stops anything, `--rollback` asks the previous version whether it can run on the database as
 it is, and if the update changed the database it stops and says to use
 `./update.sh --rollback --with-db`. That also puts back the pre-update backup, which means
-everything Arrmada recorded since the update is lost, so it asks first (`-y` skips the
+everything Rock Media Center recorded since the update is lost, so it asks first (`-y` skips the
 question). If the previous version can't restore a backup itself, the script changes nothing
 and prints the steps to do it by hand. `ARRMADA_ALLOW_NEWER_SCHEMA=1` in `.env` starts an
 older version on a newer database anyway; it's a last resort.
@@ -160,8 +160,8 @@ it, then run `./update.sh --rollback`.
 ## Published image or compiled here
 
 On the stable channel `update.sh` downloads `ARRMADA_IMAGE`, which is
-`ghcr.io/tristenlammi/arrmada:stable` (always the newest release) unless you pin one with a
-version (`ghcr.io/tristenlammi/arrmada:0.18.0`). On main it compiles the app on your server,
+`ghcr.io/blaircullen/rock-media-center:stable` (always the newest release) unless you pin one with a
+version (`ghcr.io/blaircullen/rock-media-center:0.18.0`). On main it compiles the app on your server,
 which takes a long time.
 `./update.sh --force-local` compiles once without changing `.env`. Either way
 `ARRMADA_APP_IMAGE` stays `arrmada:dev`: that's the local name `update.sh` gives whatever it
@@ -200,7 +200,7 @@ there: pass `ARRMADA_VERSION` (a release tag, or the commit date:
 running image `arrmada:previous` before each build. Otherwise none of this protection applies.
 
 To run the published image from such a tool instead, set
-`ARRMADA_APP_IMAGE=ghcr.io/tristenlammi/arrmada:stable` in `.env` and have the tool run
+`ARRMADA_APP_IMAGE=ghcr.io/blaircullen/rock-media-center:stable` in `.env` and have the tool run
 `docker compose pull` before `docker compose up -d`. (`update.sh` refuses to run on that
 setting, since it manages `arrmada:dev`; use `ARRMADA_IMAGE` for update.sh's own pull mode.)
 

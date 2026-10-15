@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Arrmada web UI — served embedded by the Go binary.",
+  "description": "Rock Media Center web UI — served embedded by the Go binary.",
   "scripts": {
     "dev": "vite",
     "prebuild": "node scripts/check-tokens.mjs",

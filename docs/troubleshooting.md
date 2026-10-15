@@ -6,8 +6,8 @@ plugin from Apps. Elsewhere, install [Docker Engine](https://docs.docker.com/eng
 and the `docker-compose-plugin` package. "Can't talk to Docker" means the daemon isn't
 running or your user isn't allowed to use it — run the installer as root (`… | sudo sh`).
 
-**Arrmada didn't start.**
-The installer and updater print the last lines of the log. The full log is in Arrmada's folder:
+**Rock Media Center didn't start.**
+The installer and updater print the last lines of the log. The full log is in Rock Media Center's folder:
 `docker compose logs arrmada-app`. A failed *update* goes back to the version that was
 running by itself ([Updating](updating.md#when-an-update-goes-wrong)).
 
@@ -16,7 +16,7 @@ running by itself ([Updating](updating.md#when-an-update-goes-wrong)).
 Compiling the image yourself (`--channel main`, `docker compose up -d --build`, or `update.sh`
 with `ARRMADA_CHANNEL=main`) takes 30–60 minutes and about **2 GB of memory free** while it
 runs; 4 GB is comfortable. If a compiler is still killed, the build ends with
-`✗ This machine ran out of memory building Arrmada` and what to do.
+`✗ This machine ran out of memory building Rock Media Center` and what to do.
 
 Versions up to v0.1.0 needed far more — about 7 GB on a four-core machine — and on a smaller
 one Docker printed only the last line, for example
@@ -67,6 +67,6 @@ check reads GitHub's public list of releases every 12 hours, sends nothing about
 and can be switched off on the same card.
 
 **Something else?**
-[Open an issue](https://github.com/tristenlammi/Arrmada/issues). The **Logs** page can download
+[Open an issue](https://github.com/blaircullen/rock-media-center/issues). The **Logs** page can download
 a support bundle (logs, status and settings with credentials and people's names taken
 out) to attach.

@@ -45,7 +45,7 @@ func cmdResetPassword(ctx context.Context, c *cli, args []string) int {
 		fmt.Fprintf(c.stderr, "arrmada reset-password: %v\n", err)
 		return exitFail
 	} else if len(s.Unknown) > 0 && !c.cfg.AllowNewerSchema {
-		fmt.Fprintln(c.stderr, "arrmada reset-password: a newer Arrmada has upgraded this database; run reset-password from that build (update Arrmada first).")
+		fmt.Fprintln(c.stderr, "arrmada reset-password: a newer Rock Media Center has upgraded this database; run reset-password from that build (update Rock Media Center first).")
 		return exitFail
 	}
 
@@ -108,7 +108,7 @@ func listAdmins(ctx context.Context, w io.Writer, svc *auth.Service) {
 		}
 	}
 	if len(admins) == 0 {
-		fmt.Fprintln(w, "There are no admin accounts yet: open Arrmada in a browser to create one.")
+		fmt.Fprintln(w, "There are no admin accounts yet: open Rock Media Center in a browser to create one.")
 		return
 	}
 	fmt.Fprintf(w, "Admin accounts: %s\n", strings.Join(admins, ", "))

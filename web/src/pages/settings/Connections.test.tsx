@@ -97,7 +97,7 @@ describe("Connections", () => {
     const servers = document.getElementById("media-servers") as HTMLElement;
     const plex = within(servers).getByText("Plex").closest("#plex") as HTMLElement;
     expect(within(plex).getByText("Connected")).toBeTruthy();
-    expect(within(plex).getByRole("list", { name: "What Arrmada uses Plex for" }).textContent).toBe("Watch linksLibrary updatesSign-inInsights");
+    expect(within(plex).getByRole("list", { name: "What Rock Media Center uses Plex for" }).textContent).toBe("Watch linksLibrary updatesSign-inInsights");
     const jf = within(servers).getByText("Jellyfin").closest("#jellyfin") as HTMLElement;
     expect(within(jf).getByText("Not connected")).toBeTruthy();
     expect(within(jf).getByRole("button", { name: "Connect Jellyfin" })).toBeTruthy();
@@ -119,7 +119,7 @@ describe("Connections", () => {
     page();
     expect(await screen.findByText("Attic · Jellyfin 10.10.3")).toBeTruthy();
     const jf = document.getElementById("jellyfin") as HTMLElement;
-    expect(within(jf).getByRole("list", { name: "What Arrmada uses Jellyfin for" }).textContent).toBe("Watch linksLibrary updates");
+    expect(within(jf).getByRole("list", { name: "What Rock Media Center uses Jellyfin for" }).textContent).toBe("Watch linksLibrary updates");
   });
 
   it("says what went wrong when the list can't load", async () => {

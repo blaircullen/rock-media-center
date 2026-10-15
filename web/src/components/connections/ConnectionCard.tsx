@@ -71,7 +71,7 @@ export function ConnectionCard({ item, test, onTest, fix, onEdit, editing, menu,
               </span>
             )}
             {item.source === "env" && (
-              <span className="rounded px-1.5 py-0.5 text-xs" style={{ background: "var(--panel-2)", color: "var(--ink-faint)" }} title="Set when Arrmada was installed; a value saved here replaces it">
+              <span className="rounded px-1.5 py-0.5 text-xs" style={{ background: "var(--panel-2)", color: "var(--ink-faint)" }} title="Set when Rock Media Center was installed; a value saved here replaces it">
                 from install
               </span>
             )}

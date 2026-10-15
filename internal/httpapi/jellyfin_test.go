@@ -190,7 +190,7 @@ func TestJellyfinRefusedKeyOnCard(t *testing.T) {
 }
 
 // Disconnect (admin only) forgets the address, the key and the identity, and keeps how
-// Arrmada used Jellyfin — library updates and sign-in — for a reconnect.
+// Rock Media Center used Jellyfin — library updates and sign-in — for a reconnect.
 func TestJellyfinDisconnect(t *testing.T) {
 	s := newJellyfinRouteServer(t)
 	jf := fakeJellyfinServer(t)

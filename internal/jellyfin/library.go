@@ -43,7 +43,7 @@ const (
 // file or folder, and an episode's show.
 var DefaultItemFields = []string{"ProviderIds", "DateCreated", "Path", "SeriesId"}
 
-// Item is one library item, with only the fields Arrmada reads.
+// Item is one library item, with only the fields Rock Media Center reads.
 type Item struct {
 	ID             string      `json:"Id"`
 	Name           string      `json:"Name"`
@@ -350,7 +350,7 @@ func validImageType(t string) bool {
 // WatchURL is the link that opens an item in Jellyfin's web app:
 // {public}/web/#/details?id=…&serverId=… (the hash route jellyfin-web 12.2 registers as
 // "details"). publicBase is the address people reach the server at, not necessarily the one
-// Arrmada uses; serverID is SystemInfo.ID.
+// Rock Media Center uses; serverID is SystemInfo.ID.
 func WatchURL(publicBase, serverID, itemID string) string {
 	publicBase = strings.TrimRight(strings.TrimSpace(publicBase), "/")
 	if publicBase == "" || itemID == "" {

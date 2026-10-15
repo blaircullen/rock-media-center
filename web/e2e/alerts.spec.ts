@@ -43,7 +43,7 @@ test.describe("admin", () => {
     expect(api.callsTo("POST", "/api/v1/notifications/test")).toHaveLength(0);
 
     await expect(page.getByText("Web Push to every device the account turned push on for.")).toBeVisible();
-    await expect(page.getByText("On iPhone, push works only when Arrmada is added to the Home Screen.")).toBeVisible();
+    await expect(page.getByText("On iPhone, push works only when Rock Media Center is added to the Home Screen.")).toBeVisible();
     // A connection made before the forms is a custom (raw link) one.
     await expect(discord.getByText("Custom (Apprise URL)")).toBeVisible();
   });

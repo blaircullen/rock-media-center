@@ -55,7 +55,7 @@ func TestMusicBrainzSendsUserAgent(t *testing.T) {
 		_, _ = io.WriteString(w, `{"artists":[]}`)
 	})
 	_, _ = m.SearchArtists(context.Background(), "x")
-	if !strings.Contains(ua, "Arrmada") || !strings.Contains(ua, "http") {
+	if !strings.Contains(ua, "RockMediaCenter") || !strings.Contains(ua, "http") {
 		t.Errorf("User-Agent = %q, want an app name and a contact URL", ua)
 	}
 }

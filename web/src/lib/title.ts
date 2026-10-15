@@ -19,7 +19,7 @@ let count = 0;
 // review), shown as "(3) " in front so a background tab says so.
 export function formatTitle(page: string, route: string, count = 0): string {
   const t = page || route;
-  const base = t ? `${t} · Arrmada` : "Arrmada";
+  const base = t ? `${t} · Rock Media Center` : "Rock Media Center";
   return count > 0 ? `(${count > 99 ? "99+" : count}) ${base}` : base;
 }
 

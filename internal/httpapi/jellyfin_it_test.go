@@ -54,7 +54,7 @@ func jellyfinIT(t *testing.T) *jfIT {
 	return e
 }
 
-// lingering lists the devices Jellyfin holds a token for under Arrmada's device id.
+// lingering lists the devices Jellyfin holds a token for under Rock Media Center's device id.
 func (e *jfIT) lingering(t *testing.T) []string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -82,7 +82,7 @@ func (e *jfIT) lingering(t *testing.T) []string {
 			mine = append(mine, d.AppName+" as "+d.LastUserName)
 		}
 	}
-	t.Logf("Jellyfin lists %d devices, %d under Arrmada's id %s", len(out.Items), len(mine), e.device)
+	t.Logf("Jellyfin lists %d devices, %d under Rock Media Center's id %s", len(out.Items), len(mine), e.device)
 	return mine
 }
 
@@ -91,7 +91,7 @@ func (e *jfIT) lingering(t *testing.T) []string {
 func TestIT_JellyfinPasswordSignIn(t *testing.T) {
 	e := jellyfinIT(t)
 	ctx := context.Background()
-	// The control: a sign-in under Arrmada's device id that isn't logged out does show up,
+	// The control: a sign-in under Rock Media Center's device id that isn't logged out does show up,
 	// so an empty list below means the logout worked, not that the check can't see.
 	c := e.s.deps.Jellyfin.Client(ctx)
 	raw, err := c.AuthenticateByName(ctx, e.user, e.userPw)
@@ -99,7 +99,7 @@ func TestIT_JellyfinPasswordSignIn(t *testing.T) {
 		t.Fatal(err)
 	}
 	if left := e.lingering(t); len(left) != 1 {
-		t.Fatalf("a sign-in left signed in shows %v under Arrmada's id, want one device", left)
+		t.Fatalf("a sign-in left signed in shows %v under Rock Media Center's id, want one device", left)
 	}
 	if err := c.WithToken(raw.AccessToken).Logout(ctx); err != nil {
 		t.Fatal(err)
@@ -127,7 +127,7 @@ func TestIT_JellyfinPasswordSignIn(t *testing.T) {
 		t.Errorf("second sign-in landed in %d, want %d", again.ID, u.ID)
 	}
 	if left := e.lingering(t); len(left) != 0 {
-		t.Errorf("Jellyfin still lists Arrmada devices after sign-in: %v", left)
+		t.Errorf("Jellyfin still lists Rock Media Center devices after sign-in: %v", left)
 	}
 	// The Jellyfin administrator is never made a requester.
 	if e.adminUser != "" {
@@ -141,8 +141,8 @@ func TestIT_JellyfinPasswordSignIn(t *testing.T) {
 	}
 }
 
-// Quick Connect end to end: Arrmada starts it, the test user approves the code from
-// another Jellyfin app (over the API), Arrmada's poll signs in once, and a second poll
+// Quick Connect end to end: Rock Media Center starts it, the test user approves the code from
+// another Jellyfin app (over the API), Rock Media Center's poll signs in once, and a second poll
 // with the same id gets nothing.
 func TestIT_JellyfinQuickConnectSignIn(t *testing.T) {
 	e := jellyfinIT(t)
@@ -180,6 +180,6 @@ func TestIT_JellyfinQuickConnectSignIn(t *testing.T) {
 		t.Errorf("second poll: HTTP %d %s, want 403", rec.Code, rec.Body)
 	}
 	if left := e.lingering(t); len(left) != 0 {
-		t.Errorf("Jellyfin still lists Arrmada devices after Quick Connect: %v", left)
+		t.Errorf("Jellyfin still lists Rock Media Center devices after Quick Connect: %v", left)
 	}
 }

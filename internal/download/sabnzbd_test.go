@@ -443,7 +443,7 @@ func TestSABnzbdListStatuses(t *testing.T) {
 		t.Errorf("unpacking job = %+v (no content path until it's finished)", pp)
 	}
 
-	// Only Arrmada's categories are asked for.
+	// Only Rock Media Center's categories are asked for.
 	for _, c := range f.allCalls() {
 		if c.mode == "queue" && c.form.Get("cat") != "arrmada,arrmada-tv,arrmada-music" ||
 			c.mode == "history" && c.form.Get("category") != "arrmada,arrmada-tv,arrmada-music" {
@@ -525,7 +525,7 @@ func TestSABnzbdCommandsUseRealID(t *testing.T) {
 	}
 
 	// Refusals: a category SABnzbd lacks, a finished job, retrying what didn't fail, a torrent
-	// command, a job that isn't Arrmada's, and a torrent hash.
+	// command, a job that isn't Rock Media Center's, and a torrent hash.
 	f.reset()
 	if err := sab.SetCategory(ctx, dc, "sab-sabnzbd_nzo_queued01", "nope"); err == nil {
 		t.Error("change to a missing category accepted")
@@ -552,7 +552,7 @@ func TestSABnzbdCommandsUseRealID(t *testing.T) {
 
 // sabRemoveFixture is a history with a finished folder job, a finished one-file job, a job
 // that finished outside every allowed folder and a failed job; SABnzbd's /downloads is
-// mapped to a temp folder that is also Arrmada's downloads folder.
+// mapped to a temp folder that is also Rock Media Center's downloads folder.
 func sabRemoveFixture(t *testing.T) (*sabFake, Client, *SABnzbd, string, string) {
 	t.Helper()
 	root := t.TempDir()
@@ -609,7 +609,7 @@ func TestSABnzbdRemove(t *testing.T) {
 	if got := cmd(); got != "queue delete SABnzbd_nzo_Queued01 del_files=1 archive=" {
 		t.Errorf("queue remove: %s", got)
 	}
-	// Finished, a folder: archived in SABnzbd, the folder deleted by Arrmada.
+	// Finished, a folder: archived in SABnzbd, the folder deleted by Rock Media Center.
 	if err := sab.Remove(ctx, dc, "sab-sabnzbd_nzo_folder", true); err != nil {
 		t.Fatal(err)
 	}
@@ -672,7 +672,7 @@ func TestSABnzbdRemove(t *testing.T) {
 		t.Errorf("gone: SABnzbd was told %s", got)
 	}
 
-	// Without Arrmada's folders, a finished job's files are left alone and SABnzbd keeps it.
+	// Without Rock Media Center's folders, a finished job's files are left alone and SABnzbd keeps it.
 	bare := newSAB()
 	if err := bare.Remove(ctx, dc, "sab-sabnzbd_nzo_kept", true); err == nil {
 		t.Error("removal without folders accepted")

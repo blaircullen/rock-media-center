@@ -28,7 +28,7 @@ func DefaultFormats() []CustomFormat {
 }
 
 // builtinFormatNames is DefaultFormats by name. A profile's own custom formats can't take
-// one of these names (ValidateFormats), so a name here is always Arrmada's format.
+// one of these names (ValidateFormats), so a name here is always Rock Media Center's format.
 var builtinFormatNames = func() map[string]bool {
 	m := map[string]bool{}
 	for _, f := range DefaultFormats() {
@@ -37,7 +37,7 @@ var builtinFormatNames = func() map[string]bool {
 	return m
 }()
 
-// isBuiltinFormat reports whether a format is one of Arrmada's (the target's formats and
+// isBuiltinFormat reports whether a format is one of Rock Media Center's (the target's formats and
 // the "Other formats" list) rather than one the owner wrote.
 func isBuiltinFormat(name string) bool { return builtinFormatNames[name] }
 

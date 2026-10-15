@@ -72,7 +72,7 @@ func TestJellyfinSessionDirectPlay(t *testing.T) {
 	if s.SrcVideoCodec != "h264" || s.SrcVideoBitDepth != 8 || s.SrcAudioCodec != "aac" || s.SrcContainer != "mkv" {
 		t.Errorf("source = %q %d-bit audio %q container %q", s.SrcVideoCodec, s.SrcVideoBitDepth, s.SrcAudioCodec, s.SrcContainer)
 	}
-	if s.Address != "172.21.0.3" || s.PlayerName != "Arrmada" || s.Product != "Arrmada" {
+	if s.Address != "172.21.0.3" || s.PlayerName != "Rock Media Center" || s.Product != "Rock Media Center" {
 		t.Errorf("player = %q %q %q", s.Address, s.PlayerName, s.Product)
 	}
 	if s.Thumb != "jellyfin:/Items/"+js.NowPlayingItem.ID+"/Images/Primary" || !IsJellyfinImage(s.Thumb) {

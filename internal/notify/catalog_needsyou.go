@@ -32,7 +32,7 @@ func init() {
 			"Import held for review", "A finished download needs a decision before it can be imported.",
 			"✋", "imports are held for review"),
 		needsYouEvent(EventImportStuck, "Import stuck", true,
-			"Import keeps failing", "A finished download keeps failing to import, or finished in a category Arrmada doesn't import.",
+			"Import keeps failing", "A finished download keeps failing to import, or finished in a category Rock Media Center doesn't import.",
 			"⚠️", "imports keep failing"),
 		needsYouEvent(EventDownloadFailed, "Download failed", true,
 			"Download failed", "The download client stopped a download with an error.",

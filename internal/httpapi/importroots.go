@@ -14,9 +14,9 @@ import (
 
 // Manual import used to walk whatever ?path= it was given, so "/" listed every big
 // video and audio file on every disk of the host. Imports are now confined to
-// the folders Arrmada was actually given: downloads and the libraries.
+// the folders Rock Media Center was actually given: downloads and the libraries.
 var (
-	errImportPathDataDir = errors.New("That's Arrmada's own data folder — pick a folder inside your downloads or library folders")
+	errImportPathDataDir = errors.New("That's Rock Media Center's own data folder — pick a folder inside your downloads or library folders")
 	errImportPathOutside = errors.New("Pick a folder inside your downloads or library folders (Settings → Library)")
 )
 

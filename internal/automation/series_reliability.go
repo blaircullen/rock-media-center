@@ -430,7 +430,7 @@ func (c *Coordinator) seriesInFlightFor(ctx context.Context, s series.Series, un
 // untracked are torrents in the client that no grab knows by hash — added by hand, or by
 // another tool. Those can only be told apart by name: a TV-category torrent whose title
 // matches the show (its romaji title or an alias too) holds what its name says, so a
-// sweep doesn't stack Arrmada's own copy on top of one the user is already fetching.
+// sweep doesn't stack Rock Media Center's own copy on top of one the user is already fetching.
 func seriesInFlightScope(acqs []Acquisition, untracked []download.Item, s series.Series) (seasons map[int]bool, whole bool, names []string) {
 	seasons = map[int]bool{}
 	hold := func(scope, name string) {

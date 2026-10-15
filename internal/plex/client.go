@@ -375,7 +375,7 @@ func parseGuids(primary string, guids []string) (tmdb, tvdb int, imdb string) {
 }
 
 // Image fetches a Plex image (poster/art) by its metadata path, authenticated with the token, so
-// Arrmada can proxy it to the browser without exposing the token. Caller closes the body.
+// Rock Media Center can proxy it to the browser without exposing the token. Caller closes the body.
 func (c *Client) Image(ctx context.Context, imgPath string) (*http.Response, error) {
 	if c.base == "" || c.token == "" {
 		return nil, ErrNotConfigured

@@ -33,7 +33,7 @@ type ProfileResolver interface {
 	AllowedResolutions(ctx context.Context, ref string) []string
 }
 
-// LibraryPrefs supplies user preferences that affect what Arrmada writes into the
+// LibraryPrefs supplies user preferences that affect what Rock Media Center writes into the
 // library alongside a movie file (metadata sidecars and artwork).
 type LibraryPrefs interface {
 	WriteNFO() bool
@@ -313,7 +313,7 @@ type ScanDuplicate struct {
 }
 
 // ScanOptions says how a scan catalogs the films it adds. The zero value is the old
-// behaviour: unmonitored, with no profile ("n/a"), so Arrmada only catalogs them.
+// behaviour: unmonitored, with no profile ("n/a"), so Rock Media Center only catalogs them.
 type ScanOptions struct {
 	// Monitor adds the films monitored, so the upgrade sweep can replace their files.
 	Monitor bool `json:"monitor"`
@@ -356,7 +356,7 @@ func ScanBudget(n int) time.Duration {
 
 // ScanLibrary walks the library root and matches each movie folder/file to TMDB. A film
 // not in the library is created (as opts says; by default UNMONITORED with an "n/a"
-// profile — Arrmada just catalogs it). A film already in the library without a file gets
+// profile — Rock Media Center just catalogs it). A film already in the library without a file gets
 // the file attached, so the sweeps stop looking for something the owner already has. A
 // film that already has a different file is reported as a duplicate and left alone.
 //
@@ -474,7 +474,7 @@ func (s *Service) ScanLibrary(ctx context.Context, rootOverride string, opts Sca
 }
 
 // importMovieFile catalogs one on-disk video as the given TMDB movie — by default
-// unmonitored with no quality profile, since Arrmada is only adopting an existing file.
+// unmonitored with no quality profile, since Rock Media Center is only adopting an existing file.
 func (s *Service) importMovieFile(ctx context.Context, video string, tmdbID int, opts ScanOptions) (Movie, error) {
 	details, err := s.meta.GetMovie(ctx, tmdbID)
 	if err != nil {
@@ -1493,7 +1493,7 @@ func (s *Service) ManualImportCandidates(ctx context.Context, dir string, maxRes
 			truncated = true
 			return fs.SkipAll
 		}
-		// Arrmada's own hidden folders (the recycle bins) hold
+		// Rock Media Center's own hidden folders (the recycle bins) hold
 		// files that are deliberately out of the library — never offer them for import.
 		if err == nil && d.IsDir() && p != dir && library.SkipScanDir(d.Name()) {
 			return fs.SkipDir

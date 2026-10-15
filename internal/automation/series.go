@@ -218,9 +218,9 @@ func (c *Coordinator) SearchSeriesNow(ctx context.Context, seriesID int64) (Sear
 // SearchSeriesManual is the series page's Search button: SearchSeriesNow that holds back
 // what is still downloading for the show, as the sweep does (ACQ-08) — a season pack in
 // flight keeps its season out of the search, and a pack covering everything missing means
-// nothing is searched ("Already downloading <release>"). Arrmada's own grabs are read from
+// nothing is searched ("Already downloading <release>"). Rock Media Center's own grabs are read from
 // the acquisition record; a queue that can't be read only drops the check for torrents
-// nobody grabbed through Arrmada.
+// nobody grabbed through Rock Media Center.
 func (c *Coordinator) SearchSeriesManual(ctx context.Context, seriesID int64) (SearchOutcome, error) {
 	held := &inFlightView{}
 	if c.downloads != nil {
@@ -1256,7 +1256,7 @@ func (c *Coordinator) ImportSeriesDownloads(ctx context.Context) {
 				Hash: it.Hash, Name: it.Name, ContentPath: it.ContentPath, MediaType: "series", ReasonCode: ReasonNumbering,
 				ExpectedID: s.ID, ExpectedTitle: s.Title, ParsedTitle: parsed.Title,
 				SizeBytes: it.SizeBytes, Indexer: c.grabIndexer(ctx, it.Name, "series"),
-				Reason: fmt.Sprintf("Downloaded, but none of its %d video file%s could be matched to an episode — the episode numbering isn't in a form Arrmada recognises",
+				Reason: fmt.Sprintf("Downloaded, but none of its %d video file%s could be matched to an episode — the episode numbering isn't in a form Rock Media Center recognises",
 					unresolved, plural(unresolved)),
 			})
 			c.log.Warn("series import: has video but nothing could be placed — held for review",

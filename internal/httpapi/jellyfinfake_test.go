@@ -18,7 +18,7 @@ import (
 )
 
 // fakeJellyfin stands in for a Jellyfin server's sign-in calls: password sign-in, Quick
-// Connect and logout. It records what it was sent, so tests can check Arrmada never
+// Connect and logout. It records what it was sent, so tests can check Rock Media Center never
 // presents a key on a sign-in call and logs every session it opened out again.
 type fakeJellyfin struct {
 	mu        sync.Mutex

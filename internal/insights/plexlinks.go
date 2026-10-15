@@ -12,12 +12,12 @@ import (
 )
 
 // The Plex library index: every movie and show in the Plex server's libraries, keyed by
-// the TMDB / TVDB / IMDb ids Plex matched them to, so Arrmada can answer "is this title in
+// the TMDB / TVDB / IMDb ids Plex matched them to, so Rock Media Center can answer "is this title in
 // Plex, and under which rating key?" from memory. It backs the Watch on Plex links, the
 // detail pages' Watched by line and (later) "ready only once Plex has it".
 //
 // One worker (RunPlexIndex) rebuilds it: at start, every 30 minutes, and about 90 seconds
-// after Arrmada asked Plex to scan something. Lookups never wait for a rebuild — they read
+// after Rock Media Center asked Plex to scan something. Lookups never wait for a rebuild — they read
 // whatever index there is, and an empty or expired one just nudges the worker — so a slow
 // or down Plex can't hold up a page.
 
@@ -457,7 +457,7 @@ func (s *Service) PlexIndexBuiltAt() time.Time {
 	return s.links.idx.builtAt
 }
 
-// PlexIndexStale asks for a rebuild after the given delay: Arrmada just asked Plex to scan
+// PlexIndexStale asks for a rebuild after the given delay: Rock Media Center just asked Plex to scan
 // something (or imported a file Plex's own watcher will pick up), and Plex needs a moment
 // to add it. A burst of asks costs one rebuild.
 func (s *Service) PlexIndexStale(after time.Duration) {

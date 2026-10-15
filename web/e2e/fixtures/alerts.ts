@@ -41,7 +41,7 @@ export const catalog: AlertCatalog = {
 export const deliveries: { deliveries: AlertDelivery[] } = {
   deliveries: [
     { id: 9, event_key: "movie.imported", title: "Imported", body: "📥 The Cartographer", status: "failed", attempts: 4, last_error: "apprise: exit status 1 (404 Page not found)", created_at: sec(NOW) - 7200, next_attempt_at: 0, sent_at: 0 },
-    { id: 8, event_key: "test", title: "Arrmada", body: "✅ Test notification — this connection works.", status: "sent", attempts: 1, last_error: "", created_at: sec(NOW) - 86400, next_attempt_at: 0, sent_at: sec(NOW) - 86400 },
+    { id: 8, event_key: "test", title: "Rock Media Center", body: "✅ Test notification — this connection works.", status: "sent", attempts: 1, last_error: "", created_at: sec(NOW) - 86400, next_attempt_at: 0, sent_at: sec(NOW) - 86400 },
   ],
 };
 

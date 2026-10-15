@@ -30,7 +30,7 @@ import (
 //	ARRMADA_SABNZBD_REMOTE     SABnzbd's downloads folder as SABnzbd names it …
 //	ARRMADA_SABNZBD_LOCAL      … and as this process sees it (a shared volume)
 //
-// It changes the test SABnzbd: adds Arrmada's categories and a news server (removed after).
+// It changes the test SABnzbd: adds Rock Media Center's categories and a news server (removed after).
 func TestUsenetLifecycleLive(t *testing.T) {
 	if os.Getenv("ARRMADA_SABNZBD_IT") == "" {
 		t.Skip("set ARRMADA_SABNZBD_IT=1 (and the ARRMADA_SABNZBD_* addresses) to run against a real SABnzbd")

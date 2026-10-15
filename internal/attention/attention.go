@@ -32,7 +32,7 @@ const (
 	KindDownload = "download" // a download the client reports as errored
 	KindStalled  = "stalled"  // a download with nobody sending it data for an hour or more
 	KindImport   = "import"   // a finished download whose import keeps failing
-	KindWrongCat = "wrongcat" // a finished TV download in a category Arrmada doesn't import
+	KindWrongCat = "wrongcat" // a finished TV download in a category Rock Media Center doesn't import
 	KindSearch   = "search"   // titles whose searches keep coming up empty (one aggregate)
 	KindHealth   = "health"   // a health check finding
 	KindIssue    = "issue"    // a problem a requester reported that is still open
@@ -68,7 +68,7 @@ type Item struct {
 	// Count is how many titles an aggregate item stands for (search:stuck); 0 otherwise.
 	Count int `json:"count,omitempty"`
 	// Hash is the torrent a download, stalled, import or wrongcat item is about, and
-	// Grabbed whether an Arrmada grab recorded it and is still downloading it — Needs you
+	// Grabbed whether a Rock Media Center grab recorded it and is still downloading it — Needs you
 	// offers "Try another release" only for those.
 	Hash    string `json:"hash,omitempty"`
 	Grabbed bool   `json:"grabbed,omitempty"`

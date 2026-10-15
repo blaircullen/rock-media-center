@@ -116,7 +116,7 @@ const (
 	inOwnCat  = "dd00000000000000000000000000000000000004"
 )
 
-// Only finished torrents nothing in Arrmada grabbed, outside its categories, are
+// Only finished torrents nothing in Rock Media Center grabbed, outside its categories, are
 // unmanaged. Ignoring one hides it for as long as it is in the client; once it has left,
 // the stored list forgets it.
 func TestUnmanagedIgnoreRoundTripsAndPrunes(t *testing.T) {
@@ -137,9 +137,9 @@ func TestUnmanagedIgnoreRoundTripsAndPrunes(t *testing.T) {
 	if rec := e.post(t, e.a.handleIgnoreDownload, "/", strangerA, ""); rec.Code != http.StatusOK {
 		t.Fatalf("ignore = %d %s", rec.Code, rec.Body.String())
 	}
-	// Ignoring one of Arrmada's own isn't a thing.
+	// Ignoring one of Rock Media Center's own isn't a thing.
 	if rec := e.post(t, e.a.handleIgnoreDownload, "/", ours, ""); rec.Code != http.StatusNotFound {
-		t.Errorf("ignoring Arrmada's own download = %d, want 404", rec.Code)
+		t.Errorf("ignoring Rock Media Center's own download = %d, want 404", rec.Code)
 	}
 	if got, ignored := e.list(t); fmt.Sprint(got) != fmt.Sprint([]string{strangerB}) || ignored != 1 {
 		t.Errorf("after ignore: %v (ignored %d), want only B and one ignored", got, ignored)

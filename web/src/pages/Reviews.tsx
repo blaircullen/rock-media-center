@@ -144,9 +144,9 @@ export function ReviewsPanel({ compact = false }: { compact?: boolean } = {}) {
     <>
       <div className="max-w-[960px]">
         {!compact && <p className="mb-5 max-w-[72ch] text-base text-ink-dim">
-          Finished downloads Arrmada held back instead of importing. Each says why: the content doesn't match what it was
+          Finished downloads Rock Media Center held back instead of importing. Each says why: the content doesn't match what it was
           grabbed for, it isn't linked to anything in your library, its files' episode numbering couldn't be read, its import
-          keeps failing (a folder Arrmada can't write to, a full disk), or there's nothing importable inside. Pick what to do —
+          keeps failing (a folder Rock Media Center can't write to, a full disk), or there's nothing importable inside. Pick what to do —
           only the actions that can work for that reason are offered.
         </p>}
 

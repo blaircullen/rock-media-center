@@ -63,7 +63,7 @@ func (a *api) handleJellyfinSave(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleJellyfinDisconnect answers DELETE /api/v1/jellyfin (admin): the address, the key
-// and the server's identity are forgotten; how Arrmada used it stays for a reconnect.
+// and the server's identity are forgotten; how Rock Media Center used it stays for a reconnect.
 // Answers with the (now empty) connection.
 func (a *api) handleJellyfinDisconnect(w http.ResponseWriter, r *http.Request) {
 	if !a.jellyfinReady(w) {

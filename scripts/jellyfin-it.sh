@@ -100,13 +100,13 @@ movie_nfo() { # movie_nfo <folder> <title> <year> <tmdb> <imdb>
 NFO
 }
 
-# NFO-matched movies, one per folder-id style Arrmada and Jellyfin use.
+# NFO-matched movies, one per folder-id style Rock Media Center and Jellyfin use.
 put h264 "Movies/The Matrix (1999) {tmdb-603}/The Matrix (1999).mkv"
 movie_nfo "The Matrix (1999) {tmdb-603}" "The Matrix" 1999 603 tt0133093
 put hevc10 "Movies/Inception (2010) [tmdbid-27205]/Inception (2010).mkv"
 movie_nfo "Inception (2010) [tmdbid-27205]" "Inception" 2010 27205 tt1375666
 
-# Arrmada's multi-track naming: two quality versions and an edition track in one folder.
+# Rock Media Center's multi-track naming: two quality versions and an edition track in one folder.
 d="Movies/Dune (2021) {tmdb-438631}"
 put hevc10 "$d/Dune (2021) - 2160p.mkv"
 put h264 "$d/Dune (2021) - 1080p.mkv"
@@ -132,7 +132,7 @@ movie_nfo "Tenet (2020) {tmdb-577922}" "Tenet" 2020 577922 tt6723592
 put h264 "Movies/Jaws (1975) {tmdb-578}/Jaws (1975).mkv"
 put h264 "Movies/Alien (1979) [tmdbid-348]/Alien (1979).mkv"
 
-# Hidden: a dot folder (Arrmada's recycle bin) and a folder with a .ignore marker.
+# Hidden: a dot folder (Rock Media Center's recycle bin) and a folder with a .ignore marker.
 put h264 "Movies/.arrmada-recycle/Recycled (2004)/Recycled (2004).mkv"
 put h264 "Movies/Ignored (2003)/Ignored (2003).mkv"
 : >"/media/Movies/Ignored (2003)/.ignore"
@@ -221,7 +221,7 @@ api POST /System/Configuration "$(cat "$work/config.json")"
 api GET /QuickConnect/Enabled | grep -q true || die "Quick Connect is still off"
 
 # Local NFOs only: every internet fetcher off (an empty enabled-list per type), no savers,
-# no realtime monitor (so a folder only appears when Arrmada reports it), no image extraction.
+# no realtime monitor (so a folder only appears when Rock Media Center reports it), no image extraction.
 libopts() { # libopts <path> <types...>
 	p=$1
 	shift
@@ -287,7 +287,7 @@ fi
 
 say "running the live tests"
 # The media volume is mounted twice: at /media, where Jellyfin sees it, and at /arr, which
-# plays Arrmada's own spelling of the same folders so path mappings are tested for real.
+# plays Rock Media Center's own spelling of the same folders so path mappings are tested for real.
 # The packages run one after another (-p 1): each reports folders to the same server, and
 # Jellyfin's scan wait restarts with every report.
 # shellcheck disable=SC2086 # the package list is meant to split

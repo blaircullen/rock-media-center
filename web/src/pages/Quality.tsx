@@ -318,8 +318,8 @@ export function Quality() {
 
         <p className="mb-4 text-base text-ink-dim">
           {media === "music"
-            ? "A music profile is a ladder of audio qualities. Arrmada grabs the best tier available on your ladder. Albums you already have aren't replaced when a better tier turns up — there's no music upgrade sweep yet."
-            : "A profile describes the file you want — codec, HDR, audio and a bitrate window. Arrmada grabs to it, ranks releases by it, and shows which files in your library don't fit."}
+            ? "A music profile is a ladder of audio qualities. Rock Media Center grabs the best tier available on your ladder. Albums you already have aren't replaced when a better tier turns up — there's no music upgrade sweep yet."
+            : "A profile describes the file you want — codec, HDR, audio and a bitrate window. Rock Media Center grabs to it, ranks releases by it, and shows which files in your library don't fit."}
         </p>
 
         {error && <div className="mb-3 rounded-lg p-3 text-sm" style={{ border: "1px solid var(--reject)", color: "var(--reject-text)" }}>{error}</div>}
@@ -335,7 +335,7 @@ export function Quality() {
           loadError ? <ErrorState what="quality profiles" message={loadError} onRetry={refresh} busy={listQ.loading} /> : <Skeleton variant="list" count={3} />
         ) : profiles.length === 0 ? (
           <div className="rounded-xl p-10 text-center text-base text-ink-dim" style={{ border: "1px solid var(--line)" }}>
-            No quality profiles yet. Add one to tell Arrmada what to grab.
+            No quality profiles yet. Add one to tell Rock Media Center what to grab.
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
@@ -1652,7 +1652,7 @@ function Hero({ winner, why, chosenOver, open, onToggle, eligible, rejected, tot
   return (
     <>
       <div className="rounded-2xl p-5" style={{ background: "linear-gradient(180deg, var(--accent-soft), var(--panel) 62%)", border: "1px solid var(--accent)", boxShadow: "var(--shadow)" }}>
-        <div className="mb-2.5 font-mono text-2xs font-bold uppercase tracking-[0.12em] text-accent-text">★ Arrmada would grab this</div>
+        <div className="mb-2.5 font-mono text-2xs font-bold uppercase tracking-[0.12em] text-accent-text">★ Rock Media Center would grab this</div>
         <div className="mb-3 text-3xl font-bold tracking-tight">{r.resolution} {r.source}</div>
         <div className="mb-4 flex flex-wrap gap-1.5">
           {(r.hdr ?? []).map((h) => <Chip key={h} accent>{h}</Chip>)}

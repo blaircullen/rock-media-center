@@ -123,7 +123,7 @@ export function Sidebar({ open, onClose, bell = false, returnFocus }: { open: bo
           >
             <FleetMark className="h-[18px] w-[18px]" />
           </span>
-          <span className="text-lg font-extrabold tracking-[0.12em]">ARRMADA</span>
+          <span className="text-lg font-extrabold tracking-[0.12em]">ROCK MEDIA</span>
           {bell && <div className="ml-auto"><NotificationBell placement="side" /></div>}
         </div>
 

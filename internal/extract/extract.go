@@ -1,6 +1,6 @@
 // Package extract unpacks archives in a completed download (RAR, including
 // multi-part sets, and ZIP) so the importer can find the media inside. This is
-// the Unpackerr functionality, folded into Arrmada's pipeline.
+// the Unpackerr functionality, folded into Rock Media Center's pipeline.
 package extract
 
 import (

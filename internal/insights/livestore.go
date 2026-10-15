@@ -155,7 +155,7 @@ func (s *Service) saveAllLive(ctx context.Context, tr *tracker) {
 
 // resume continues a stream the last run was following. It reports false when the stream
 // was gone too long to be the same play; the caller then closes it and starts afresh.
-// Time Arrmada was down is not counted as watching unless playback actually moved on.
+// Time Rock Media Center was down is not counted as watching unless playback actually moved on.
 func (ls *liveSession) resume(sess plex.Session, now time.Time) bool {
 	ls.resumed = false
 	gap := now.Sub(ls.lastSeen)

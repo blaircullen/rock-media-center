@@ -21,7 +21,7 @@ type LibraryItem struct {
 	Year      int    `json:"year,omitempty"`
 	ThumbURL  string `json:"thumb_url"`
 	RatingKey string `json:"rating_key,omitempty"`
-	Media     string `json:"media,omitempty"` // movie | series: Arrmada's word, for links
+	Media     string `json:"media,omitempty"` // movie | series: Rock Media Center's word, for links
 	TMDB      int    `json:"tmdb,omitempty"`
 	ArrmadaID int64  `json:"arrmada_id,omitempty"`
 

@@ -12,7 +12,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/mail"
 )
 
-// Outgoing email (Settings → Alerts → Outgoing email): the mail account Arrmada sends
+// Outgoing email (Settings → Alerts → Outgoing email): the mail account Rock Media Center sends
 // from, for emails to people. The server, the login and the password are credentials: they
 // live in the API key store, are typed in this card only, and only ever come back to the
 // browser as "set" plus a masked hint. Port, security and the From address are ordinary
@@ -223,7 +223,7 @@ func (a *api) handleClearSMTP(w http.ResponseWriter, r *http.Request) {
 // enough that the card doesn't hang on a server that never answers.
 const smtpTestTimeout = 45 * time.Second
 
-// handleTestSMTP sends "Arrmada test email" to an address with the saved setup and says
+// handleTestSMTP sends "Rock Media Center test email" to an address with the saved setup and says
 // what happened; a refusal carries the mail server's own reply ("535 5.7.8 Username and
 // Password not accepted"), not a generic error.
 //
@@ -248,8 +248,8 @@ func (a *api) handleTestSMTP(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	err := mail.Send(ctx, cfg, password, mail.Message{
 		To:      strings.TrimSpace(req.To),
-		Subject: "Arrmada test email",
-		Body:    "This is a test from Arrmada's outgoing email settings. If you can read it, sending works.",
+		Subject: "Rock Media Center test email",
+		Body:    "This is a test from Rock Media Center's outgoing email settings. If you can read it, sending works.",
 	})
 	if err != nil {
 		a.deps.Log.Warn("outgoing email: test failed", "code", mail.ReplyCode(err))

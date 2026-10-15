@@ -16,7 +16,7 @@ import (
 //
 // It matters most for anime and for any show with two-part episodes: TVDB numbers seasons
 // the way releases and existing libraries do (Naruto Shippuden is 22 seasons here, 20 on
-// TMDB), and — crucially — it carries an authoritative absolute number per episode. Arrmada
+// TMDB), and — crucially — it carries an authoritative absolute number per episode. Rock Media Center
 // otherwise derives absolute numbers by counting, which drifts the moment the season list
 // is wrong. The absolute number is what anime releases ("Show - 137") are matched against.
 //

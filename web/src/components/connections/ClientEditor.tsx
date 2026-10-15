@@ -35,7 +35,7 @@ export function ClientForm({ editing, onSaved }: { editing?: DownloadClient; onS
   const [kind, setKind] = useState<Kind>(editing?.kind === "sabnzbd" ? "sabnzbd" : "qbittorrent");
   const usenet = kind === "sabnzbd";
   const [name, setName] = useState(editing?.name ?? defaultName(kind));
-  // No default URL: localhost:8080 inside the Arrmada container is Arrmada itself.
+  // No default URL: localhost:8080 inside the Rock Media Center container is Rock Media Center itself.
   const [url, setUrl] = useState(editing?.url ?? "");
   const [username, setUsername] = useState(editing?.username ?? "");
   // qBittorrent's password, or SABnzbd's API key: both are the client's stored secret.
@@ -115,7 +115,7 @@ export function ClientForm({ editing, onSaved }: { editing?: DownloadClient; onS
         </Labeled>
         {usenet ? (
           <>
-            <Labeled label="URL" hint="As reached from Arrmada, e.g. http://sabnzbd:8080">
+            <Labeled label="URL" hint="As reached from Rock Media Center, e.g. http://sabnzbd:8080">
               <input className={field} style={fieldStyle} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="http://sabnzbd:8080" inputMode="url" autoComplete="off" required />
             </Labeled>
             <Labeled label="API key" hint="SABnzbd → Config → General → API Key">
@@ -139,7 +139,7 @@ export function ClientForm({ editing, onSaved }: { editing?: DownloadClient; onS
                 style={fieldStyle}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="http://qbittorrent:8080 (as reached from the Arrmada container)"
+                placeholder="http://qbittorrent:8080 (as reached from the Rock Media Center container)"
                 required
               />
             </Labeled>
@@ -166,7 +166,7 @@ export function ClientForm({ editing, onSaved }: { editing?: DownloadClient; onS
       <p className="mt-3 text-xs text-ink-faint">
         {usenet
           ? "Use the full API key, not the NZB key. Saving tests it straight away. The key is stored on your server and never shown again."
-          : "Points at your qBittorrent WebUI as the Arrmada container reaches it: its container name or your server’s IP. localhost here means the Arrmada container itself, not your server. Credentials are stored on your server."}
+          : "Points at your qBittorrent WebUI as the Rock Media Center container reaches it: its container name or your server’s IP. localhost here means the Rock Media Center container itself, not your server. Credentials are stored on your server."}
       </p>
       {error && <div role="alert" className="mt-3 text-sm" style={{ color: "var(--reject-text)" }}>{error}</div>}
       <button
@@ -182,7 +182,7 @@ export function ClientForm({ editing, onSaved }: { editing?: DownloadClient; onS
 }
 
 // ClientEditor opens inside a client's card: for qBittorrent the port to forward, for
-// SABnzbd what Arrmada needs from it (categories, completed folder, news servers); then the
+// SABnzbd what Rock Media Center needs from it (categories, completed folder, news servers); then the
 // form, then its path mappings and path check. The status is read once, when the card
 // opens: for SABnzbd it's several calls, so it's never polled. A switched-off qBittorrent
 // may not be running at all, so its port isn't asked.
@@ -224,9 +224,9 @@ export function serversLine(f: Pick<UsenetFacts, "servers_configured" | "servers
   return { text: `${noun}, ${f.servers_working} working`, ok: false };
 }
 
-// UsenetPanel is the SABnzbd card's body: Arrmada's categories and which it has (with Add
+// UsenetPanel is the SABnzbd card's body: Rock Media Center's categories and which it has (with Add
 // missing categories, which only ever acts on that click), the completed folder and where
-// Arrmada sees it, the news servers, and anything else SABnzbd's answers say needs a look.
+// Rock Media Center sees it, the news servers, and anything else SABnzbd's answers say needs a look.
 function UsenetPanel({ client, onChanged }: { client: DownloadClient; onChanged?: () => void }) {
   const [facts, setFacts] = useState<UsenetFacts | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -281,7 +281,7 @@ function UsenetPanel({ client, onChanged }: { client: DownloadClient; onChanged?
   return (
     <section aria-label="SABnzbd" className={`${box} flex flex-col gap-2.5`} style={boxStyle}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="text-base font-semibold">What Arrmada needs from SABnzbd</div>
+        <div className="text-base font-semibold">What Rock Media Center needs from SABnzbd</div>
         {facts.version && <span className="font-mono text-xs text-ink-faint">SABnzbd {facts.version}</span>}
       </div>
 
@@ -335,13 +335,13 @@ function UsenetPanel({ client, onChanged }: { client: DownloadClient; onChanged?
 }
 
 // bundledSABLink is the bundled SABnzbd's own page as the browser reaches it: this host on
-// the port it's published on (not the container name Arrmada talks to it by).
+// the port it's published on (not the container name Rock Media Center talks to it by).
 export function bundledSABLink(port: string, loc: { protocol: string; hostname: string }): string {
   return `${loc.protocol}//${loc.hostname}:${port}`;
 }
 
 // OpenBundledSAB is where the bundled SABnzbd's news server is added: SABnzbd's own page.
-// Arrmada never asks for the provider's login.
+// Rock Media Center never asks for the provider's login.
 function OpenBundledSAB({ port, noServer }: { port: string; noServer: boolean }) {
   const href = bundledSABLink(port, window.location);
   return (
@@ -352,11 +352,11 @@ function OpenBundledSAB({ port, noServer }: { port: string; noServer: boolean })
   );
 }
 
-// CategoryLine names the categories Arrmada files downloads under in every client. They're
+// CategoryLine names the categories Rock Media Center files downloads under in every client. They're
 // fixed: each importer reads only its own, so they aren't a setting.
 export function CategoryLine({ c, usenet }: { c: DownloadCategories; usenet?: boolean }) {
   return (
-    <p className="m-0 text-xs text-ink-dim" title="Arrmada files every download under one of these, so each importer finds its own.">
+    <p className="m-0 text-xs text-ink-dim" title="Rock Media Center files every download under one of these, so each importer finds its own.">
       Categories in {usenet ? "qBittorrent and SABnzbd" : "qBittorrent"}: <span className="font-mono">{c.movies}</span> (movies) · <span className="font-mono">{c.tv}</span> · <span className="font-mono">{c.music}</span>
     </p>
   );

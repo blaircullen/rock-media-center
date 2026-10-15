@@ -13,7 +13,7 @@ import (
 // is your library" at a glance, not to inventory a 40,000-folder share.
 const maxEntries = 10000
 
-// FolderCheck is what Arrmada can tell about a folder before it's saved: whether it's
+// FolderCheck is what Rock Media Center can tell about a folder before it's saved: whether it's
 // really there, whether the app user can write to it, whether finished downloads can be
 // hardlinked into it, and how much room it has.
 type FolderCheck struct {

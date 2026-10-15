@@ -9,7 +9,7 @@ export const importApi = {
   // the saved one, but only for the saved URL.
   importTautulli: (url: string, api_key: string, before?: number) =>
     req<{ status: string } & JobRef>("/api/v1/insights/import/tautulli", { method: "POST", body: JSON.stringify({ url, api_key, before }) }),
-  // Imported plays that double up plays Arrmada recorded live (admin), and removing them:
+  // Imported plays that double up plays Rock Media Center recorded live (admin), and removing them:
   // a job that backs the database up first and deletes nothing unless `expected` still holds.
   importOverlaps: () => req<ImportOverlaps>("/api/v1/insights/import/overlaps"),
   removeImportOverlaps: (expected: number) =>

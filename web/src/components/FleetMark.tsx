@@ -1,4 +1,4 @@
-// The Arrmada mark (the "A-sail"): two sails back to back form an "A" over a hull.
+// The Rock Media Center mark (the "A-sail"): two sails back to back form an "A" over a hull.
 // Same paths as web/public/icon.svg, framed tight on the mark; drawn in currentColor.
 export function FleetMark({ className }: { className?: string }) {
   return (

@@ -1,6 +1,6 @@
 // Package xem fetches scene→absolute episode mappings from TheXEM (thexem.info) — the
 // community database that reconciles how the scene (and TVDB) number anime split into
-// S1/S2/… by arc with the absolute episode order. It lets Arrmada map a release like
+// S1/S2/… by arc with the absolute episode order. It lets Rock Media Center map a release like
 // "Dragon Ball Super S02E01" onto TMDB's continuous numbering, which air-date-gap
 // inference can't do for shows that aired without a broadcast break.
 package xem
@@ -31,7 +31,7 @@ type Client struct {
 	log   *slog.Logger
 }
 
-// New builds a client. flareURL returns Arrmada's FlareSolverr address (e.g.
+// New builds a client. flareURL returns Rock Media Center's FlareSolverr address (e.g.
 // http://arrmada-flaresolverr:8191), read on every fetch so a URL changed in Settings
 // applies at once; it's used to get past a Cloudflare challenge when the direct request
 // is blocked. A nil func, or one returning "", disables that fallback.

@@ -44,10 +44,10 @@ export function NeedsYouPanel() {
 
   return (
     <div className="max-w-[960px]">
-      <Section id="reviews" title="Held for review" count={att.counts.reviews} hint="Finished downloads Arrmada held back instead of importing. Each says why, with only the actions that can work for it.">
+      <Section id="reviews" title="Held for review" count={att.counts.reviews} hint="Finished downloads Rock Media Center held back instead of importing. Each says why, with only the actions that can work for it.">
         <ReviewsPanel compact />
       </Section>
-      <Section id="import-failures" title="Imports failing" count={imports.length} hint="Finished downloads whose import keeps failing — usually a folder Arrmada can't write to, or a full disk. Fix the cause, then retry.">
+      <Section id="import-failures" title="Imports failing" count={imports.length} hint="Finished downloads whose import keeps failing — usually a folder Rock Media Center can't write to, or a full disk. Fix the cause, then retry.">
         {imports.length === 0 ? <Empty>No import is failing.</Empty> : imports.map((it) => <ImportFailureCard key={it.key} it={it} />)}
       </Section>
       <Section id="stalled" title="Stalled or errored" count={stalled.length} hint="Downloads nobody has sent data for an hour, or that the client stopped with an error.">
@@ -189,7 +189,7 @@ function StalledCard({ it }: { it: AttentionItem }) {
   const usenet = hash.toLowerCase().startsWith(USENET_KEY_PREFIX);
   const retry: CardAction = { label: "Retry", disabled: busy, title: "Ask SABnzbd to try this download again", onSelect: () => run(() => api.torrentAction(hash, "retry"), "SABnzbd is trying it again.") };
   const errored = it.kind === "download";
-  // Another release is only for what Arrmada grabbed; anything else gets the client's own
+  // Another release is only for what Rock Media Center grabbed; anything else gets the client's own
   // remedies first.
   const primary = it.grabbed
     ? <PrimaryBtn label={searching ? "Searching…" : "Try another release"} disabled={searching} title="Search for a different release; this one is removed only once another is grabbed" onClick={() => void tryAnother()} />
@@ -207,21 +207,21 @@ function WrongCategoryCard({ it }: { it: AttentionItem }) {
   // The TV category is the server's; ask for it when the button is used.
   const move = () => run(async () => {
     const { categories } = await downloadClientApi.downloadClientList();
-    if (!categories?.tv) throw new Error("Couldn't read Arrmada's TV category — try again in a moment.");
+    if (!categories?.tv) throw new Error("Couldn't read Rock Media Center's TV category — try again in a moment.");
     await api.setDownloadCategory(hash!, categories.tv);
   }, "Moved to TV — the next import check picks it up.");
   return (
     <ProblemCard
       it={it}
-      primary={hash ? <PrimaryBtn label={busy ? "Moving…" : "Move to TV"} disabled={busy} title="File it under Arrmada's TV category, where the series import looks" onClick={() => void move()} /> : undefined}
+      primary={hash ? <PrimaryBtn label={busy ? "Moving…" : "Move to TV"} disabled={busy} title="File it under Rock Media Center's TV category, where the series import looks" onClick={() => void move()} /> : undefined}
       secondary={[show]}
     />
   );
 }
 
-// UnmanagedSection is the finished torrents nothing in Arrmada grabbed or imported, outside
+// UnmanagedSection is the finished torrents nothing in Rock Media Center grabbed or imported, outside
 // its categories — added by hand, or left from another tool. Collapsed by default: they
-// aren't problems, just things Arrmada could take in. Each can be imported into a title
+// aren't problems, just things Rock Media Center could take in. Each can be imported into a title
 // the user picks, or ignored for as long as it stays in the client.
 function UnmanagedSection() {
   const [open, setOpen] = useState(false);
@@ -241,16 +241,16 @@ function UnmanagedSection() {
       <h2 id="unmanaged-title" className="m-0 flex items-center gap-2 text-md font-bold">
         <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls="unmanaged-list" className="flex items-baseline gap-2 text-left">
           <span aria-hidden className="inline-block w-3 text-xs text-ink-faint">{open ? "▾" : "▸"}</span>
-          Not managed by Arrmada <span className="font-mono text-xs font-normal text-ink-faint">{list ? count : "…"}</span>
+          Not managed by Rock Media Center <span className="font-mono text-xs font-normal text-ink-faint">{list ? count : "…"}</span>
         </button>
       </h2>
       <p className="mb-3 mt-0.5 max-w-[72ch] text-sm text-ink-faint">
-        Finished downloads Arrmada didn't grab, outside its categories. Import one into a title in your library, or ignore it.
+        Finished downloads Rock Media Center didn't grab, outside its categories. Import one into a title in your library, or ignore it.
         {ignored > 0 ? ` ${ignored} ignored.` : ""}
       </p>
       {open && (
         <div id="unmanaged-list" className="flex flex-col gap-2">
-          {error ? <Empty>{error}</Empty> : !list ? <Skeleton variant="list" count={2} /> : list.length === 0 ? <Empty>Every finished download is Arrmada's.</Empty> : list.map((u) => (
+          {error ? <Empty>{error}</Empty> : !list ? <Skeleton variant="list" count={2} /> : list.length === 0 ? <Empty>Every finished download is Rock Media Center's.</Empty> : list.map((u) => (
             <UnmanagedCard key={u.hash} u={u} onGone={() => drop(u.hash)} />
           ))}
         </div>

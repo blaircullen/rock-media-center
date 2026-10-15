@@ -68,13 +68,13 @@ const SECTION_ANCHOR: Record<ConnectionSectionId, string> = {
 // poll covers a dropped socket.
 const SLOW_POLL_MS = 60_000;
 
-// Settings → Connections: every integration Arrmada talks to as a card with a status dot,
+// Settings → Connections: every integration Rock Media Center talks to as a card with a status dot,
 // its last success or error, and a Test. The list comes from what the server already knows,
-// so opening the page calls nothing outside Arrmada; Test asks the one connection. Indexers,
+// so opening the page calls nothing outside Rock Media Center; Test asks the one connection. Indexers,
 // download clients and Prowlarr are added, edited, switched off and deleted here (the old
 // Indexers and Download clients pages redirect here); admins edit the metadata keys and the
 // FlareSolverr URL inside their cards. The media servers (Plex and Jellyfin) sit side by
-// side at the top and are connected inside their cards (how Arrmada uses them is Settings
+// side at the top and are connected inside their cards (how Rock Media Center uses them is Settings
 // → Media servers); alerts link to their own page.
 export function ConnectionsSettings() {
   const { user } = useMe();
@@ -220,8 +220,8 @@ export function ConnectionsSettings() {
     const ok = await confirm({
       title: `Remove ${c.name}?`,
       body: c.bundled
-        ? `Arrmada stops sending downloads to it. ${already} It stays removed after a restart; you can restore it from this page.`
-        : `Arrmada stops sending downloads to it. ${already}`,
+        ? `Rock Media Center stops sending downloads to it. ${already} It stays removed after a restart; you can restore it from this page.`
+        : `Rock Media Center stops sending downloads to it. ${already}`,
       confirmLabel: "Remove",
       tone: "danger",
     });
@@ -331,10 +331,10 @@ export function ConnectionsSettings() {
         <>
           {restoreErr && <p role="alert" className="m-0 text-sm" style={{ color: "var(--reject-text)" }}>{restoreErr}</p>}
           {dl.data?.can_restore_bundled && (
-            <p className="m-0 text-sm text-ink-dim">The qBittorrent that comes with Arrmada was removed, so it gets no downloads.</p>
+            <p className="m-0 text-sm text-ink-dim">The qBittorrent that comes with Rock Media Center was removed, so it gets no downloads.</p>
           )}
           {dl.data?.can_restore_bundled_sabnzbd && (
-            <p className="m-0 text-sm text-ink-dim">The SABnzbd that runs alongside Arrmada was removed, so it gets no Usenet downloads.</p>
+            <p className="m-0 text-sm text-ink-dim">The SABnzbd that runs alongside Rock Media Center was removed, so it gets no Usenet downloads.</p>
           )}
           {adding === "client" && <ClientForm onSaved={clientSaved} />}
         </>

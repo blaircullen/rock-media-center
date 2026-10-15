@@ -243,11 +243,11 @@ export const activity: ActivityFeed = {
       quality_profile: "hd-1080p", media_type: "movie", stage: "import_retrying", why: "Import failed 3× (permission denied) — next try in 8 min", managed: true,
       item: { kind: "movie", id: 2, title: "Heat", year: 1995, upgrade: true },
     },
-    // Nothing in Arrmada grabbed it: the release name is all there is.
+    // Nothing in Rock Media Center grabbed it: the release name is all there is.
     {
       hash: "e2e0000000000000000000000000000000000005", name: "Some.Linux.Distro.ISO-FIXTURE", state: "seeding",
       progress: 1, size_bytes: 3_000_000_000, down_speed: 0, up_speed: 0, eta_seconds: 0, ratio: 0.5,
-      quality_profile: "n/a", media_type: "movie", stage: "not_managed", why: "Not managed by Arrmada",
+      quality_profile: "n/a", media_type: "movie", stage: "not_managed", why: "Not managed by Rock Media Center",
     },
   ],
   totals: { down_speed: 12_400_000, up_speed: 800_000, active: 2 },
@@ -369,7 +369,7 @@ export const connections: { sections: ConnectionSectionData[] } = {
       id: "downloads", title: "Downloads", items: [
         {
           kind: "download_client", ref: "1", card: "download_client-1", name: "qBittorrent", type: "qbittorrent", subtitle: "http://qbittorrent:8080", configured: true, enabled: true, state: "failing", testable: true,
-          last_error: "connection refused", last_error_at: new Date(NOW - 60_000).toISOString(), failing_since: new Date(NOW - 10 * 60_000).toISOString(), detail: "Comes with Arrmada",
+          last_error: "connection refused", last_error_at: new Date(NOW - 60_000).toISOString(), failing_since: new Date(NOW - 10 * 60_000).toISOString(), detail: "Comes with Rock Media Center",
         },
       ],
     },

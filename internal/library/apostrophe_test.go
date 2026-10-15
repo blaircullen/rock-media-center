@@ -6,7 +6,7 @@ import "testing"
 // Real examples from a library import: "Tom's Divorce" → "Tom s Divorce", "Li'l Sebastian"
 // → "Li l Sebastian". It's legal on every filesystem we target, it's what the title
 // actually is, and files scanned in from elsewhere keep it — so stripping it also made
-// Arrmada's naming inconsistent with the rest of the library.
+// Rock Media Center's naming inconsistent with the rest of the library.
 func TestApostrophesSurviveNaming(t *testing.T) {
 	cases := []struct{ in, want string }{
 		{"Tom's Divorce", "Tom's Divorce"},

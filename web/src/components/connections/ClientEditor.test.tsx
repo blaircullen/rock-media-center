@@ -6,8 +6,8 @@ import { downloadClientApi, type UsenetFacts } from "../../lib/downloadClientApi
 import { ClientEditor, ClientForm, serversLine } from "./ClientEditor";
 
 // Usenet U4: SABnzbd is added beside qBittorrent with its URL and API key (sent once, never
-// shown back), and its card says what Arrmada needs from it: categories (added only on a
-// click), the completed folder Arrmada sees, the news servers and anything to fix.
+// shown back), and its card says what Rock Media Center needs from it: categories (added only on a
+// click), the completed folder Rock Media Center sees, the news servers and anything to fix.
 
 const KEY = "0f1e2d3c4b5a69788796a5b4c3d2e1f0";
 const sab = (over: Partial<DownloadClient> = {}): DownloadClient => ({ id: 4, name: "SABnzbd", kind: "sabnzbd", url: "http://sabnzbd:8080", enabled: true, priority: 25, ...over });
@@ -24,7 +24,7 @@ const facts = (over: Partial<UsenetFacts> = {}): UsenetFacts => ({
   servers_working: 1,
   language: "en",
   not_english: false,
-  warnings: ['SABnzbd is missing Arrmada\'s arrmada-tv category. Use "Add missing categories"'],
+  warnings: ['SABnzbd is missing Rock Media Center\'s arrmada-tv category. Use "Add missing categories"'],
   ...over,
 });
 
@@ -78,9 +78,9 @@ describe("the SABnzbd card", () => {
     const cats = within(card).getByRole("list", { name: "Categories" });
     expect(cats.textContent).toMatch(/✓ arrmada \(movies\)/);
     expect(cats.textContent).toMatch(/✕ arrmada-tv \(TV\)/);
-    expect(within(card).getByText(/Arrmada sees it at/).parentElement?.textContent).toMatch(/✓ Completed folder \/downloads\/complete · Arrmada sees it at \/media\/downloads\/complete/);
+    expect(within(card).getByText(/Rock Media Center sees it at/).parentElement?.textContent).toMatch(/✓ Completed folder \/downloads\/complete · Rock Media Center sees it at \/media\/downloads\/complete/);
     expect(within(card).getByText(/1 server, working/)).toBeTruthy();
-    expect(within(card).getByRole("list", { name: "Needs a look" }).textContent).toMatch(/missing Arrmada's arrmada-tv/);
+    expect(within(card).getByRole("list", { name: "Needs a look" }).textContent).toMatch(/missing Rock Media Center's arrmada-tv/);
     expect(add).not.toHaveBeenCalled();
 
     await act(async () => { fireEvent.click(within(card).getByRole("button", { name: "Add missing categories" })); });

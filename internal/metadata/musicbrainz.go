@@ -35,7 +35,7 @@ type MusicBrainz struct {
 const (
 	mbBaseURL     = "https://musicbrainz.org/ws/2"
 	caaBaseURL    = "https://coverartarchive.org"
-	mbUserAgent   = "Arrmada/1.0 ( https://github.com/tristenlammi/Arrmada )"
+	mbUserAgent   = "RockMediaCenter/1.0 ( https://github.com/blaircullen/rock-media-center )"
 	mbMinInterval = 1100 * time.Millisecond // the documented limit is 1/sec; leave headroom
 	mbTimeout     = 20 * time.Second
 )

@@ -182,7 +182,7 @@ export function Dashboard() {
           />
         </div>
 
-        {/* What Arrmada has been doing — the newest of Activity → History. */}
+        {/* What Rock Media Center has been doing — the newest of Activity → History. */}
         <SectionLabel link={{ to: LINKS.history, label: "See all →" }}>Recent activity</SectionLabel>
         <Card>
           {!data ? (

@@ -168,7 +168,7 @@ export function Backups() {
     <div id="backups" className="scroll-mt-20 rounded-xl p-5" style={{ background: "var(--panel)", border: "1px solid var(--line)" }}>
       <h2 className="m-0 text-md font-bold">Backups</h2>
       <p className="mb-4 mt-0.5 text-sm text-ink-faint">
-        Copies of Arrmada's database: one every night, one before every update, and any you take yourself. Backups contain your API keys and password hashes. They're stored next to the database (on Unraid: /mnt/user/appdata/arrmada/backups when the data dir is in appdata), so download one now and then to keep a copy off this server.
+        Copies of Rock Media Center's database: one every night, one before every update, and any you take yourself. Backups contain your API keys and password hashes. They're stored next to the database (on Unraid: /mnt/user/appdata/arrmada/backups when the data dir is in appdata), so download one now and then to keep a copy off this server.
       </p>
 
       <div className="flex flex-col gap-4">
@@ -179,7 +179,7 @@ export function Backups() {
             <div className="min-w-0 flex-1 break-words">
               {last.ok
                 ? <>Restored {last.from} on {when(last.at)}. The database it replaced is kept as a “Before restore” backup.</>
-                : <>The restore on {when(last.at)} didn't happen: {last.error}. Arrmada started on the database as it was.</>}
+                : <>The restore on {when(last.at)} didn't happen: {last.error}. Rock Media Center started on the database as it was.</>}
             </div>
             <button onClick={() => dismissRestore(last.at)} className="flex-none text-xs font-semibold text-ink-dim">Dismiss</button>
           </div>
@@ -188,11 +188,11 @@ export function Backups() {
         {pending && (
           <div className="flex flex-col gap-2 rounded-lg p-3 text-sm" style={{ border: "1px solid var(--avoid)", background: "var(--panel-2)" }}>
             <div>
-              <b>Restore staged.</b> {pendingFile ? <>The {kindLabel(pendingFile.kind)} backup from {when(pendingFile.created_at)}</> : <>{pending.name}</>} replaces the database the next time Arrmada starts{pending.requested_by ? ` (asked for by ${pending.requested_by})` : ""}. Anything changed until then will be lost.
+              <b>Restore staged.</b> {pendingFile ? <>The {kindLabel(pendingFile.kind)} backup from {when(pendingFile.created_at)}</> : <>{pending.name}</>} replaces the database the next time Rock Media Center starts{pending.requested_by ? ` (asked for by ${pending.requested_by})` : ""}. Anything changed until then will be lost.
             </div>
             {!state?.can_restart && (
               <div className="text-ink-dim">
-                Restart the Arrmada container to run it, for example <code className="select-all rounded px-1.5 py-0.5 font-mono text-xs" style={{ background: "var(--panel)" }}>docker restart Arrmada-app</code>.
+                Restart the Rock Media Center container to run it, for example <code className="select-all rounded px-1.5 py-0.5 font-mono text-xs" style={{ background: "var(--panel)" }}>docker restart Arrmada-app</code>.
               </div>
             )}
             <div className="flex flex-wrap gap-2">
@@ -282,8 +282,8 @@ export function Backups() {
           body={
             <div className="flex flex-col gap-2">
               <span>Puts back the {kindLabel(toRestore.kind)} backup from <b>{when(toRestore.created_at)}</b>.</span>
-              <span>Everything since {when(toRestore.created_at)} will be lost: requests, watch history, listening places, users and settings. Downloads grabbed since then keep going in qBittorrent but Arrmada won't know about them. You may need to sign in again. The current database is kept as Before restore.</span>
-              <span>{state?.can_restart ? "Arrmada restarts to do this; it takes a few seconds." : "It runs the next time Arrmada starts; you'll restart the container yourself."}</span>
+              <span>Everything since {when(toRestore.created_at)} will be lost: requests, watch history, listening places, users and settings. Downloads grabbed since then keep going in qBittorrent but Rock Media Center won't know about them. You may need to sign in again. The current database is kept as Before restore.</span>
+              <span>{state?.can_restart ? "Rock Media Center restarts to do this; it takes a few seconds." : "It runs the next time Rock Media Center starts; you'll restart the container yourself."}</span>
             </div>
           }
           confirmLabel="Restore"
@@ -302,12 +302,12 @@ export function Backups() {
           {restarting === "waiting" ? (
             <>
               <h2 className="m-0 text-lg font-bold">Restarting…</h2>
-              <p className="mb-0 mt-2 text-sm text-ink-dim">Arrmada is restoring the backup and starting again. This page reloads when it's back.</p>
+              <p className="mb-0 mt-2 text-sm text-ink-dim">Rock Media Center is restoring the backup and starting again. This page reloads when it's back.</p>
             </>
           ) : (
             <>
               <h2 className="m-0 text-lg font-bold">Still not back</h2>
-              <p className="mt-2 text-sm text-ink-dim">Arrmada hasn't answered for two minutes. Check the container is running and look at its log; the card shows how the restore went once it's up.</p>
+              <p className="mt-2 text-sm text-ink-dim">Rock Media Center hasn't answered for two minutes. Check the container is running and look at its log; the card shows how the restore went once it's up.</p>
               <button onClick={() => window.location.reload()} className={btn} style={btnStyle}>Reload</button>
             </>
           )}

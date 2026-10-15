@@ -1,5 +1,5 @@
 // Package webui embeds the compiled React single-page app and serves it from the
-// Go binary, so Arrmada ships as one process on one port. When no web build has
+// Go binary, so Rock Media Center ships as one process on one port. When no web build has
 // been embedded yet (fresh checkout / `go run` before `npm run build`), it serves
 // a branded placeholder so the backend still shows signs of life.
 package webui

@@ -18,7 +18,7 @@ import (
 // Posters on alerts. A library alert (a movie or show landing) carries the title's
 // poster: the public TMDB or Open Library image the library already stores, which Apprise
 // fetches and attaches. A Plex stream alert carries the Plex image path instead
-// ("plex:/library/metadata/…/thumb/…"); at send time Arrmada fetches it itself, with the
+// ("plex:/library/metadata/…/thumb/…"); at send time Rock Media Center fetches it itself, with the
 // Plex token, into a temporary file Apprise attaches, and deletes the file after that
 // attempt whether it went through or not. The token never leaves the server: it isn't in
 // the stored row, the attachment argument or the file's name. A Jellyfin stream alert works

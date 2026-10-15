@@ -566,7 +566,7 @@ func (c *Coordinator) SearchMissing(ctx context.Context) {
 			continue // not yet at its minimum-availability threshold
 		}
 		if untrackedMovie(untracked, m, c.movieKeys(ctx, m)) {
-			continue // a torrent nobody grabbed through Arrmada is already fetching it
+			continue // a torrent nobody grabbed through Rock Media Center is already fetching it
 		}
 		if c.MovieSearchBusy(m.ID) {
 			continue // a search someone started is queued or running; it covers this one
@@ -932,7 +932,7 @@ func (c *Coordinator) SearchMovieManual(ctx context.Context, id int64) (SearchOu
 	}
 	if c.downloads != nil && len(c.missingVersions(ctx, m.ID)) > 0 {
 		// In flight by the acquisition record (whatever the torrent is called), or a
-		// torrent nobody grabbed through Arrmada that is for this film. An unreadable
+		// torrent nobody grabbed through Rock Media Center that is for this film. An unreadable
 		// record or queue doesn't stop the search: searchAndGrab's busy-version and
 		// pending-grab guards still keep a second copy from being grabbed.
 		name := ""
@@ -1482,7 +1482,7 @@ func (c *Coordinator) upgradeMovie(ctx context.Context, m movies.Movie, b *upgra
 	held := 0
 	for _, v := range versions {
 		// Include any monitored version with a file whose profile allows upgrades — regardless of
-		// whether Arrmada grabbed it or found it on a library scan. The AllowsUpgrades gate keeps
+		// whether Rock Media Center grabbed it or found it on a library scan. The AllowsUpgrades gate keeps
 		// us from indexer-searching movies on a non-upgrading profile.
 		if !v.Monitored || !v.HasFile {
 			continue
@@ -2163,7 +2163,7 @@ func (c *Coordinator) DetectStalled(ctx context.Context) {
 
 // ManageSeeding removes finished torrents once they hit their indexer's seed goal (ratio
 // or time). An imported one goes with its data — safe, the library keeps its own copy. A
-// dismissed one goes with its files kept: Arrmada never imported them, and the user said
+// dismissed one goes with its files kept: Rock Media Center never imported them, and the user said
 // they'd handle them, so they may be the only copy.
 func (c *Coordinator) ManageSeeding(ctx context.Context) {
 	grabs, err := c.seedCleanupGrabs(ctx)
@@ -2227,7 +2227,7 @@ func (c *Coordinator) ManageSeeding(ctx context.Context) {
 		if c.heldForReview(ctx, it.Hash) {
 			continue
 		}
-		// Only data whose content Arrmada imported is deleted with the torrent.
+		// Only data whose content Rock Media Center imported is deleted with the torrent.
 		deleteData := g.Status == grabStatusImported
 		if usenet {
 			c.cleanUpUsenetJob(ctx, it, *g, deleteData)
@@ -2356,7 +2356,7 @@ func normRelease(s string) string {
 		// torrent is a filename ending ".mp4", while the indexer's listing often leaves it
 		// as a trailing WORD ("…x264-Cherzo mp4"). Stripping only the dotted form left two
 		// keys differing by "mp4" that could never match, so the download showed as not
-		// managed by Arrmada and its seed rule was never found.
+		// managed by Rock Media Center and its seed rule was never found.
 		//
 		// Matched against the raw string rather than the normalized key on purpose: the
 		// key has no separators left, and a blind suffix trim there would eat the "ts" off
@@ -2505,7 +2505,7 @@ func (c *Coordinator) AttachMovieImport(ctx context.Context, rec library.ImportR
 
 // untrackedMovie reports whether a torrent no grab knows (see untrackedQueue) is for the
 // movie, by its parsed title (any of keys, movieKeys) and year — the only way to tell for
-// a torrent Arrmada didn't grab. Arrmada's own downloads are found by hash, through the
+// a torrent Rock Media Center didn't grab. Rock Media Center's own downloads are found by hash, through the
 // acquisition record.
 func untrackedMovie(untracked []download.Item, m movies.Movie, keys []string) bool {
 	return untrackedMovieItem(untracked, m, keys) != ""

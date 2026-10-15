@@ -13,7 +13,7 @@ import (
 )
 
 // The Jellyfin library index: every movie and show in Jellyfin's libraries, keyed by the
-// TMDB / TVDB / IMDb ids Jellyfin matched them to and by their folders, so Arrmada can
+// TMDB / TVDB / IMDb ids Jellyfin matched them to and by their folders, so Rock Media Center can
 // answer "is this title in Jellyfin, and under which item id?" from memory. It backs the
 // Jellyfin Watch links and "ready once Jellyfin has it".
 //
@@ -21,7 +21,7 @@ import (
 // multi-version folder whose names don't group as its own movie, with no provider ids at
 // all, so only the folder finds them.
 //
-// One worker (RunIndex) rebuilds it: at start, every 30 minutes, and after Arrmada asked
+// One worker (RunIndex) rebuilds it: at start, every 30 minutes, and after Rock Media Center asked
 // Jellyfin to scan something — no sooner than the server's own wait (it scans a reported
 // folder once nothing new was reported for a minute), see ScanSettle. Lookups never wait
 // for a rebuild; an empty or expired index just nudges the worker.
@@ -461,7 +461,7 @@ func (x *index) byIDs(media string, ids mediaserver.ExternalIDs) (jellyfin.Item,
 	return jellyfin.Item{}, false
 }
 
-// locateFolder translates Arrmada's folder for the title to Jellyfin's spelling, the way a
+// locateFolder translates Rock Media Center's folder for the title to Jellyfin's spelling, the way a
 // scan of it would be (the folder as is, the path mappings, a guess from matching library
 // folder names), and looks it up.
 func (s *Service) locateFolder(ctx context.Context, idx *index, media, folder string) (jellyfin.Item, bool) {

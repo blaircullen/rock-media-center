@@ -130,7 +130,7 @@ func (s *Service) FinishImportRun(ctx context.Context, id int64, status string, 
 // mid-import, and those runs will never finish. Call once at startup, before any import.
 func (s *Service) MarkInterruptedImports(ctx context.Context) (int64, error) {
 	res, err := s.repo.db.ExecContext(ctx, `UPDATE insights_import_runs SET status = ?, finished_at = ?,
-		error = 'Arrmada stopped before this import finished' WHERE status = ?`, RunInterrupted, time.Now().Unix(), RunRunning)
+		error = 'Rock Media Center stopped before this import finished' WHERE status = ?`, RunInterrupted, time.Now().Unix(), RunRunning)
 	if err != nil {
 		return 0, err
 	}

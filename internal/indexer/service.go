@@ -169,7 +169,7 @@ func (s *Service) allow(ctx context.Context, idx Indexer) (ok bool, reason strin
 }
 
 // record notes how one indexer's part of a search went. caller is the context the search
-// was called with: when it is done (the person closed the release modal, Arrmada is
+// was called with: when it is done (the person closed the release modal, Rock Media Center is
 // shutting down), a failure says nothing about the indexer and is dropped. The
 // per-indexer deadline is not the caller's, so an indexer that hangs past it does count.
 // backoff is false for a Test: its failure shows on the row but pauses nothing.
@@ -204,7 +204,7 @@ func (s *Service) resetStatus(ctx context.Context, id int64, forget bool) {
 	}
 }
 
-// connectionChanged reports whether an edit touched how Arrmada reaches the indexer — its
+// connectionChanged reports whether an edit touched how Rock Media Center reaches the indexer — its
 // kind, address, login or key, or whether it's on at all. Only then are its old failures
 // beside the point; scoping it to other media (the row's pills) or changing its seed
 // rules leaves its health alone. A blank key or password means "keep", so only a new one

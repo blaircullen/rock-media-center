@@ -1,4 +1,4 @@
-// Package indexer is Arrmada's search backbone (the Prowlarr-class layer). It
+// Package indexer is Rock Media Center's search backbone (the Prowlarr-class layer). It
 // supports the standard protocols — Torznab (torrent) and Newznab (usenet) — and
 // native private-tracker integrations (e.g. TorrentLeech), all behind one
 // Searcher interface so every media module searches through one aggregated API.

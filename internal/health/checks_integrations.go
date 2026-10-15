@@ -11,7 +11,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/download"
 )
 
-// Checks on the services Arrmada talks to. Each honours its own pace: a client is asked
+// Checks on the services Rock Media Center talks to. Each honours its own pace: a client is asked
 // every minute, Plex's identity at most every five when the poller isn't already talking
 // to it, and TMDB every six hours unless its key changes. None of them puts a token or
 // key in a message.
@@ -65,7 +65,7 @@ func DownloadClientsCheck(states func(ctx context.Context) (configured int, st [
 	}
 }
 
-// UnseenDownloads is one client whose finished downloads Arrmada can't see on disk.
+// UnseenDownloads is one client whose finished downloads Rock Media Center can't see on disk.
 type UnseenDownloads struct {
 	ClientID   int64
 	ClientName string
@@ -75,7 +75,7 @@ type UnseenDownloads struct {
 }
 
 // DownloadPathsCheck warns about a download client whose finished downloads aren't where
-// Arrmada looks for them (after the client's path mappings): they download fine and never
+// Rock Media Center looks for them (after the client's path mappings): they download fine and never
 // import. unseen reads the shared queue snapshot and stats a few paths; it asks no client
 // anything itself.
 func DownloadPathsCheck(unseen func(ctx context.Context) ([]UnseenDownloads, error)) Check {
@@ -96,7 +96,7 @@ func DownloadPathsCheck(unseen func(ctx context.Context) ([]UnseenDownloads, err
 					Key:   fmt.Sprintf("downloads.paths.%d", u.ClientID),
 					Level: LevelWarning,
 					Fix:   ConnectionFix(fmt.Sprintf("download_client-%d", u.ClientID), "Map paths for "+u.ClientName),
-					Message: fmt.Sprintf("%s has %s Arrmada can't see on disk (such as %s), so they won't import. Mount its download folder into Arrmada or add a path mapping, then Test it.",
+					Message: fmt.Sprintf("%s has %s Rock Media Center can't see on disk (such as %s), so they won't import. Mount its download folder into Rock Media Center or add a path mapping, then Test it.",
 						u.ClientName, what, u.Example),
 				})
 			}
@@ -136,7 +136,7 @@ func PlexCheck(state func(ctx context.Context) PlexState, probe func(ctx context
 func plexCheck(state func(ctx context.Context) PlexState, probe func(ctx context.Context) error, now func() time.Time) Check {
 	return mediaServerCheck(mediaServerSpec{
 		key: "plex.connection", name: "Plex connection", server: "Plex", fix: FixPlexConnection,
-		refused: "Plex rejected Arrmada's token — reconnect Plex. Plex sign-in for family, recommendations and Insights stop working until you do.",
+		refused: "Plex rejected Rock Media Center's token — reconnect Plex. Plex sign-in for family, recommendations and Insights stop working until you do.",
 	}, state, probe, now)
 }
 
@@ -149,7 +149,7 @@ func JellyfinCheck(state func(ctx context.Context) PlexState, probe func(ctx con
 func jellyfinCheck(state func(ctx context.Context) PlexState, probe func(ctx context.Context) error, now func() time.Time) Check {
 	return mediaServerCheck(mediaServerSpec{
 		key: "jellyfin.connection", name: "Jellyfin connection", server: "Jellyfin", fix: FixJellyfinConnection,
-		refused: "Jellyfin rejected Arrmada's API key — make a new one in Jellyfin (Dashboard → API Keys) and save it on the Jellyfin card. Watch links and library updates stop until you do.",
+		refused: "Jellyfin rejected Rock Media Center's API key — make a new one in Jellyfin (Dashboard → API Keys) and save it on the Jellyfin card. Watch links and library updates stop until you do.",
 	}, state, probe, now)
 }
 

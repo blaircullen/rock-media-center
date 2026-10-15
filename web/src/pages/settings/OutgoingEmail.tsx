@@ -6,7 +6,7 @@ import { useQuery, setQueryData } from "../../lib/query";
 import { useUnsavedGuard } from "../../lib/useUnsavedGuard";
 import { Button, useConfirm, useToast } from "../../ui";
 
-// Settings → Alerts → Outgoing email: the mail account Arrmada sends from.
+// Settings → Alerts → Outgoing email: the mail account Rock Media Center sends from.
 // Admin-only. The server, the login and the password are credentials: they're
 // typed here and never shown again — the card says they're saved, with a short hint, and a
 // blank field keeps what's saved. So unlike the auto-saving cards, this one has a Save.
@@ -26,7 +26,7 @@ export function OutgoingEmail() {
     <Section
       id="outgoing-email"
       title="Outgoing email"
-      subtitle="The mail account Arrmada sends from. Use your own provider's SMTP details with an app password, not your normal password."
+      subtitle="The mail account Rock Media Center sends from. Use your own provider's SMTP details with an app password, not your normal password."
     >
       {error && !data ? (
         <p className="text-sm" style={{ color: "var(--reject-text)" }}>Couldn’t load the outgoing email settings — {error.message}</p>
@@ -128,7 +128,7 @@ function MailForm({ view }: { view: SMTPView }) {
             placeholder={keep(view.password_set) || "An app password"} autoComplete="new-password" />
         </Field>
         <Field label="From address">
-          <input className={input} style={inputStyle} value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Arrmada <you@example.com>" spellCheck={false} />
+          <input className={input} style={inputStyle} value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Rock Media Center <you@example.com>" spellCheck={false} />
         </Field>
       </div>
       <Note tone="info">

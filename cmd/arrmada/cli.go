@@ -43,7 +43,7 @@ var cliCommands = []cliCommand{
 	{name: "backup", args: "[--kind manual|pre-update]", summary: "copy the database to <data>/backups while the app keeps running", dataDir: true, run: cmdBackup},
 	{name: "schema", summary: "compare the database's schema with this build's (exit 3: a newer build upgraded it)", dataDir: true, run: cmdSchema},
 	{name: "reset-password", args: "<email> [--password-stdin]", summary: "give a locked-out account a new password and sign it out everywhere", dataDir: true, run: cmdResetPassword},
-	{name: "restore", args: "<backup name | path to .db or .db.gz> | --cancel", summary: "check a backup and put it in place the next time Arrmada starts", dataDir: true,
+	{name: "restore", args: "<backup name | path to .db or .db.gz> | --cancel", summary: "check a backup and put it in place the next time Rock Media Center starts", dataDir: true,
 		run: func(_ context.Context, c *cli, args []string) int {
 			return restoreCommand(c.cfg.DataDir, args, c.stdout, c.stderr)
 		}},
@@ -170,7 +170,7 @@ func cmdVersion(_ context.Context, c *cli, args []string) int {
 		fmt.Fprintln(c.stdout, store.LatestMigration())
 		return exitOK
 	}
-	fmt.Fprintf(c.stdout, "Arrmada %s (commit %s, %s, schema %s)\n",
+	fmt.Fprintf(c.stdout, "Rock Media Center %s (commit %s, %s, schema %s)\n",
 		buildinfo.Version, buildinfo.Commit, runtime.Version(), store.LatestMigration())
 	return exitOK
 }
@@ -209,7 +209,7 @@ func cmdSchema(ctx context.Context, c *cli, args []string) int {
 	fmt.Fprintf(c.stdout, "database:   %s\nthis build: %s\n", applied, s.Latest)
 	switch {
 	case len(s.Unknown) > 0:
-		fmt.Fprintf(c.stdout, "A newer Arrmada has upgraded this database (%s); this build won't start on it.\n",
+		fmt.Fprintf(c.stdout, "A newer Rock Media Center has upgraded this database (%s); this build won't start on it.\n",
 			strings.Join(s.Unknown, ", "))
 		return exitNewerSchema
 	case len(s.Pending) > 0:

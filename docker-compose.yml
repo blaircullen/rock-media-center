@@ -1,4 +1,4 @@
-# Arrmada + bundled qBittorrent + FlareSolverr. Normally started by ./install.sh, which
+# Rock Media Center + bundled qBittorrent + FlareSolverr. Normally started by ./install.sh, which
 # writes .env and docker-compose.override.yml. A plain `docker compose up -d` also works:
 # it downloads the published image (64-bit Intel/AMD servers only).
 # Then open http://localhost:7878  (qBittorrent WebUI: http://localhost:8080)
@@ -20,7 +20,7 @@ services:
     # ARRMADA_PORT (every install.sh has written one) but no ARRMADA_APP_IMAGE gets an image
     # name Docker refuses: up, build and pull stop with the message below and leave the
     # running container alone. Add the line to .env and run it again (docs/updating.md).
-    image: "${ARRMADA_APP_IMAGE:-${ARRMADA_PORT:+ARRMADA_APP_IMAGE is missing from .env, see docs/updating.md (arrmada:dev builds here, ghcr.io/tristenlammi/arrmada:stable downloads) -- }ghcr.io/tristenlammi/arrmada:stable}"
+    image: "${ARRMADA_APP_IMAGE:-${ARRMADA_PORT:+ARRMADA_APP_IMAGE is missing from .env, see docs/updating.md (arrmada:dev builds here, ghcr.io/blaircullen/rock-media-center:stable downloads) -- }ghcr.io/blaircullen/rock-media-center:stable}"
     build:
       context: .
       # What the build is stamped with (Dashboard, /api/health). update.sh and install.sh
@@ -47,7 +47,7 @@ services:
       # An older build refuses to start on a database a newer one has upgraded (after a
       # rollback without --with-db, say). Set this to 1 in .env only to start it anyway.
       ARRMADA_ALLOW_NEWER_SCHEMA: "${ARRMADA_ALLOW_NEWER_SCHEMA:-}"
-      # Which Arrmada updates bring: stable (the published releases) or main (the newest
+      # Which Rock Media Center updates bring: stable (the published releases) or main (the newest
       # code, compiled here). install.sh and update.sh keep it in .env; the in-app update
       # check compares the running build with the same thing.
       ARRMADA_CHANNEL: "${ARRMADA_CHANNEL:-stable}"
@@ -69,7 +69,7 @@ services:
       # The host port Prowlarr's web UI is published on (below), so the "Open Prowlarr"
       # link points at this install's Prowlarr and not an older one on 9696.
       ARRMADA_PROWLARR_HOST_PORT: "${ARRMADA_PROWLARR_PORT:-9696}"
-      # Optional bundled SABnzbd (started only with `--profile sabnzbd`). Arrmada registers
+      # Optional bundled SABnzbd (started only with `--profile sabnzbd`). Rock Media Center registers
       # it once its config (mounted below) exists, which is only when the profile is on.
       ARRMADA_SABNZBD_URL: "http://arrmada-sabnzbd:8080"
       # The host port SABnzbd's own web page is on, for the "open SABnzbd" link.
@@ -95,7 +95,7 @@ services:
       # Movie/TV metadata. Get a free v3 API key from https://www.themoviedb.org/settings/api
       ARRMADA_TMDB_API_KEY: "${ARRMADA_TMDB_API_KEY:-}"
       ARRMADA_OMDB_API_KEY: "${ARRMADA_OMDB_API_KEY:-}"
-      # Incoming BitTorrent port — Arrmada applies this inside qBittorrent so it
+      # Incoming BitTorrent port — Rock Media Center applies this inside qBittorrent so it
       # matches the published port above. Same source (.env) as the ports block.
       ARRMADA_QBIT_PORT: "${ARRMADA_QBIT_PORT:-6881}"
       # Run as this user/group. On Unraid, set ARRMADA_PUID=99 / ARRMADA_PGID=100 in .env
@@ -109,7 +109,7 @@ services:
       # Managed media (downloads + library) for the self-contained setup. To use an existing
       # library, see docker-compose.override.example.yml (mounts it at its own path, NOT /data).
       - arrmada-media:/media
-      # The optional bundled SABnzbd's config, read-only: Arrmada reads its API key from
+      # The optional bundled SABnzbd's config, read-only: Rock Media Center reads its API key from
       # here, so the key is never in .env. Empty (and unused) while SABnzbd isn't switched on.
       - arrmada-sab-config:/bundled/sabnzbd:ro
     depends_on:
@@ -122,7 +122,7 @@ services:
     restart: unless-stopped
 
   # One-shot: create the media subfolders and hand them to uid/gid 1000 (the
-  # user both Arrmada and qBittorrent run as) so both can write and hardlink.
+  # user both Rock Media Center and qBittorrent run as) so both can write and hardlink.
   arrmada-media-init:
     image: alpine:3.20
     container_name: Arrmada-media-init
@@ -134,7 +134,7 @@ services:
     restart: "no"
 
   # One-shot: seed qBittorrent's config the first time (auth-bypass on the
-  # private Docker network + downloads path) so Arrmada connects with no setup.
+  # private Docker network + downloads path) so Rock Media Center connects with no setup.
   arrmada-qbittorrent-init:
     image: alpine:3.20
     container_name: Arrmada-qbittorrent-init
@@ -158,17 +158,17 @@ services:
       WEBUI_PORT: "8080"
     volumes:
       - arrmada-qbt-config:/config
-      # Same shared media volume, same path as Arrmada — so a file's path is
+      # Same shared media volume, same path as Rock Media Center — so a file's path is
       # identical in both containers and hardlinks resolve.
       - arrmada-media:/media
     ports:
       # qBittorrent's own WebUI ← .env (install.sh auto-picks a free host port so it
-      # won't clash with an existing qBit on 8080). Arrmada manages qBit over the
+      # won't clash with an existing qBit on 8080). Rock Media Center manages qBit over the
       # internal Docker network, so you rarely need this — it's just for a direct peek.
       - "${ARRMADA_QBIT_WEBUI_PORT:-8080}:8080"
       # BitTorrent incoming-connection port, TCP *and* UDP (peers + DHT/uTP). Set
       # once in .env (ARRMADA_QBIT_PORT — the install script picks a random one);
-      # Arrmada auto-applies the same value inside qBittorrent, so the two always
+      # Rock Media Center auto-applies the same value inside qBittorrent, so the two always
       # match. Forward this port on your router to this Docker host.
       - "${ARRMADA_QBIT_PORT:-6881}:${ARRMADA_QBIT_PORT:-6881}"
       - "${ARRMADA_QBIT_PORT:-6881}:${ARRMADA_QBIT_PORT:-6881}/udp"
@@ -182,7 +182,7 @@ services:
   # OPTIONAL indexer manager (Prowlarr). NOT started by default — opt in with:
   #     ./install.sh --with-prowlarr        (or: docker compose --profile prowlarr up -d)
   # Then add your trackers at its WebUI (port ← ARRMADA_PROWLARR_PORT) and click
-  # "Sync from Prowlarr" in Arrmada → Indexers. Point Prowlarr's FlareSolverr proxy at
+  # "Sync from Prowlarr" in Rock Media Center → Indexers. Point Prowlarr's FlareSolverr proxy at
   # http://arrmada-flaresolverr:8191 for Cloudflare-protected trackers.
   arrmada-prowlarr:
     image: lscr.io/linuxserver/prowlarr:2.6.5
@@ -200,9 +200,9 @@ services:
 
   # OPTIONAL Usenet downloader (SABnzbd). NOT started by default — opt in with:
   #     ./install.sh --with-sabnzbd        (or: docker compose --profile sabnzbd up -d)
-  # Arrmada registers it by itself, with its categories and folders. You add your Usenet
+  # Rock Media Center registers it by itself, with its categories and folders. You add your Usenet
   # provider in SABnzbd's own page (port ← ARRMADA_SABNZBD_PORT) → Config → Servers, and
-  # your Newznab indexers in Arrmada. Downloads go under the shared downloads folder, so
+  # your Newznab indexers in Rock Media Center. Downloads go under the shared downloads folder, so
   # imports are a rename on the same filesystem rather than a copy.
   arrmada-sabnzbd:
     # Pinned so a fresh install gets a known-good version; bump deliberately.
@@ -215,7 +215,7 @@ services:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - arrmada-sab-config:/config
-      # Same shared media volume, same path as Arrmada, like qBittorrent.
+      # Same shared media volume, same path as Rock Media Center, like qBittorrent.
       - arrmada-media:/media
     ports:
       - "${ARRMADA_SABNZBD_PORT:-8085}:8080"
@@ -227,10 +227,10 @@ services:
     restart: unless-stopped
 
   # One-shot, with SABnzbd: its first settings, only if it has none yet — English (its
-  # failure reasons are read by Arrmada), Arrmada's categories with folders of their own,
-  # downloads on the shared volume (Arrmada moves them into its Downloads folder once it
-  # sees SABnzbd can reach that), the name Arrmada uses for it allowed, every job repaired,
-  # unpacked and deleted after (pp=3), and a new random API key. Arrmada reads the key from
+  # failure reasons are read by Rock Media Center), Rock Media Center's categories with folders of their own,
+  # downloads on the shared volume (Rock Media Center moves them into its Downloads folder once it
+  # sees SABnzbd can reach that), the name Rock Media Center uses for it allowed, every job repaired,
+  # unpacked and deleted after (pp=3), and a new random API key. Rock Media Center reads the key from
   # the config volume; it isn't printed or written anywhere else.
   arrmada-sabnzbd-init:
     image: alpine:3.20
@@ -301,7 +301,7 @@ services:
 
   # Solves Cloudflare challenges for protected trackers (e.g. TorrentLeech), the
   # same way Prowlarr uses it. Headless-Chromium image (~1 GB). NO host port is
-  # published — only Arrmada talks to it, over the internal Docker network — so it
+  # published — only Rock Media Center talks to it, over the internal Docker network — so it
   # can never clash with an existing FlareSolverr on 8191.
   arrmada-flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:v3.5.2

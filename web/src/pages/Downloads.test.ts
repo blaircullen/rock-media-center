@@ -47,7 +47,7 @@ describe("stallLine", () => {
   it("says when auto-retry is off", () => {
     expect(stallLine(dl({ phase: "stalled", stall: { idle_minutes: 0, failover_in_minutes: 0, off: true } }))).toBe("Auto-retry off");
   });
-  it("stays quiet for a moving download or one Arrmada didn't grab", () => {
+  it("stays quiet for a moving download or one Rock Media Center didn't grab", () => {
     expect(stallLine(dl({ phase: "downloading", stall: { idle_minutes: 2, failover_in_minutes: 358, off: false } }))).toBeNull();
     expect(stallLine(dl({ phase: "stalled" }))).toBeNull();
   });

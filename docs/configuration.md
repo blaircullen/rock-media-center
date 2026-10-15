@@ -1,7 +1,7 @@
 # Configuration
 
 Almost everything is set in the app (Settings). A few things have to be known before the
-container starts; those live in `.env` in Arrmada's folder. Change a line, then run
+container starts; those live in `.env` in Rock Media Center's folder. Change a line, then run
 `sh update.sh` to apply it.
 
 ## Ports
@@ -11,7 +11,7 @@ at the end and saves them in `.env`.
 
 | Service           | Default | Setting                   |
 | ----------------- | ------- | ------------------------- |
-| Arrmada           | 7878    | `ARRMADA_PORT`            |
+| Rock Media Center           | 7878    | `ARRMADA_PORT`            |
 | qBittorrent WebUI | 8080    | `ARRMADA_QBIT_WEBUI_PORT` |
 | BitTorrent        | random  | `ARRMADA_QBIT_PORT` — forward this on your router (TCP and UDP) |
 | Prowlarr          | 9696    | `ARRMADA_PROWLARR_PORT` (only with `--with-prowlarr`) |
@@ -22,11 +22,11 @@ at the end and saves them in `.env`.
 | Setting | What it's for |
 |---|---|
 | `ARRMADA_CHANNEL` | What updates bring: `stable`, the published releases (the default), or `main`, the newest code compiled on the server ([Updating](updating.md#stable-or-main)) |
-| `ARRMADA_IMAGE` | The published image `update.sh` downloads on the stable channel (`ghcr.io/tristenlammi/arrmada:stable` when unset) ([Updating](updating.md#published-image-or-compiled-here)) |
+| `ARRMADA_IMAGE` | The published image `update.sh` downloads on the stable channel (`ghcr.io/blaircullen/rock-media-center:stable` when unset) ([Updating](updating.md#published-image-or-compiled-here)) |
 | `ARRMADA_APP_IMAGE` | The image `docker compose` runs. `arrmada:dev` (what the installer writes) is whatever `update.sh` built or downloaded — leave it. Without the line, a plain `docker compose up -d` runs the published image ([Updating](updating.md#upgrading-from-v010-or-earlier)) |
 | `ARRMADA_DATA_HOST` | Where the database, its backups and settings live on the host |
 | `ARRMADA_STORAGE_HOST` | Your media folder (for reference; the mount itself is in `docker-compose.override.yml`) |
-| `ARRMADA_PUID`, `ARRMADA_PGID` | The user and group Arrmada and qBittorrent run as. On Unraid, 99 and 100 |
+| `ARRMADA_PUID`, `ARRMADA_PGID` | The user and group Rock Media Center and qBittorrent run as. On Unraid, 99 and 100 |
 | `TZ` | Timezone. Schedules — the nightly sweeps and the daily stats — run on this clock ([list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) |
 | `COMPOSE_PROFILES` | The optional companions to run, a comma list: `prowlarr` (Prowlarr), `sabnzbd` (SABnzbd, for Usenet), e.g. `prowlarr,sabnzbd`. `update.sh` never changes it |
 | `ARRMADA_RECYCLE_DIR` | Override for the recycle bin (see below) |
@@ -50,13 +50,13 @@ qBittorrent's save path follows. Files already imported stay where they are.
 To mount a different folder later, run the install line again with `--media /new/folder`
 ([Install → Changing things later](install.md#changing-things-later)).
 
-> ⚠ Never mount media at `/data`. That path holds Arrmada's own database.
+> ⚠ Never mount media at `/data`. That path holds Rock Media Center's own database.
 
 ### Hardlinks
 
 For hardlinks, the library and the download folder must sit under **one** mount: one share
 (say `/mnt/user/data`) with `media/movies`, `media/tv` and `torrents` inside, mounted once at
-`/storage` in both Arrmada and qBittorrent. Then a finished download appears in your library
+`/storage` in both Rock Media Center and qBittorrent. Then a finished download appears in your library
 instantly, takes no extra space, and keeps seeding. The installer sets it up this way.
 
 On Unraid, `/mnt/user` merges disks: a hardlink only works when the download and the library
@@ -75,7 +75,7 @@ For read-only trials or unusual layouts, see
 Deleted and replaced files go to a hidden `.arrmada-recycle` folder at the top of the
 library folder they came from (Movies, TV, and so on), so a delete is a quick move on the
 same drive rather than a copy. Each of those folders has a `.plexignore` and an `.ignore`, so
-neither Plex nor Jellyfin lists what's in it, and Arrmada's own library scans skip hidden folders. Restore, size and
+neither Plex nor Jellyfin lists what's in it, and Rock Media Center's own library scans skip hidden folders. Restore, size and
 age limits are in Settings → Downloads → Recycle bin; the size limit counts every bin together.
 
 Older versions kept one shared bin in the app's library volume. It stays listed (marked
@@ -86,21 +86,21 @@ bin for everything, or to `off` to delete files straight away.
 
 ## Usenet (SABnzbd)
 
-Arrmada can download from Usenet as well as torrents, through SABnzbd. It's optional, and
-it needs two things Arrmada can't give you: **your own Usenet provider** (a paid account —
+Rock Media Center can download from Usenet as well as torrents, through SABnzbd. It's optional, and
+it needs two things Rock Media Center can't give you: **your own Usenet provider** (a paid account —
 the news servers the files come from) and **Newznab indexers** (the sites that list what's
 on Usenet). Without both, Usenet adds nothing.
 
 There are two ways to have SABnzbd.
 
 **The bundled one.** `install.sh --with-sabnzbd` (on a new install, or later on the one you
-have) runs SABnzbd beside Arrmada and Arrmada connects to it by itself, usually within a
+have) runs SABnzbd beside Rock Media Center and Rock Media Center connects to it by itself, usually within a
 minute: its API key is read from SABnzbd's own settings (never written to `.env`, never
-shown), Arrmada's categories are there with a folder each, it's in English, every job is
+shown), Rock Media Center's categories are there with a folder each, it's in English, every job is
 repaired, unpacked and tidied (post-processing 3), and its downloads go under `usenet/` in
 your Downloads folder — `usenet/incomplete` while downloading, `usenet/complete` when
 done — so an import is a rename on the same drive rather than a copy. That folder follows
-your Downloads folder when you change it in Settings → Library, once Arrmada has checked
+your Downloads folder when you change it in Settings → Library, once Rock Media Center has checked
 SABnzbd can see it (the installer mounts your media folder into SABnzbd for that).
 
 What's left is your provider: open `http://<server>:8085` (the port the installer printed;
@@ -111,22 +111,22 @@ provider in SABnzbd" until there's a news server. Open SABnzbd by the server's I
 it only answers to the names in its `host_whitelist` (Config → Special), which starts with
 just `arrmada-sabnzbd`; add your server's name there to use that instead.
 
-Removed in Arrmada, the bundled SABnzbd stays removed (even after a restart) until **Restore
+Removed in Rock Media Center, the bundled SABnzbd stays removed (even after a restart) until **Restore
 bundled SABnzbd** in Settings → Connections. To stop running it at all, take `sabnzbd` out of
 `COMPOSE_PROFILES` in `.env` and run `docker compose rm -sf arrmada-sabnzbd`.
 
 **Your own SABnzbd.** In Settings → Connections → **+ Add client**, pick SABnzbd and give
-its address (as Arrmada's container reaches it) and its **full API key** (SABnzbd → Config →
-General; the NZB key can't read the queue). Arrmada never changes your SABnzbd by itself:
-its card shows which of Arrmada's categories are missing, and **Add missing categories**
+its address (as Rock Media Center's container reaches it) and its **full API key** (SABnzbd → Config →
+General; the NZB key can't read the queue). Rock Media Center never changes your SABnzbd by itself:
+its card shows which of Rock Media Center's categories are missing, and **Add missing categories**
 creates them when you click it. If SABnzbd says "hostname verification failed", add the
-name Arrmada uses to its `host_whitelist`. If SABnzbd sees its downloads under a different
-path than Arrmada does, add a path mapping on the card. Keep SABnzbd in English: Arrmada
+name Rock Media Center uses to its `host_whitelist`. If SABnzbd sees its downloads under a different
+path than Rock Media Center does, add a path mapping on the card. Keep SABnzbd in English: Rock Media Center
 reads its failure reasons, and translated ones can't be told apart.
 
 **Indexers.** Add Newznab indexers in Settings → Connections → **+ Add indexer** (the
 Newznab tile appears once a Usenet client exists), or keep them in Prowlarr: its Usenet
-indexers come over in the Prowlarr sync once Arrmada has a Usenet client, and adding one
+indexers come over in the Prowlarr sync once Rock Media Center has a Usenet client, and adding one
 runs the sync straight away.
 
 **Usenet or torrents.** By default the better release wins wherever it is. Settings →
@@ -134,7 +134,7 @@ Downloads → **When a release is on both Usenet and torrents** can prefer one n
 the preference only decides between releases that are otherwise as good — it never picks a
 worse release, and it never hides the other network's.
 
-**When a download fails.** Arrmada reads SABnzbd's reason:
+**When a download fails.** Rock Media Center reads SABnzbd's reason:
 
 - Something wrong with the release — articles missing from your provider, damage its
   repair files can't fix, a password, an archive that won't unpack, a duplicate — and the
@@ -146,14 +146,14 @@ worse release, and it never hides the other network's.
   your account, so it's never "fixed" by grabbing something else: the health list says to
   check your provider instead.
 
-After an import Arrmada archives the job in SABnzbd's history and deletes what's left of
+After an import Rock Media Center archives the job in SABnzbd's history and deletes what's left of
 its folder. Usenet downloads never seed.
 
 ## Connecting Jellyfin
 
 Jellyfin is connected in the app, on its card in Settings → Connections (next to Plex's):
 
-1. **Server URL** — the address Arrmada reaches Jellyfin on, for example
+1. **Server URL** — the address Rock Media Center reaches Jellyfin on, for example
    `http://192.168.1.10:8096`, or `http://jellyfin:8096` when both run in the same Docker
    network.
 2. **API key** — make one in Jellyfin under **Dashboard → API Keys → +**, and paste it. Test
@@ -165,11 +165,11 @@ Jellyfin is connected in the app, on its card in Settings → Connections (next 
 
 The rest is in Settings → Media servers, Jellyfin's group:
 
-- **Watch monitoring** — off until you switch it on. Arrmada then asks Jellyfin what's playing
+- **Watch monitoring** — off until you switch it on. Rock Media Center then asks Jellyfin what's playing
   every few seconds and records each play in Insights; Jellyfin's history in Insights starts
   then.
 - **Library updates** — on by default once connected. If a line says "whole library", add a
-  path mapping from Arrmada's folder to the same folder as Jellyfin sees it.
+  path mapping from Rock Media Center's folder to the same folder as Jellyfin sees it.
 - **Sign-in** — let people sign in with their Jellyfin username and password, and optionally
   Quick Connect (switch it on in Jellyfin too, under Dashboard → General). Passwords go
   straight to Jellyfin and are never kept.
@@ -177,7 +177,7 @@ The rest is in Settings → Media servers, Jellyfin's group:
 
 If you keep several versions of a movie (say 4K and 1080p), Jellyfin shows them as one title
 only when each file name starts with the movie folder's name — `Dune (2021)/Dune (2021) -
-2160p.mkv` — which Arrmada's default movie naming does. If you've changed the naming in
+2160p.mkv` — which Rock Media Center's default movie naming does. If you've changed the naming in
 Settings → Naming & metadata so file names start differently, Jellyfin lists each version
 as its own movie.
 
@@ -185,7 +185,7 @@ The first-run setup's **Media server** step offers the same: Plex, Jellyfin, bot
 
 ## Reverse proxies and tunnels
 
-Give Arrmada its own hostname (for example `arrmada.example.com`) and proxy it from the root.
+Give Rock Media Center its own hostname (for example `arrmada.example.com`) and proxy it from the root.
 Serving it under a path such as `example.com/arrmada` isn't supported: the old
 `ARRMADA_BASE_URL` setting never worked with the web app and has been removed. If your `.env`
 still sets it, it's ignored and the app runs at the root.

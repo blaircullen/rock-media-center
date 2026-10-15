@@ -176,7 +176,7 @@ func (s *Service) SendMessage(ctx context.Context, userID int64, m Message) (int
 			Endpoint: x.endpoint,
 			Keys:     webpush.Keys{P256dh: x.p256dh, Auth: x.auth},
 		}, &webpush.Options{
-			Subscriber:      "https://github.com/tristenlammi/Arrmada",
+			Subscriber:      "https://github.com/blaircullen/rock-media-center",
 			VAPIDPublicKey:  pub,
 			VAPIDPrivateKey: priv,
 			TTL:             sendTTL,

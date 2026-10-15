@@ -18,7 +18,7 @@ import { LibraryView } from "./insights/LibraryView";
 import { InsightsPerson } from "./InsightsPerson";
 import { BarChart, ChartCard, HBarChart, Legend, LineChart } from "./insights/charts";
 
-// Insights — Arrmada's watch monitoring for Plex and Jellyfin (a Tautulli replacement): live
+// Insights — Rock Media Center's watch monitoring for Plex and Jellyfin (a Tautulli replacement): live
 // Activity, History, People, Graphs and Reliability (buffering). With both servers connected,
 // server chips narrow every tab to one (?server=, in the address) and each row names its
 // server. The connections and the alerts used to be tabs here; they live in Settings →

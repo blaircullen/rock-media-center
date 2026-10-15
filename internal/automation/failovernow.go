@@ -10,13 +10,13 @@ import (
 )
 
 // Needs you's actions on a stuck download: try another release now, and retry an import
-// now. Both act on one torrent, by info hash, and only on what the record says Arrmada
+// now. Both act on one torrent, by info hash, and only on what the record says Rock Media Center
 // grabbed or is importing.
 
 var (
 	// ErrNotOurDownload: no in-flight grab recorded this torrent (added by hand, or already
 	// imported or replaced), so there is nothing to replace it for.
-	ErrNotOurDownload = errors.New("Arrmada didn't grab this download, so it has nothing to replace it with")
+	ErrNotOurDownload = errors.New("Rock Media Center didn't grab this download, so it has nothing to replace it with")
 	// ErrDownloadNotInClient: the torrent isn't in the download client (or the client
 	// can't be read just now).
 	ErrDownloadNotInClient = errors.New("that download isn't in the download client")

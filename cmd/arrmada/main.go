@@ -1,4 +1,4 @@
-// Command arrmada is the single entrypoint for the Arrmada media-automation
+// Command arrmada is the single entrypoint for the Rock Media Center media-automation
 // server. M0: config → logger → HTTP server (API + embedded UI) → graceful
 // shutdown. Everything else (DB, scheduler, modules) hangs off this.
 package main
@@ -90,9 +90,9 @@ func (p libPrefs) DownloadArtwork() bool {
 
 // movieTitleResolver names movie imports from the matched library record (its
 // metadata title/year) instead of the scene release, so folders are deterministic
-// and match the movie Arrmada tracks — and settles the track before the file is placed.
+// and match the movie Rock Media Center tracks — and settles the track before the file is placed.
 // The download's grab row (by info hash) says which movie and track it was for; one
-// Arrmada didn't grab is matched by its release name and routed by its resolution and
+// Rock Media Center didn't grab is matched by its release name and routed by its resolution and
 // edition.
 type movieTitleResolver struct {
 	svc   *movies.Service
@@ -158,7 +158,7 @@ func main() {
 		defer stopLogFile()
 	}
 
-	log.Info("starting Arrmada",
+	log.Info("starting Rock Media Center",
 		"version", buildinfo.Version,
 		"commit", buildinfo.Commit,
 		"addr", cfg.Addr(),
@@ -167,7 +167,7 @@ func main() {
 		// Sub-path hosting was never finished (the web app always asked for /api/v1 at the
 		// root), so the option is gone. Say so rather than refuse to start: the app still
 		// works, just at the root of the hostname.
-		log.Warn("ARRMADA_BASE_URL is no longer supported and is ignored — serve Arrmada at the root of its own hostname (it is running at the root)",
+		log.Warn("ARRMADA_BASE_URL is no longer supported and is ignored — serve Rock Media Center at the root of its own hostname (it is running at the root)",
 			"ARRMADA_BASE_URL", cfg.BaseURLIgnored)
 	}
 	if restored > 0 {
@@ -280,8 +280,8 @@ func main() {
 		TV:    libroots.Func(roots.TV),
 		Music: libroots.Func(roots.Music),
 	}
-	// SABnzbd files by Arrmada's categories (the movie one is configurable) and, once a
-	// finished job is imported, has its leftover folder deleted only inside Arrmada's
+	// SABnzbd files by Rock Media Center's categories (the movie one is configurable) and, once a
+	// finished job is imported, has its leftover folder deleted only inside Rock Media Center's
 	// downloads folder or SABnzbd's own completed folder — never a library or the database.
 	downloads.SetMovieCategory(cfg.DownloadCategory)
 	downloads.SetFolders(func(ctx context.Context) download.PathEnv {
@@ -478,7 +478,7 @@ func main() {
 	// (instead of silently overwriting it) — same bin the delete paths use.
 	imports.SetBin(bins)
 	// Name movie imports from the matched library record (metadata title), not the
-	// scene release — deterministic folders that match the movie Arrmada tracks.
+	// scene release — deterministic folders that match the movie Rock Media Center tracks.
 	imports.SetTitleResolver(movieTitleResolver{svc: movieSvc, grabs: coordinator})
 	// Hold a movie download for admin review when it doesn't match what it was
 	// grabbed for (e.g. a wrong film), instead of importing the wrong thing.
@@ -574,7 +574,7 @@ func main() {
 		scheduler.Description("Asks each Torznab indexer which searches and categories it supports, when that's unknown or over a week old."))
 	// Prowlarr on autopilot: the same non-destructive sync as the Sync now button, every
 	// hour with the saved URL and key, so a tracker added, disabled or removed in Prowlarr
-	// reaches Arrmada without anyone remembering to click. It does nothing until one sync
+	// reaches Rock Media Center without anyone remembering to click. It does nothing until one sync
 	// has worked (that's what saves the URL and key). The first run waits a minute after
 	// start so Prowlarr's own container has time to come up alongside this one.
 	sched.Register("prowlarr-sync", time.Hour, false, func(ctx context.Context) error {
@@ -888,7 +888,7 @@ func main() {
 		Enabled: func(ctx context.Context) bool { return settingsSvc.GetBool(ctx, updatecheck.KeyEnabled, true) },
 	})
 	sched.Register("update-check", updatecheck.Interval, true, updates.Run,
-		scheduler.Label("Check for updates"), scheduler.Description("Asks GitHub every 12 hours whether a newer Arrmada release is out. Switch it off on Settings → Status."))
+		scheduler.Label("Check for updates"), scheduler.Description("Asks GitHub every 12 hours whether a newer Rock Media Center release is out. Switch it off on Settings → Status."))
 
 	// Health checks run in the background on their own intervals (the health-check task
 	// below drives them); the health endpoint serves their cached results. httpapi.New
@@ -1091,7 +1091,7 @@ func main() {
 		}
 	})
 
-	log.Info("Arrmada is online", "url", displayURL(cfg))
+	log.Info("Rock Media Center is online", "url", displayURL(cfg))
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)

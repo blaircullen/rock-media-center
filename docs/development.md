@@ -1,4 +1,4 @@
-# Developing Arrmada
+# Developing Rock Media Center
 
 The backend is Go 1.25 with SQLite; the web UI is React, TypeScript and Tailwind (Vite),
 embedded into the Go binary.

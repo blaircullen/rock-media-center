@@ -1,4 +1,4 @@
-// Package httpapi wires Arrmada's HTTP surface: a versioned JSON API plus the
+// Package httpapi wires Rock Media Center's HTTP surface: a versioned JSON API plus the
 // embedded web UI, both served from one port. M0 ships the skeleton — health,
 // status, request logging, and panic recovery — that later modules hang off.
 package httpapi
@@ -401,7 +401,7 @@ func (a *api) registerRoutes(mux *router) {
 	mux.HandleFunc("POST /api/v1/queue/{hash}/failover", a.requireRole(auth.RoleManager, a.handleFailOver))
 	mux.HandleFunc("POST /api/v1/queue/{hash}/category", a.requireRole(auth.RoleManager, a.handleSetCategory))
 	mux.HandleFunc("POST /api/v1/imports/{hash}/retry", a.requireRole(auth.RoleManager, a.handleRetryImport))
-	// Finished torrents Arrmada didn't grab: import into a picked title, or ignore (unmanaged.go).
+	// Finished torrents Rock Media Center didn't grab: import into a picked title, or ignore (unmanaged.go).
 	mux.HandleFunc("GET /api/v1/downloads/unmanaged", a.requireRole(auth.RoleManager, a.handleUnmanaged))
 	mux.HandleFunc("GET /api/v1/queue/{hash}/targets", a.requireRole(auth.RoleManager, a.handleUnmanagedTargets))
 	mux.HandleFunc("POST /api/v1/queue/{hash}/import", a.requireRole(auth.RoleManager, a.handleImportUnmanaged))
@@ -762,7 +762,7 @@ func (a *api) handleStatus(w http.ResponseWriter, r *http.Request) {
 	_, authed := userFrom(r)
 
 	out := map[string]any{
-		"app":            "Arrmada",
+		"app":            "Rock Media Center",
 		"version":        buildinfo.Version,
 		"commit":         buildinfo.Commit,
 		"started_at":     a.start.UTC().Format(time.RFC3339),

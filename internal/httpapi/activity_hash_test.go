@@ -19,7 +19,7 @@ import (
 )
 
 // A grabbed movie whose torrent arrives under a name that parses to nothing like it is
-// still Arrmada's: the Downloads feed labels it by hash (with its seed rule), keeps the
+// still Rock Media Center's: the Downloads feed labels it by hash (with its seed rule), keeps the
 // film out of Searching, and the movie grid shows its progress. A torrent no grab knows
 // is "not managed", even when its name matches a library title.
 func TestDownloadsFeedJoinsByHash(t *testing.T) {
@@ -85,7 +85,7 @@ func TestDownloadsFeedJoinsByHash(t *testing.T) {
 		switch d.Hash {
 		case hash:
 			if !d.SeedKnown || d.MediaType != "movie" {
-				t.Errorf("Arrmada's own torrent: %+v, want its seed rule by hash", d)
+				t.Errorf("Rock Media Center's own torrent: %+v, want its seed rule by hash", d)
 			}
 		case stranger:
 			if d.SeedKnown {

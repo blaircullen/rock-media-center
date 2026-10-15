@@ -144,7 +144,7 @@ func TestSetLibraryPathsRefusesDataDir(t *testing.T) {
 		}
 		var body map[string]string
 		_ = json.Unmarshal(w.Body.Bytes(), &body)
-		if body["folder"] != "movies" || !strings.Contains(body["message"], "Movies folder can't be inside or contain Arrmada's data folder") {
+		if body["folder"] != "movies" || !strings.Contains(body["message"], "Movies folder can't be inside or contain Rock Media Center's data folder") {
 			t.Errorf("%s: unhelpful refusal %+v", name, body)
 		}
 	}

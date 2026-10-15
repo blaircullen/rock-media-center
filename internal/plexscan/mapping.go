@@ -1,9 +1,9 @@
-// Package plexscan tells Plex which folder changed after Arrmada imports, renames,
+// Package plexscan tells Plex which folder changed after Rock Media Center imports, renames,
 // deletes or converts a file, so Plex picks the change up within a minute instead of
 // waiting for its own watcher (unreliable on Unraid's /mnt/user shares) or its scheduled
 // scan.
 //
-// Arrmada and Plex usually see the same files under different paths (/movies/Heat (1995)
+// Rock Media Center and Plex usually see the same files under different paths (/movies/Heat (1995)
 // here, /data/media/movies/Heat (1995) in the Plex container), so every folder is first
 // translated to Plex's side (mapping.go), then queued and debounced so a season pack or a
 // burst of renames costs one scan per folder (scanner.go).
@@ -31,7 +31,7 @@ const (
 	HowDirect = "direct"
 	// HowMapped: a path mapping the owner entered translated it.
 	HowMapped = "mapped"
-	// HowGuessed: Arrmada's library folder and one of Plex's end in the same name
+	// HowGuessed: Rock Media Center's library folder and one of Plex's end in the same name
 	// (/movies and /data/media/movies), so the rest of the path was carried across.
 	HowGuessed = "guessed"
 	// HowSection: no translation was found, so the whole library section is scanned.
@@ -41,7 +41,7 @@ const (
 	HowNone = "none"
 )
 
-// PathMap translates an Arrmada folder (From) to the same folder as Plex sees it (To).
+// PathMap translates a Rock Media Center folder (From) to the same folder as Plex sees it (To).
 type PathMap struct {
 	From string `json:"from"`
 	To   string `json:"to"`
@@ -56,9 +56,9 @@ type Resolution struct {
 	Note        string   `json:"note,omitempty"`
 }
 
-// Resolve works out which Plex library section(s) a changed Arrmada folder belongs to and
+// Resolve works out which Plex library section(s) a changed Rock Media Center folder belongs to and
 // what that folder is called on Plex's side. kind is KindMovie or KindShow, dir the
-// folder as Arrmada sees it, arrRoot Arrmada's library folder for that kind. It tries, in
+// folder as Rock Media Center sees it, arrRoot Rock Media Center's library folder for that kind. It tries, in
 // order: the folder as is, the owner's mappings (longest From wins), a guess from matching
 // folder names, and finally the whole section. Pure: no I/O.
 func Resolve(kind, dir, arrRoot string, sections []plex.Library, maps []PathMap) Resolution {
@@ -99,7 +99,7 @@ func Resolve(kind, dir, arrRoot string, sections []plex.Library, maps []PathMap)
 		return r
 	}
 
-	// (c) Arrmada's library folder and a Plex one share their last name.
+	// (c) Rock Media Center's library folder and a Plex one share their last name.
 	if rel, ok := under(dir, arrRoot); ok {
 		name := lastSegment(arrRoot)
 		for _, sec := range mine {
@@ -153,7 +153,7 @@ func kindNoun(kind string) string {
 	return "movie"
 }
 
-// Paths come from two machines that may not agree on anything: Arrmada runs in a Linux
+// Paths come from two machines that may not agree on anything: Rock Media Center runs in a Linux
 // container, Plex may be on Windows (D:\Media\Movies, \\nas\media). They're compared in
 // one canonical spelling — forward slashes, cleaned, no trailing slash — and Windows
 // paths compare without regard to case, the way Windows treats them. Output keeps the

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// ErrPlexAlreadyLinked: the Plex account is linked to another Arrmada account. UserID and
+// ErrPlexAlreadyLinked: the Plex account is linked to another Rock Media Center account. UserID and
 // Username say which, for the caller to show (only an admin is told the id).
 type ErrPlexAlreadyLinked struct {
 	UserID   int64
@@ -42,7 +42,7 @@ func (s *Service) PlexLinkFor(ctx context.Context, userID int64) (PlexLink, erro
 // LinkPlex ties a Plex account to an existing account, replacing any Plex account it was
 // linked to before. A Plex account linked to someone else is refused with
 // *ErrPlexAlreadyLinked (the unique index settles a race the same way): one Plex account
-// is one Arrmada account. Linking grants nothing by itself — whether Plex sign-in may
+// is one Rock Media Center account. Linking grants nothing by itself — whether Plex sign-in may
 // enter a staff account is the sign-in's decision.
 func (s *Service) LinkPlex(ctx context.Context, userID int64, plexID, plexUsername string) error {
 	h, err := s.link(ctx, plexLink, userID, plexID, plexUsername)

@@ -10,15 +10,15 @@ import (
 )
 
 // Remote path mapping. An external or seedbox qBittorrent reports paths as it sees them
-// ("/downloads/Movie.2024"), and Arrmada may have that same folder mounted somewhere else
+// ("/downloads/Movie.2024"), and Rock Media Center may have that same folder mounted somewhere else
 // ("/media/downloads"). A client's PathMaps translate between the two: every path the
 // client reports goes through ToLocal before anything reads it (the shared queue read, so
-// imports, stall checks and health all see local paths), and the save path Arrmada sends
+// imports, stall checks and health all see local paths), and the save path Rock Media Center sends
 // with a new download goes through ToRemote. A client with no mappings — every existing
 // one, and the bundled qBittorrent — is untouched: both are then the identity.
 
 // PathMap is one mapping: the folder as the download client names it, and the same
-// folder as Arrmada sees it.
+// folder as Rock Media Center sees it.
 type PathMap struct {
 	Remote string `json:"remote"`
 	Local  string `json:"local"`
@@ -121,7 +121,7 @@ func localUnder(p, base string) (string, bool) {
 	return rel, true
 }
 
-// ToLocal turns a path the client reported into the path Arrmada reads. A path no mapping
+// ToLocal turns a path the client reported into the path Rock Media Center reads. A path no mapping
 // covers comes back exactly as given, so a client without mappings is untouched. The
 // remote path is cleaned before matching, so "/downloads/../etc" is not under /downloads,
 // and the result is always inside the mapping's local folder.
@@ -159,7 +159,7 @@ func (pm PathMap) normRemote() string {
 	return r.p
 }
 
-// ToRemote turns a folder Arrmada names (its downloads folder, as a save path) into the
+// ToRemote turns a folder Rock Media Center names (its downloads folder, as a save path) into the
 // client's path for it. A path no mapping covers comes back as given.
 func (m PathMaps) ToRemote(p string) string {
 	if len(m) == 0 || p == "" || !filepath.IsAbs(p) {
@@ -226,17 +226,17 @@ func ValidatePathMaps(maps []PathMap, dataDir string) (PathMaps, error) {
 		}
 		local := strings.TrimSpace(pm.Local)
 		if local == "" || strings.ContainsRune(local, 0) || !filepath.IsAbs(local) || !strings.HasPrefix(filepath.ToSlash(local), "/") {
-			return nil, fmt.Errorf("%w: %q isn't a full path inside the Arrmada container (it starts with /)", ErrBadPathMap, pm.Local)
+			return nil, fmt.Errorf("%w: %q isn't a full path inside the Rock Media Center container (it starts with /)", ErrBadPathMap, pm.Local)
 		}
 		local = filepath.Clean(local)
 		if filepath.Dir(local) == local {
-			return nil, fmt.Errorf("%w: the Arrmada side can't be the whole filesystem (/)", ErrBadPathMap)
+			return nil, fmt.Errorf("%w: the Rock Media Center side can't be the whole filesystem (/)", ErrBadPathMap)
 		}
 		for _, d := range protected {
 			_, inData := localUnder(local, d)
 			_, holdsData := localUnder(d, local)
 			if inData || holdsData {
-				return nil, fmt.Errorf("%w: %s is Arrmada's data folder, where its database lives; downloads and media must never be put there", ErrBadPathMap, local)
+				return nil, fmt.Errorf("%w: %s is Rock Media Center's data folder, where its database lives; downloads and media must never be put there", ErrBadPathMap, local)
 			}
 		}
 		key := rp.p

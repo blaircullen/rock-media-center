@@ -80,7 +80,7 @@ func (a *api) handleFileInfo(w http.ResponseWriter, r *http.Request) {
 	if st, err := os.Stat(path); err == nil {
 		out.Exists, out.Size, out.Modified = true, st.Size(), st.ModTime().UnixMilli()
 	} else if errors.Is(err, os.ErrNotExist) {
-		out.MissingReason = "the file isn't on disk — it was moved or deleted outside Arrmada"
+		out.MissingReason = "the file isn't on disk — it was moved or deleted outside Rock Media Center"
 	} else {
 		out.MissingReason = err.Error()
 	}
@@ -128,7 +128,7 @@ func (a *api) fileSourceFor(ctx context.Context, path string) (*fileSource, stri
 		fromPack = err == nil
 	}
 	if err != nil {
-		return nil, "no import record for this file — it was probably added by a library scan rather than grabbed by Arrmada"
+		return nil, "no import record for this file — it was probably added by a library scan rather than grabbed by Rock Media Center"
 	}
 
 	src := &fileSource{

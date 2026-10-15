@@ -75,8 +75,8 @@ var bannedCopy = []bannedPhrase{
 	webPhrase(`group: "Plex"`, "the sidebar group holding Insights is 'Watching' — it covers Plex and Jellyfin (lib/nav.ts)"),
 	// COPY-10: system strings that described an older build.
 	webPhrase(`auth_enabled`, "sign-in is always enforced, so a constant Auth stat says nothing — leave it off the Dashboard"),
-	phrase(`kept in memory, up to`, "the viewer loads up to LOG_LIMIT lines; Arrmada keeps 50,000 in memory and writes rotating log files"),
-	webPhrase(`ARRMADA_BASE_URL`, "sub-path hosting isn't supported — Arrmada is served at the root of its own port or hostname"),
+	phrase(`kept in memory, up to`, "the viewer loads up to LOG_LIMIT lines; Rock Media Center keeps 50,000 in memory and writes rotating log files"),
+	webPhrase(`ARRMADA_BASE_URL`, "sub-path hosting isn't supported — Rock Media Center is served at the root of its own port or hostname"),
 	webPhrase(`dev-docker`, "builds are stamped with a dated version and the short commit (update.sh)"),
 	// COPY-04: no music upgrade sweep exists.
 	phrase(`keeps upgrading until`, "music albums aren't upgraded after the first grab"),
@@ -239,7 +239,7 @@ func TestCopyGuardMatcher(t *testing.T) {
 		`keeps upgrading until it reaches the top`,
 		`and upgrades later if one appears`,
 		`Replace an album when a higher tier turns up`,
-		`If your quality profile allows upgrades, Arrmada keeps watching`,
+		`If your quality profile allows upgrades, Rock Media Center keeps watching`,
 		`  { key: "missing", label: "Missing" },`,
 		`return { label: have > 0 ? "In progress" : "Wanted" };`,
 		`{version.monitored ? "Monitored" : "Unmonitored"}</button>`,

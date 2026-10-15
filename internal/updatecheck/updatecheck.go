@@ -1,9 +1,9 @@
-// Package updatecheck asks GitHub whether a newer Arrmada release is out, for System →
+// Package updatecheck asks GitHub whether a newer Rock Media Center release is out, for System →
 // Status. It reads the repository's public releases (and, for a build of a commit, how
 // it compares with main or with the latest release, whichever its install follows) with
 // plain unauthenticated GETs: nothing about the server,
 // its library or its users is sent, not even the version, and the User-Agent is just
-// "Arrmada". It is on by default, says what it does, and can be switched off; while off
+// "Rock Media Center". It is on by default, says what it does, and can be switched off; while off
 // it makes no requests at all.
 //
 // Trouble with GitHub (no releases yet, the rate limit, no network) is never an error
@@ -30,7 +30,7 @@ import (
 
 const (
 	// DefaultRepo is where releases are published.
-	DefaultRepo = "tristenlammi/Arrmada"
+	DefaultRepo = "blaircullen/rock-media-center"
 	// DefaultAPI is GitHub's REST API.
 	DefaultAPI = "https://api.github.com"
 	// KeyEnabled is the setting that switches the check off ("false"); on by default.
@@ -304,7 +304,7 @@ func describe(err error) string {
 	var he httpError
 	switch {
 	case errors.Is(err, errRateLimited):
-		return "GitHub asked Arrmada to wait before checking again; it will try later."
+		return "GitHub asked Rock Media Center to wait before checking again; it will try later."
 	case errors.As(err, &he):
 		return fmt.Sprintf("GitHub answered with an error (HTTP %d); it will try again later.", he.code)
 	default:
@@ -320,7 +320,7 @@ func (c *Checker) get(ctx context.Context, path, etag string) (*http.Response, e
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	req.Header.Set("User-Agent", "Arrmada")
+	req.Header.Set("User-Agent", "RockMediaCenter")
 	if etag != "" {
 		req.Header.Set("If-None-Match", etag)
 	}

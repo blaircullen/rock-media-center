@@ -91,7 +91,7 @@ func (b *RootBins) rootOf(path string) string {
 }
 
 // RootOf is the longest of roots holding path ("" when none does) — the library folder a
-// file belongs to, for anything Arrmada keeps beside it on the same drive (the recycle
+// file belongs to, for anything Rock Media Center keeps beside it on the same drive (the recycle
 // bins). The folder itself doesn't count as inside it.
 func RootOf(roots []libroots.Root, path string) string {
 	p, err := filepath.Abs(path)
@@ -147,7 +147,7 @@ func topDir(path string) string {
 	return "/" + strings.Join(parts, "/")
 }
 
-// PrepareHiddenDir makes one of Arrmada's hidden folders at the top of a library folder (a
+// PrepareHiddenDir makes one of Rock Media Center's hidden folders at the top of a library folder (a
 // recycle bin) and its marker files (.plexignore, .ignore).
 // Without them a media server could list every file in it as a library item, so a folder
 // that can't have them is an error like any other. A folder made before a marker existed
@@ -246,7 +246,7 @@ func binHasItems(dir string) bool {
 }
 
 // SkipScanDir reports whether a library scan should skip a folder by its name. Hidden
-// folders are Arrmada's own — the .arrmada-recycle bins — or
+// folders are Rock Media Center's own — the .arrmada-recycle bins — or
 // a system's (.AppleDouble, .Trash): scanned as media they'd add deleted films back to the
 // library, or bogus titles that vanish when the folder is cleared.
 func SkipScanDir(name string) bool { return strings.HasPrefix(name, ".") }

@@ -92,7 +92,7 @@ func TestIT_InsightsRecordsJellyfinPlay(t *testing.T) {
 		}
 		req, _ := http.NewRequestWithContext(ctx, http.MethodPost, base+path, bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf(`MediaBrowser Token="%s", Client="Arrmada IT Player", Device="IT TV", DeviceId="arrmada-it-insights-player", Version="0.1-it"`, auth.AccessToken))
+		req.Header.Set("Authorization", fmt.Sprintf(`MediaBrowser Token="%s", Client="Rock Media Center IT Player", Device="IT TV", DeviceId="arrmada-it-insights-player", Version="0.1-it"`, auth.AccessToken))
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			t.Fatal(err)

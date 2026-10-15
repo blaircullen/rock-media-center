@@ -15,7 +15,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/settings"
 )
 
-// mediaServers is every media server Arrmada talks to, wired once: Plex (its connection
+// mediaServers is every media server Rock Media Center talks to, wired once: Plex (its connection
 // and index live in Insights, its scanner is built in main) and Jellyfin (its own
 // service, index and scanner). Producers of library changes call Request, which tells
 // each server's scanner; the import outbox's "plex.scan" consumer (the name kept so rows
@@ -39,7 +39,7 @@ type mediaServerDeps struct {
 	Insights *insights.Service
 	// Plex is the Plex scanner main already built.
 	Plex *plexscan.Scanner
-	// Roots is Arrmada's movie and TV folder per plexscan kind, read live.
+	// Roots is Rock Media Center's movie and TV folder per plexscan kind, read live.
 	Roots func(ctx context.Context) map[string]string
 	Log   *slog.Logger // tagged "jellyfin"
 }
@@ -69,7 +69,7 @@ func setupMediaServers(d mediaServerDeps) *mediaServers {
 	return m
 }
 
-// Request queues a scan of dir (a folder as Arrmada sees it) on every server; each
+// Request queues a scan of dir (a folder as Rock Media Center sees it) on every server; each
 // scanner drops it at once when its server isn't set up or its scans are off.
 func (m *mediaServers) Request(kind, dir string) {
 	for _, sc := range []*plexscan.Scanner{m.Plex, m.JellyfinScan} {

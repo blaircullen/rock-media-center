@@ -69,7 +69,7 @@ export function DeleteSeriesDialog({ series, onClose, onDeleted }: {
               <img src={series.poster_url} alt="" className="h-full w-full object-cover" />
             </div>
           )}
-          <p className="m-0">It'll be removed from your library and Arrmada will stop monitoring it. Its files stay on disk unless you tick the box below.</p>
+          <p className="m-0">It'll be removed from your library and Rock Media Center will stop monitoring it. Its files stay on disk unless you tick the box below.</p>
         </div>
       }
       extra={

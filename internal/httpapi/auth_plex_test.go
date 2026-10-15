@@ -113,7 +113,7 @@ func TestPlexLoginPollNeedsStartingBrowser(t *testing.T) {
 	}
 }
 
-// Arrmada keeps a handle to popups it opens (the Plex sign-in window) while still
+// Rock Media Center keeps a handle to popups it opens (the Plex sign-in window) while still
 // refusing one to cross-origin openers.
 func TestSecurityHeadersCOOP(t *testing.T) {
 	s := newRouteServer(t, nil)

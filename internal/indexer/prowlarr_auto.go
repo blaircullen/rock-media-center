@@ -97,7 +97,7 @@ func (s *Service) RecordProwlarrSync(ctx context.Context, st ProwlarrSettings, t
 // ScheduledProwlarrSync is the hourly "prowlarr-sync" task: the same non-destructive sync
 // as the Sync now button, with the saved URL and key. Until a sync has worked once (which
 // is what saves them) it does nothing, so an install without Prowlarr never errors.
-// flareURL is Arrmada's FlareSolverr, for the bundled Prowlarr's proxy. Rows the sync adds
+// flareURL is Rock Media Center's FlareSolverr, for the bundled Prowlarr's proxy. Rows the sync adds
 // get their capabilities read straight after, as a manual sync does in the background.
 func (s *Service) ScheduledProwlarrSync(ctx context.Context, st ProwlarrSettings, flareURL func(context.Context) string) error {
 	base := strings.TrimSpace(st.Get(ctx, SettingProwlarrURL, ""))

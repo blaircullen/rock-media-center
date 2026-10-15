@@ -433,7 +433,7 @@ func (a *api) handleInsightsPerson(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleInsightsLibrary returns the Insights Library tab (?window=days, ?metric=duration),
-// each title linked to its Arrmada page when Arrmada has it. It only links: nothing here
+// each title linked to its Rock Media Center page when Rock Media Center has it. It only links: nothing here
 // changes a file.
 func (a *api) handleInsightsLibrary(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
@@ -460,7 +460,7 @@ func (a *api) handleInsightsLibrary(w http.ResponseWriter, r *http.Request) {
 	a.writeJSON(w, http.StatusOK, v)
 }
 
-// linkLibraryItems fills each title's Arrmada id from its TMDB id, one lookup per kind.
+// linkLibraryItems fills each title's Rock Media Center id from its TMDB id, one lookup per kind.
 func (a *api) linkLibraryItems(ctx context.Context, items []*insights.LibraryItem) {
 	var movieIDs, seriesIDs []int
 	for _, it := range items {

@@ -1,4 +1,4 @@
-// Package connstatus remembers how each integration Arrmada talks to — an indexer, a
+// Package connstatus remembers how each integration Rock Media Center talks to — an indexer, a
 // download client, FlareSolverr — has been answering: when it last worked, when and why
 // it last failed, how many times in a row, and, for indexers, how long background work
 // should leave it alone before trying again.

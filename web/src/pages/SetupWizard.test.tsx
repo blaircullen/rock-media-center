@@ -58,7 +58,7 @@ describe("SetupWizard TMDB key check", () => {
     const dialog = await screen.findByRole("dialog", { name: "Save this TMDB key anyway?" });
     await act(async () => { fireEvent.click(within(dialog).getByText("Keep editing")); });
     expect(save).not.toHaveBeenCalled();
-    expect(screen.getByText("Welcome to Arrmada")).toBeTruthy();
+    expect(screen.getByText("Welcome to Rock Media Center")).toBeTruthy();
 
     await act(async () => { fireEvent.click(screen.getByText("Save and continue")); });
     await act(async () => { fireEvent.click(within(await screen.findByRole("dialog")).getByText("Save anyway")); });
@@ -90,7 +90,7 @@ describe("SetupWizard optional keys", () => {
 
   it("shows every optional key with a link to a free key", async () => {
     page();
-    const section = await screen.findByRole("region", { name: "Optional keys — Arrmada works without them" });
+    const section = await screen.findByRole("region", { name: "Optional keys — Rock Media Center works without them" });
     const names = within(section).getAllByText(/^(TheTVDB|OMDb)$/).map((n) => n.textContent);
     expect(names).toEqual(["TheTVDB", "OMDb"]);
     expect(within(section).getAllByText("Optional")).toHaveLength(2);

@@ -1,4 +1,4 @@
-// Package toolrun starts the helper tools Arrmada shells out to (ffprobe today) — the one
+// Package toolrun starts the helper tools Rock Media Center shells out to (ffprobe today) — the one
 // way they should all be started.
 //
 // A bare exec.CommandContext gets none of what a long-running tool on a shared home server

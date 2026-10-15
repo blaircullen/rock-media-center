@@ -12,7 +12,7 @@ import (
 
 // The update to a build with stall fail-over on by default met months of grab rows that
 // were never closed: the same release grabbed again every day it failed to import, torrents
-// Arrmada itself had removed at their seed goal, packs whose episodes were long in the
+// Rock Media Center itself had removed at their seed goal, packs whose episodes were long in the
 // library. Each row failed over on its own — The Expanse's complete pack nine times, with a
 // blocklist line, a history line and a search apiece. These pin the behaviour that replaced
 // it: one decision per download, and a download that has finished closes without a search.
@@ -197,7 +197,7 @@ func TestVanishedPackAlreadyInLibraryClosesQuietly(t *testing.T) {
 }
 
 // Another row for the same torrent has already been settled — seeded and removed by
-// Arrmada at its goal, removed by the user, failed over before, or waiting in Review. The
+// Rock Media Center at its goal, removed by the user, failed over before, or waiting in Review. The
 // stale duplicate takes that outcome quietly (or waits, for Review) and never fails over
 // a second time, even though the show still wants the episodes.
 func TestDuplicateOfASettledGrabClosesQuietly(t *testing.T) {
@@ -234,7 +234,7 @@ func TestDuplicateOfASettledGrabClosesQuietly(t *testing.T) {
 	}
 }
 
-// A torrent Arrmada removes at its seed goal closes every row recorded for it, not only the
+// A torrent Rock Media Center removes at its seed goal closes every row recorded for it, not only the
 // one seed cleanup matched — a duplicate left 'grabbed' reads as a vanished download.
 func TestSeedCleanupClosesDuplicateRows(t *testing.T) {
 	h := newLifecycleHarness(t)

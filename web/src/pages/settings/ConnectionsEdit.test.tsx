@@ -276,7 +276,7 @@ describe("a download client's card", () => {
     expect(screen.getByText("arrmada-tv")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "+ Add client" }));
     const form = screen.getByRole("form", { name: "Add a download client" });
-    expect((within(form).getByPlaceholderText(/as reached from the Arrmada container/) as HTMLInputElement).value).toBe("");
+    expect((within(form).getByPlaceholderText(/as reached from the Rock Media Center container/) as HTMLInputElement).value).toBe("");
     expect(within(form).queryByText("Category")).toBeNull();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Restore bundled qBittorrent" })); });
     expect(restore).toHaveBeenCalledWith(undefined);
@@ -288,7 +288,7 @@ describe("a download client's card", () => {
     vi.spyOn(downloadClientApi, "downloadClientList").mockResolvedValue({ clients: [], categories: CATS, can_restore_bundled_sabnzbd: true });
     const restore = vi.spyOn(downloadClientApi, "restoreBundledClient").mockResolvedValue({ restored: true });
     page();
-    expect(await screen.findByText(/The SABnzbd that runs alongside Arrmada was removed/)).toBeTruthy();
+    expect(await screen.findByText(/The SABnzbd that runs alongside Rock Media Center was removed/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Restore bundled qBittorrent" })).toBeNull();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Restore bundled SABnzbd" })); });
     expect(restore).toHaveBeenCalledWith("sabnzbd");

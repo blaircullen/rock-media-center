@@ -41,14 +41,14 @@ func TestDescribeEveryStage(t *testing.T) {
 		{"wrong category, none", done(Input{Phase: "seeding", WrongCategory: true}), WrongCategory, "In no category", GroupFinishing},
 		{"grabbed, waiting for import", done(Input{Phase: "seeding", Linked: true, GrabStatus: "grabbed"}), Importing, "next import check", GroupFinishing},
 		{"not grabbed, in our category", done(Input{Phase: "seeding", OwnCategory: true}), Downloaded, "matches a title", GroupFinishing},
-		{"nobody's", done(Input{Phase: "seeding"}), NotManaged, "Not managed by Arrmada", GroupSeeding},
+		{"nobody's", done(Input{Phase: "seeding"}), NotManaged, "Not managed by Rock Media Center", GroupSeeding},
 
 		// Usenet: unpacking is finishing, never stuck; a failure says SABnzbd's reason and
 		// what happens next; a finished, imported job is Imported — it never seeds.
 		{"usenet unpacking", Input{Phase: "unpacking", Usenet: true, Linked: true, GrabStatus: "grabbed"}, Unpacking, "SABnzbd is checking and unpacking it", GroupFinishing},
 		{"usenet waiting its turn", Input{Phase: "queued", Usenet: true}, Queued, "Waiting its turn in SABnzbd", GroupDownloading},
 		{"usenet downloading", Input{Phase: "downloading", Usenet: true}, Downloading, "", GroupDownloading},
-		{"usenet failed, ours", Input{Phase: "error", Usenet: true, Linked: true, GrabStatus: "grabbed", FailMessage: "Download failed - Not on your server(s)"}, Failed, "SABnzbd failed it: Download failed - Not on your server(s) — Arrmada blocklists it and tries another release", GroupDownloading},
+		{"usenet failed, ours", Input{Phase: "error", Usenet: true, Linked: true, GrabStatus: "grabbed", FailMessage: "Download failed - Not on your server(s)"}, Failed, "SABnzbd failed it: Download failed - Not on your server(s) — Rock Media Center blocklists it and tries another release", GroupDownloading},
 		{"usenet failed, disk full", Input{Phase: "error", Usenet: true, Linked: true, GrabStatus: "grabbed", FailMessage: "Unpacking failed, write error or disk is full?", FailFix: "Free up space, then Retry"}, Failed, "write error or disk is full? — Free up space, then Retry", GroupDownloading},
 		{"usenet failed, not ours", Input{Phase: "error", Usenet: true, FailMessage: "Duplicate NZB"}, Failed, "SABnzbd failed it: Duplicate NZB", GroupDownloading},
 		{"usenet finished, waiting for import", done(Input{Phase: "completed", Usenet: true, Linked: true, GrabStatus: "grabbed"}), Importing, "next import check", GroupFinishing},

@@ -13,7 +13,7 @@ import { ServerTile } from "./brand/ServerBadge";
 // to. The same sheet links Jellyfin to the account you're signed in as (JellyfinAccountLink).
 // Its own chunk: only someone who taps a Jellyfin button downloads it.
 //
-// The password goes to Arrmada once, which hands it to Jellyfin; nothing here keeps it
+// The password goes to Rock Media Center once, which hands it to Jellyfin; nothing here keeps it
 // after the sheet closes. Quick Connect's secret never reaches the browser: the server
 // gives an id to poll and the code to show.
 

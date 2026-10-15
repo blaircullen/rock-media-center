@@ -8,7 +8,7 @@ import { plexApi, type PlexConnectResult } from "../../lib/plexApi";
 import { usePlexPinSignIn, type PlexFlow } from "../../lib/plexSignIn";
 import { useToast } from "../../ui";
 
-// PlexConnect points Arrmada at the Plex Media Server: Sign in with Plex (finds the
+// PlexConnect points Rock Media Center at the Plex Media Server: Sign in with Plex (finds the
 // server itself), or a URL and token typed in. It opens inside the Plex card on Settings →
 // Connections; the first-run wizard can reuse it as is. It reads and writes the connection
 // through the API on its own, so nothing else holds its state. The token never comes back
@@ -78,7 +78,7 @@ export function PlexConnect({ onChanged, onError }: { onChanged?: () => void; on
     <div className="mt-2 flex flex-col gap-4 border-t pt-3" style={{ borderColor: "var(--line)" }}>
       {choices.length > 1 && (
         <div role="group" aria-label="Choose your Plex server" className="flex flex-col gap-2 rounded-lg p-3" style={{ border: "1px solid var(--accent-line)", background: "var(--accent-soft)" }}>
-          <div className="text-base font-semibold">More than one of your servers answered. Which one should Arrmada use?</div>
+          <div className="text-base font-semibold">More than one of your servers answered. Which one should Rock Media Center use?</div>
           {choices.map((c) => (
             <button key={c.machine_id} onClick={() => { setUrl(c.url); void save(c.url); }} disabled={busy !== null} className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg px-3 py-2 text-left text-base" style={{ background: "var(--panel)", border: "1px solid var(--line)" }}>
               <span className="font-semibold">{c.name}</span>

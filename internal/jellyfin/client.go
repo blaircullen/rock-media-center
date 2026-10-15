@@ -74,14 +74,14 @@ type Client struct {
 	http     *http.Client
 }
 
-// ClientName is how Arrmada names itself to Jellyfin: the dashboard's device list and
+// ClientName is how Rock Media Center names itself to Jellyfin: the dashboard's device list and
 // session list show it.
-const ClientName = "Arrmada"
+const ClientName = "Rock Media Center"
 
 // New builds a client for the server at baseURL using an API key (Dashboard → API Keys).
-// deviceID should be stable per Arrmada install: Jellyfin files sessions and tokens under
+// deviceID should be stable per Rock Media Center install: Jellyfin files sessions and tokens under
 // it, and signing in again from the same device replaces that user's earlier token there.
-// version is Arrmada's build. hc may be nil for the default client (15 s per call).
+// version is Rock Media Center's build. hc may be nil for the default client (15 s per call).
 func New(baseURL, apiKey, deviceID, version string, hc *http.Client) *Client {
 	if hc == nil {
 		hc = defaultHTTPClient()

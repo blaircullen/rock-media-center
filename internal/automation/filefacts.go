@@ -69,7 +69,7 @@ func (c *Coordinator) episodeFileOf(ctx context.Context, f series.EpisodeFile) q
 }
 
 // upgradeBaseline is the "what we already have" release string the upgrade comparison scores
-// against. Files Arrmada grabbed carry their SourceRelease; files found by a library scan don't —
+// against. Files Rock Media Center grabbed carry their SourceRelease; files found by a library scan don't —
 // so fall back to their probed quality (e.g. "Bambi 1942 1080p BluRay x264"), then the filename.
 // Without this, disk-imported movies could never be considered for an upgrade at all.
 //

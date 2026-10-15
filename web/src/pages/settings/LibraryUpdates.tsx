@@ -11,7 +11,7 @@ import { plexLibraryApi, type PlexPathMap, type PlexScanRoot, type PlexScanStatu
 import { ago } from "../../lib/taskTime";
 import { Button } from "../../ui";
 
-// A media server's "library updates" card: after Arrmada imports, upgrades, renames,
+// A media server's "library updates" card: after Rock Media Center imports, upgrades, renames,
 // deletes or converts a file it asks the server (Plex or Jellyfin) to scan just that
 // folder. Each library folder's line shows where its scans go on the server's side and how
 // that was worked out, so a wrong guess is visible. Self-contained (its own load and
@@ -72,7 +72,7 @@ function RootLine({ r, name, busy, onTest }: { r: PlexScanRoot; name: string; bu
       </div>
       {r.how === "section" && (
         <Note tone="warn">
-          Arrmada couldn't match {r.arrmada_root} to a folder {name} knows, so each change scans the whole {r.sections.join(", ")} library.
+          Rock Media Center couldn't match {r.arrmada_root} to a folder {name} knows, so each change scans the whole {r.sections.join(", ")} library.
           That works, but it's slow on a big library: add a path mapping below.{r.note ? ` (${r.note})` : ""}
         </Note>
       )}
@@ -144,7 +144,7 @@ export function LibraryUpdates({ server }: { server: MediaServerKind }) {
     <Section
       id={id}
       title={title}
-      subtitle={`After Arrmada imports, upgrades, renames or deletes a file, it asks ${name} to scan just that folder, so the change shows up in ${name} within a minute. Arrmada's folders usually have different names inside ${name}'s container; each line shows where its scans go.`}
+      subtitle={`After Rock Media Center imports, upgrades, renames or deletes a file, it asks ${name} to scan just that folder, so the change shows up in ${name} within a minute. Rock Media Center's folders usually have different names inside ${name}'s container; each line shows where its scans go.`}
     >
       {!view.configured && (
         <Note tone="info">
@@ -165,10 +165,10 @@ export function LibraryUpdates({ server }: { server: MediaServerKind }) {
 
       <div className="flex flex-col gap-2">
         <span className="font-mono text-2xs font-bold uppercase tracking-[0.1em] text-ink-faint">Path mappings</span>
-        <span className="text-xs text-ink-faint">Only needed when a line above says "whole library" or points somewhere wrong. The Arrmada folder is as Arrmada sees it; the {name} folder is the same place as {name} sees it (for example {SERVER_FOLDER[server]}, or D:\Media\Movies on Windows).</span>
+        <span className="text-xs text-ink-faint">Only needed when a line above says "whole library" or points somewhere wrong. The Rock Media Center folder is as Rock Media Center sees it; the {name} folder is the same place as {name} sees it (for example {SERVER_FOLDER[server]}, or D:\Media\Movies on Windows).</span>
         {maps.map((m, i) => (
           <div key={i} className="flex flex-wrap items-center gap-2">
-            <input aria-label="Arrmada folder" placeholder="/movies" value={m.from} onChange={(e) => edit(maps.map((x, j) => (j === i ? { ...x, from: e.target.value } : x)))} className={`${input} min-w-0 flex-1`} style={inputStyle} />
+            <input aria-label="Rock Media Center folder" placeholder="/movies" value={m.from} onChange={(e) => edit(maps.map((x, j) => (j === i ? { ...x, from: e.target.value } : x)))} className={`${input} min-w-0 flex-1`} style={inputStyle} />
             <span className="text-ink-faint">→</span>
             <input aria-label={`${name} folder`} placeholder={SERVER_FOLDER[server]} value={m.to} onChange={(e) => edit(maps.map((x, j) => (j === i ? { ...x, to: e.target.value } : x)))} className={`${input} min-w-0 flex-1`} style={inputStyle} />
             <Button size="sm" variant="ghost" onClick={() => edit(maps.filter((_, j) => j !== i))}>Remove</Button>
@@ -185,7 +185,7 @@ export function LibraryUpdates({ server }: { server: MediaServerKind }) {
           last.error
             ? <span style={{ color: "var(--reject-text)" }}>Last scan {ago(last.at)} failed: {last.error}</span>
             : <>Last scan: {ago(last.at)} · <span className="font-mono">{last.path || "whole library"}</span>{last.section ? ` · ${last.section}` : ""}</>
-        ) : "No scans asked for since Arrmada started."}
+        ) : "No scans asked for since Rock Media Center started."}
         {view.pending > 0 && ` · ${view.pending} waiting`}
       </div>
       {msg && <div className="text-sm" style={{ color: msg.tone === "err" ? "var(--reject-text)" : "var(--good-text)" }}>{msg.text}</div>}

@@ -16,10 +16,10 @@ import (
 )
 
 // handleImportOverseerr migrates an existing Overseerr/Jellyseerr request history
-// into Arrmada. It fetches the request list up front (so it can report how many
+// into Rock Media Center. It fetches the request list up front (so it can report how many
 // were found), then imports them in the background — approved/available ones are
 // added to the library and searched, pending ones become pending requests here.
-// Requests are attributed to a matching Arrmada user (by username) or to the admin
+// Requests are attributed to a matching Rock Media Center user (by username) or to the admin
 // running the import. Declined requests are skipped. Re-running is safe: media
 // already requested is left alone.
 func (a *api) handleImportOverseerr(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,7 @@ func (a *api) handleImportOverseerr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Resolve Overseerr requesters to Arrmada users by username (case-insensitive),
+	// Resolve Overseerr requesters to Rock Media Center users by username (case-insensitive),
 	// falling back to the admin running the import.
 	byName := map[string]int64{}
 	if users, e := a.deps.Auth.ListUsers(ctx); e == nil {
@@ -65,7 +65,7 @@ func (a *api) handleImportOverseerr(w http.ResponseWriter, r *http.Request) {
 	jobID, existing, ok := a.submitOr503(w, r, jobs.Spec{Kind: "requests.import-overseerr", Target: "all", Class: jobs.ClassExternalImport, Timeout: 30 * time.Minute,
 		Fn: func(bg context.Context, p *jobs.Progress) (any, error) {
 			client := overseerr.New(req.URL, req.APIKey)
-			plexUsers := map[int]int64{} // requester's Plex account id → Arrmada user id (cached)
+			plexUsers := map[int]int64{} // requester's Plex account id → Rock Media Center user id (cached)
 			var imported, skipped, declined, failed int
 			for i := range items {
 				if bg.Err() != nil {

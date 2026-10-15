@@ -120,7 +120,7 @@ export function movieLibraryConfig({ fits, queueKnown, actions, rowAction }: Mov
     // Wanted. Downloading is any download in flight (its own file, an upgrade, a version).
     filters: [
       { key: "all", label: "All" },
-      { key: "wanted", label: STATUS_LABEL.wanted, match: (m) => isMovieWanted(m, queueKnown), title: "Monitored, no file yet: Arrmada is searching for these" },
+      { key: "wanted", label: STATUS_LABEL.wanted, match: (m) => isMovieWanted(m, queueKnown), title: "Monitored, no file yet: Rock Media Center is searching for these" },
       { key: "downloading", label: "Downloading", match: (m) => !!m.download },
       { key: "nofile", label: "No file (unmonitored)", match: (m) => !m.monitored && !m.has_file, title: "No file and not monitored: never searched for" },
       { key: "filemissing", label: STATUS_LABEL.fileMissing, match: (m) => movieStatus(m, undefined, queueKnown).key === "missing", title: "A file was recorded but is gone from disk" },

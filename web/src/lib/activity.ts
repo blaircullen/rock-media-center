@@ -1,4 +1,4 @@
-// The Activity page (/activity/<tab>): what Arrmada is downloading, what needs a person,
+// The Activity page (/activity/<tab>): what Rock Media Center is downloading, what needs a person,
 // what it's still looking for, what it has done, and what it won't grab again — one page
 // that used to be four (Downloads, Review, History, Blocklist). The address is the
 // state: the tab is the path, a tab's own sub-view lives in ?show=, so Back and deep

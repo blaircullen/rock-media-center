@@ -113,7 +113,7 @@ func TestDownloadsFeedClientState(t *testing.T) {
 }
 
 // ACQ-17: a torrent no grab knows is labelled by its download category, so a music
-// torrent is Music — "Inception" the soundtrack never counts as the film. One Arrmada
+// torrent is Music — "Inception" the soundtrack never counts as the film. One Rock Media Center
 // grabbed takes its type and profile from the acquisition record (ACQ-25) instead.
 func TestQueueMediaTypeByCategory(t *testing.T) {
 	cases := map[string]string{

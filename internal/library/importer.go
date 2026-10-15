@@ -1269,7 +1269,7 @@ func clean(s string) string {
 // splits the word in two: "Tom's Divorce" became "Tom s Divorce" and "Li'l Sebastian"
 // became "Li l Sebastian". They're legal on every filesystem we target, they're what
 // the title actually is, and library files scanned in from elsewhere keep them — so
-// stripping them also made Arrmada's own naming inconsistent with the rest of a library.
+// stripping them also made Rock Media Center's own naming inconsistent with the rest of a library.
 var reTitlePunct = regexp.MustCompile(`[.,!?:;"…]+`)
 
 // cleanTitleLoose sanitizes a metadata title into a folder/file name: it drops

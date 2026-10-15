@@ -53,13 +53,13 @@ func LogLibraryDirs(ctx context.Context, roots *libroots.Roots, env config.Confi
 			log.Info("library folder: using the folder chosen in the app", "library", d.name, "folder", *d.field, "environment_default", *envDirs[i].field)
 		}
 		if *d.field != "" && libroots.UnderDataDir(*d.field, env.DataDir) {
-			log.Error("library folder is inside or contains Arrmada's data folder; move it to its own mount",
+			log.Error("library folder is inside or contains Rock Media Center's data folder; move it to its own mount",
 				"library", d.name, "folder", *d.field, "data_dir", env.DataDir)
 		}
 	}
 }
 
-// inContainer reports whether Arrmada runs in Docker, where exiting restarts it
+// inContainer reports whether Rock Media Center runs in Docker, where exiting restarts it
 // (restart: unless-stopped). Outside a container a restart would just stop the app.
 func inContainer() bool {
 	if _, err := os.Stat("/.dockerenv"); err == nil {
@@ -281,7 +281,7 @@ func (a *api) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 // policy brings the container straight back with the saved settings applied.
 func (a *api) handleRestart(w http.ResponseWriter, r *http.Request) {
 	if a.deps.Restart == nil || !inContainer() {
-		a.writeError(w, http.StatusBadRequest, "Arrmada can only restart itself inside Docker — restart it the way you started it")
+		a.writeError(w, http.StatusBadRequest, "Rock Media Center can only restart itself inside Docker — restart it the way you started it")
 		return
 	}
 	a.deps.Log.Info("restart requested from the app")

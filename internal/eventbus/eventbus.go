@@ -1,4 +1,4 @@
-// Package eventbus is Arrmada's in-process publish/subscribe hub. Modules emit
+// Package eventbus is Rock Media Center's in-process publish/subscribe hub. Modules emit
 // events (release.grabbed, movie.downloaded, …) and the UI's websocket hub and the admin
 // alerts (notify) subscribe. Delivery is asynchronous and non-blocking: a slow subscriber
 // never stalls a publisher — its events are dropped (counted and logged) instead.

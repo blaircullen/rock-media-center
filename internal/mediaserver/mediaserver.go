@@ -1,4 +1,4 @@
-// Package mediaserver is what Arrmada's features need from "a media server" without caring
+// Package mediaserver is what Rock Media Center's features need from "a media server" without caring
 // which one: the server kinds, the ids a title is known by, an indexed title, a live
 // stream, a library, the Server interface every connected server answers, and a Registry
 // over all of them. Types only — nothing here calls a server; internal/insights (Plex)
@@ -13,7 +13,7 @@ import (
 // Kind names a media server product.
 type Kind string
 
-// The servers Arrmada can connect to, in the order they're listed and asked.
+// The servers Rock Media Center can connect to, in the order they're listed and asked.
 const (
 	Plex     Kind = "plex"
 	Jellyfin Kind = "jellyfin"
@@ -41,12 +41,12 @@ func (k Kind) order() int {
 	return 2
 }
 
-// ExternalIDs are what a title is known by outside Arrmada. Zero / "" = unknown.
+// ExternalIDs are what a title is known by outside Rock Media Center. Zero / "" = unknown.
 type ExternalIDs struct {
 	TMDB int
 	TVDB int
 	IMDB string
-	// Folder is the title's folder as Arrmada sees it (a movie's folder, a show's folder).
+	// Folder is the title's folder as Rock Media Center sees it (a movie's folder, a show's folder).
 	// A server that matched no outside id (Jellyfin lists each file of an ungrouped
 	// multi-version folder as its own movie, with no ids) can still be found by it.
 	// Servers that only index by id ignore it.
@@ -81,12 +81,12 @@ type Library struct {
 	Type  string `json:"type"` // movie | show | artist | photo
 	Count int64  `json:"-"`    // filled by SectionTotal on demand
 	// Locations are the library's folders as the server sees them (its own paths, which
-	// usually differ from Arrmada's container paths). Partial scans name a folder under
+	// usually differ from Rock Media Center's container paths). Partial scans name a folder under
 	// one of these.
 	Locations []string `json:"locations,omitempty"`
 }
 
-// Server is one connected media server as the rest of Arrmada uses it. Every lookup
+// Server is one connected media server as the rest of Rock Media Center uses it. Every lookup
 // answers from memory (an index the server keeps fresh in the background), so a slow or
 // down server never holds up a page.
 type Server interface {
@@ -150,7 +150,7 @@ func LeadWith(links []WatchLink, home Kind) []WatchLink {
 	return out
 }
 
-// Registry is every media server Arrmada knows how to use, Plex first, then Jellyfin.
+// Registry is every media server Rock Media Center knows how to use, Plex first, then Jellyfin.
 // A server that isn't set up is still in it; the methods skip it. The zero value and a
 // nil *Registry are empty.
 type Registry struct {

@@ -336,7 +336,7 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 // away rather than through the queue, so the answer is the real outcome; a saved
 // connection's Test is also recorded in its delivery log.
 func (s *Service) Test(ctx context.Context, c Connection) error {
-	m := Message{Title: "Arrmada", Body: "✅ Test notification — this connection works.", Link: "/settings/alerts"}
+	m := Message{Title: "Rock Media Center", Body: "✅ Test notification — this connection works.", Link: "/settings/alerts"}
 	err := s.deliver(ctx, c, m)
 	if c.ID > 0 {
 		s.recordTest(context.WithoutCancel(ctx), c, m, err)

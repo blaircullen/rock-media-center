@@ -12,7 +12,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/store"
 )
 
-// The maintenance commands for when the web UI can't help — above all when Arrmada won't
+// The maintenance commands for when the web UI can't help — above all when Rock Media Center won't
 // start. They only touch files in the data dir and never open the live database, so they
 // are safe while the app is stopped or crash-looping:
 //
@@ -23,7 +23,7 @@ import (
 
 const restoreUsage = `usage:
   arrmada restore <backup name | path to .db or .db.gz>
-      check the backup and put it in place the next time Arrmada starts
+      check the backup and put it in place the next time Rock Media Center starts
   arrmada restore --cancel
       drop a staged restore that hasn't run yet
   arrmada backups
@@ -61,8 +61,8 @@ func restoreCommand(dataDir string, args []string, stdout, stderr io.Writer) int
 		return 1
 	}
 	fmt.Fprintf(stdout, "Staged %s (%s, taken %s, schema %s).\n", b.Name, b.Kind, b.CreatedAt.Local().Format(time.DateTime), info.SchemaVersion)
-	fmt.Fprintln(stdout, "It replaces the database the next time Arrmada starts; the current one is kept as a pre-restore backup.")
-	fmt.Fprintln(stdout, "Everything since the backup was taken will be lost. Start or restart Arrmada now, or undo this with: arrmada restore --cancel")
+	fmt.Fprintln(stdout, "It replaces the database the next time Rock Media Center starts; the current one is kept as a pre-restore backup.")
+	fmt.Fprintln(stdout, "Everything since the backup was taken will be lost. Start or restart Rock Media Center now, or undo this with: arrmada restore --cancel")
 	return 0
 }
 

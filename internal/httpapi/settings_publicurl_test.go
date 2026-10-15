@@ -10,7 +10,7 @@ import (
 )
 
 // The outside address is the owner's call (admin only), must be a plain http(s) origin
-// (Arrmada is served at the root), and is stored tidied.
+// (Rock Media Center is served at the root), and is stored tidied.
 func TestPublicURLSetting(t *testing.T) {
 	s := newRouteServer(t, nil)
 	_, admin := s.user(t, "admin", auth.RoleAdmin)

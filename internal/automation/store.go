@@ -503,7 +503,7 @@ func (c *Coordinator) seedCleanupGrabs(ctx context.Context) ([]grab, error) {
 // data has landed (never remove a torrent before then), but the Seeding tab wants the
 // rule for anything currently in the client. Using the imported-only set there made a
 // torrent that had finished downloading but not yet imported read "Not managed by
-// Arrmada — no seed rule", even though its rule was recorded at grab time.
+// Rock Media Center — no seed rule", even though its rule was recorded at grab time.
 func (c *Coordinator) liveGrabs(ctx context.Context) ([]grab, error) {
 	return c.grabsWhere(ctx, liveWhere)
 }

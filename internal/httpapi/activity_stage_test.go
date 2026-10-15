@@ -111,7 +111,7 @@ func TestDownloadsFeedStages(t *testing.T) {
 		retrying: {"import_retrying", "Import failed 3× (permission denied) — next try in"},
 		seeding:  {"seeding", ""},
 		running:  {"downloading", ""},
-		stranger: {"not_managed", "Not managed by Arrmada"},
+		stranger: {"not_managed", "Not managed by Rock Media Center"},
 		waiting:  {"importing", "Waiting for the next import check"},
 	}
 	for h, w := range want {

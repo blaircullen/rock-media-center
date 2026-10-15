@@ -417,7 +417,7 @@ func TestUploadAcceptsGzipAndPlain(t *testing.T) {
 	}
 }
 
-// Anything that isn't a sound Arrmada database is refused with a reason, and leaves
+// Anything that isn't a sound Rock Media Center database is refused with a reason, and leaves
 // nothing behind.
 func TestUploadRejectsBadMagicAndCorrupt(t *testing.T) {
 	s := newBackupServer(t)

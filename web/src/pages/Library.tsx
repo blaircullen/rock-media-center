@@ -54,7 +54,7 @@ export function LibraryFolders() {
 
   return (
     <div>
-      <p className="mb-4 max-w-[64ch] text-base text-ink-dim">Point each library at a folder inside your mounted media. Use <b>Browse</b> to pick from the folders Arrmada can see — a picked folder is saved straight away — then <b>Scan</b> to catalog what's there.</p>
+      <p className="mb-4 max-w-[64ch] text-base text-ink-dim">Point each library at a folder inside your mounted media. Use <b>Browse</b> to pick from the folders Rock Media Center can see — a picked folder is saved straight away — then <b>Scan</b> to catalog what's there.</p>
 
       <div className="flex flex-col gap-2.5">
         {ROWS.map((row) => (
@@ -191,7 +191,7 @@ function UnmatchedReview({ media, reloadKey }: { media: "movie" | "series"; relo
             {label} — needs review
             <span className="ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-bold" style={{ background: "var(--reject-soft)", color: "var(--reject-text)" }}>{items.length}</span>
           </div>
-          <div className="text-xs text-ink-faint">Arrmada couldn't confidently identify these — pick the right title so nothing is mis-filed.</div>
+          <div className="text-xs text-ink-faint">Rock Media Center couldn't confidently identify these — pick the right title so nothing is mis-filed.</div>
         </div>
         <button onClick={load} className="rounded-lg px-3 py-1.5 text-sm font-semibold" style={{ border: "1px solid var(--line)", background: "var(--panel-2)", color: "var(--ink)" }}>Refresh</button>
       </div>
@@ -258,7 +258,7 @@ function UnmatchedRow({ media, item, busy, onPick }: { media: "movie" | "series"
   );
 }
 
-// FolderChips checks a folder shortly after it's typed or picked and shows what Arrmada
+// FolderChips checks a folder shortly after it's typed or picked and shows what Rock Media Center
 // sees there: is it there, can the app write to it, will finished downloads hardlink in
 // (or be copied), how much room, how many folders. A problem that would make the save
 // refuse it is shown in red and reported through onBlocking. The data-folder rule applies
@@ -325,7 +325,7 @@ export function FolderChips({ kind, path, current, downloads, onBlocking, onCrea
       <FolderChip color={good}>✓ Exists</FolderChip>
       {c.writable
         ? <FolderChip color={good}>✓ Writable</FolderChip>
-        : <FolderChip color={warn} title="Arrmada can read this folder but not write to it: imports can't land here. Check PUID/PGID and the share's permissions.">⚠ Read-only</FolderChip>}
+        : <FolderChip color={warn} title="Rock Media Center can read this folder but not write to it: imports can't land here. Check PUID/PGID and the share's permissions.">⚠ Read-only</FolderChip>}
       {c.hardlink_with_downloads === true && <FolderChip color={good}>✓ Hardlinks with Downloads</FolderChip>}
       {c.hardlink_with_downloads === false && (
         <FolderChip color={warn} title="Downloads and this folder are on different drives or shares, so each finished download is copied (using the space twice) instead of hardlinked.">⚠ Will copy, not hardlink</FolderChip>
@@ -379,7 +379,7 @@ export function FolderPicker({ initial, onClose, onSelect }: { initial?: string;
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <span className="text-xs" style={{ color: data?.path_disabled ? "var(--avoid-text)" : "var(--ink-faint)" }}>
-          {data?.path_disabled ? "This folder holds Arrmada's own data — go into your media folder and pick one there." : "Navigate into the folder you want, then select it."}
+          {data?.path_disabled ? "This folder holds Rock Media Center's own data — go into your media folder and pick one there." : "Navigate into the folder you want, then select it."}
         </span>
         <button onClick={() => data && !data.path_disabled && onSelect(data.path)} disabled={!data || data.path_disabled}className="rounded-lg px-4 py-2 text-base font-semibold disabled:opacity-50" style={{ background: "linear-gradient(150deg, var(--accent), var(--accent-deep))", color: "var(--accent-ink)" }}>Select this folder</button>
       </div>

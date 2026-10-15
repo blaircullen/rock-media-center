@@ -42,7 +42,7 @@ type ImportedSession struct {
 // ImportOptions tunes one import pass.
 type ImportOptions struct {
 	// Before, when set (epoch seconds), skips plays that started at or after it — "only
-	// import plays from before Arrmada started recording". The overlap check already
+	// import plays from before Rock Media Center started recording". The overlap check already
 	// skips plays recorded live; this is for owners who'd rather not mix sources at all.
 	Before int64
 	// RunID stamps every play this pass inserts with its import run, so "Remove this
@@ -112,7 +112,7 @@ func normalizeDecision(d string) string {
 }
 
 // ImportHistory records historical sessions. A row is skipped when it was imported before
-// (same user + item + start, so a re-run adds nothing) and when Arrmada already recorded the
+// (same user + item + start, so a re-run adds nothing) and when Rock Media Center already recorded the
 // same play live — Tautulli and the poller both watch the same server, so without that check
 // every play in the overlap period counted twice. A check that errors skips the row (counted
 // as failed): when unsure, never risk a double count.
@@ -207,13 +207,13 @@ func (s *Service) ImportHistory(ctx context.Context, rows []ImportedSession, opt
 	return c
 }
 
-// FirstLiveStart is when Arrmada first recorded a play itself (epoch seconds, 0 = never) —
-// the natural cutoff for "only import plays from before Arrmada was watching".
+// FirstLiveStart is when Rock Media Center first recorded a play itself (epoch seconds, 0 = never) —
+// the natural cutoff for "only import plays from before Rock Media Center was watching".
 func (s *Service) FirstLiveStart(ctx context.Context) (int64, error) {
 	return s.repo.firstLiveStart(ctx)
 }
 
-// ImportOverlaps counts imported plays that duplicate a play Arrmada recorded live — the
+// ImportOverlaps counts imported plays that duplicate a play Rock Media Center recorded live — the
 // double counts imports made before they learned to skip those. firstLive is when live
 // recording began, for the explanation next to the count.
 func (s *Service) ImportOverlaps(ctx context.Context) (count int, firstLive int64, err error) {

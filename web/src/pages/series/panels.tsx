@@ -301,7 +301,7 @@ export function DuplicatesPanel({ seriesId, refreshKey, flash }: { seriesId: num
       <p className="mb-3 text-sm text-ink-dim">
         {extras} extra file{extras === 1 ? "" : "s"} on disk across {dupes.length} episode{dupes.length === 1 ? "" : "s"}
         {reclaim > 0 && <> · {fmtBytes(reclaim)} reclaimable</>}. These are older copies left behind when a re-import
-        wrote a different filename. Arrmada tracks the one marked <em>keeping</em>; the rest are unused.
+        wrote a different filename. Rock Media Center tracks the one marked <em>keeping</em>; the rest are unused.
       </p>
       {error && <div className="mb-3 rounded-lg p-2.5 text-sm" style={{ border: "1px solid var(--reject)", color: "var(--reject-text)" }}>{error}</div>}
       <div className="overflow-hidden rounded-xl" style={{ border: "1px solid var(--line)" }}>

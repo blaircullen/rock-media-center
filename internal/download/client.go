@@ -1,5 +1,5 @@
 // Package download manages download clients — the programs that actually fetch
-// releases (torrents/nzbs). Arrmada hands a grabbed release to a client and then
+// releases (torrents/nzbs). Rock Media Center hands a grabbed release to a client and then
 // tracks its progress. Clients sit behind one Downloader interface so qBittorrent,
 // SABnzbd, etc. are interchangeable.
 package download
@@ -23,7 +23,7 @@ type Client struct {
 	URL      string `json:"url"`
 	Username string `json:"username,omitempty"`
 	Password string `json:"-"` // secret
-	// Category is the retired per-client category, still stored but never read: Arrmada
+	// Category is the retired per-client category, still stored but never read: Rock Media Center
 	// chooses the category for every download (categories.go).
 	Category string `json:"-"`
 	Enabled  bool   `json:"enabled"`
@@ -33,7 +33,7 @@ type Client struct {
 	// Bundled marks a packaged client, at most one per kind. Startup re-adds it only while
 	// no row of its kind is marked and the owner hasn't removed it (Service.EnsureBundled).
 	Bundled bool `json:"bundled"`
-	// PathMaps translate the paths this client reports into the ones Arrmada reads, for a
+	// PathMaps translate the paths this client reports into the ones Rock Media Center reads, for a
 	// client that sees its downloads under a different path (pathmap.go). Empty for most.
 	PathMaps PathMaps `json:"path_maps,omitempty"`
 }
@@ -42,14 +42,14 @@ type Client struct {
 const DefaultPriority = 25
 
 // AddRequest asks a client to start a download. Provide either URL (the client
-// fetches it) or File bytes (Arrmada already fetched an auth-gated .torrent, or an .nzb).
+// fetches it) or File bytes (Rock Media Center already fetched an auth-gated .torrent, or an .nzb).
 type AddRequest struct {
 	Name     string // release title, for logging
 	URL      string
 	File     []byte
 	Filename string
 	Category string
-	SavePath string // where the client should save (matches Arrmada's downloads dir)
+	SavePath string // where the client should save (matches Rock Media Center's downloads dir)
 	Paused   bool
 	// Transport picks which clients may take it (Service.AddDownload): a torrent never goes
 	// to a usenet client, nor an NZB to a torrent client. Empty means torrent — all Add has

@@ -16,7 +16,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/series"
 )
 
-// The Wanted view: every monitored title Arrmada is still looking for — movies, series
+// The Wanted view: every monitored title Rock Media Center is still looking for — movies, series
 // and albums — with when it last searched, how that went, how many searches in a
 // row came up empty, and roughly when the sweep tries next. It answers "why isn't it
 // downloading?" on the Downloads page's Searching and Upcoming tabs, and the row and its

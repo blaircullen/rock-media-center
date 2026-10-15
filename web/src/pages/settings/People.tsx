@@ -178,7 +178,7 @@ function PeopleList({ meId }: { meId?: number }) {
   const ctx: RowContext = { update, reload: load, toast, people: people ?? [] };
 
   return (
-    <Section id="users" title="People & access" subtitle="Everyone who can use Arrmada, and what each of them may do. Changes save as you make them. Auto-approve lets someone's requests download without waiting for you.">
+    <Section id="users" title="People & access" subtitle="Everyone who can use Rock Media Center, and what each of them may do. Changes save as you make them. Auto-approve lets someone's requests download without waiting for you.">
       <RoleLegend />
       {err && <div className="text-sm" style={{ color: "var(--reject-text)" }}>{err}</div>}
       <div className="flex flex-col gap-2">

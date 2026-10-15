@@ -30,7 +30,7 @@ func startFake(t *testing.T, o mailtest.Options) *mailtest.Server {
 }
 
 func cfgFor(s *mailtest.Server, security, user string) Config {
-	return Config{Host: s.Host, Port: s.Port, Security: security, Username: user, From: "Arrmada <arrmada@example.com>"}
+	return Config{Host: s.Host, Port: s.Port, Security: security, Username: user, From: "Rock Media Center <arrmada@example.com>"}
 }
 
 // A message with an attachment arrives as multipart/mixed: the text part, then the file
@@ -40,7 +40,7 @@ func TestSendAttachmentOverSTARTTLS(t *testing.T) {
 	payload := bytes.Repeat([]byte("Les Misérables, every chapter. "), 400) // ~12 KB: several base64 lines
 	opened := false
 	msg := Message{
-		To: "reader_42@example.org", Subject: "Les Misérables", Body: "Sent from Arrmada.\nEnjoy.",
+		To: "reader_42@example.org", Subject: "Les Misérables", Body: "Sent from Rock Media Center.\nEnjoy.",
 		Attachment: &Attachment{Name: "Les Misérables - Victor Hugo.epub", ContentType: "application/epub+zip", Size: int64(len(payload)),
 			Open: func() (io.ReadCloser, error) { opened = true; return io.NopCloser(bytes.NewReader(payload)), nil }},
 	}
@@ -83,7 +83,7 @@ func TestSendAttachmentOverSTARTTLS(t *testing.T) {
 		t.Errorf("first part = %q, want the text body", ct)
 	}
 	body, _ := io.ReadAll(text) // multipart decodes quoted-printable itself
-	if !strings.Contains(string(body), "Sent from Arrmada.") {
+	if !strings.Contains(string(body), "Sent from Rock Media Center.") {
 		t.Errorf("body = %q", body)
 	}
 	file, err := mr.NextPart()
@@ -117,7 +117,7 @@ func TestSendAttachmentOverSTARTTLS(t *testing.T) {
 // Implicit TLS (port 465) and a plain-text message with no attachment.
 func TestSendImplicitTLSPlainText(t *testing.T) {
 	s := startFake(t, mailtest.Options{User: "owner", Pass: "pw", Implicit: true})
-	if err := send(context.Background(), cfgFor(s, SecurityTLS, "owner"), "pw", Message{To: "me@example.com", Subject: "Arrmada test email", Body: "It works."}, s.Roots); err != nil {
+	if err := send(context.Background(), cfgFor(s, SecurityTLS, "owner"), "pw", Message{To: "me@example.com", Subject: "Rock Media Center test email", Body: "It works."}, s.Roots); err != nil {
 		t.Fatalf("send: %v", err)
 	}
 	m := s.Messages()

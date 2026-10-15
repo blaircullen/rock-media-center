@@ -8,7 +8,7 @@ import (
 )
 
 // SetCategory posts the hashes and category to setCategory. qBittorrent answers 409 for a
-// category it doesn't have yet (Arrmada's are created by the first download filed under
+// category it doesn't have yet (Rock Media Center's are created by the first download filed under
 // each), so that one is created and the move retried once.
 func TestQBittorrentSetCategory(t *testing.T) {
 	var mu sync.Mutex

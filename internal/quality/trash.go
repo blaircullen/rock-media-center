@@ -15,7 +15,7 @@ import (
 // A TRaSH custom format is a list of specifications. Radarr and Sonarr match one by
 // grouping its specifications by kind (release title, source, resolution…): within a kind
 // that has a required specification, every required one must hold; within a kind with
-// none, any one of them must; and every kind must pass. Arrmada's formats are flatter (a
+// none, any one of them must; and every kind must pass. Rock Media Center's formats are flatter (a
 // list of conditions, all or any of which must hold), so each kind becomes one condition:
 // the alternatives of a kind fold into one value ("WEB-DL|WEBRip", or patterns joined
 // with |), which keeps the meaning exact for nearly every format TRaSH publishes.
@@ -122,7 +122,7 @@ func (s trashSpec) label() string {
 }
 
 // ImportTrashCF converts TRaSH custom-format JSON — one format, or a list of them — into
-// Arrmada custom formats. media picks which app's numbering the source values use: TRaSH
+// Rock Media Center custom formats. media picks which app's numbering the source values use: TRaSH
 // publishes Radarr formats for films and Sonarr formats for series, and the two number
 // their sources differently.
 func ImportTrashCF(data []byte, media string) (TrashImport, error) {
@@ -149,7 +149,7 @@ func ImportTrashCF(data []byte, media string) (TrashImport, error) {
 		}
 		if builtIn[strings.ToLower(name)] {
 			renamed := name + " (TRaSH)"
-			tf.Warnings = append(tf.Warnings, fmt.Sprintf("Renamed to %q: %s is one of Arrmada's built-in formats.", renamed, name))
+			tf.Warnings = append(tf.Warnings, fmt.Sprintf("Renamed to %q: %s is one of Rock Media Center's built-in formats.", renamed, name))
 			tf.Format.Name = renamed
 		}
 		if taken[strings.ToLower(tf.Format.Name)] {
@@ -207,7 +207,7 @@ type converted struct {
 	note []string // supported, with a caveat worth showing
 }
 
-// convertTrash turns one TRaSH format into an Arrmada format. A non-empty second result
+// convertTrash turns one TRaSH format into a Rock Media Center format. A non-empty second result
 // is why the format can't be imported at all.
 func convertTrash(cf trashCF, media string) (TrashFormat, string) {
 	name := strings.TrimSpace(cf.Name)
@@ -300,10 +300,10 @@ func convertTrash(cf trashCF, media string) (TrashFormat, string) {
 			tf.Format.Conditions = append(tf.Format.Conditions, *c.cond)
 		}
 	default:
-		return tf, "it mixes negated and plain alternatives alongside other required parts, which an Arrmada format can't express exactly"
+		return tf, "it mixes negated and plain alternatives alongside other required parts, which a Rock Media Center format can't express exactly"
 	}
 	if len(tf.Format.Conditions) == 0 {
-		return tf, "nothing in it is something Arrmada can check"
+		return tf, "nothing in it is something Rock Media Center can check"
 	}
 	if len(tf.Format.Conditions) > maxConditions {
 		return tf, fmt.Sprintf("it would need more than %d conditions", maxConditions)
@@ -404,7 +404,7 @@ func convertSpec(s trashSpec, media string) converted {
 		}
 		v, known := trashSource(media, n)
 		if !known {
-			c.why = fmt.Sprintf("uses source %d, which Arrmada doesn't read from release names", n)
+			c.why = fmt.Sprintf("uses source %d, which Rock Media Center doesn't read from release names", n)
 			return c
 		}
 		set(CondSource, v)
@@ -418,19 +418,19 @@ func convertSpec(s trashSpec, media string) converted {
 		case 480, 576, 720, 1080, 2160:
 			set(CondResolution, strconv.Itoa(n)+"p")
 		default:
-			c.why = fmt.Sprintf("uses resolution %d, which Arrmada doesn't grade", n)
+			c.why = fmt.Sprintf("uses resolution %d, which Rock Media Center doesn't grade", n)
 		}
 	case "QualityModifierSpecification":
 		n, _ := s.intValue()
 		switch n {
 		case 5: // REMUX
 			set(CondSource, "Remux")
-		case 2: // SCREENER: Arrmada files screeners with cams
+		case 2: // SCREENER: Rock Media Center files screeners with cams
 			set(CondSource, "CAM")
 		case 4: // BRDISK
 			c.cond = &Condition{Type: CondFullDisc, Negate: s.Negate}
 		default:
-			c.why = "uses a quality modifier (raw HD or regional) Arrmada doesn't read"
+			c.why = "uses a quality modifier (raw HD or regional) Rock Media Center doesn't read"
 		}
 	case "LanguageSpecification":
 		n, ok := s.intValue()
@@ -445,15 +445,15 @@ func convertSpec(s trashSpec, media string) converted {
 		}
 		set(CondLanguage, code)
 	case "IndexerFlagSpecification":
-		c.why = "matches on indexer flags, which Arrmada doesn't receive"
+		c.why = "matches on indexer flags, which Rock Media Center doesn't receive"
 	case "SizeSpecification":
 		c.why = "matches on size; use the profile's bitrate window instead"
 	case "YearSpecification":
-		c.why = "matches on the year, which Arrmada's custom formats don't"
+		c.why = "matches on the year, which Rock Media Center's custom formats don't"
 	case "ReleaseTypeSpecification":
-		c.why = "matches on episode/season-pack type, which Arrmada's custom formats don't"
+		c.why = "matches on episode/season-pack type, which Rock Media Center's custom formats don't"
 	default:
-		c.why = fmt.Sprintf("is a %s, which Arrmada doesn't support", s.Implementation)
+		c.why = fmt.Sprintf("is a %s, which Rock Media Center doesn't support", s.Implementation)
 	}
 	return c
 }
@@ -465,13 +465,13 @@ func patternProblem(p string) string {
 	if _, err := compileRegex(p); err != nil {
 		for _, look := range []string{"(?=", "(?!", "(?<=", "(?<!"} {
 			if strings.Contains(p, look) {
-				return "uses a lookaround ((?= (?! (?<= (?<!), which Arrmada's regex engine can't run"
+				return "uses a lookaround ((?= (?! (?<= (?<!), which Rock Media Center's regex engine can't run"
 			}
 		}
 		if strings.Contains(p, "(?>") {
-			return "uses an atomic group ((?>), which Arrmada's regex engine can't run"
+			return "uses an atomic group ((?>), which Rock Media Center's regex engine can't run"
 		}
-		return "has a pattern Arrmada's regex engine can't run: " + strings.TrimPrefix(err.Error(), "error parsing regexp: ")
+		return "has a pattern Rock Media Center's regex engine can't run: " + strings.TrimPrefix(err.Error(), "error parsing regexp: ")
 	}
 	return ""
 }
@@ -523,19 +523,19 @@ var trashLanguages = map[int]string{
 func trashLanguage(n int) (string, string) {
 	switch n {
 	case 1:
-		return "", "matches English, which release names almost never state — Arrmada can't tell an English release from an untagged one"
+		return "", "matches English, which release names almost never state — Rock Media Center can't tell an English release from an untagged one"
 	case -2:
-		return "", "matches the title's original language, which Arrmada's custom formats can't compare against (the Unwanted pack's foreign-only rule does)"
+		return "", "matches the title's original language, which Rock Media Center's custom formats can't compare against (the Unwanted pack's foreign-only rule does)"
 	case -1, 0:
 		return "", "matches any or an unknown language, which a release name can't show"
 	}
 	if code, ok := trashLanguages[n]; ok {
 		return code, ""
 	}
-	return "", fmt.Sprintf("uses language %d, which Arrmada doesn't map", n)
+	return "", fmt.Sprintf("uses language %d, which Rock Media Center doesn't map", n)
 }
 
-// trashSource maps a Radarr (films) or Sonarr (series) source number onto Arrmada's.
+// trashSource maps a Radarr (films) or Sonarr (series) source number onto Rock Media Center's.
 func trashSource(media string, n int) (string, bool) {
 	if media == MediaSeries {
 		switch n {

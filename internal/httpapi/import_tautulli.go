@@ -27,7 +27,7 @@ func (a *api) handleTautulliConfig(w http.ResponseWriter, r *http.Request) {
 
 // handleImportTautulli backfills Insights with a Tautulli watch history so its stats/graphs aren't
 // empty on day one. Verifies the connection, saves it (for Retry), then imports in the background
-// as a tracked run. Re-running is safe: plays already imported, and plays Arrmada recorded live,
+// as a tracked run. Re-running is safe: plays already imported, and plays Rock Media Center recorded live,
 // are skipped.
 func (a *api) handleImportTautulli(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -255,7 +255,7 @@ func (a *api) handleRemoveImportRun(w http.ResponseWriter, r *http.Request) {
 	a.accepted(w, jobID, existing, nil)
 }
 
-// handleImportOverlaps counts imported plays that double up plays Arrmada recorded live
+// handleImportOverlaps counts imported plays that double up plays Rock Media Center recorded live
 // (imports made before the importer skipped those), for the repair button.
 func (a *api) handleImportOverlaps(w http.ResponseWriter, r *http.Request) {
 	n, first, err := a.deps.Insights.ImportOverlaps(r.Context())

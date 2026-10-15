@@ -465,7 +465,7 @@ func (c *Coordinator) HandleMovieImportStuck(ctx context.Context, hash, name, co
 	c.addReview(ctx, Review{
 		Hash: hash, Name: name, ContentPath: contentPath, MediaType: "movie", ReasonCode: ReasonImportFailed,
 		ExpectedID: mid, ExpectedTitle: title, ParsedTitle: parsed.Title, Indexer: indexerName,
-		Reason: fmt.Sprintf("Import failed %d times: %v — fix the cause (a folder Arrmada can't write to, a full disk), then Import", attempts, cause),
+		Reason: fmt.Sprintf("Import failed %d times: %v — fix the cause (a folder Rock Media Center can't write to, a full disk), then Import", attempts, cause),
 	})
 	c.log.Warn("movie import: giving up retrying for now — held for review",
 		"release", name, "attempts", attempts, "err", cause)
@@ -529,7 +529,7 @@ func (c *Coordinator) RejectReview(ctx context.Context, id int64) error {
 // held forever, never imported, never seed-cleaned.
 //
 // Its grab becomes 'dismissed': seed cleanup takes the torrent out of the client at its
-// goal but keeps the files, which Arrmada never imported and may be the only copy.
+// goal but keeps the files, which Rock Media Center never imported and may be the only copy.
 func (c *Coordinator) DismissReview(ctx context.Context, id int64) error {
 	r, err := c.pendingReview(ctx, id)
 	if err != nil {
@@ -560,7 +560,7 @@ func (c *Coordinator) ReviewTargets(ctx context.Context, reviewID int64, q strin
 
 // ImportTargets lists the library items of one kind (series | movie | music) a
 // download could be imported into, filtered by q — the picker behind a review's "Choose
-// different…" and Needs you's "Import into…" for a torrent Arrmada didn't grab.
+// different…" and Needs you's "Import into…" for a torrent Rock Media Center didn't grab.
 func (c *Coordinator) ImportTargets(ctx context.Context, kind, q string, limit int) (targets []ReviewTarget, truncated bool, err error) {
 	r := Review{MediaType: kind}
 	if limit <= 0 || limit > reviewTargetCap {

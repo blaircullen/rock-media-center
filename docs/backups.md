@@ -1,6 +1,6 @@
 # Backups and restoring
 
-Arrmada copies its database into `<data>/backups` — on a default install,
+Rock Media Center copies its database into `<data>/backups` — on a default install,
 `/mnt/user/appdata/arrmada/data/backups` on Unraid or `~/arrmada/data/backups` elsewhere:
 
 | Kind | When | Kept |
@@ -21,11 +21,11 @@ Plex token and password hashes, so keep downloaded copies somewhere private.
 ## Restoring
 
 **Restore** on a row puts that backup back (type `RESTORE` to confirm). The backup is checked
-first (a damaged file, or one from a newer Arrmada, is refused), then staged, and swapped in
-the next time Arrmada starts — never while it's running. Inside Docker the app restarts itself
+first (a damaged file, or one from a newer Rock Media Center, is refused), then staged, and swapped in
+the next time Rock Media Center starts — never while it's running. Inside Docker the app restarts itself
 straight away; otherwise restart the container (`docker restart Arrmada-app`), or cancel the
 staged restore on the card. The database it replaces is kept as a "Before restore" backup, and
-if the swap fails at start-up Arrmada starts on the database as it was and the card says why.
+if the swap fails at start-up Rock Media Center starts on the database as it was and the card says why.
 Everything since the backup was taken is lost: requests, watch history, listening places,
 users and settings.
 
@@ -33,10 +33,10 @@ users and settings.
 the same way, listed as "Uploaded", and restored with that row's Restore. Behind Cloudflare,
 request bodies over 100 MB are refused, so upload big backups from your home network.
 
-### When Arrmada won't start
+### When Rock Media Center won't start
 
-The same restore works from the command line, in Arrmada's folder, without the web UI. It
-only stages the backup; the swap happens when Arrmada next starts:
+The same restore works from the command line, in Rock Media Center's folder, without the web UI. It
+only stages the backup; the swap happens when Rock Media Center next starts:
 
 ```sh
 docker compose run --rm --no-deps arrmada-app backups          # list them

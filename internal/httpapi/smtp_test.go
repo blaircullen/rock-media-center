@@ -60,7 +60,7 @@ func startMailFake(t *testing.T, o mailtest.Options) *mailtest.Server {
 // saveSMTP points the saved setup at the fake server (no TLS: it's on 127.0.0.1).
 func saveSMTP(t *testing.T, s *routeServer, c *http.Cookie, fake *mailtest.Server, user, pass string) {
 	t.Helper()
-	body := fmt.Sprintf(`{"host":%q,"port":%d,"security":"none","username":%q,"password":%q,"from":"Arrmada <arrmada@example.com>"}`,
+	body := fmt.Sprintf(`{"host":%q,"port":%d,"security":"none","username":%q,"password":%q,"from":"Rock Media Center <arrmada@example.com>"}`,
 		fake.Host, fake.Port, user, pass)
 	if rec := s.doJSON("PUT", "/api/v1/settings/smtp", c, body); rec.Code != http.StatusOK {
 		t.Fatalf("save SMTP: HTTP %d %s", rec.Code, rec.Body)
@@ -89,7 +89,7 @@ func TestSMTPSettingsSaveTestAndRedact(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &v); err != nil {
 		t.Fatal(err)
 	}
-	if !v.Configured || !v.HostSet || !v.UsernameSet || !v.PasswordSet || v.Port != fake.Port || v.Security != "none" || v.From != "Arrmada <arrmada@example.com>" {
+	if !v.Configured || !v.HostSet || !v.UsernameSet || !v.PasswordSet || v.Port != fake.Port || v.Security != "none" || v.From != "Rock Media Center <arrmada@example.com>" {
 		t.Errorf("view = %+v", v)
 	}
 	// The API keys list doesn't show the mail credentials, and its routes can't touch them.
@@ -113,7 +113,7 @@ func TestSMTPSettingsSaveTestAndRedact(t *testing.T) {
 		t.Fatalf("test send: HTTP %d %s", rec.Code, rec.Body)
 	}
 	msgs := fake.Messages()
-	if len(msgs) != 1 || msgs[0].To[0] != "owner@example.com" || !strings.Contains(msgs[0].Data, "Arrmada test email") || msgs[0].User != "mailbox-login-xyz" {
+	if len(msgs) != 1 || msgs[0].To[0] != "owner@example.com" || !strings.Contains(msgs[0].Data, "Rock Media Center test email") || msgs[0].User != "mailbox-login-xyz" {
 		t.Fatalf("fake server got %+v", msgs)
 	}
 

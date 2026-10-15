@@ -10,7 +10,7 @@ import { Button, StatusChip, useConfirm, useToast } from "../../ui";
 import { Field } from "../../ui/Field";
 import { Input } from "../../ui/Input";
 
-// JellyfinConnect points Arrmada at a Jellyfin server: its URL, an API key made in
+// JellyfinConnect points Rock Media Center at a Jellyfin server: its URL, an API key made in
 // Jellyfin, and the public address Watch links use. It opens inside the Jellyfin card on
 // Settings → Connections and reads and writes the connection through the API on its own.
 // The key is a credential: it's typed here, saved with Save (not auto-saved) and never
@@ -111,7 +111,7 @@ function JellyfinForm({ cfg, onChanged, testFirst, inWizard }: { cfg: JellyfinCo
         )}
       </div>
 
-      <Field label="Server URL" hint="As Arrmada reaches it, for example http://192.168.1.10:8096 or http://jellyfin:8096.">
+      <Field label="Server URL" hint="As Rock Media Center reaches it, for example http://192.168.1.10:8096 or http://jellyfin:8096.">
         <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="http://192.168.1.10:8096" autoComplete="off" spellCheck={false} />
       </Field>
 

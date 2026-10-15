@@ -1,6 +1,6 @@
 // Package netutil works out who a request really came from.
 //
-// Arrmada usually sits behind something: a Cloudflare tunnel (cloudflared in its own
+// Rock Media Center usually sits behind something: a Cloudflare tunnel (cloudflared in its own
 // container, so a private Docker address is the TCP peer) or a reverse proxy on the
 // same box. Those stamp the visitor's address into Cf-Connecting-Ip, X-Forwarded-For
 // or Forwarded. From anyone else those headers are just text an attacker can set, so

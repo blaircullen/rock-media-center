@@ -1,14 +1,14 @@
-# ─── Point Arrmada at an EXISTING library ───────────────────────────────────────
+# ─── Point Rock Media Center at an EXISTING library ───────────────────────────────────────
 # ./install.sh writes docker-compose.override.yml for you when you give it a media folder;
 # you only need this file for the layouts below. Copy it to docker-compose.override.yml
 # (Compose merges it automatically), pick ONE setup, edit the host paths, run ./update.sh,
 # then pick each library folder in Settings → Library.
 #
-# ⚠  NEVER mount media at /data — that path holds Arrmada's own database + config.
+# ⚠  NEVER mount media at /data — that path holds Rock Media Center's own database + config.
 #    (Keep the DB in appdata instead via ARRMADA_DATA_HOST=/mnt/user/appdata/arrmada in .env.)
 
 # ── Setup A: read-only trial (just catalog what you already have) ───────────────
-# Mounts each library folder read-only so Arrmada can only READ + catalog — it can't
+# Mounts each library folder read-only so Rock Media Center can only READ + catalog — it can't
 # move, rename, delete, or write anything. Nothing downloads.
 services:
   arrmada-app:
@@ -21,7 +21,7 @@ services:
 # ── Setup B: full use — downloading WITH hardlinks (no wasted space) ────────────
 # For hardlinks, the library AND the download folder must sit under ONE container
 # mount. Mount the shared parent once into BOTH containers at /storage (any name but
-# /data). qBittorrent downloads under /storage/torrents; Arrmada hardlinks into
+# /data). qBittorrent downloads under /storage/torrents; Rock Media Center hardlinks into
 # /storage/media/… — same filesystem, so no duplication and it keeps seeding.
 #
 # services:
@@ -33,4 +33,4 @@ services:
 #       - /mnt/user/masterdirectory:/storage
 #
 # Then in Settings → Library pick each library under /storage and the downloads folder
-# (e.g. /storage/torrents). Arrmada points qBittorrent at that downloads folder itself.
+# (e.g. /storage/torrents). Rock Media Center points qBittorrent at that downloads folder itself.

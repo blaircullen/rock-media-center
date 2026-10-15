@@ -21,7 +21,7 @@ import { LibraryUpdates } from "./LibraryUpdates";
 import { requesterPages } from "./roles";
 import { AutoApproveChecks, ROLES, jellyfinUnlinkConfirm, plexUnlinkConfirm, typesFromCSV, typesToCSV } from "./People";
 
-// Settings → Media servers: how Arrmada uses each media server, one group per server —
+// Settings → Media servers: how Rock Media Center uses each media server, one group per server —
 // Plex, then Jellyfin. Each group says which server it is, records what's watched (watch
 // monitoring), tells the server what changed (library updates) and, for admins, who may
 // sign in with it and which accounts are linked to it. The connections themselves (address,
@@ -131,7 +131,7 @@ function StatusLine({ name, status, lastError, lastPollAt }: { name: string; sta
 const connectButton = "inline-block rounded-lg px-3.5 py-2 text-base font-semibold";
 const connectStyle = { background: "linear-gradient(150deg, var(--accent), var(--accent-deep))", color: "var(--accent-ink)" };
 
-// PlexServer says which server Arrmada is connected to and how it's doing, and sends you
+// PlexServer says which server Rock Media Center is connected to and how it's doing, and sends you
 // to the Plex card on Connections to connect or change it.
 function PlexServer({ cfg, err }: { cfg: PlexConfig | null; err: string | null }) {
   const connected = !!cfg && cfg.status !== "unconfigured";
@@ -173,7 +173,7 @@ function PlexMonitoring({ cfg, setCfg }: { cfg: PlexConfig; setCfg: (c: PlexConf
     validate: wholeNumber(2, 60, "The interval"),
   });
   return (
-    <Section id="plex-monitoring" title="Plex watch monitoring" subtitle="Insights' Activity, History, People and Graphs come from this: Arrmada asks Plex what's playing every few seconds and records each play. It switches on by itself when Plex is first connected.">
+    <Section id="plex-monitoring" title="Plex watch monitoring" subtitle="Insights' Activity, History, People and Graphs come from this: Rock Media Center asks Plex what's playing every few seconds and records each play. It switches on by itself when Plex is first connected.">
       <AutoToggle
         label="Record what's watched on Plex"
         hint={connected ? "Off keeps everything already recorded and stops adding to it." : "Starts once your Plex server is connected."}
@@ -186,7 +186,7 @@ function PlexMonitoring({ cfg, setCfg }: { cfg: PlexConfig; setCfg: (c: PlexConf
   );
 }
 
-// JellyfinServer says which Jellyfin server Arrmada is connected to and how it's doing,
+// JellyfinServer says which Jellyfin server Rock Media Center is connected to and how it's doing,
 // links to its card on Connections, and (admins) disconnects it.
 function JellyfinServer({ cfg, err, status, admin, onDisconnected }: {
   cfg: JellyfinConfig | null;
@@ -203,7 +203,7 @@ function JellyfinServer({ cfg, err, status, admin, onDisconnected }: {
   const disconnect = async () => {
     const ok = await confirm({
       title: `Disconnect ${cfg?.server_name || "Jellyfin"}?`,
-      body: "Arrmada forgets its address and API key: Watch links, library updates, watch monitoring and Sign in with Jellyfin stop until you connect it again. Plays already recorded, linked accounts and these settings stay.",
+      body: "Rock Media Center forgets its address and API key: Watch links, library updates, watch monitoring and Sign in with Jellyfin stop until you connect it again. Plays already recorded, linked accounts and these settings stay.",
       confirmLabel: "Disconnect",
       tone: "danger",
     });
@@ -304,7 +304,7 @@ function JellyfinMonitoring({ cfg, onSaved }: { cfg: JellyfinConfig; onSaved: ()
     validate: wholeNumber(2, 60, "The interval"),
   });
   return (
-    <Section id="jellyfin-monitoring" title="Jellyfin watch monitoring" subtitle="Arrmada asks Jellyfin what's playing every few seconds and records each play in Insights, next to Plex's. Jellyfin keeps no watch history Arrmada can read, so its history starts when this is switched on. Jellyfin doesn't report buffering, so it's left out of Reliability.">
+    <Section id="jellyfin-monitoring" title="Jellyfin watch monitoring" subtitle="Rock Media Center asks Jellyfin what's playing every few seconds and records each play in Insights, next to Plex's. Jellyfin keeps no watch history Rock Media Center can read, so its history starts when this is switched on. Jellyfin doesn't report buffering, so it's left out of Reliability.">
       <AutoToggle
         label="Record what's watched on Jellyfin"
         hint={connected ? "Off keeps everything already recorded and stops adding to it." : "Starts once your Jellyfin server is connected."}
@@ -324,7 +324,7 @@ const LINK_FIELDS = {
     blocked: (p: Person) => !!p.plex_blocked,
     confirm: plexUnlinkConfirm,
     unlink: { plex_unlink: true },
-    subtitle: "Who signs in with which Plex account. A Plex sign-in opens the Arrmada account linked to it; Discover also uses that person's Plex watch history.",
+    subtitle: "Who signs in with which Plex account. A Plex sign-in opens the Rock Media Center account linked to it; Discover also uses that person's Plex watch history.",
     none: "No account is linked to Plex yet. Someone's first Sign in with Plex links one, and anyone can link their own Plex account themselves.",
     own: "Your own Plex link is in the sidebar and on your account page.",
   },
@@ -334,13 +334,13 @@ const LINK_FIELDS = {
     blocked: (p: Person) => !!p.jellyfin_blocked,
     confirm: jellyfinUnlinkConfirm,
     unlink: { jellyfin_unlink: true },
-    subtitle: "Who signs in with which Jellyfin user. A Jellyfin sign-in opens the Arrmada account linked to it, and that person's Watch links open Jellyfin first.",
+    subtitle: "Who signs in with which Jellyfin user. A Jellyfin sign-in opens the Rock Media Center account linked to it, and that person's Watch links open Jellyfin first.",
     none: "No account is linked to Jellyfin yet. Someone's first Sign in with Jellyfin links one, and anyone can link their own Jellyfin user from their account page.",
     own: "Your own Jellyfin link is in the sidebar and on your account page.",
   },
 } as const;
 
-// LinkedAccounts (admin): which Arrmada accounts are linked to which Plex account or
+// LinkedAccounts (admin): which Rock Media Center accounts are linked to which Plex account or
 // Jellyfin user, with Unlink. Blocking one and merging a duplicate sign-in stay under More
 // on the person's row in People & access, where the rest of their access is.
 function LinkedAccounts({ server }: { server: MediaServerKind }) {
@@ -434,7 +434,7 @@ function PlexSignIn() {
         save={staff}
       />
       {staff.value && (
-        <Note tone="warn">Anyone who controls a linked Plex account gets that account — for an admin, everything in Arrmada. Keep the Plex account behind two-factor sign-in at plex.tv.</Note>
+        <Note tone="warn">Anyone who controls a linked Plex account gets that account — for an admin, everything in Rock Media Center. Keep the Plex account behind two-factor sign-in at plex.tv.</Note>
       )}
     </Section>
   );

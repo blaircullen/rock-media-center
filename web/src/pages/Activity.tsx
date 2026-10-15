@@ -27,7 +27,7 @@ function panelFor(tab: ActivityTab) {
   }
 }
 
-// Activity — what Arrmada is downloading, what needs you, what it's still looking for,
+// Activity — what Rock Media Center is downloading, what needs you, what it's still looking for,
 // what it has done, and what it won't grab again. The tab is the address (/activity/wanted),
 // so Back steps through tabs and every link can open the right one.
 export function Activity() {

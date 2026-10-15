@@ -42,9 +42,9 @@ export function RestartBanner() {
       <div className="min-w-0 flex-1">
         <span className="font-semibold" style={{ color: "var(--avoid-text)" }}>New folders are saved but not in use yet: </span>
         {changes.reduce<React.ReactNode[]>((acc, c, i) => (i === 0 ? [c] : [...acc, "; ", c]), [])}.
-        <span className="text-ink-dim"> Downloads and imports keep using the old folders until Arrmada restarts. </span>
+        <span className="text-ink-dim"> Downloads and imports keep using the old folders until Rock Media Center restarts. </span>
         {!(admin && st.can_restart) && (
-          <span className="text-ink-dim">{admin ? "Restart the Arrmada container the way you started it." : "Ask an admin to restart Arrmada."}</span>
+          <span className="text-ink-dim">{admin ? "Restart the Rock Media Center container the way you started it." : "Ask an admin to restart Rock Media Center."}</span>
         )}
       </div>
       {admin && st.can_restart && (
@@ -52,11 +52,11 @@ export function RestartBanner() {
       )}
       {confirming && (
         <ConfirmDialog
-          title="Restart Arrmada now?"
+          title="Restart Rock Media Center now?"
           tone="accent"
           body={
             <div className="flex flex-col gap-1.5">
-              <span>Arrmada restarts and starts using the new folders. Files already imported stay where they are. This page reloads once it's back, usually in a few seconds.</span>
+              <span>Rock Media Center restarts and starts using the new folders. Files already imported stay where they are. This page reloads once it's back, usually in a few seconds.</span>
             </div>
           }
           confirmLabel="Restart now"

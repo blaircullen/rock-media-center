@@ -9,7 +9,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/plexscan"
 )
 
-// The library-updates cards (Plex's, and Jellyfin's in jellyfin.go): whether Arrmada tells
+// The library-updates cards (Plex's, and Jellyfin's in jellyfin.go): whether Rock Media Center tells
 // the server to scan after changes, how each library folder maps onto the server's, and
 // the last scan. Paths only — the token or key and the server address never appear here.
 

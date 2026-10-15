@@ -23,7 +23,7 @@ import (
 // Releases are numbered against TVDB's convention. TVmaze follows the same convention and
 // is free with no API key, which matters for a self-hosted app that has to work the
 // moment it's installed. Sonarr uses TVDB itself, but only because it runs a central
-// proxy holding that relationship for every install — infrastructure Arrmada doesn't have.
+// proxy holding that relationship for every install — infrastructure Rock Media Center doesn't have.
 //
 // Matching is by TVDB or IMDb id, both of which TMDB already hands us, so no show has to
 // be re-identified.

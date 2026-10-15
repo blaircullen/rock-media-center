@@ -46,7 +46,7 @@ export function JellyfinSignIn() {
         save={staff}
       />
       {staff.value && (
-        <Note tone="warn">Anyone who knows a linked Jellyfin user's password gets that account — for an admin, everything in Arrmada.</Note>
+        <Note tone="warn">Anyone who knows a linked Jellyfin user's password gets that account — for an admin, everything in Rock Media Center.</Note>
       )}
     </Section>
   );

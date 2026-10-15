@@ -1,14 +1,14 @@
 package webui
 
 // placeholderHTML is shown when the backend runs without an embedded web build.
-// It uses the Arrmada design tokens (warm terracotta) so a bare `go run` already
+// It uses the Rock Media Center design tokens (warm terracotta) so a bare `go run` already
 // looks like the product. The real UI (web/) replaces this once built.
 const placeholderHTML = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Arrmada</title>
+<title>Rock Media Center</title>
 <style>
   :root { color-scheme: dark light; }
   * { box-sizing: border-box; }
@@ -52,7 +52,7 @@ const placeholderHTML = `<!doctype html>
         <path d="M128 376 L384 376 Q368 420 330 420 L182 420 Q144 420 128 376 Z" fill="currentColor"/>
       </svg>
     </div>
-    <h1>ARRMADA</h1>
+    <h1>ROCK MEDIA CENTER</h1>
     <p class="tag">One fleet. Every media job.</p>
     <span class="status"><span class="dot"></span>Backend online — web UI not built yet</span>
     <div class="links"><a href="api/health">/api/health</a> &nbsp;·&nbsp; <a href="api/v1/status">/api/v1/status</a></div>

@@ -20,7 +20,7 @@ export function NotFound() {
             </svg>
           </div>
           <h2 className="m-0 text-lg font-bold">Page not found</h2>
-          <p className="mx-auto mt-2 text-base leading-relaxed text-ink-dim">That address doesn’t exist in Arrmada.</p>
+          <p className="mx-auto mt-2 text-base leading-relaxed text-ink-dim">That address doesn’t exist in Rock Media Center.</p>
           <div className="mt-4 flex justify-center gap-2">
             {staff && <Link to="/" className={btn} style={{ background: "linear-gradient(150deg, var(--accent), var(--accent-deep))", color: "var(--accent-ink)" }}>Dashboard</Link>}
             <Link to="/discover" className={btn} style={staff ? { border: "1px solid var(--line)", background: "var(--panel-2)", color: "var(--ink)" } : { background: "linear-gradient(150deg, var(--accent), var(--accent-deep))", color: "var(--accent-ink)" }}>Discover</Link>

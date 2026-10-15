@@ -56,7 +56,7 @@ const CONFIRM_LABEL: Record<RemoveDownloadMode, string> = {
 
 // RemoveDownloadDialog asks what removing a torrent should do with its files. Keeping them
 // is the default — an un-imported download may be the only copy — and blocklisting is only
-// offered for downloads Arrmada grabbed for something in the library.
+// offered for downloads Rock Media Center grabbed for something in the library.
 export function RemoveDownloadDialog({ it, onClose, onDone }: { it: ActivityDownload; onClose: () => void; onDone: (r: RemoveDownloadResult) => void }) {
   const [mode, setMode] = useState<RemoveDownloadMode>("keep_files");
   const [unmonitor, setUnmonitor] = useState(false);

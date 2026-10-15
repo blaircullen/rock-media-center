@@ -222,7 +222,7 @@ func TestWatchLinkResponsesCarryNoSecrets(t *testing.T) {
 	db := s.st.DB()
 	for _, q := range []string{
 		// The Matrix matches by id; Dune's three files didn't group, so Jellyfin knows
-		// them only by folder (Arrmada's /movies is Jellyfin's /media/Movies).
+		// them only by folder (Rock Media Center's /movies is Jellyfin's /media/Movies).
 		`INSERT INTO movies (id, tmdb_id, title, year, monitored, min_availability, has_file, movie_file_path) VALUES (1, 603, 'The Matrix', 1999, 1, 'announced', 1, '/movies/The Matrix (1999) {tmdb-603}/The Matrix (1999).mkv')`,
 		`INSERT INTO movies (id, tmdb_id, title, year, monitored, min_availability, has_file, movie_file_path) VALUES (2, 438631, 'Dune', 2021, 1, 'announced', 1, '/movies/Dune (2021) {tmdb-438631}/Dune (2021) - 1080p.mkv')`,
 	} {

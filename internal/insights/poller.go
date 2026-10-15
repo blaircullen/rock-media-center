@@ -193,7 +193,7 @@ func (s *Service) reconcile(ctx context.Context, tr *tracker, sessions []plex.Se
 	tr.playingAt.Store(now.Unix())
 
 	// Finalize sessions that vanished since the last poll — including ones restored from
-	// before a restart that ended while Arrmada was down (credited up to their last sighting).
+	// before a restart that ended while Rock Media Center was down (credited up to their last sighting).
 	for key, ls := range tr.live {
 		if !seen[key] {
 			s.finalize(ctx, ls)

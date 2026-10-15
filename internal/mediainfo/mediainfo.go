@@ -14,7 +14,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/toolrun"
 )
 
-// Info is the subset of media properties Arrmada cares about.
+// Info is the subset of media properties Rock Media Center cares about.
 type Info struct {
 	Width      int    `json:"width"`
 	Height     int    `json:"height"`

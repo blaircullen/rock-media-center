@@ -34,7 +34,7 @@ function when(s: string): string {
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-// BlocklistPanel is Activity → Blocklist: every release Arrmada won't grab again, for every
+// BlocklistPanel is Activity → Blocklist: every release Rock Media Center won't grab again, for every
 // kind of title, including the global entries that block a release for everything. Each
 // can be unblocked.
 export function BlocklistPanel() {
@@ -91,7 +91,7 @@ export function BlocklistPanel() {
     <>
       <div className="max-w-[1100px]">
         <p className="mb-5 max-w-[72ch] text-base text-ink-dim">
-          Releases Arrmada won't grab again: ones you blocked or rejected, downloads that stalled, and fakes it caught.
+          Releases Rock Media Center won't grab again: ones you blocked or rejected, downloads that stalled, and fakes it caught.
           Most are blocked for one title. Global entries block a release for every title — usually junk rejected from
           Needs you that wasn't tied to anything. Unblock an entry to make that release grabbable again on the next search.
         </p>

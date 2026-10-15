@@ -108,7 +108,7 @@ export function phaseLabel(it: ActivityDownload, nowSec = Date.now() / 1000): { 
   return { text: PHASE_TEXT[phase] ?? phase, tone };
 }
 
-// stallLine is the card's second line for a grab Arrmada is watching: how long it has made
+// stallLine is the card's second line for a grab Rock Media Center is watching: how long it has made
 // no progress and when stall fail-over tries another release. Shown only once there is
 // something to say — a torrent that is moving doesn't need it.
 export function stallLine(it: ActivityDownload): string | null {
@@ -337,7 +337,7 @@ export function QueuePanel() {
 
       {clients && clients.configured > 0 && clients.enabled === 0 && (
         <div className="mb-4 rounded-lg p-3.5 text-base" style={{ border: "1px solid var(--avoid)", background: "var(--avoid-soft)", color: "var(--avoid-text)" }}>
-          Every download client is switched off, so Arrmada can't grab anything. Enable one in{" "}
+          Every download client is switched off, so Rock Media Center can't grab anything. Enable one in{" "}
           <Link to={LINKS.downloadClients} className="font-semibold underline" style={{ color: "inherit" }}>Settings → Connections</Link>.
         </div>
       )}
@@ -414,7 +414,7 @@ export function QueuePanel() {
   );
 }
 
-// WantedPanel is Activity → Wanted: the titles Arrmada is still looking for (Searching)
+// WantedPanel is Activity → Wanted: the titles Rock Media Center is still looking for (Searching)
 // and the ones that aren't out yet (Upcoming), across movies, series and albums.
 export function WantedPanel() {
   const [query, setQuery] = useSearchParamState<string>("q", "", { debounceMs: 300 });
@@ -493,7 +493,7 @@ function NoClientCard() {
   return (
     <EmptyState
       title="No download client yet"
-      body="Arrmada can't grab anything until one is set up: torrents go through qBittorrent, Usenet through SABnzbd."
+      body="Rock Media Center can't grab anything until one is set up: torrents go through qBittorrent, Usenet through SABnzbd."
       action={
         <Link to={LINKS.downloadClients} className="inline-block rounded-lg px-3 py-1.5 text-sm font-semibold" style={{ background: "var(--accent)", color: "var(--accent-ink)" }}>
           Add a download client →
@@ -622,7 +622,7 @@ function FinishingCard({ it, busy, onRemoved }: { it: ActivityDownload; busy: bo
 
 // seedGoal computes the removal target for a seeding torrent and how far along it is.
 function seedGoal(it: ActivityDownload): { label: string; frac: number | null } {
-  if (!it.seed_known) return { label: "Not managed by Arrmada — no seed rule", frac: null };
+  if (!it.seed_known) return { label: "Not managed by Rock Media Center — no seed rule", frac: null };
   if (it.seed_enabled === false) return { label: "No seeding — removes after import", frac: null };
   const ratioTarget = it.seed_ratio ?? 0;
   const hoursTarget = it.seed_hours ?? 0;
@@ -670,7 +670,7 @@ function SeedingCard({ it, guard, busy, act, onRemoved }: { it: ActivityDownload
           <TransferTitle it={it} />
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
             {paused && it.held_by_guard ? <GuardChip guard={guard} /> : it.stage === "not_managed" ? (
-              // Nothing in Arrmada grabbed or imported it: a muted chip, no seed rule.
+              // Nothing in Rock Media Center grabbed or imported it: a muted chip, no seed rule.
               <span className="rounded px-1.5 py-0.5 font-mono text-2xs uppercase" style={{ background: "var(--panel-2)", color: "var(--ink-faint)" }}>{STAGE.not_managed.label}</span>
             ) : <span className="rounded px-1.5 py-0.5 font-mono text-2xs uppercase" style={{ background: "var(--panel-2)", color: paused ? "var(--ink-faint)" : "var(--good-text)" }}>{paused ? STAGE.paused.label : STAGE.seeding.label}</span>}
             <ItemChips it={it} />

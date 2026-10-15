@@ -49,7 +49,7 @@ function subscribe(fn: () => void) {
  */
 export function useAttentionPoll() {
   useLiveRefresh(loadAttention, { topics: [ATTENTION_TOPIC], fallbackMs: ATTENTION_POLL_MS, debounceMs: 300, immediate: true });
-  // The browser tab says "(3) Movies · Arrmada" while requests or reviews wait on someone,
+  // The browser tab says "(3) Movies · Rock Media Center" while requests or reviews wait on someone,
   // so a pinned tab shows it without being opened.
   const c = useAttention()?.counts;
   const actionable = (c?.requests ?? 0) + (c?.reviews ?? 0);

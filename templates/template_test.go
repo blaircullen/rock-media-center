@@ -31,7 +31,7 @@ func TestUnraidTemplate(t *testing.T) {
 	if err := xml.Unmarshal(raw, &c); err != nil {
 		t.Fatal(err)
 	}
-	if c.Repository != "ghcr.io/tristenlammi/arrmada:stable" {
+	if c.Repository != "ghcr.io/blaircullen/rock-media-center:stable" {
 		t.Errorf("repository = %q", c.Repository)
 	}
 	paths := map[string]string{}

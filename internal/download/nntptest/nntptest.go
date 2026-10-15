@@ -268,7 +268,7 @@ func NZB(password string, files map[string]string, sizes map[string]int) []byte 
 	}
 	b.WriteString("</head>\n")
 	for _, name := range names {
-		fmt.Fprintf(&b, `<file poster="tester@example.invalid" date="1700000000" subject="Arrmada test [1/1] - &quot;%s&quot; yEnc (1/1)">`+"\n", name)
+		fmt.Fprintf(&b, `<file poster="tester@example.invalid" date="1700000000" subject="Rock Media Center test [1/1] - &quot;%s&quot; yEnc (1/1)">`+"\n", name)
 		b.WriteString("<groups><group>alt.binaries.test</group></groups>\n")
 		fmt.Fprintf(&b, "<segments><segment bytes=\"%d\" number=\"1\">%s</segment></segments>\n</file>\n", sizes[name], files[name])
 	}
@@ -284,7 +284,7 @@ func NZBFiles(files ...File) []byte {
 	b.WriteString(`<nzb xmlns="http://www.newzbin.com/DTD/2003/nzb">` + "\n<head></head>\n")
 	for _, f := range files {
 		n := len(f.Segments)
-		fmt.Fprintf(&b, `<file poster="tester@example.invalid" date="1700000000" subject="Arrmada test [1/1] - &quot;%s&quot; yEnc (1/%d)">`+"\n", f.Name, n)
+		fmt.Fprintf(&b, `<file poster="tester@example.invalid" date="1700000000" subject="Rock Media Center test [1/1] - &quot;%s&quot; yEnc (1/%d)">`+"\n", f.Name, n)
 		b.WriteString("<groups><group>alt.binaries.test</group></groups>\n<segments>\n")
 		for i, s := range f.Segments {
 			fmt.Fprintf(&b, "<segment bytes=\"%d\" number=\"%d\">%s</segment>\n", s.Bytes, i+1, s.ID)

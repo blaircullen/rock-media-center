@@ -71,7 +71,7 @@ export function UploadTorrentModal({
           <h2 id={titleId} className="m-0 text-lg font-bold">Upload a .torrent or .nzb — {what}</h2>
           <IconButton label="Close" onClick={onClose} className="h-7 w-7 rounded-md text-ink-faint hover:text-[var(--ink)]">✕</IconButton>
         </div>
-        <p className="mb-3 text-sm text-ink-dim">Found a release yourself? Download the .torrent from your tracker (while logged in), or the .nzb from your usenet indexer, and drop it here. Arrmada previews it so you can check it's right, then grabs it into your library. An .nzb needs SABnzbd in Settings → Connections.</p>
+        <p className="mb-3 text-sm text-ink-dim">Found a release yourself? Download the .torrent from your tracker (while logged in), or the .nzb from your usenet indexer, and drop it here. Rock Media Center previews it so you can check it's right, then grabs it into your library. An .nzb needs SABnzbd in Settings → Connections.</p>
 
         <input ref={inputRef} type="file" accept=".torrent,.nzb" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) load(f); }} />
         <div

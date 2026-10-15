@@ -52,7 +52,7 @@ func TestManualImportCandidatesCapped(t *testing.T) {
 	}
 }
 
-// A manual import of a library folder never offers what Arrmada keeps out of the library
+// A manual import of a library folder never offers what Rock Media Center keeps out of the library
 // on purpose: held originals and the recycle bin.
 func TestManualImportCandidatesSkipHiddenFolders(t *testing.T) {
 	dir := t.TempDir()

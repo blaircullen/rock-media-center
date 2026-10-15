@@ -31,7 +31,7 @@ export default function App() {
   const router = useMemo(() => (role ? routerFor(role, external) : null), [role, external]);
   // Signed out mid-session: the sign-in screen shouldn't keep the last page's tab title.
   useEffect(() => {
-    if (!user) document.title = "Arrmada";
+    if (!user) document.title = "Rock Media Center";
   }, [user]);
 
   if (loading) {

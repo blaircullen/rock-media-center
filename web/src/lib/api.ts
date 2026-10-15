@@ -1,4 +1,4 @@
-// Thin typed client for Arrmada's JSON API.
+// Thin typed client for Rock Media Center's JSON API.
 
 import type { PipelineStage } from "./stages";
 import type { MediaServerKind, WatchLink } from "../components/brand/servers";
@@ -352,17 +352,17 @@ export interface ActivityDownload {
   seed_enabled?: boolean; // false = remove as soon as imported (no seeding)
   seed_ratio?: number; // target ratio (0 = no ratio target)
   seed_hours?: number; // target seed time in hours (0 = no time target)
-  imported?: boolean; // Arrmada has imported this download into the library
+  imported?: boolean; // Rock Media Center has imported this download into the library
   /** Where it has got to (lib/stages), and for staff why it is there ("Import failed 3× …"). */
   stage?: PipelineStage;
   why?: string;
   quality_profile: string;
   media_type?: string;
   held_by_guard?: boolean; // paused by the disk guard, which won't let it resume yet
-  // How an in-flight grab stands against its stall window; absent for torrents Arrmada
+  // How an in-flight grab stands against its stall window; absent for torrents Rock Media Center
   // didn't grab. idle_minutes stays 0 while the clock is held (paused, queued, checking).
   stall?: { idle_minutes: number; failover_in_minutes: number; off: boolean };
-  /** An Arrmada grab recorded this torrent (by info hash). */
+  /** A Rock Media Center grab recorded this torrent (by info hash). */
   managed?: boolean;
   /** Which network it came over; a usenet job's hash is its "sab-…" key either way. */
   transport?: "torrent" | "usenet";
@@ -632,7 +632,7 @@ export interface DownloadClient {
   path_maps?: PathMap[];
 }
 
-/** One remote path mapping: the folder as the download client names it, and inside Arrmada. */
+/** One remote path mapping: the folder as the download client names it, and inside Rock Media Center. */
 export interface PathMap {
   remote: string;
   local: string;
@@ -645,7 +645,7 @@ export interface DownloadClientStatus {
   last_error_at?: string;
 }
 
-/** The categories Arrmada files downloads under; not a per-client setting. */
+/** The categories Rock Media Center files downloads under; not a per-client setting. */
 export interface DownloadCategories {
   movies: string;
   tv: string;
@@ -791,7 +791,7 @@ export interface SetupState {
   /** Whether a Prowlarr answers at the saved address; null unless asked (?prowlarr=1). */
   prowlarr_available?: boolean | null;
 }
-// path_disabled: the folder on screen holds (or is) Arrmada's data folder, so it can be
+// path_disabled: the folder on screen holds (or is) Rock Media Center's data folder, so it can be
 // walked through but not selected.
 export interface BrowseResult { path: string; parent: string; dirs: { name: string; path: string }[]; path_disabled?: boolean }
 // ManualImportList is one manual-import listing. The server stops after 500 files (or 30
@@ -883,7 +883,7 @@ export interface AttentionItem {
   count?: number; // an aggregate's size (search:stuck)
   /** The torrent a download, stalled, import or wrongcat item is about. */
   hash?: string;
-  /** An Arrmada grab recorded that torrent (so another release can be tried). */
+  /** A Rock Media Center grab recorded that torrent (so another release can be tried). */
   grabbed?: boolean;
 }
 export interface AttentionGroup {
@@ -1027,7 +1027,7 @@ export interface AppSettings {
   quality_ranking?: "v1" | "v2";
   /** When a release is on both Usenet and torrents: the better release wins (best, the default), or the preferred network between equals. */
   download_network_preference?: NetworkPreference;
-  /** The address Arrmada is reached at from outside ("https://arrmada.example.com"; "" = none). Admin-only. */
+  /** The address Rock Media Center is reached at from outside ("https://arrmada.example.com"; "" = none). Admin-only. */
   app_public_url: string;
 }
 
@@ -1301,7 +1301,7 @@ export function uploadBackup(file: File, onProgress?: (fraction: number) => void
         : xhr.status === 413 ? "The file is too large to upload here." : `HTTP ${xhr.status}`;
       reject(new ApiError(msg, xhr.status, body));
     };
-    xhr.onerror = () => reject(new Error("The upload was cut off. Behind Cloudflare, uploads over 100 MB fail; use Arrmada's LAN address."));
+    xhr.onerror = () => reject(new Error("The upload was cut off. Behind Cloudflare, uploads over 100 MB fail; use Rock Media Center's LAN address."));
     const form = new FormData();
     form.append("file", file);
     xhr.send(form);
@@ -2062,7 +2062,7 @@ export interface BufferGroup { id?: string; name: string; sessions: number; buff
 export interface BufferEvent { at: number; offset_ms: number; duration_ms: number; user: string; user_id?: string; title: string; platform: string; decision: string; cause: string; detail: string }
 export interface CauseCount { cause: string; label: string; count: number; stall_ms: number }
 // The Insights Library tab (GET /insights/library). media/tmdb come from the Plex library
-// index; arrmada_id is set when Arrmada has the title.
+// index; arrmada_id is set when Rock Media Center has the title.
 export interface LibraryItem {
   kind: "movie" | "show"; title: string; year?: number; thumb_url: string; rating_key?: string;
   media?: "movie" | "series"; tmdb?: number; arrmada_id?: number;
@@ -2220,7 +2220,7 @@ export const api = {
     req<{ status: string; category: string }>(`/api/v1/queue/${hash}/category`, { method: "POST", body: JSON.stringify({ category }) }),
   retryImport: (hash: string) =>
     req<{ status: string }>(`/api/v1/imports/${hash}/retry`, { method: "POST" }),
-  // Finished torrents Arrmada didn't grab: list, import into a picked title, or ignore.
+  // Finished torrents Rock Media Center didn't grab: list, import into a picked title, or ignore.
   unmanagedDownloads: () => req<{ unmanaged: UnmanagedDownload[]; ignored: number }>("/api/v1/downloads/unmanaged"),
   unmanagedTargets: (hash: string, kind: ReviewKind, q: string) =>
     req<{ targets: ReviewTarget[]; truncated?: boolean }>(`/api/v1/queue/${hash}/targets?kind=${kind}&q=${encodeURIComponent(q)}`),
@@ -2513,7 +2513,7 @@ export const api = {
   // "Complete the <name>" rows: one per collection the library has started.
   discoverCollections: () => req<{ rows: CollectionRow[] }>(`/api/v1/discover/collections`).then((r) => r.rows),
   discoverCollection: (id: number) => req<CollectionDetail>(`/api/v1/discover/collection/${id}`),
-  // What just arrived in the library (Arrmada's imports, plus Plex's when it's set up).
+  // What just arrived in the library (Rock Media Center's imports, plus Plex's when it's set up).
   discoverRecentlyAdded: () => req<{ items: DiscoverCard[] }>(`/api/v1/discover/recently-added`).then((r) => r.items),
   discoverByGenre: (media: string, genre: number) =>
     req<{ items: DiscoverCard[] }>(`/api/v1/discover?media=${media}&genre=${genre}`).then((r) => r.items),
@@ -2875,7 +2875,7 @@ export interface Movie {
    * detail page's own look); file_missing_since says when it was noticed. MOV-21. */
   file_missing?: boolean;
   file_missing_since?: string;
-  /** Detail only: what Arrmada will do about this movie, from the facts the sweeps act on. */
+  /** Detail only: what Rock Media Center will do about this movie, from the facts the sweeps act on. */
   acquisition?: MovieAcquisition;
   // Detail only (MOV-04): the missing-sweep's backoff, when it next searches (absent when
   // no automatic search is coming) and how the stored searches went.
@@ -3010,7 +3010,7 @@ export interface ImportRecord {
 
 export type ReviewKind = "series" | "movie" | "music";
 
-/** A finished torrent nothing in Arrmada grabbed or imported, outside its categories. */
+/** A finished torrent nothing in Rock Media Center grabbed or imported, outside its categories. */
 export interface UnmanagedDownload {
   hash: string;
   name: string;

@@ -172,7 +172,7 @@ func TestImportRunProgressRetryAndUndo(t *testing.T) {
 	srv, queries := fakeTautulli(t, 1200, key)
 	snap := &snapshotRecorder{}
 	s, r := insightsImportServer(t, snap)
-	// Arrmada recorded play #3 live.
+	// Rock Media Center recorded play #3 live.
 	if _, err := s.st.DB().Exec(`INSERT INTO stream_sessions (session_key,user_id,rating_key,title,started_at,stopped_at)
 		VALUES ('9','7','3','Film 3',1030005,1032990)`); err != nil {
 		t.Fatal(err)

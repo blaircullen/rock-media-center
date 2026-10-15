@@ -1,4 +1,4 @@
-// Package insights is Arrmada's watch-monitoring module (the Tautulli replacement): the
+// Package insights is Rock Media Center's watch-monitoring module (the Tautulli replacement): the
 // Plex connection and its monitoring status, live activity on Plex and Jellyfin, a poller
 // per server that records every play (and Plex's buffer events), Tautulli import, and the
 // history, people, graphs and reliability reads over the recorded plays — each narrowable
@@ -32,7 +32,7 @@ const (
 	// keyHWSince is when recorded plays started storing the hardware encode Plex really
 	// used; plays before it stored "hardware was requested" (see PLEX-09).
 	keyHWSince  = "insights_hw_actual_since"
-	plexProduct = "Arrmada"
+	plexProduct = "Rock Media Center"
 	// The connected server's machine identifier and name, from its own /identity and root
 	// endpoint: stored on sign-in, on a save that changes the URL or token, and on a Test of
 	// the saved connection. Plex sign-in gates on the machine id, and app.plex.tv deep

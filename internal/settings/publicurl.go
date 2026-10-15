@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-// KeyPublicURL is the address people reach Arrmada at from outside the server, e.g.
+// KeyPublicURL is the address people reach Rock Media Center at from outside the server, e.g.
 // https://arrmada.example.com (Settings → System). Alerts link back to the app with it,
-// and the calendar feed's link is built from it. Arrmada is served at the root of its
+// and the calendar feed's link is built from it. Rock Media Center is served at the root of its
 // own hostname or port, so it's an origin: a scheme, a host and an optional port —
 // nothing after.
 const KeyPublicURL = "app_public_url"
@@ -30,7 +30,7 @@ func NormalizePublicURL(raw string) (string, error) {
 		return "", errors.New("the address mustn't contain a user name or password")
 	}
 	if strings.Trim(u.Path, "/") != "" || u.RawQuery != "" || u.Fragment != "" || u.Opaque != "" || strings.HasSuffix(raw, "?") || strings.HasSuffix(raw, "#") {
-		return "", errors.New("give just the address, like https://arrmada.example.com — Arrmada is served at the root, not under a path")
+		return "", errors.New("give just the address, like https://arrmada.example.com — Rock Media Center is served at the root, not under a path")
 	}
 	return strings.ToLower(u.Scheme) + "://" + strings.ToLower(u.Host), nil
 }

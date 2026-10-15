@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-// Plex sign-in uses a PIN-based OAuth: Arrmada asks plex.tv for a short-lived PIN,
-// the user authorizes it in a plex.tv popup, and Arrmada polls until plex.tv hands
+// Plex sign-in uses a PIN-based OAuth: Rock Media Center asks plex.tv for a short-lived PIN,
+// the user authorizes it in a plex.tv popup, and Rock Media Center polls until plex.tv hands
 // back an auth token. This is the same flow Tautulli/Overseerr use — no manual
 // X-Plex-Token hunting.
 

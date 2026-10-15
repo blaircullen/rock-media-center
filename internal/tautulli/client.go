@@ -1,4 +1,4 @@
-// Package tautulli is a read-only client for a Tautulli instance, used to backfill Arrmada's
+// Package tautulli is a read-only client for a Tautulli instance, used to backfill Rock Media Center's
 // Insights (watch monitoring) with historical play sessions so stats aren't blank on day one.
 package tautulli
 
@@ -130,7 +130,7 @@ func (c *Client) History(ctx context.Context, fn func(Page) error) error {
 		}
 		// grouping=0: one row per real session. Tautulli's default groups a user's
 		// consecutive sittings of one item into a single row spanning all of them, which
-		// can't be matched against the plays Arrmada recorded live.
+		// can't be matched against the plays Rock Media Center recorded live.
 		params := url.Values{"length": {strconv.Itoa(length)}, "start": {strconv.Itoa(start)}, "grouping": {"0"}}
 		if err := c.call(ctx, "get_history", params, &data); err != nil {
 			return err

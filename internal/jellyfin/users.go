@@ -21,7 +21,7 @@ type User struct {
 	Policy           UserPolicy `json:"Policy"`
 }
 
-// UserPolicy is the part of a user's policy Arrmada reads.
+// UserPolicy is the part of a user's policy Rock Media Center reads.
 type UserPolicy struct {
 	IsAdministrator    bool `json:"IsAdministrator"` // closest to Plex's server owner
 	IsDisabled         bool `json:"IsDisabled"`
@@ -110,7 +110,7 @@ func (c *Client) QuickConnectConnect(ctx context.Context, secret string) (QuickC
 }
 
 // QuickConnectAuthorize approves a code as the user this client acts for (WithToken). It is
-// what a Jellyfin app does when someone types the code in; Arrmada only needs it in tests.
+// what a Jellyfin app does when someone types the code in; Rock Media Center only needs it in tests.
 func (c *Client) QuickConnectAuthorize(ctx context.Context, code string) error {
 	if code == "" {
 		return errors.New("no quick connect code")

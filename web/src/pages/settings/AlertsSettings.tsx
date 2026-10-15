@@ -106,11 +106,11 @@ export function AlertsSettings() {
                 <Button onClick={() => setAdding("choose")}>+ Add alert</Button>
               </div>
             ))}
-            {admin && <p className="text-xs text-ink-faint">On iPhone, push works only when Arrmada is added to the Home Screen.</p>}
+            {admin && <p className="text-xs text-ink-faint">On iPhone, push works only when Rock Media Center is added to the Home Screen.</p>}
           </>
         )}
       </Section>
-      {/* The mail account Arrmada sends from: a login, so admins only. */}
+      {/* The mail account Rock Media Center sends from: a login, so admins only. */}
       {admin && <OutgoingEmail />}
     </div>
   );

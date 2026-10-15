@@ -12,11 +12,11 @@ import (
 // none, plus the uncompressed shell files.
 func testFS() fstest.MapFS {
 	return fstest.MapFS{
-		"index.html":             {Data: []byte("<!doctype html><title>Arrmada</title>")},
+		"index.html":             {Data: []byte("<!doctype html><title>Rock Media Center</title>")},
 		"index.html.br":          {Data: []byte("BR-INDEX")}, // must never be used
 		"sw.js":                  {Data: []byte("const CACHE = 'arrmada-abc';")},
 		"sw.js.gz":               {Data: []byte("GZ-SW")}, // must never be used
-		"manifest.webmanifest":   {Data: []byte(`{"name":"Arrmada"}`)},
+		"manifest.webmanifest":   {Data: []byte(`{"name":"Rock Media Center"}`)},
 		"assets/index-abc.js":    {Data: []byte("console.log('identity')")},
 		"assets/index-abc.js.br": {Data: []byte("BR-BYTES")},
 		"assets/index-abc.js.gz": {Data: []byte("GZ-BYTES")},

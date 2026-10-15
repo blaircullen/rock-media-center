@@ -234,7 +234,7 @@ func (q *QBittorrent) Add(ctx context.Context, dc Client, req AddRequest) error 
 		if req.Category != "" {
 			_ = w.WriteField("category", req.Category)
 		}
-		// Pin the save path to Arrmada's downloads dir so the client and Arrmada agree
+		// Pin the save path to Rock Media Center's downloads dir so the client and Rock Media Center agree
 		// on where the file lands — otherwise a stale client default breaks import
 		// (and hardlinking, if it points off the shared volume).
 		if req.SavePath != "" {
@@ -264,7 +264,7 @@ func (q *QBittorrent) Add(ctx context.Context, dc Client, req AddRequest) error 
 	}
 	// 409 Conflict means the torrent is ALREADY in the client — the same info hash is
 	// there under some other name. That's the state the caller wanted, so it isn't a
-	// failure: reporting one left the release ungrabbed in Arrmada's eyes, re-attempted
+	// failure: reporting one left the release ungrabbed in Rock Media Center's eyes, re-attempted
 	// every sweep forever, while the torrent itself sat in the client with no grab row —
 	// so no seed rule ever applied to it and the Downloads page called it unmanaged.
 	//
@@ -318,7 +318,7 @@ func (q *QBittorrent) action(ctx context.Context, dc Client, hash, primary, lega
 var errCategoryMissing = errors.New("qbittorrent: category does not exist")
 
 // SetCategory files torrents under another category (hashes joined with |). qBittorrent
-// only takes a category it already has, and Arrmada's are created by the first download
+// only takes a category it already has, and Rock Media Center's are created by the first download
 // filed under each, so a missing one is created (with no save path of its own) and the
 // move tried once more.
 func (q *QBittorrent) SetCategory(ctx context.Context, dc Client, hash, category string) error {
@@ -458,7 +458,7 @@ func (q *QBittorrent) SetListenPort(ctx context.Context, dc Client, port int) er
 }
 
 // SetSavePath points qBittorrent's default save path and incomplete (temp) path
-// at Arrmada's downloads dir. The seed config only applies on first run, so this
+// at Rock Media Center's downloads dir. The seed config only applies on first run, so this
 // fixes an existing client whose path still points at the old managed volume.
 func (q *QBittorrent) SetSavePath(ctx context.Context, dc Client, savePath string) error {
 	// Download straight to the final folder — NO separate "incomplete" path. The
@@ -515,7 +515,7 @@ func (q *QBittorrent) DefaultSavePath(ctx context.Context, dc Client) (string, e
 }
 
 // List returns the current torrents. It intentionally does NOT filter by the
-// client's category: Arrmada manages several internal categories on the bundled
+// client's category: Rock Media Center manages several internal categories on the bundled
 // client (movies use "arrmada", series use "arrmada-tv"), and callers that need a
 // specific category filter in Go (see CompletedInCategory). Filtering server-side
 // to a single category here would hide series torrents from imports and the feed.

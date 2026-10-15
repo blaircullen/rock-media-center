@@ -206,7 +206,7 @@ func (n *jobNamer) lookup(ctx context.Context, target string) (string, string) {
 }
 
 // trigger says who or what started a job: a person by name, an approved request, or
-// Arrmada itself.
+// Rock Media Center itself.
 func (n *jobNamer) trigger(ctx context.Context, trigger string) (string, string) {
 	kind, rest, _ := strings.Cut(trigger, ":")
 	switch kind {
@@ -233,7 +233,7 @@ func (n *jobNamer) trigger(ctx context.Context, trigger string) (string, string)
 	case "api":
 		return "The API", ""
 	}
-	return "Arrmada", ""
+	return "Rock Media Center", ""
 }
 
 // withYear is "Title (Year)", or the title alone when the year isn't known.

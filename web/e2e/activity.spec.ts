@@ -127,11 +127,11 @@ test.describe("manager", () => {
     await expect(page.getByRole("tablist", { name: "Activity" }).getByRole("tab", { name: /^Needs you/ })).toContainText("4");
   });
 
-  // ACQ-31: finished torrents Arrmada didn't grab sit, collapsed, at the bottom of Needs
+  // ACQ-31: finished torrents Rock Media Center didn't grab sit, collapsed, at the bottom of Needs
   // you; each can be imported into a picked title or ignored.
   test("unmanaged torrents can be imported into a picked title or ignored", async ({ page, api }) => {
     await page.goto("/activity/needs-you");
-    const toggle = page.getByRole("button", { name: /Not managed by Arrmada/ });
+    const toggle = page.getByRole("button", { name: /Not managed by Rock Media Center/ });
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
     await expect(toggle).toContainText("2");
     await expect(page.getByTestId("unmanaged-item")).toHaveCount(0);

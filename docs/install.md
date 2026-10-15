@@ -1,4 +1,4 @@
-# Installing Arrmada
+# Installing Rock Media Center
 
 ## What you need
 
@@ -8,7 +8,7 @@
     plugin from the Apps tab for Compose.
   - **Other Linux:** [Docker Engine](https://docs.docker.com/engine/install/) and its
     `docker-compose-plugin` package.
-- A folder that holds your media and downloads (optional — Arrmada can manage its own storage,
+- A folder that holds your media and downloads (optional — Rock Media Center can manage its own storage,
   but you'll usually want your own share).
 - A free [TMDB API key](https://www.themoviedb.org/settings/api), entered in the app during setup.
 
@@ -17,14 +17,14 @@
 On the server, as root (on Unraid, open the terminal from the top-right of the web UI):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/blaircullen/rock-media-center/main/install.sh | sh
 ```
 
 If you're not root, put `sudo` before `sh`.
 
 The installer checks Docker, then asks two things — press **Enter** to accept each suggestion:
 
-1. **Where Arrmada keeps its files.** The default is `/mnt/user/appdata/arrmada` on Unraid,
+1. **Where Rock Media Center keeps its files.** The default is `/mnt/user/appdata/arrmada` on Unraid,
    `~/arrmada` (or `/opt/arrmada` as root) elsewhere. The database goes in `data/` inside it.
 2. **Where your media lives.** Give the folder that *contains* your libraries and downloads
    (for example `/mnt/user/data` with `media/movies`, `media/tv` and `torrents` inside). It's
@@ -39,7 +39,7 @@ It works out everything else and shows a summary before it starts:
 | Ports | Free ones, so nothing clashes with Radarr (7878), qBittorrent (8080) and friends |
 | User | Whoever owns your media folder (99:100 on Unraid) |
 | Timezone | Your server's own (asked only if it can't be found) |
-| The app | The latest release, downloaded from `ghcr.io/tristenlammi/arrmada:stable` — the stable channel, which updates follow too (compiled on the server only with `--channel main` or if the download fails — that takes 30–60 minutes and [a few GB of memory](troubleshooting.md#the-build-fails-or-gets-killed)) |
+| The app | The latest release, downloaded from `ghcr.io/blaircullen/rock-media-center:stable` — the stable channel, which updates follow too (compiled on the server only with `--channel main` or if the download fails — that takes 30–60 minutes and [a few GB of memory](troubleshooting.md#the-build-fails-or-gets-killed)) |
 
 When it's done it prints the address, e.g. `http://192.168.1.10:7878`.
 
@@ -63,26 +63,26 @@ qBittorrent connects itself — there's nothing to set up there.
 Pass options after `sh -s --`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/install.sh | sh -s -- --media /mnt/user/data -y
+curl -fsSL https://raw.githubusercontent.com/blaircullen/rock-media-center/main/install.sh | sh -s -- --media /mnt/user/data -y
 ```
 
 | Option | What it does |
 |---|---|
-| `--dir DIR` | Where Arrmada keeps its files |
+| `--dir DIR` | Where Rock Media Center keeps its files |
 | `--media DIR` | The folder holding your libraries and downloads (mounted at `/storage`) |
-| `--no-media` | Use Arrmada's own managed storage instead (not recommended on Unraid: it lives in `docker.img`) |
+| `--no-media` | Use Rock Media Center's own managed storage instead (not recommended on Unraid: it lives in `docker.img`) |
 | `--tz ZONE` | Timezone, e.g. `Europe/London` ([list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) |
 | `--puid N --pgid N` | Run as this user and group |
 | `--with-prowlarr` | Also run the optional Prowlarr indexer manager |
-| `--with-sabnzbd` | Also run SABnzbd, for Usenet. Arrmada connects to it by itself; you add your own Usenet provider in SABnzbd and your Newznab indexers in Arrmada ([Usenet](configuration.md#usenet-sabnzbd)) |
+| `--with-sabnzbd` | Also run SABnzbd, for Usenet. Rock Media Center connects to it by itself; you add your own Usenet provider in SABnzbd and your Newznab indexers in Rock Media Center ([Usenet](configuration.md#usenet-sabnzbd)) |
 | `--channel main` | Follow main instead of the releases: the newest code, compiled on your server at install and on every update (for developers; see [Following main](updating.md#following-main-developers)). `--channel stable` is the default |
 | `--build` | The same as `--channel main` |
-| `--image REF` | On the stable channel, run a specific published image, e.g. `ghcr.io/tristenlammi/arrmada:0.18.0` |
+| `--image REF` | On the stable channel, run a specific published image, e.g. `ghcr.io/blaircullen/rock-media-center:0.18.0` |
 | `-y`, `--yes` | Don't ask anything; take the suggestions and the options given |
 
 ## Changing things later
 
-Run the same line again with an option, on the server that has Arrmada:
+Run the same line again with an option, on the server that has Rock Media Center:
 
 - `--media /new/folder` — mount a different media folder (or add one to an install that
   started on managed storage). The old mounts are kept in `docker-compose.override.yml.bak`.
@@ -92,15 +92,15 @@ Run the same line again with an option, on the server that has Arrmada:
   whose files are older than the bundled SABnzbd is told to run `sh update.sh` first.
 
 With no option it [updates](updating.md) instead. Ports, timezone and the run-as user live
-in `.env` in Arrmada's folder: change a line there, then run `sh update.sh`.
+in `.env` in Rock Media Center's folder: change a line there, then run `sh update.sh`.
 
 ## From a git checkout
 
 Prefer git? This is how the project started, and it keeps working:
 
 ```sh
-git clone https://github.com/tristenlammi/Arrmada
-cd Arrmada
+git clone https://github.com/blaircullen/rock-media-center
+cd Rock Media Center
 ./install.sh
 ```
 
@@ -120,16 +120,16 @@ and FlareSolverr instead.
 
 | Container | What it is |
 |---|---|
-| `Arrmada-app` | Arrmada itself |
+| `Arrmada-app` | Rock Media Center itself |
 | `Arrmada-qbittorrent` | The download client, already wired up |
 | `Arrmada-flaresolverr` | Gets past Cloudflare on trackers that use it (no port published) |
 | `Arrmada-prowlarr` | Only with `--with-prowlarr` |
 | `Arrmada-sabnzbd` | Only with `--with-sabnzbd`: the Usenet downloader, already wired up (`Arrmada-sabnzbd-init` writes its first settings once) |
 
-Arrmada's folder holds `docker-compose.yml`, your settings in `.env`, the mounts in
+Rock Media Center's folder holds `docker-compose.yml`, your settings in `.env`, the mounts in
 `docker-compose.override.yml`, the scripts, and `data/` (the database and its backups).
 
-> ⚠ Never mount media at `/data` inside the container — that's where Arrmada keeps its
+> ⚠ Never mount media at `/data` inside the container — that's where Rock Media Center keeps its
 > database. The installer always mounts media at `/storage`.
 
 ## Docker Compose without the installer
@@ -137,7 +137,7 @@ Arrmada's folder holds `docker-compose.yml`, your settings in `.env`, the mounts
 One file, no git. In an empty folder on the server (e.g. `/mnt/user/appdata/arrmada`):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/docker-compose.example.yml -o docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/blaircullen/rock-media-center/main/docker-compose.example.yml -o docker-compose.yml
 ```
 
 Open it and change the lines marked `←`:
@@ -165,7 +165,7 @@ The same file works as a Portainer stack:
 
 1. **Stacks → Add stack**, give it a name, and either pick **Web editor** and paste
    [`docker-compose.example.yml`](../docker-compose.example.yml), or pick **Repository** with
-   `https://github.com/tristenlammi/Arrmada` and compose path `docker-compose.example.yml`.
+   `https://github.com/blaircullen/rock-media-center` and compose path `docker-compose.example.yml`.
 2. Change the lines marked `←` as above. Keep the folders full paths (`/mnt/user/…`): a stack
    has no folder of its own, so a relative path like `./data` would end up inside Portainer's
    own volume, hidden, and gone with the stack.
@@ -181,14 +181,14 @@ A checkout runs the published image the same way, with its database and media in
 volumes:
 
 ```sh
-git clone https://github.com/tristenlammi/Arrmada
-cd Arrmada
+git clone https://github.com/blaircullen/rock-media-center
+cd Rock Media Center
 docker compose up -d
 ```
 
 To change ports or the run-as user there, put the settings from
 [Configuration](configuration.md) in a `.env` next to `docker-compose.yml`; if that `.env` sets
-`ARRMADA_PORT`, also add `ARRMADA_APP_IMAGE=ghcr.io/tristenlammi/arrmada:stable` (see
+`ARRMADA_PORT`, also add `ARRMADA_APP_IMAGE=ghcr.io/blaircullen/rock-media-center:stable` (see
 [Updating](updating.md#upgrading-from-v010-or-earlier) for why). Update with
 `git pull && docker compose pull && docker compose up -d`, or run `./install.sh` once to get
 `update.sh`'s backups and roll-back (it keeps the database volume).

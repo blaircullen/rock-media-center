@@ -8,7 +8,7 @@ import (
 )
 
 // The usenet client's health checks (internal/health/checks_usenet.go): what SABnzbd says
-// about itself, whether it's downloading anything, and whether Arrmada can tidy up after it.
+// about itself, whether it's downloading anything, and whether Rock Media Center can tidy up after it.
 
 func (a *api) registerUsenetChecks(reg *health.Registry) {
 	reg.Register(health.UsenetClientsCheck(a.usenetClientFacts))

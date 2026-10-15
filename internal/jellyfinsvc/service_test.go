@@ -316,7 +316,7 @@ func TestIndexFindsTitlesByIDsAndFolder(t *testing.T) {
 		}
 	}
 
-	// The folder fallback: Arrmada's /srv/films is Jellyfin's /media/Movies by a mapping…
+	// The folder fallback: Rock Media Center's /srv/films is Jellyfin's /media/Movies by a mapping…
 	h.root = map[string]string{plexscan.KindMovie: "/srv/films", plexscan.KindShow: "/srv/shows"}
 	dune := mediaserver.ExternalIDs{TMDB: 438631, Folder: "/srv/films/Dune (2021) {tmdb-438631}"}
 	if got := ids("movie", dune); got != "" {

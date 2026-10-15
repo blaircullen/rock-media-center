@@ -24,9 +24,9 @@ import (
 // SABnzbd drives SABnzbd's API: every call is a POST to {url}/api with the API key in the
 // form body, so the key never sits in a URL, a proxy log or an error message. The key is the
 // client's Password (never marshalled) and must be the full API key: the NZB key can add
-// jobs but can't read the queue, which Arrmada needs.
+// jobs but can't read the queue, which Rock Media Center needs.
 //
-// Only Arrmada's own categories are read and acted on. A user's own SABnzbd has jobs of
+// Only Rock Media Center's own categories are read and acted on. A user's own SABnzbd has jobs of
 // its own, and a command for one of those must never come from here.
 type SABnzbd struct {
 	http *http.Client
@@ -35,10 +35,10 @@ type SABnzbd struct {
 
 	mu       sync.RWMutex
 	movieCat string                            // the configured movie category ("" = default)
-	folders  func(ctx context.Context) PathEnv // Arrmada's folders, for the leftover-folder guard
+	folders  func(ctx context.Context) PathEnv // Rock Media Center's folders, for the leftover-folder guard
 }
 
-// NewSABnzbd creates the downloader with Arrmada's default categories and no folders
+// NewSABnzbd creates the downloader with Rock Media Center's default categories and no folders
 // (SetFolders): until it has them, removing a finished job leaves its folder in place.
 func NewSABnzbd() *SABnzbd {
 	return &SABnzbd{
@@ -54,14 +54,14 @@ func (s *SABnzbd) SetMovieCategory(movie string) {
 	s.mu.Unlock()
 }
 
-// SetFolders wires where Arrmada keeps things, read on every use (the folders are live).
+// SetFolders wires where Rock Media Center keeps things, read on every use (the folders are live).
 func (s *SABnzbd) SetFolders(fn func(ctx context.Context) PathEnv) {
 	s.mu.Lock()
 	s.folders = fn
 	s.mu.Unlock()
 }
 
-// categories is Arrmada's categories, in the order they're shown.
+// categories is Rock Media Center's categories, in the order they're shown.
 func (s *SABnzbd) categories() []sabCategory {
 	s.mu.RLock()
 	c := FixedCategories(s.movieCat)
@@ -71,8 +71,8 @@ func (s *SABnzbd) categories() []sabCategory {
 
 type sabCategory struct{ name, kind string }
 
-// ours reports whether cat is one of Arrmada's categories. SABnzbd keeps category names
-// lowercase, and so does Arrmada.
+// ours reports whether cat is one of Rock Media Center's categories. SABnzbd keeps category names
+// lowercase, and so does Rock Media Center.
 func (s *SABnzbd) ours(cat string) bool {
 	for _, c := range s.categories() {
 		if strings.EqualFold(c.name, cat) {
@@ -97,13 +97,13 @@ func (s *SABnzbd) catList() string {
 var errSABKey = errors.New("SABnzbd refused the API key. Use the full API key from SABnzbd → Config → General (the NZB key can't read the queue)")
 
 // sabHostError is SABnzbd's "Hostname verification failed": it only answers to the names
-// in its host_whitelist, and the address Arrmada uses isn't one of them.
+// in its host_whitelist, and the address Rock Media Center uses isn't one of them.
 func sabHostError(dc Client) error {
 	host := dc.URL
 	if u, err := url.Parse(dc.URL); err == nil && u.Hostname() != "" {
 		host = u.Hostname()
 	}
-	return fmt.Errorf("SABnzbd refused the address Arrmada uses for it (hostname verification). Add %s to SABnzbd → Config → Special → host_whitelist", host)
+	return fmt.Errorf("SABnzbd refused the address Rock Media Center uses for it (hostname verification). Add %s to SABnzbd → Config → Special → host_whitelist", host)
 }
 
 // sabURL is the API endpoint, without any user info a pasted address might carry.
@@ -115,7 +115,7 @@ func sabURL(dc Client) string {
 const sabMaxBody = 32 << 20
 
 // scrub takes the API key out of text that came back from SABnzbd or the network, in case
-// anything ever echoes it — nothing Arrmada shows or logs may carry it.
+// anything ever echoes it — nothing Rock Media Center shows or logs may carry it.
 func scrub(dc Client, s string) string {
 	if k := strings.TrimSpace(dc.Password); len(k) >= 4 {
 		s = strings.ReplaceAll(s, k, "[api key]")
@@ -251,7 +251,7 @@ func (s *SABnzbd) Categories(ctx context.Context, dc Client) ([]string, error) {
 	return v.Categories, err
 }
 
-// sabStatus is the slice of fullstatus Arrmada reads. The full answer carries the API key,
+// sabStatus is the slice of fullstatus Rock Media Center reads. The full answer carries the API key,
 // so it is decoded into this and never kept or logged whole.
 type sabStatus struct {
 	Status struct {
@@ -297,8 +297,8 @@ func (s *SABnzbd) Ping(ctx context.Context, dc Client) error {
 // --- adding ---------------------------------------------------------------------------
 
 // ErrNZBRequired: SABnzbd is only ever handed the NZB itself. Passing it a link would put
-// the indexer's API key into SABnzbd's history; Arrmada fetches NZBs itself.
-var ErrNZBRequired = errors.New("sabnzbd: Arrmada sends SABnzbd the NZB file itself, not a link")
+// the indexer's API key into SABnzbd's history; Rock Media Center fetches NZBs itself.
+var ErrNZBRequired = errors.New("sabnzbd: Rock Media Center sends SABnzbd the NZB file itself, not a link")
 
 // Add hands SABnzbd an NZB (see AddKeyed).
 func (s *SABnzbd) Add(ctx context.Context, dc Client, req AddRequest) error {
@@ -306,7 +306,7 @@ func (s *SABnzbd) Add(ctx context.Context, dc Client, req AddRequest) error {
 	return err
 }
 
-// AddKeyed uploads the NZB (addfile) under the release title and Arrmada's category, at the
+// AddKeyed uploads the NZB (addfile) under the release title and Rock Media Center's category, at the
 // category's priority, with repair + unpack + delete (pp=3), and the password the NZB carries.
 // It answers with the job's download key.
 //
@@ -397,7 +397,7 @@ func hasCategory(cats []string, cat string) bool {
 }
 
 func missingCategoryError(dc Client, cat string) error {
-	return fmt.Errorf("%s has no %q category, so SABnzbd would file the download where Arrmada never looks. Use \"Add missing categories\" on its card in Arrmada, or add it in SABnzbd → Config → Categories", dc.Name, cat)
+	return fmt.Errorf("%s has no %q category, so SABnzbd would file the download where Rock Media Center never looks. Use \"Add missing categories\" on its card in Rock Media Center, or add it in SABnzbd → Config → Categories", dc.Name, cat)
 }
 
 // nzbPassword is the password an NZB declares in its head (<meta type="password">), "" when
@@ -525,7 +525,7 @@ func (s *SABnzbd) history(ctx context.Context, dc Client) (sabHistory, error) {
 	return decode[sabHistory](dc, body, "history")
 }
 
-// List reads the queue and the history, both only in Arrmada's categories. A job in the
+// List reads the queue and the history, both only in Rock Media Center's categories. A job in the
 // queue is downloading (or waiting); one in the history is being unpacked, finished, or
 // failed. A job keeps its key from the queue to the history.
 func (s *SABnzbd) List(ctx context.Context, dc Client) ([]Item, error) {
@@ -677,7 +677,7 @@ func parseSABDuration(s string) int64 {
 
 // --- commands -------------------------------------------------------------------------
 
-// sabJob is one of Arrmada's jobs, found by key, with the id SABnzbd knows it by.
+// sabJob is one of Rock Media Center's jobs, found by key, with the id SABnzbd knows it by.
 type sabJob struct {
 	id      string // SABnzbd's own id, in its own case: it matches ids case-sensitively
 	inQueue bool
@@ -685,7 +685,7 @@ type sabJob struct {
 	storage string
 }
 
-// find looks a key up among Arrmada's jobs. A key is lowercase; SABnzbd 4.x ids aren't,
+// find looks a key up among Rock Media Center's jobs. A key is lowercase; SABnzbd 4.x ids aren't,
 // and a command with the lowercased id is answered "ok" while doing nothing. So the real
 // id always comes from a fresh read. false when no such job (any more).
 func (s *SABnzbd) find(ctx context.Context, dc Client, key string) (sabJob, bool, error) {
@@ -723,8 +723,8 @@ func boolParam(b bool) string {
 // Remove takes a job out of SABnzbd. One still downloading is deleted (with its partial
 // files when deleteData). A failed one is deleted from the history, its partial files with it
 // when deleteData. A finished one is archived in the history (SABnzbd keeps a record) and,
-// when deleteData, Arrmada deletes the folder it was unpacked into itself — but only a
-// folder inside Arrmada's downloads folder or SABnzbd's completed folder, never one of those
+// when deleteData, Rock Media Center deletes the folder it was unpacked into itself — but only a
+// folder inside Rock Media Center's downloads folder or SABnzbd's completed folder, never one of those
 // folders themselves, a category folder, a library or the database folder (leftoverTarget).
 // A folder outside all that is refused before anything is touched. A job that is already
 // gone is no error.
@@ -786,11 +786,11 @@ func deleteLeftover(target string, guard leftoverGuard) error {
 	return nil
 }
 
-// ErrLeftoverOutside: a finished job's folder isn't somewhere Arrmada may delete from.
-var ErrLeftoverOutside = errors.New("not inside Arrmada's downloads folder or SABnzbd's completed folder")
+// ErrLeftoverOutside: a finished job's folder isn't somewhere Rock Media Center may delete from.
+var ErrLeftoverOutside = errors.New("not inside Rock Media Center's downloads folder or SABnzbd's completed folder")
 
-// leftoverTarget is the folder (as Arrmada sees it) a finished job left behind, once it has
-// passed every guard: strictly inside Arrmada's downloads folder or SABnzbd's completed
+// leftoverTarget is the folder (as Rock Media Center sees it) a finished job left behind, once it has
+// passed every guard: strictly inside Rock Media Center's downloads folder or SABnzbd's completed
 // folder (resolved, so a symlink or ".." can't fake it), and not one of those folders, a
 // category folder, a library folder (or a folder holding one) or the database folder.
 func (s *SABnzbd) leftoverTarget(ctx context.Context, dc Client, storage string) (string, leftoverGuard, error) {
@@ -798,7 +798,7 @@ func (s *SABnzbd) leftoverTarget(ctx context.Context, dc Client, storage string)
 	folders := s.folders
 	s.mu.RUnlock()
 	if folders == nil {
-		return "", leftoverGuard{}, fmt.Errorf("left %s in place: Arrmada doesn't know its downloads folder", storage)
+		return "", leftoverGuard{}, fmt.Errorf("left %s in place: Rock Media Center doesn't know its downloads folder", storage)
 	}
 	env := folders(ctx)
 	local := dc.PathMaps.ToLocal(storage)
@@ -872,7 +872,7 @@ func guardLeftover(local string, roots, protected, keep []string) (string, error
 			continue
 		}
 		if pathguard.Within(rp, k) || pathguard.Within(k, rp) {
-			return "", fmt.Errorf("left %s in place: it's in or holds one of Arrmada's own folders", local)
+			return "", fmt.Errorf("left %s in place: it's in or holds one of Rock Media Center's own folders", local)
 		}
 	}
 	return rp, nil
@@ -949,7 +949,7 @@ func (s *SABnzbd) TorrentAction(ctx context.Context, dc Client, key, action stri
 // --- folders, categories and health ---------------------------------------------------
 
 // DefaultSavePath is SABnzbd's completed folder as SABnzbd names it — where finished jobs
-// are unpacked, and so what Arrmada must be able to see.
+// are unpacked, and so what Rock Media Center must be able to see.
 func (s *SABnzbd) DefaultSavePath(ctx context.Context, dc Client) (string, error) {
 	st, err := s.fullStatus(ctx, dc)
 	if err != nil {
@@ -970,7 +970,7 @@ type sabCatConfig struct {
 	} `json:"config"`
 }
 
-// categoryFolders is, for each of Arrmada's categories SABnzbd has with a folder of its
+// categoryFolders is, for each of Rock Media Center's categories SABnzbd has with a folder of its
 // own, that folder as SABnzbd names it. A relative folder is inside the completed folder;
 // a trailing "*" (no job folders) is dropped.
 func (s *SABnzbd) categoryFolders(ctx context.Context, dc Client, completeDir string) (map[string]string, error) {
@@ -1017,11 +1017,11 @@ func (s *SABnzbd) CategoryFolders(ctx context.Context, dc Client) (map[string]st
 // UsenetFacts is what a usenet client's card shows beside its connection state.
 type UsenetFacts struct {
 	Version string `json:"version"`
-	// Categories are Arrmada's categories and whether SABnzbd has each; Missing names the
+	// Categories are Rock Media Center's categories and whether SABnzbd has each; Missing names the
 	// ones it lacks ("Add missing categories" creates them).
 	Categories []UsenetCategory `json:"categories"`
 	Missing    []string         `json:"missing_categories"`
-	// CompleteFolder is where finished jobs land, and whether Arrmada sees it (after the
+	// CompleteFolder is where finished jobs land, and whether Rock Media Center sees it (after the
 	// client's path mappings).
 	CompleteFolder PathCheck `json:"complete_folder"`
 	// Servers are SABnzbd's enabled news servers. ServersWorking counts those without an
@@ -1037,12 +1037,12 @@ type UsenetFacts struct {
 	Warnings []string `json:"warnings"`
 }
 
-// UsenetCategory is one of Arrmada's categories in SABnzbd.
+// UsenetCategory is one of Rock Media Center's categories in SABnzbd.
 type UsenetCategory struct {
 	Name    string `json:"name"`
 	For     string `json:"for"` // movies, tv, music
 	Present bool   `json:"present"`
-	// Folder is set when the category has a folder of its own, with whether Arrmada sees it.
+	// Folder is set when the category has a folder of its own, with whether Rock Media Center sees it.
 	Folder *PathCheck `json:"folder,omitempty"`
 }
 
@@ -1126,18 +1126,18 @@ func factWarnings(dc Client, f UsenetFacts) []string {
 		w = append(w, fmt.Sprintf("None of %s's news servers is working. Check the provider's address, login and connections in SABnzbd → Config → Servers", dc.Name))
 	}
 	if len(f.Missing) > 0 {
-		w = append(w, fmt.Sprintf("%s is missing Arrmada's %s %s. Use \"Add missing categories\"", dc.Name, strings.Join(f.Missing, ", "), plural(len(f.Missing), "category", "categories")))
+		w = append(w, fmt.Sprintf("%s is missing Rock Media Center's %s %s. Use \"Add missing categories\"", dc.Name, strings.Join(f.Missing, ", "), plural(len(f.Missing), "category", "categories")))
 	}
 	if f.CompleteFolder.Remote != "" && !f.CompleteFolder.Visible {
-		w = append(w, fmt.Sprintf("Arrmada can't see %s's completed folder %s (looked for it at %s). Mount it into Arrmada or add a path mapping", dc.Name, f.CompleteFolder.Remote, f.CompleteFolder.Local))
+		w = append(w, fmt.Sprintf("Rock Media Center can't see %s's completed folder %s (looked for it at %s). Mount it into Rock Media Center or add a path mapping", dc.Name, f.CompleteFolder.Remote, f.CompleteFolder.Local))
 	}
 	for _, c := range f.Categories {
 		if c.Folder != nil && !c.Folder.Visible {
-			w = append(w, fmt.Sprintf("Arrmada can't see the folder %s files %s downloads in, %s", dc.Name, c.Name, c.Folder.Remote))
+			w = append(w, fmt.Sprintf("Rock Media Center can't see the folder %s files %s downloads in, %s", dc.Name, c.Name, c.Folder.Remote))
 		}
 	}
 	if f.NotEnglish {
-		w = append(w, fmt.Sprintf("%s's language is %q. Its failure reasons are translated, which makes them harder for Arrmada to read; English works best (SABnzbd → Config → General)", dc.Name, f.Language))
+		w = append(w, fmt.Sprintf("%s's language is %q. Its failure reasons are translated, which makes them harder for Rock Media Center to read; English works best (SABnzbd → Config → General)", dc.Name, f.Language))
 	}
 	return w
 }
@@ -1149,9 +1149,9 @@ func plural(n int, one, many string) string {
 	return many
 }
 
-// AddMissingCategories creates the Arrmada categories SABnzbd lacks, with SABnzbd's defaults
+// AddMissingCategories creates the Rock Media Center categories SABnzbd lacks, with SABnzbd's defaults
 // (no folder of their own), and names the ones it created. It's only ever run when the owner
-// asks: Arrmada doesn't change a SABnzbd it was pointed at on its own.
+// asks: Rock Media Center doesn't change a SABnzbd it was pointed at on its own.
 func (s *SABnzbd) AddMissingCategories(ctx context.Context, dc Client) ([]string, error) {
 	cats, err := s.Categories(ctx, dc)
 	if err != nil {

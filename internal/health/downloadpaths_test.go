@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// A client whose finished downloads Arrmada can't see is a warning naming it, linked to
+// A client whose finished downloads Rock Media Center can't see is a warning naming it, linked to
 // its card; nothing unseen, or no queue to judge, is no finding.
 func TestDownloadPathsCheck(t *testing.T) {
 	run := func(list []UnseenDownloads, err error) []Finding {

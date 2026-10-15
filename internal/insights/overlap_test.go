@@ -107,7 +107,7 @@ func TestImportKeepsNonOverlapping(t *testing.T) {
 	rows := []ImportedSession{
 		// Tautulli's copy of play A: a duplicate.
 		{UserID: 7, RatingKey: "100", Title: "Dune", StartedAt: 1000, StoppedAt: 4005, WatchedMS: 3005 * 1000},
-		// The back-to-back replay (Arrmada was restarting then): a real play.
+		// The back-to-back replay (Rock Media Center was restarting then): a real play.
 		{UserID: 7, RatingKey: "100", Title: "Dune", StartedAt: 4000, StoppedAt: 7000, WatchedMS: 3000 * 1000},
 		// While monitoring was off: a real play.
 		{UserID: 7, RatingKey: "100", Title: "Dune", StartedAt: 50_000, StoppedAt: 53_000},

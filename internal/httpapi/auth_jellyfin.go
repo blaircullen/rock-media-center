@@ -14,10 +14,10 @@ import (
 )
 
 // Sign in with Jellyfin: a Jellyfin username and password, or Quick Connect. Either way
-// Jellyfin itself says who the person is; Arrmada keeps only the Jellyfin user's id on the
+// Jellyfin itself says who the person is; Rock Media Center keeps only the Jellyfin user's id on the
 // account. The password passes through once, to Jellyfin, and is never stored, logged or
 // echoed; the token Jellyfin hands back is used to log that session out straight away, so
-// no "Arrmada" device lingers in Jellyfin's list.
+// no "Rock Media Center" device lingers in Jellyfin's list.
 
 // Settings keys (Settings → Media servers; all admin-only to change).
 const (
@@ -54,7 +54,7 @@ func (a *api) jellyfinAutoApproval(ctx context.Context) auth.AutoApproval {
 
 // jellyfinAuthed is the moment after Jellyfin accepted someone: their session is logged
 // out at once (the token isn't needed again, and Jellyfin would otherwise list an
-// "Arrmada" device under them), and who they are is all that's kept. A failed logout is
+// "Rock Media Center" device under them), and who they are is all that's kept. A failed logout is
 // logged without the token and doesn't stop the sign-in.
 func (a *api) jellyfinAuthed(ctx context.Context, c *jellyfin.Client, res jellyfin.AuthResult) jellyfin.User {
 	lctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
@@ -89,7 +89,7 @@ func (a *api) jellyfinFailure(w http.ResponseWriter, err error, secret string) {
 // this address (a growing pause after 5), and per username from anywhere outside the LAN
 // (the same pause; never applied at home, so a stranger can't lock the owner out). Every
 // wrong password also counts against the Jellyfin user inside Jellyfin, which may lock the
-// account after a few, so the per-username pause matters more here than for Arrmada's own
+// account after a few, so the per-username pause matters more here than for Rock Media Center's own
 // passwords.
 func (a *api) jellyfinPasswordAuth(w http.ResponseWriter, r *http.Request, flow, username, password string) (jellyfin.User, bool) {
 	ctx := r.Context()
@@ -99,7 +99,7 @@ func (a *api) jellyfinPasswordAuth(w http.ResponseWriter, r *http.Request, flow,
 		return jellyfin.User{}, false
 	}
 	// A Jellyfin user without a password signs in on Jellyfin's own login page with a
-	// blank one. Arrmada may be reachable from places Jellyfin isn't, so a name alone is
+	// blank one. Rock Media Center may be reachable from places Jellyfin isn't, so a name alone is
 	// never enough here: such users can use Quick Connect.
 	if password == "" {
 		a.writeError(w, http.StatusBadRequest, "Enter your Jellyfin password. No password? Use Quick Connect instead.")
@@ -276,7 +276,7 @@ func (a *api) handleJellyfinQCPoll(w http.ResponseWriter, r *http.Request) {
 	a.finishJellyfinSignIn(w, r, ju)
 }
 
-// finishJellyfinSignIn turns a Jellyfin user Jellyfin has just vouched for into an Arrmada
+// finishJellyfinSignIn turns a Jellyfin user Jellyfin has just vouched for into a Rock Media Center
 // session: the account linked to them, or a new requester. Refused: a Jellyfin user
 // disabled in Jellyfin or blocked here, a disabled account, and a staff account unless the
 // owner allowed staff Jellyfin sign-in. A Jellyfin administrator is never made a new
