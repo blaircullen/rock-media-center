@@ -366,6 +366,15 @@ internal/
 deploy/beast/      compose service, watchdog script, calibration list
 ```
 
+### Schema conventions (set by U1)
+
+- Item states are stored as the exact lowercase names in the state diagram (`waiting_blair`, `waiting_for_playback`, `lane_unavailable`, `paused`, …); `paused` and `lane_unavailable` are item states. Terminal states are `done`, `cancelled` and `dropped`.
+- An item's `recording_id` is empty until pinning; when a pin would collide with another active item, U8 merges the two in one transaction (KTD2).
+- A blocked candidate is keyed by recording and decoded-audio fingerprint, so a block survives a Plex re-import.
+- Playlist memberships and ratings are recorded per durable identity in `mus_track_identities` and `mus_track_memberships`; `mus_library_tracks.playlist_count` serves only sweep ordering.
+- The R26 sweep retry lives on the library track; the item's retry fields serve short retries such as a BLIND library read.
+- Journal rows carry a `kind` (`place`, `swap`, `undo`); an undo runs the swap phases with the quarantined version as the incoming file and the current file as the incumbent.
+
 ### Sequencing
 
 U1 lands first, after the fork cleanup is committed. U2–U7 and U17 then run in parallel. U8 follows U1, U3, U4 and U5. U9 and U12 follow U8. U10 follows U9, and U11 follows U10. U13 follows U8–U12, and U14 builds against U13's response shapes. U15 wires everything; U16 installs and runs the release checks.
