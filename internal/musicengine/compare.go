@@ -232,11 +232,15 @@ func cmpDecide(in CmpInput) CmpResult {
 			cmpExplicitWord(inc.Explicit), cmpExplicitWord(cand.Explicit))
 	}
 
+	// An approval waives only the question Blair was asked (mastering or trade-off). It never
+	// waives an outright downgrade or the path/extension guard below, so those are evaluated
+	// whether or not Blair approved.
+	masteringWaived := false
 	if why := cmpMastering(inc, cand); why != "" {
-		if in.Approved {
-			return CmpResult{Action: CmpSwap, Reason: "Blair approved it: " + why}
+		if !in.Approved {
+			return cmpAsk(DecisionDifferentMaster, "%s", why)
 		}
-		return cmpAsk(DecisionDifferentMaster, "%s", why)
+		masteringWaived = true
 	}
 
 	override := cmpSpectral(inc.Verdict) && cand.Verdict == string(audiocheck.Genuine) && cand.Lossless()
@@ -247,18 +251,25 @@ func cmpDecide(in CmpInput) CmpResult {
 		better, worse := cmpQuality(in)
 		switch {
 		case len(better) > 0 && len(worse) > 0:
-			if in.Approved {
-				return CmpResult{Action: CmpSwap, Reason: "Blair approved the trade-off"}
+			if !in.Approved {
+				return cmpAsk(DecisionTradeOff, "the candidate (%s) is better in %s but worse in %s than the library file (%s)",
+					cmpDescribe(cand), strings.Join(better, ", "), strings.Join(worse, ", "), cmpDescribe(inc))
 			}
-			return cmpAsk(DecisionTradeOff, "the candidate (%s) is better in %s but worse in %s than the library file (%s)",
+			reason = fmt.Sprintf("Blair approved the trade-off: the candidate (%s) is better in %s but worse in %s than the library file (%s)",
 				cmpDescribe(cand), strings.Join(better, ", "), strings.Join(worse, ", "), cmpDescribe(inc))
 		case len(worse) > 0:
 			return cmpKeep("the candidate (%s) is worse in %s than the library file (%s)", cmpDescribe(cand), strings.Join(worse, ", "), cmpDescribe(inc))
-		case len(better) == 0:
+		case len(better) == 0 && !masteringWaived:
 			return cmpKeep("the candidate (%s) is no better than the library file (%s)", cmpDescribe(cand), cmpDescribe(inc))
+		case len(better) == 0:
+			reason = "Blair approved the different mastering: the candidate is not worse in any measured quality"
+		default:
+			reason = fmt.Sprintf("the candidate (%s) is better in %s and worse in nothing than the library file (%s)",
+				cmpDescribe(cand), strings.Join(better, ", "), cmpDescribe(inc))
 		}
-		reason = fmt.Sprintf("the candidate (%s) is better in %s and worse in nothing than the library file (%s)",
-			cmpDescribe(cand), strings.Join(better, ", "), cmpDescribe(inc))
+	}
+	if masteringWaived && !strings.HasPrefix(reason, "Blair approved") {
+		reason = "Blair approved the different mastering; " + reason
 	}
 
 	if !strings.EqualFold(filepath.Ext(cand.Path), filepath.Ext(inc.Path)) {

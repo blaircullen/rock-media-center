@@ -120,7 +120,21 @@ func (s *Swaps) Bind(p *Placement) error {
 		return fmt.Errorf("musicengine swaps: placement quarantine root %q differs from the quarantine's %q", p.cfg.QuarantineRoot, s.cfg.Quarantine.Root())
 	}
 	s.p = p
+	p.playing = s.rowPlaying
 	return nil
+}
+
+// rowPlaying is Placement's last-look hook: whether Plex reports the row's track playing now.
+// A track the engine cannot find is an error (the replacement stays pending), never "idle".
+func (s *Swaps) rowPlaying(ctx context.Context, row JournalRow) (bool, error) {
+	if row.TrackID == 0 {
+		return false, fmt.Errorf("journal row %d has no library track, so playback cannot be checked", row.ID)
+	}
+	track, err := swapLoadTrack(ctx, s.p.m.DB(), row.TrackID)
+	if err != nil {
+		return false, err
+	}
+	return s.isPlaying(ctx, track.RatingKey)
 }
 
 func (s *Swaps) autoSwaps() bool { return s.cfg.AutoSwaps != nil && s.cfg.AutoSwaps() }
@@ -332,7 +346,7 @@ func (s *Swaps) deferSwap(ctx context.Context, m Machine, it Item, track swapTra
 	if row, ok, err := s.p.jr.OpenForItem(ctx, it.ID); err != nil {
 		return err
 	} else if ok {
-		if _, err := s.p.rollback(ctx, row, "deferred: "+reason); err != nil {
+		if err := s.rollbackUnpublished(ctx, row, "deferred: "+reason); err != nil {
 			return err
 		}
 	}
@@ -342,6 +356,25 @@ func (s *Swaps) deferSwap(ctx context.Context, m Machine, it Item, track swapTra
 		}
 		return sweepDeferTrack(ctx, tx, track.ID, m.Now(), sweepDeferAfter)
 	})
+}
+
+// rollbackUnpublished rolls a row back under the destination's lock, and only if it is still
+// open and has not published: another path may have advanced it since the caller read it.
+func (s *Swaps) rollbackUnpublished(ctx context.Context, row JournalRow, reason string) error {
+	unlock, err := s.p.lock(ctx, row.NewPath)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	cur, err := s.p.jr.Get(ctx, row.ID)
+	if err != nil {
+		return err
+	}
+	if !cur.Open() || cur.Phase >= PhasePublished {
+		return nil
+	}
+	_, err = s.p.rollback(ctx, cur, reason)
+	return err
 }
 
 // swapFinishItem ends an item that will not swap, inside the caller's transaction. It leaves
@@ -396,10 +429,13 @@ func (s *Swaps) advanceRow(ctx context.Context, m Machine, it Item, track swapTr
 	}
 	out, err := s.p.Advance(ctx, row)
 	if err != nil {
-		return err
+		return s.p.waitIfNoSpace(ctx, it, err)
 	}
-	if out == OutcomeRolledBack {
+	switch out {
+	case OutcomeRolledBack:
 		return s.startSwap(ctx, m, it, track)
+	case OutcomePending:
+		return s.waitForPlayback(ctx, m, it) // it started playing after the checks above
 	}
 	return nil // advanced (the item now awaits Plex) or stopped for Blair
 }
@@ -725,7 +761,7 @@ func (s *Swaps) runSwap(ctx context.Context, m Machine, it Item, track swapTrack
 		if errors.As(err, &ve) {
 			return s.rejectCandidate(ctx, m, it, c, ve.Reason)
 		}
-		return err
+		return s.p.waitIfNoSpace(ctx, it, err)
 	}
 	s.log.Info("musicengine swap staged", "item", it.ID, "row", row.ID, "why", why)
 	// Staging takes a while; look at playback again before the file is touched.
@@ -736,8 +772,14 @@ func (s *Swaps) runSwap(ctx context.Context, m Machine, it Item, track swapTrack
 	if playing {
 		return s.waitForPlayback(ctx, m, it)
 	}
-	_, err = s.p.Advance(ctx, row)
-	return err
+	out, err := s.p.Advance(ctx, row)
+	if err != nil {
+		return s.p.waitIfNoSpace(ctx, it, err)
+	}
+	if out == OutcomePending {
+		return s.waitForPlayback(ctx, m, it)
+	}
+	return nil
 }
 
 // ---- Finalize ----

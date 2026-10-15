@@ -103,6 +103,9 @@ func (c *placeFakeChecker) Check(_ context.Context, path string) audiocheck.Resu
 		Integrity: audiocheck.Integrity{OK: true, DecodedSec: 200},
 		Signature: &audiocheck.Signature{TopHz: 21000, FloorDB: -70},
 	}
+	if strings.Contains(audio, "AACCODEC") {
+		r.Facts.Codec, r.Facts.Container, r.Facts.BitrateKbps = "aac", "m4a", 256
+	}
 	switch {
 	case strings.Contains(audio, "BLIND"):
 		r.Verdict, r.Reason = audiocheck.Blind, "cannot read"

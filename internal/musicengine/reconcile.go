@@ -29,6 +29,10 @@ type ReconcileReport struct {
 	Advanced    int
 	Closed      int
 	ConfirmedBy int // rows without an item that Plex confirmed
+	// Pending counts rows that were left open on purpose and are retried later: an item-less
+	// row Plex has not indexed yet, a swap or undo waiting for a playing track to stop, or a
+	// row waiting for disk space. It is not "recovered"; Swaps.Resume keeps working on them.
+	Pending int
 }
 
 // Reconcile settles every open journal row. Call it at boot, before the engine's first Tick.
@@ -71,9 +75,17 @@ func (p *Placement) reconcileRow(ctx context.Context, row JournalRow, rep *Recon
 	}
 	out, err := p.Advance(ctx, row)
 	if err != nil {
+		if errors.Is(err, ErrSpaceWait) {
+			rep.Pending++
+			p.log.Info("musicengine reconcile: row waits for disk space", "row", row.ID, "err", err)
+			return nil
+		}
 		return err
 	}
 	switch out {
+	case OutcomePending:
+		rep.Pending++
+		return nil
 	case OutcomeRolledBack:
 		rep.RolledBack++
 		return nil
@@ -96,8 +108,12 @@ func (p *Placement) reconcileRow(ctx context.Context, row JournalRow, rep *Recon
 		return fmt.Errorf("reading tags of %s: %w", cur.NewPath, err)
 	}
 	key, indexed, err := p.plexIndexed(ctx, cur, tags, false)
-	if err != nil || !indexed {
-		return err // not indexed yet: the row stays at published for the next run
+	if err != nil {
+		return err
+	}
+	if !indexed {
+		rep.Pending++ // not indexed yet: the row stays at published; Swaps.Resume retries it
+		return nil
 	}
 	if err := p.confirm(ctx, cur, tags, key, nil, false); err != nil {
 		return err

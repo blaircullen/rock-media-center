@@ -163,6 +163,23 @@ func TestCmpDecide(t *testing.T) {
 			in.Incumbent.Path, in.Incumbent.Codec, in.Incumbent.BitDepth, in.Incumbent.BitrateKbps = "/lib/a.m4a", "aac", 0, 256
 			in.Approved = true
 		}, CmpAsk, DecisionPathChange, "file name and path"},
+		// Astra finding 3: an approval waives only the question it was asked.
+		{"approved different master still meets the extension guard", func(in *CmpInput) {
+			in.Incumbent.Path, in.Incumbent.Codec, in.Incumbent.BitDepth, in.Incumbent.BitrateKbps = "/lib/a.m4a", "aac", 0, 256
+			in.Candidate.ReleaseGroupMBID = ""
+			in.Approved = true
+		}, CmpAsk, DecisionPathChange, "file name and path"},
+		{"approved different master cannot be an outright downgrade", func(in *CmpInput) {
+			in.Incumbent.BitDepth = 24
+			in.Candidate.ReleaseGroupMBID = "rg2"
+			in.Approved = true
+		}, CmpKeep, "", "worse in bit depth"},
+		{"approved trade-off still meets the extension guard", func(in *CmpInput) {
+			in.Incumbent.Path = "/lib/a.m4a"
+			in.Incumbent.SampleRate = 96000
+			in.Candidate.BitDepth = 24
+			in.Approved = true
+		}, CmpAsk, DecisionPathChange, "file name and path"},
 		{"extension case does not count as a path change", func(in *CmpInput) {
 			in.Incumbent.Path = "/lib/a.FLAC"
 			in.Candidate.BitDepth = 24

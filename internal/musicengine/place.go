@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -15,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tristenlammi/arrmada/internal/audiocheck"
@@ -186,6 +188,12 @@ type PlacementConfig struct {
 	// Finalize runs for swap and undo rows after Plex lists the file and before plex_confirmed
 	// is recorded: U11 re-applies the track's rating and memberships and reads them back.
 	Finalize func(ctx context.Context, row JournalRow, ratingKey string) error
+	// Space reserves the bytes a placement copy and a quarantine copy are about to write
+	// (KTD10). Nil means every reservation succeeds. A refusal makes the work wait: the
+	// journal row is not started (Stage) or is left where it is (Advance), and the error
+	// matches ErrSpaceWait. Reservations are keyed by spaceKey (a negative number), which
+	// cannot collide with the download reservations keyed by item id.
+	Space SpaceReserver
 
 	// Owner and modes for files and folders (R17); defaults 1024:100, 0664, 0775.
 	UID, GID          int
@@ -209,12 +217,105 @@ type Placement struct {
 	jr     *Journal
 	log    *slog.Logger
 
+	// locks serialize every stage, advance and confirm of one destination path (finding 1):
+	// HTTP undo, the scheduled Swaps.Resume, the reconciler and the item steps all reach the
+	// same journal row, and none of them may copy into quarantine or rename over the library
+	// file while another is doing the same.
+	lockMu sync.Mutex
+	locks  map[string]*destLock
+
+	// playing, set by Swaps.Bind, says whether Plex reports the row's track playing right
+	// now. publishReplace asks it immediately before the rename (finding 13).
+	playing func(ctx context.Context, row JournalRow) (bool, error)
+
 	// crash, when set (tests), is asked at each named point; true makes the code return
 	// errCrash at once, leaving disk and journal exactly as they are.
 	crash func(point string) bool
 }
 
 var errCrash = errors.New("musicengine: simulated crash")
+
+// ErrSpaceWait is matched (errors.Is) by the error returned when the space gate refused the
+// bytes a placement needs. Nothing was dropped; try again later.
+var ErrSpaceWait = errors.New("musicengine placement: waiting for disk space")
+
+// ErrPlaybackPending is matched (errors.Is) when a swap or undo stopped just before it would
+// replace a track Plex reports as playing. The journal row stays open for the next pass.
+var ErrPlaybackPending = errors.New("musicengine placement: the track is playing; the replacement is waiting")
+
+// destLock is one per-destination lock. A channel, not a sync.Mutex, so a waiter can give up
+// when its context ends.
+type destLock struct {
+	ch   chan struct{}
+	refs int
+}
+
+// lock takes the lock named key and returns its release. key is a destination path, or a
+// namespaced name such as "undo:"+path for a caller that holds it across Stage and Advance.
+func (p *Placement) lock(ctx context.Context, key string) (func(), error) {
+	p.lockMu.Lock()
+	if p.locks == nil {
+		p.locks = map[string]*destLock{}
+	}
+	l := p.locks[key]
+	if l == nil {
+		l = &destLock{ch: make(chan struct{}, 1)}
+		p.locks[key] = l
+	}
+	l.refs++
+	p.lockMu.Unlock()
+	drop := func() {
+		p.lockMu.Lock()
+		if l.refs--; l.refs == 0 {
+			delete(p.locks, key)
+		}
+		p.lockMu.Unlock()
+	}
+	select {
+	case l.ch <- struct{}{}:
+		return func() { <-l.ch; drop() }, nil
+	case <-ctx.Done():
+		drop()
+		return nil, ctx.Err()
+	}
+}
+
+// spaceKey is the SpaceReserver key for a destination path: always negative, so it never
+// collides with a download reservation (keyed by the positive item id). It is derived from
+// the path (one open journal row per path, KTD18) and not from the row id because Stage must
+// reserve before the row exists, and a restart's recovery must find the same key.
+func spaceKey(dest string) int64 {
+	h := fnv.New64a()
+	h.Write([]byte(filepath.Clean(dest)))
+	return -int64(h.Sum64()>>2) - 1
+}
+
+// reserve holds bytes for dest's journal. A nil Space allows everything.
+func (p *Placement) reserve(ctx context.Context, dest string, bytes int64) error {
+	if p.cfg.Space == nil {
+		return nil
+	}
+	if bytes < 1 {
+		bytes = 1
+	}
+	if ok, why := p.cfg.Space.Reserve(ctx, spaceKey(dest), bytes); !ok {
+		return fmt.Errorf("%w: %s needs %d bytes: %s", ErrSpaceWait, dest, bytes, why)
+	}
+	return nil
+}
+
+func (p *Placement) releaseSpace(ctx context.Context, dest string) {
+	if p.cfg.Space != nil {
+		p.cfg.Space.Release(ctx, spaceKey(dest))
+	}
+}
+
+func fileSize(path string) int64 {
+	if fi, err := os.Stat(path); err == nil {
+		return fi.Size()
+	}
+	return 0
+}
 
 // NewPlacement validates the config and builds a Placement. Call Bind (or let the first
 // Step do it) before Reconcile.
@@ -464,6 +565,11 @@ func (p *Placement) Stage(ctx context.Context, s StageSpec) (JournalRow, error) 
 	if err := p.layout.Inside(s.Dest); err != nil {
 		return JournalRow{}, err
 	}
+	unlock, err := p.lock(ctx, s.Dest)
+	if err != nil {
+		return JournalRow{}, err
+	}
+	defer unlock()
 	swap := s.Kind != JournalPlace
 	if swap {
 		if s.IncumbentSHA == "" || s.QuarantinePath == "" {
@@ -472,6 +578,15 @@ func (p *Placement) Stage(ctx context.Context, s StageSpec) (JournalRow, error) 
 		if _, err := os.Stat(s.Dest); err != nil {
 			return JournalRow{}, fmt.Errorf("swap destination %s: %w", s.Dest, err)
 		}
+	}
+	// Hold the room for the temp copy (and the incumbent's quarantine copy) before the row
+	// starts; a refusal leaves no journal row behind (finding 6).
+	need := fileSize(s.Source)
+	if swap {
+		need += fileSize(s.Dest)
+	}
+	if err := p.reserve(ctx, s.Dest, need); err != nil {
+		return JournalRow{}, err
 	}
 	b := JournalBegin{
 		Kind: s.Kind, ItemID: s.ItemID, TrackID: s.TrackID, CandidateID: s.CandidateID, RecordingID: s.RecordingID,
@@ -484,6 +599,7 @@ func (p *Placement) Stage(ctx context.Context, s StageSpec) (JournalRow, error) 
 	}
 	row, err := p.jr.Start(ctx, b)
 	if err != nil {
+		p.releaseSpace(ctx, s.Dest)
 		return JournalRow{}, err
 	}
 	if err := p.at("stage:begin"); err != nil {
@@ -550,6 +666,13 @@ func (p *Placement) Stage(ctx context.Context, s StageSpec) (JournalRow, error) 
 		}
 		return row, err
 	}
+	if s.Kind != JournalUndo {
+		if why, err := p.losslessOrApprovedLossy(ctx, s.CandidateID, res); err != nil {
+			return row, err
+		} else if why != "" {
+			return row, p.stageBad(ctx, row, why)
+		}
+	}
 	if _, err := p.jr.Record(ctx, p.m.DB(), row.ID, PhaseTempVerified, PhaseData{TempSHA: sha}); err != nil {
 		return row, err
 	}
@@ -562,6 +685,29 @@ func (p *Placement) Stage(ctx context.Context, s StageSpec) (JournalRow, error) 
 		return row, err
 	}
 	return p.jr.Get(ctx, row.ID)
+}
+
+// losslessOrApprovedLossy is the final-publication codec gate (finding 2). A file enters the
+// library only when its probed codec is lossless, or when it is the plan-R15 case: the
+// official YouTube audio Blair approved, which acquire stores as a candidate in the YouTube
+// lane with the verdict "LOSSY" (such a candidate exists only after his approval). It returns
+// a reason when the file must be refused. Undo restores an older library file and is exempt;
+// the caller skips this check for it.
+func (p *Placement) losslessOrApprovedLossy(ctx context.Context, candidateID int64, res audiocheck.Result) (string, error) {
+	if isLossless(res.Facts.Codec) {
+		return "", nil
+	}
+	if candidateID != 0 {
+		var lane, verdict string
+		err := p.m.DB().QueryRowContext(ctx, `SELECT lane, verdict FROM mus_candidates WHERE id = ?`, candidateID).Scan(&lane, &verdict)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return "", fmt.Errorf("reading candidate %d for the codec gate: %w", candidateID, err)
+		}
+		if err == nil && lane == LaneYouTube && verdict == "LOSSY" {
+			return "", nil
+		}
+	}
+	return fmt.Sprintf("the file's codec is %q, not lossless, and it is not the lossy YouTube audio Blair approved", res.Facts.Codec), nil
 }
 
 // stageBad rolls the row back for a verified-bad result and returns the *VerifyError.
@@ -584,10 +730,13 @@ const (
 	OutcomeRolledBack
 	// OutcomeStopped: a collision or a changed incumbent; the row is closed, a decision raised.
 	OutcomeStopped
+	// OutcomePending: the row is open and untouched past its last phase because the track is
+	// playing; the next pass (item step, Swaps.Resume, reconcile) tries again.
+	OutcomePending
 )
 
 func (o Outcome) String() string {
-	return [...]string{"advanced", "rolled back", "stopped"}[o]
+	return [...]string{"advanced", "rolled back", "stopped", "pending"}[o]
 }
 
 // rollback removes the row's temp file(s) and closes it. Library files are never touched.
@@ -598,6 +747,7 @@ func (p *Placement) rollback(ctx context.Context, row JournalRow, reason string)
 	if err := p.jr.Close(ctx, p.m.DB(), row.ID, "rolled back: "+reason); err != nil {
 		return OutcomeRolledBack, err
 	}
+	p.releaseSpace(ctx, row.NewPath)
 	return OutcomeRolledBack, nil
 }
 
@@ -654,6 +804,9 @@ func (p *Placement) stop(ctx context.Context, row JournalRow, kind, reason strin
 		}
 		return p.parkItem(ctx, tx, row.ItemID, reason)
 	})
+	if err == nil {
+		p.releaseSpace(ctx, row.NewPath)
+	}
 	return OutcomeStopped, err
 }
 
@@ -701,6 +854,16 @@ func (p *Placement) Advance(ctx context.Context, row JournalRow) (Outcome, error
 		return OutcomeAdvanced, err // storage unreachable: touch nothing, leave the row
 	}
 	if err := p.layout.Inside(row.NewPath); err != nil {
+		return OutcomeAdvanced, err
+	}
+	unlock, err := p.lock(ctx, row.NewPath)
+	if err != nil {
+		return OutcomeAdvanced, err
+	}
+	defer unlock()
+	// Another path (HTTP undo, Swaps.Resume, the reconciler) may have moved the row while we
+	// waited for the lock; act on what the journal says now, never on the caller's copy.
+	if row, err = p.jr.Get(ctx, row.ID); err != nil {
 		return OutcomeAdvanced, err
 	}
 	for {
@@ -826,6 +989,7 @@ func (p *Placement) finishPublished(ctx context.Context, row JournalRow) (Outcom
 	if err := p.recordPublished(ctx, row, sha); err != nil {
 		return OutcomeAdvanced, err
 	}
+	p.releaseSpace(ctx, row.NewPath) // the bytes are on disk now; the share's own reading counts them
 	if err := p.at("place:recorded"); err != nil {
 		return OutcomeAdvanced, err
 	}
@@ -843,6 +1007,9 @@ func (p *Placement) quarantineIncumbent(ctx context.Context, row JournalRow) (Ou
 	if cur != row.IncumbentSHA {
 		out, serr := p.stop(ctx, row, "collision", fmt.Sprintf("%s no longer holds the incumbent recorded for this swap; nothing changed", row.NewPath))
 		return out, row, serr
+	}
+	if err := p.reserve(ctx, row.NewPath, fileSize(row.NewPath)); err != nil {
+		return OutcomeAdvanced, row, err
 	}
 	if err := p.copyToQuarantine(row); err != nil {
 		return OutcomeAdvanced, row, err
@@ -873,7 +1040,11 @@ func (p *Placement) quarantineIncumbent(ctx context.Context, row JournalRow) (Ou
 }
 
 // copyToQuarantine copies the incumbent into the quarantine root and verifies the copy. It
-// overwrites a partial copy from an earlier attempt. The quarantine root is never created.
+// never opens the quarantine destination for writing over an existing file (finding 1): the
+// bytes go to a part file only this row writes, are checksummed there, and are linked into
+// place with a no-replace link. A destination that already holds the incumbent's bytes is
+// reused; one that holds anything else is an error and is left exactly as found. The
+// quarantine root is never created.
 func (p *Placement) copyToQuarantine(row JournalRow) error {
 	root := p.cfg.QuarantineRoot
 	if root == "" {
@@ -889,18 +1060,49 @@ func (p *Placement) copyToQuarantine(row JournalRow) error {
 	if err := os.MkdirAll(dir, p.cfg.DirMode); err != nil {
 		return fmt.Errorf("creating %s: %w", dir, err)
 	}
-	if err := p.placeCopy(row.NewPath, row.QuarantinePath, "quarantine:mid_copy"); err != nil {
-		return fmt.Errorf("copying incumbent to quarantine: %w", err)
+	holdsIncumbent := func() (bool, error) {
+		sha, err := placeSHA256(row.QuarantinePath)
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+		if err != nil {
+			return false, fmt.Errorf("checksumming existing quarantine file %s: %w", row.QuarantinePath, err)
+		}
+		if sha != row.IncumbentSHA {
+			return false, fmt.Errorf("quarantine file %s already exists with checksum %s, expected the incumbent %s; refusing to overwrite it", row.QuarantinePath, sha, row.IncumbentSHA)
+		}
+		return true, nil
 	}
-	if _, err := p.placePerms(row.QuarantinePath, false); err != nil {
+	if ok, err := holdsIncumbent(); err != nil || ok {
 		return err
 	}
-	sha, err := placeSHA256(row.QuarantinePath)
+	part := fmt.Sprintf("%s.part-%d", row.QuarantinePath, row.ID)
+	if err := p.placeCopy(row.NewPath, part, "quarantine:mid_copy"); err != nil {
+		return fmt.Errorf("copying incumbent to quarantine: %w", err)
+	}
+	if _, err := p.placePerms(part, false); err != nil {
+		return err
+	}
+	sha, err := placeSHA256(part)
 	if err != nil {
 		return fmt.Errorf("checksumming quarantine copy: %w", err)
 	}
 	if sha != row.IncumbentSHA {
-		return fmt.Errorf("quarantine copy %s has checksum %s, expected %s", row.QuarantinePath, sha, row.IncumbentSHA)
+		if rerr := os.Remove(part); rerr != nil && !errors.Is(rerr, os.ErrNotExist) {
+			p.log.Warn("musicengine placement: could not remove a bad quarantine part file", "path", part, "err", rerr)
+		}
+		return fmt.Errorf("quarantine copy %s has checksum %s, expected %s", part, sha, row.IncumbentSHA)
+	}
+	if err := os.Link(part, row.QuarantinePath); err != nil {
+		if !errors.Is(err, os.ErrExist) {
+			return fmt.Errorf("linking quarantine copy into %s: %w", row.QuarantinePath, err)
+		}
+		if _, err := holdsIncumbent(); err != nil { // lost a race for the name: only identical bytes are acceptable
+			return err
+		}
+	}
+	if err := os.Remove(part); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("removing quarantine part file %s: %w", part, err)
 	}
 	return nil
 }
@@ -920,6 +1122,9 @@ func (p *Placement) publishReplace(ctx context.Context, row JournalRow) (Outcome
 		return p.stop(ctx, row, "collision", fmt.Sprintf("%s no longer holds the incumbent recorded for this swap; nothing changed", row.NewPath))
 	}
 	if q, qerr := placeSHA256(row.QuarantinePath); qerr != nil || q != row.QuarantineSHA {
+		if err := p.reserve(ctx, row.NewPath, fileSize(row.NewPath)); err != nil {
+			return OutcomeAdvanced, err
+		}
 		if err := p.copyToQuarantine(row); err != nil { // the incumbent is still here, so redo phase 3's copy
 			return OutcomeAdvanced, err
 		}
@@ -927,6 +1132,18 @@ func (p *Placement) publishReplace(ctx context.Context, row JournalRow) (Outcome
 	t, err := placeSHA256(row.TempPath)
 	if err != nil || t != row.TempSHA {
 		return p.rollback(ctx, row, "the verified temp file is gone or changed; the incumbent was not touched")
+	}
+	// The last look before the library file changes (finding 13): every route to a swap or
+	// undo publication, including boot reconciliation and undo recovery, ends here.
+	if p.playing != nil {
+		playing, err := p.playing(ctx, row)
+		if err != nil {
+			return OutcomeAdvanced, err
+		}
+		if playing {
+			p.log.Info("musicengine placement: the track is playing; the replacement stays pending", "row", row.ID, "path", row.NewPath)
+			return OutcomePending, nil
+		}
 	}
 	if err := os.Rename(row.TempPath, row.NewPath); err != nil {
 		return OutcomeAdvanced, fmt.Errorf("replacing %s: %w", row.NewPath, err)
@@ -1030,10 +1247,24 @@ func (p *Placement) stepPlacing(ctx context.Context, it Item) error {
 		if errors.As(err, &ve) {
 			return p.rejectAndSearch(ctx, it, cand, ve.Reason)
 		}
-		return err
+		return p.waitIfNoSpace(ctx, it, err)
 	}
 	_, err = p.Advance(ctx, row)
-	return err
+	return p.waitIfNoSpace(ctx, it, err)
+}
+
+// waitIfNoSpace turns a space refusal into a wait: the item keeps its state and is looked at
+// again after RetryAfter, with the reason shown. Any other error passes through unchanged.
+func (p *Placement) waitIfNoSpace(ctx context.Context, it Item, err error) error {
+	if !errors.Is(err, ErrSpaceWait) {
+		return err
+	}
+	if _, uerr := p.m.DB().ExecContext(ctx, `UPDATE mus_items SET next_attempt_at = ?, last_reason = ?, updated_at = ? WHERE id = ? AND state = ?`,
+		p.m.Now().Add(p.cfg.RetryAfter).Unix(), clip(err.Error(), 300), p.m.Now().Unix(), it.ID, string(it.State)); uerr != nil {
+		return errors.Join(err, uerr)
+	}
+	p.log.Info("musicengine placement: waiting for disk space", "item", it.ID, "reason", err)
+	return nil
 }
 
 // rejectAndSearch marks the candidate rejected and sends the item back to searching.
@@ -1182,7 +1413,7 @@ func (p *Placement) stepAwaiting(ctx context.Context, it Item) error {
 	if row.Phase < PhasePublished {
 		out, err := p.Advance(ctx, row)
 		if err != nil || out != OutcomeAdvanced {
-			return err
+			return p.waitIfNoSpace(ctx, it, err)
 		}
 		if row, err = p.jr.Get(ctx, row.ID); err != nil {
 			return err
@@ -1250,6 +1481,19 @@ func (p *Placement) candidateFacts(ctx context.Context, row JournalRow) *placeFa
 // confirm records plex_confirmed and closes the row, together with the library track, the
 // durable identity and (for a row with an item) the move to done, in one transaction.
 func (p *Placement) confirm(ctx context.Context, row JournalRow, tags TrackTags, ratingKey string, facts *placeFacts, finishItem bool) error {
+	unlock, err := p.lock(ctx, row.NewPath)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	cur, err := p.jr.Get(ctx, row.ID)
+	if err != nil {
+		return err
+	}
+	if !cur.Open() {
+		return nil // another path confirmed or closed the row while we waited
+	}
+	row = cur
 	if row.Kind != JournalPlace && p.cfg.Finalize != nil {
 		if err := p.cfg.Finalize(ctx, row, ratingKey); err != nil {
 			return fmt.Errorf("finishing %s on Plex: %w", row.Kind, err)

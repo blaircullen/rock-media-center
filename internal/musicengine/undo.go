@@ -67,6 +67,16 @@ func (s *Swaps) Undo(ctx context.Context, swapID int64) (UndoResult, error) {
 	if err != nil {
 		return UndoResult{}, undoRefuse("swap %d does not exist", swapID)
 	}
+	// One undo of a track at a time (a double click, two tabs). The lock name differs from the
+	// destination lock Stage, Advance and confirm take inside, so it nests without deadlock.
+	unlockUndo, err := s.p.lock(ctx, "undo:"+sw.NewPath)
+	if err != nil {
+		return UndoResult{}, err
+	}
+	defer unlockUndo()
+	if sw, err = s.p.jr.Get(ctx, swapID); err != nil {
+		return UndoResult{}, err
+	}
 	switch {
 	case sw.Kind != JournalSwap || sw.Phase < PhasePlexConfirmed:
 		return UndoResult{}, undoRefuse("journal row %d is not a completed swap", swapID)
@@ -174,6 +184,9 @@ func (s *Swaps) Undo(ctx context.Context, swapID int64) (UndoResult, error) {
 	out, err := s.p.Advance(ctx, row)
 	if err != nil {
 		return res, fmt.Errorf("undo %d is open and will be retried: %w", row.ID, err)
+	}
+	if out == OutcomePending {
+		return res, fmt.Errorf("undo %d is open and will finish when the track stops playing: %w", row.ID, ErrPlaybackPending)
 	}
 	if out != OutcomeAdvanced {
 		last, gerr := s.p.jr.Get(ctx, row.ID)
@@ -288,17 +301,31 @@ func (s *Swaps) Resume(ctx context.Context) error {
 	}
 	var errs []error
 	for _, r := range rows {
-		if r.Kind != JournalUndo || r.ItemID != 0 {
+		// Item-less rows have no item step to finish them: an undo, and an album track
+		// placed without an item that Plex had not indexed yet (finding 15). A row with an
+		// item is finished by that item's own step.
+		if r.ItemID != 0 || (r.Kind != JournalUndo && r.Kind != JournalPlace) {
 			continue
 		}
 		if r.Phase < PhasePublished {
-			if _, err := s.p.Advance(ctx, r); err != nil {
-				errs = append(errs, fmt.Errorf("resuming undo row %d: %w", r.ID, err))
+			out, err := s.p.Advance(ctx, r)
+			if errors.Is(err, ErrSpaceWait) {
+				s.log.Info("musicengine resume: row waits for disk space", "row", r.ID, "err", err)
 				continue
 			}
+			if err != nil {
+				errs = append(errs, fmt.Errorf("resuming %s row %d: %w", r.Kind, r.ID, err))
+				continue
+			}
+			if out != OutcomeAdvanced {
+				continue // pending (a playing track), rolled back or stopped: nothing to confirm
+			}
 		}
-		if _, err := s.confirmItemless(ctx, r.ID, false); err != nil {
-			errs = append(errs, fmt.Errorf("confirming undo row %d: %w", r.ID, err))
+		confirmed, err := s.confirmItemless(ctx, r.ID, false)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("confirming %s row %d: %w", r.Kind, r.ID, err))
+		} else if !confirmed {
+			s.log.Debug("musicengine resume: row is pending, Plex has not indexed it yet", "row", r.ID, "path", r.NewPath)
 		}
 	}
 	// Completed undos whose swaps are not marked.
