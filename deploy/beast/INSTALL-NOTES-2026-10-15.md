@@ -66,9 +66,8 @@ was not run; it sends real messages.
   treat Beast's shared clients as its own. Removed in 2d5087a2;
   the bundled qBittorrent row it created logged in with no password and qBittorrent banned the
   app's IP 172.25.0.3 for one hour (05:39-06:39). Sonarr was not affected.
-- 1,564 of about 6,000 artist folders under `/mnt/nas/music` are 755 (not group-writable), so a
-  placement or swap into one of them stops with a reason. Changing NAS permissions is Blair's
-  call.
+- 1,564 of about 6,000 artist folders under `/mnt/nas/music` were 755 (not group-writable), so a
+  placement or swap into one of them stopped with a reason. Fixed later the same day (below).
 
 ## First intake run, compared with `/home/olares/shazam-library-check.json` (06:45)
 
@@ -93,3 +92,15 @@ was not run; it sends real messages.
   dot-prefixed temp files; the old file is in quarantine and the swap is undoable. The test
   rating and play were cleared afterwards.
 - Automatic swaps switched ON after both passed (plan KTD16).
+
+## slskd user and music folder permissions (Blair, 2026-10-15)
+
+- slskd now runs as 1000:1000 (`user: "1000:1000"` in `/var/docker-stacks/droppedneedle/docker-compose.yml`;
+  backup `docker-compose.yml.bak-20261015-slskd-uid`). Its app folder and
+  `beast-qbt/slskd` were chowned to 1000:1000. Checked after the restart: logged in to Soulseek
+  through the VPN, API answers, writes to `/downloads/complete`; 7 remotely queued transfers kept.
+  The engine now moves Soulseek downloads instead of copying them.
+- 8,782 directories under `/mnt/nas/music` (8,664 mode 755, 118 mode 700, all 1024:users) got
+  group rwx; other-user bits unchanged. Original modes: `/home/olares/music-dir-modes-before-20261015.tsv`
+  (mode, owner, path) for rollback. Afterwards no directory lacks group rwx, and a 1000:100 write
+  probe succeeded in formerly-755 folders.
