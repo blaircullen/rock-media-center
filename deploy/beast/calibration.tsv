@@ -1,4 +1,6 @@
-# PROPOSED - Blair confirms before the R13 run. Do not treat any row as final until he has.
+# CONFIRMED by Blair 2026-10-15 ("confirm the calibration list, use your defaults"). The one open
+# label, Bae Bee "Let It Be", stays FAKE_BIT_DEPTH: audiocheck lets a padded container override
+# the shelf verdict (internal/audiocheck/check.go classify), so that is the label the checker gives.
 # Columns: path<TAB>expected_verdict<TAB>why. Lines starting with # are comments.
 # Source: Beast /home/olares/library-audit/scan.log (getmusic flac-check.py v3 audit, 2026-10-11,
 # 65,740 files; 621 FAKE = 514 "FAKE (128k-class shelf)" + 107 "FAKE bit depth"). Every path was
@@ -25,6 +27,6 @@
 /mnt/nas/music/Simon Westman/Diamonds and Pearls/Diamonds and Pearls.flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 24-bit, 1024 kbps, top 11.5 kHz of 22.1, floor -96 dB, LSBs active (24-bit container does not rescue it)
 /mnt/nas/music/Vidar Arvidsson/Leave The Door Open/Leave The Door Open.flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 16-bit, 503 kbps, top 6.2 kHz of 22.1, floor -87 dB
 /mnt/nas/music/Jorelyn Ariza/We Don't Need Another Hero/We Don't Need Another Hero.flac	FAKE	audit FAKE (128k-class shelf); 44.1 kHz 24-bit, 1097 kbps, top 4.3 kHz of 22.1, floor -98 dB, LSBs active
-/mnt/nas/music/Bae Bee/Beatles Lullabies/02 - Let It Be.flac	FAKE_BIT_DEPTH	audit FAKE bit depth (padded 24-bit container, no LSB content); 44.1 kHz 24-bit, 326 kbps, top 7.5 kHz, floor -96 dB, true LSBs ALL ZERO. Top is also low, so the checker may report FAKE; Blair decides which label is accepted for this row
+/mnt/nas/music/Bae Bee/Beatles Lullabies/02 - Let It Be.flac	FAKE_BIT_DEPTH	audit FAKE bit depth (padded 24-bit container, no LSB content); 44.1 kHz 24-bit, 326 kbps, top 7.5 kHz, floor -96 dB, true LSBs ALL ZERO. Top is also low; the padded-LSB verdict wins in audiocheck, so FAKE_BIT_DEPTH is expected
 /mnt/nas/music/RAYE/WHERE IS MY HUSBAND!/WHERE IS MY HUSBAND!.flac	UPSAMPLED	audit UPSAMPLED (44.1k source in hi-res container); 48 kHz 24-bit, 1802 kbps, top 22.1 kHz of nyquist 24.0, floor -85 dB, LSBs active
 /mnt/nas/music/Empress Of/For Your Consideration/08 - Fácil.flac	UPSAMPLED	audit UPSAMPLED (44.1k source in hi-res container); 48 kHz 24-bit, 1676 kbps, top 22.1 kHz of nyquist 24.0, floor -112 dB, LSBs active
