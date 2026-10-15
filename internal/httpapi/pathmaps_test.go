@@ -153,7 +153,9 @@ func TestHealthNamesClientWithUnseenDownloads(t *testing.T) {
 	})
 	a := &api{deps: s.deps}
 	ctx := context.Background()
-	remote := fakePathQbit(t, "/downloads", "["+finishedTorrent("a1", "/downloads/Gone.2020", 2)+","+finishedTorrent("a2", seen, 1)+"]")
+	// a3 is Radarr's, on a client shared with it: not this app's to see (Beast, 2026-10-15).
+	radarr := strings.Replace(finishedTorrent("a3", "/downloads/Radarr.Moved.It.2026.mkv", 3), `"category":"arrmada"`, `"category":"radarr"`, 1)
+	remote := fakePathQbit(t, "/downloads", "["+finishedTorrent("a1", "/downloads/Gone.2020", 2)+","+finishedTorrent("a2", seen, 1)+","+radarr+"]")
 	bundled := fakePathQbit(t, "/downloads", "["+finishedTorrent("b1", "/downloads/AlsoGone", 1)+"]")
 	_, _ = dl.Create(ctx, download.Client{Name: "seedbox", Kind: download.KindQbittorrent, URL: remote, Enabled: true})
 	_, _ = dl.Create(ctx, download.Client{Name: "bundled", Kind: download.KindQbittorrent, URL: bundled, Enabled: true, Bundled: true})

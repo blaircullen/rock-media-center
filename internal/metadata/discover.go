@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/tristenlammi/arrmada/internal/adultfilter"
@@ -380,6 +381,9 @@ type tmdbDiscoverItem struct {
 	Popularity   float64 `json:"popularity"`
 	Adult        bool    `json:"adult"`
 	GenreIDs     []int   `json:"genre_ids"`
+	// OriginalLanguage and OriginCountry tell anime apart from other animation.
+	OriginalLanguage string   `json:"original_language"`
+	OriginCountry    []string `json:"origin_country"`
 }
 
 // browseMinVotes is the vote-count floor for BROWSE lists (trending, popular,
@@ -425,8 +429,35 @@ func hasNoiseGenre(ids []int) bool {
 	return false
 }
 
+// isAnime: TMDB animation (genre 16) that is Japanese, by language or origin country. Rock
+// Media Center never shows anime in Discover (Blair, 2026-10-15: "get rid of any anime
+// suggestions").
+func (i tmdbDiscoverItem) isAnime() bool {
+	animation := false
+	for _, id := range i.GenreIDs {
+		if id == 16 {
+			animation = true
+		}
+	}
+	if !animation {
+		return false
+	}
+	if strings.EqualFold(i.OriginalLanguage, "ja") {
+		return true
+	}
+	for _, c := range i.OriginCountry {
+		if strings.EqualFold(c, "JP") {
+			return true
+		}
+	}
+	return false
+}
+
 func (i tmdbDiscoverItem) toItem(defaultMedia string, minVotes int, dropNoise bool) (DiscoverItem, bool) {
 	if dropNoise && hasNoiseGenre(i.GenreIDs) {
+		return DiscoverItem{}, false
+	}
+	if i.isAnime() {
 		return DiscoverItem{}, false
 	}
 	if i.Adult {

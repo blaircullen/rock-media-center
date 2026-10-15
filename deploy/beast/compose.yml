@@ -57,6 +57,10 @@ services:
     volumes:
       # App state (SQLite, config, staging scratch, backups) on local disk, not NFS.
       - /var/lib/rock-media-center:/data
+      # Empty local Movies and TV folders. Radarr and Sonarr own Beast's real movie and TV
+      # folders; this app must never organise them, but its Movies/TV settings need folders
+      # that exist and are writable (otherwise "Needs you" shows two folder errors).
+      - /var/lib/rock-media-center-media:/media/library
       # Same path inside and outside so Plex, Navidrome and this app agree on file paths.
       - /mnt/nas/music:/mnt/nas/music
       # Only the subfolder the clients use: /mnt/nas/downloads itself is root-only (mode 000).

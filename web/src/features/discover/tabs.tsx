@@ -59,10 +59,9 @@ export function BrowseTab({ media, ctx }: { media: "movie" | "series"; ctx: RowC
         <PosterRow order={0} title={`Trending ${media === "movie" ? "movies" : "series"}`} seeAll={browseLink("trending", media)} load={() => api.discoverTrending(media)} ctx={ctx} />
         <PosterRow order={1} title={`Popular ${media === "movie" ? "movies" : "series"}`} seeAll={browseLink("popular", media)} load={() => api.discoverPopular(media)} ctx={ctx} />
         <PosterRow order={2} hideOnError title={`Top rated ${media === "movie" ? "movies" : "series"}`} seeAll={browseLink("top_rated", media)} load={() => api.discoverRow("top_rated", media)} ctx={ctx} />
-        {media === "movie" ? (
+        {/* No anime row for series: Rock Media Center never suggests anime. */}
+        {media === "movie" && (
           <PosterRow order={3} hideOnError title="In cinemas now" seeAll={browseLink("now_playing", "movie")} load={() => api.discoverRow("now_playing")} ctx={ctx} />
-        ) : (
-          <PosterRow order={3} hideOnError title="Anime" load={() => api.discoverRow("anime")} ctx={ctx} />
         )}
         <Suspense fallback={null}><StreamingRow media={media} ctx={ctx} /></Suspense>
         <PosterRow order={4} hideOnError title="Hidden gems" seeAll={browseLink("hidden_gems", media)} load={() => api.discoverRow("hidden_gems", media)} ctx={ctx} />

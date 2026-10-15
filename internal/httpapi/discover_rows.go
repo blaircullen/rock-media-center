@@ -44,7 +44,9 @@ func (a *api) handleDiscoverRow(w http.ResponseWriter, r *http.Request) {
 	case "top_rated":
 		items, err = rows.TopRated(ctx, media)
 	case "anime":
-		items, err = rows.Anime(ctx)
+		// Never shown (Blair, 2026-10-15); a 404 makes the page hide the row.
+		a.writeError(w, http.StatusNotFound, "unknown row")
+		return
 	case "hidden_gems":
 		items, err = rows.HiddenGems(ctx, media)
 	case "region":

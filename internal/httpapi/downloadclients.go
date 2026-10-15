@@ -456,9 +456,14 @@ func (a *api) unseenDownloads(ctx context.Context) ([]health.UnseenDownloads, er
 	if err != nil {
 		return nil, err
 	}
+	// Only Rock Media Center's own categories: on a client shared with Radarr/Sonarr (Beast)
+	// their finished torrents live in their own folders, are none of this app's business, and
+	// are often already moved away by them, so they must not raise "can't see on disk".
+	cats := download.FixedCategories(a.deps.Config.DownloadCategory)
+	own := map[string]bool{cats.Movies: true, cats.TV: true, cats.Music: true, download.CategoryMusicEngine: true}
 	byClient := map[int64][]download.Item{}
 	for _, it := range snap.Items {
-		if _, ok := watch[it.ClientID]; !ok || !it.Complete() || it.ContentPath == "" || it.RawState == "missingFiles" {
+		if _, ok := watch[it.ClientID]; !ok || !own[it.Category] || !it.Complete() || it.ContentPath == "" || it.RawState == "missingFiles" {
 			continue
 		}
 		byClient[it.ClientID] = append(byClient[it.ClientID], it)
