@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -22,11 +23,53 @@ const isrcBody = `{"isrc":"SEXXX1000001","recordings":[
     "release-group":{"id":"rg-2","title":"Live","primary-type":"Album","secondary-types":["Live"]}}]}
 ]}`
 
+// serveISRC answers like MusicBrainz: the isrc resource names the recordings (it rejects
+// inc=release-groups with 400), and the recording resource returns each one in full.
+func serveISRC(t *testing.T, w http.ResponseWriter, r *http.Request) {
+	t.Helper()
+	var all struct {
+		Recordings []json.RawMessage `json:"recordings"`
+	}
+	if err := json.Unmarshal([]byte(isrcBody), &all); err != nil {
+		t.Fatal(err)
+	}
+	switch {
+	case strings.HasPrefix(r.URL.Path, "/isrc/"):
+		if strings.Contains(r.URL.Query().Get("inc"), "release-groups") {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = io.WriteString(w, `{"error":"release-groups is not a valid inc parameter for the isrc resource."}`)
+			return
+		}
+		var ids []string
+		for _, raw := range all.Recordings {
+			var rec struct {
+				ID string `json:"id"`
+			}
+			_ = json.Unmarshal(raw, &rec)
+			ids = append(ids, `{"id":"`+rec.ID+`"}`)
+		}
+		_, _ = io.WriteString(w, `{"recordings":[`+strings.Join(ids, ",")+`]}`)
+	case strings.HasPrefix(r.URL.Path, "/recording/"):
+		id := strings.TrimPrefix(r.URL.Path, "/recording/")
+		for _, raw := range all.Recordings {
+			if strings.Contains(string(raw), `"id":"`+id+`"`) {
+				_, _ = w.Write(raw)
+				return
+			}
+		}
+		w.WriteHeader(http.StatusNotFound)
+	default:
+		_, _ = io.WriteString(w, `{}`)
+	}
+}
+
 func TestISRCLookupReturnsRecordingAndReleases(t *testing.T) {
 	var path, inc string
 	m := mbStub(t, func(w http.ResponseWriter, r *http.Request) {
-		path, inc = r.URL.Path, r.URL.Query().Get("inc")
-		_, _ = io.WriteString(w, isrcBody)
+		if strings.HasPrefix(r.URL.Path, "/isrc/") {
+			path, inc = r.URL.Path, r.URL.Query().Get("inc")
+		}
+		serveISRC(t, w, r)
 	})
 	recs, err := m.RecordingsByISRC(context.Background(), "sexxx1000001")
 	if err != nil {
@@ -35,8 +78,8 @@ func TestISRCLookupReturnsRecordingAndReleases(t *testing.T) {
 	if path != "/isrc/SEXXX1000001" {
 		t.Errorf("path = %q", path)
 	}
-	if inc != "releases+release-groups+artist-credits" {
-		t.Errorf("inc = %q", inc)
+	if strings.Contains(inc, "release-groups") {
+		t.Errorf("inc = %q: the isrc resource rejects release-groups", inc)
 	}
 	if len(recs) != 2 {
 		t.Fatalf("recordings = %d", len(recs))
@@ -56,7 +99,7 @@ func TestISRCLookupReturnsRecordingAndReleases(t *testing.T) {
 
 // AE4: a live recording must be recognisable as live so it never counts as the studio one.
 func TestLiveRecordingReportsLiveDisambiguation(t *testing.T) {
-	m := mbStub(t, func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, isrcBody) })
+	m := mbStub(t, func(w http.ResponseWriter, r *http.Request) { serveISRC(t, w, r) })
 	recs, err := m.RecordingsByISRC(context.Background(), "SEXXX1000001")
 	if err != nil {
 		t.Fatal(err)
@@ -185,12 +228,14 @@ func TestCatalogueLookupWaitsForIntakeLookup(t *testing.T) {
 func TestRecordingLookupRetries503(t *testing.T) {
 	var calls int
 	m := mbStub(t, func(w http.ResponseWriter, r *http.Request) {
-		calls++
-		if calls < 3 {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			return
+		if strings.HasPrefix(r.URL.Path, "/isrc/") {
+			calls++
+			if calls < 3 {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
 		}
-		_, _ = io.WriteString(w, isrcBody)
+		serveISRC(t, w, r)
 	})
 	recs, err := m.RecordingsByISRC(context.Background(), "SEXXX1000001")
 	if err != nil || len(recs) != 2 || calls != 3 {

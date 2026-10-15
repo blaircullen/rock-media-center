@@ -211,7 +211,11 @@ func (m *MusicBrainz) RecordingsByISRC(ctx context.Context, isrc string) ([]Reco
 	var body struct {
 		Recordings []mbRecording `json:"recordings"`
 	}
-	err := m.get(ctx, "/isrc/"+url.PathEscape(isrc), url.Values{"inc": {mbRecordingInc}}, &body)
+	// The isrc resource rejects inc=release-groups with 400 ("release-groups is not a valid
+	// inc parameter for the isrc resource", checked live 2026-10-15), and the release groups
+	// carry the live/compilation hints the pin filters on. So the ISRC lookup only names the
+	// recordings, and each one is then read in full from the recording resource.
+	err := m.get(ctx, "/isrc/"+url.PathEscape(isrc), url.Values{"inc": {"artist-credits"}}, &body)
 	if err == errNotFound {
 		return nil, nil // an unregistered ISRC is an ordinary answer, not a failure
 	}
@@ -220,7 +224,11 @@ func (m *MusicBrainz) RecordingsByISRC(ctx context.Context, isrc string) ([]Reco
 	}
 	out := make([]Recording, 0, len(body.Recordings))
 	for _, r := range body.Recordings {
-		out = append(out, r.toRecording())
+		full, err := m.GetRecording(ctx, r.ID)
+		if err != nil {
+			return nil, fmt.Errorf("musicbrainz recording %s (from ISRC %s): %w", r.ID, isrc, err)
+		}
+		out = append(out, *full)
 	}
 	return out, nil
 }
