@@ -72,6 +72,8 @@ type AcquireConfig struct {
 	Decisions DecisionRaiser // nil: write mus_decisions rows directly
 	Space     StagingSpace   // nil: reservations always succeed
 	VPN       VPNCheck       // nil: torrent and Soulseek lanes are unavailable (KTD20)
+	// FileTags reads a downloaded file's tags; nil means ffprobe.
+	FileTags AcquireTagReader
 
 	Staging *Staging
 	// Category is the download-client category; empty means "rmc-music".
@@ -100,6 +102,7 @@ type Acquire struct {
 	category  string
 	slskDir   string
 	vpn       VPNCheck
+	fileTags  AcquireTagReader
 	now       func() time.Time
 	log       *slog.Logger
 }
@@ -130,6 +133,10 @@ func NewAcquire(cfg AcquireConfig) (*Acquire, error) {
 	}
 	if a.category == "" {
 		a.category = acqCategoryDefault
+	}
+	a.fileTags = cfg.FileTags
+	if a.fileTags == nil {
+		a.fileTags = ffprobeAcquireTags
 	}
 	if a.now == nil {
 		a.now = time.Now
@@ -216,6 +223,11 @@ func (a *Acquire) searchStep(ctx context.Context, m Machine, it Item) error {
 		}
 	}
 	if cand != nil {
+		// A candidate kept from an earlier pass (space wait, restart) was found when the VPN
+		// was up; ask again before it starts (finding 5).
+		if why := a.vpnBlock(ctx, cand.Lane); why != "" {
+			return a.markLaneUnavailable(ctx, m, it, acqPass{unavailable: []string{cand.Lane + ": " + why}})
+		}
 		return a.startCandidate(ctx, m, it, rec, *cand)
 	}
 	if len(pass.unavailable) > 0 {
@@ -255,6 +267,41 @@ func (a *Acquire) lanePass(ctx context.Context, m Machine, it Item, lq laneQuery
 		}
 	}
 	return pass, nil
+}
+
+// vpnBlock is the reason a torrent or Soulseek operation may not run right now, or "" when
+// it may (KTD20). It fails closed: no check, or a failing one, blocks.
+func (a *Acquire) vpnBlock(ctx context.Context, lane string) string {
+	if lane != LaneTorrent && lane != LaneSoulseek {
+		return ""
+	}
+	return laneVPNProblem(ctx, a.vpn)
+}
+
+// vpnHold stops a download step that the VPN does not allow. A candidate with no client job
+// yet goes back to 'found' and the item to lane_unavailable, so nothing is enqueued; a
+// running job is left alone and its poll is deferred.
+func (a *Acquire) vpnHold(ctx context.Context, m Machine, it Item, c candRow, why string) error {
+	reason := "lane unavailable: " + c.Lane + ": " + clip(why, 300)
+	if c.ClientJobID != "" {
+		return a.acqDefer(ctx, m, it, acqLaneRetry, reason)
+	}
+	err := store.WithTx(ctx, m.DB(), func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE mus_candidates SET state = 'found', reserved_bytes = 0 WHERE id = ? AND state = 'downloading'`, c.ID); err != nil {
+			return fmt.Errorf("returning candidate %d to the queue: %w", c.ID, err)
+		}
+		if err := m.TransitionTx(ctx, tx, it.ID, StateSearching, "VPN not confirmed; candidate kept for later"); err != nil {
+			return err
+		}
+		if err := m.TransitionTx(ctx, tx, it.ID, StateLaneUnavailable, reason); err != nil {
+			return err
+		}
+		_, err := tx.ExecContext(ctx, `UPDATE mus_items SET next_attempt_at = ? WHERE id = ?`, m.Now().Add(acqLaneRetry).Unix(), it.ID)
+		return err
+	})
+	a.space.Release(ctx, it.ID)
+	return err
 }
 
 func (a *Acquire) vpnState(ctx context.Context) (bool, string) {
@@ -446,6 +493,9 @@ func (a *Acquire) downloadStep(ctx context.Context, m Machine, it Item) error {
 	if c == nil {
 		return m.Transition(ctx, it.ID, StateSearching, "no candidate was downloading; searching again")
 	}
+	if why := a.vpnBlock(ctx, c.Lane); why != "" {
+		return a.vpnHold(ctx, m, it, *c, why)
+	}
 	dir, err := a.staging.ensureCandidateDir(it.ID, c.ID)
 	if err != nil {
 		return err
@@ -523,7 +573,7 @@ func (a *Acquire) clientDownload(ctx context.Context, m Machine, it Item, c cand
 	if qi.ContentPath == "" {
 		return a.rejectDownload(ctx, m, it, c, "the client finished but reported no file location")
 	}
-	if _, err := acqAdopt(qi.ContentPath, dir); err != nil {
+	if err := a.adopt(ctx, m, c, qi.ContentPath, dir); err != nil {
 		return fmt.Errorf("moving the finished download into staging: %w", err)
 	}
 	return a.toChecking(ctx, m, it, c, dir)
@@ -579,6 +629,50 @@ func acqMatchQueue(items []download.Item, c candRow) (download.Item, bool) {
 	return download.Item{}, false
 }
 
+// acqAlreadyAdopted: a previous attempt recorded where it was moving the finished download
+// (staging_path set to the destination before the rename, finding 8) and the destination is
+// there, so a crash after the rename left the work done.
+func acqAlreadyAdopted(c candRow, dir string) bool {
+	p := filepath.Clean(c.StagingPath)
+	if c.StagingPath == "" || p == filepath.Clean(dir) || !stagingInside(dir, p) {
+		return false
+	}
+	_, err := os.Lstat(p)
+	return err == nil
+}
+
+// adopt moves a finished download into the candidate's staging directory so a crash at any
+// point can be resumed: the destination is written to the candidate first, in its own
+// statement, then the rename runs. On a retry a destination that exists while the source does
+// not is taken as adopted.
+func (a *Acquire) adopt(ctx context.Context, m Machine, c candRow, src, dir string) error {
+	src, dir = filepath.Clean(src), filepath.Clean(dir)
+	if acqAlreadyAdopted(c, dir) {
+		if _, err := os.Lstat(src); errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+	}
+	dst := filepath.Join(dir, filepath.Base(src))
+	if stagingInside(dir, src) {
+		dst = src
+	}
+	if err := store.WithTx(ctx, m.DB(), func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, `UPDATE mus_candidates SET staging_path = ? WHERE id = ?`, dst, c.ID)
+		return err
+	}); err != nil {
+		return fmt.Errorf("recording adoption of candidate %d: %w", c.ID, err)
+	}
+	if _, err := acqAdopt(src, dir); err != nil {
+		if _, serr := os.Lstat(src); errors.Is(serr, fs.ErrNotExist) {
+			if _, derr := os.Lstat(dst); derr == nil {
+				return nil // moved by an earlier attempt
+			}
+		}
+		return err
+	}
+	return nil
+}
+
 // acqAdopt makes src part of dir: already inside it, or renamed into it. A rename across
 // filesystems fails with an error naming both paths; the deployment keeps the client's
 // completed folder on the same volume as staging (U16), so it is a cheap rename.
@@ -623,33 +717,45 @@ func (a *Acquire) soulseekDownload(ctx context.Context, m Machine, it Item, c ca
 	default:
 		return a.acqDefer(ctx, m, it, acqPollInterval, "")
 	}
-	src, err := acqFindSoulseekFile(a.slskDir, c.Source.Filename, c.Source.Size)
-	if err != nil {
-		return err
-	}
-	if _, err := acqAdopt(src, dir); err != nil {
-		return fmt.Errorf("moving the Soulseek file into staging: %w", err)
+	if adopted := acqAlreadyAdopted(c, dir); !adopted {
+		src, err := acqFindSoulseekFile(a.slskDir, c.Source.Filename, c.Source.Size)
+		if err != nil {
+			return err
+		}
+		if err := a.adopt(ctx, m, c, src, dir); err != nil {
+			return fmt.Errorf("moving the Soulseek file into staging: %w", err)
+		}
 	}
 	return a.toChecking(ctx, m, it, c, dir)
 }
 
-// acqFindSoulseekFile finds a finished transfer in slskd's download folder by its file name
-// (the remote path uses \ or /) and size; the newest match wins.
+// acqFindSoulseekFile finds THIS transfer's finished file in slskd's download folder. slskd
+// saves a transfer under the remote file's own folder name, so the match needs the file name,
+// that parent folder and the size together; the same name and size from another peer lands in
+// a differently named folder or is a second match. More than one match is ambiguous and is an
+// error, never "the newest one" (finding 4).
 func acqFindSoulseekFile(root, remote string, size int64) (string, error) {
 	if root == "" {
 		return "", errors.New("the slskd download folder is not configured")
 	}
-	base := remote
-	if i := strings.LastIndexAny(base, `\/`); i >= 0 {
-		base = base[i+1:]
+	parts := strings.FieldsFunc(remote, func(r rune) bool { return r == '\\' || r == '/' })
+	if len(parts) == 0 {
+		return "", fmt.Errorf("slskd file name %q has no name", remote)
 	}
-	var best string
-	var bestMod time.Time
+	base := parts[len(parts)-1]
+	parent := ""
+	if len(parts) > 1 {
+		parent = parts[len(parts)-2]
+	}
+	var matches []string
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() || !strings.EqualFold(d.Name(), base) {
+			return nil
+		}
+		if parent != "" && !strings.EqualFold(filepath.Base(filepath.Dir(p)), parent) {
 			return nil
 		}
 		info, err := d.Info()
@@ -659,18 +765,19 @@ func acqFindSoulseekFile(root, remote string, size int64) (string, error) {
 		if size > 0 && info.Size() != size {
 			return nil
 		}
-		if best == "" || info.ModTime().After(bestMod) {
-			best, bestMod = p, info.ModTime()
-		}
+		matches = append(matches, p)
 		return nil
 	})
 	if err != nil {
 		return "", fmt.Errorf("looking for %q in %s: %w", base, root, err)
 	}
-	if best == "" {
-		return "", fmt.Errorf("slskd reports %q finished but it is not in %s", base, root)
+	switch len(matches) {
+	case 0:
+		return "", fmt.Errorf("slskd reports %q finished but it is not in %s (folder %q)", base, root, parent)
+	case 1:
+		return matches[0], nil
 	}
-	return best, nil
+	return "", fmt.Errorf("slskd transfer %q matches %d files in %s; cannot tell which is this transfer", base, len(matches), root)
 }
 
 func (a *Acquire) youtubeDownload(ctx context.Context, m Machine, it Item, c candRow, dir string) error {
@@ -801,6 +908,15 @@ func (a *Acquire) checkStep(ctx context.Context, m Machine, it Item) error {
 			return a.rejectChecked(ctx, m, it, *c, "", err.Error(), nil, "")
 		}
 	}
+	tags, tagsErr := a.fileTags(ctx, target)
+	if tagsErr != nil && ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if tagsErr != nil {
+		a.log.Warn("reading tags of downloaded file", "path", target, "err", tagsErr)
+	} else if err := acqSetReleaseIDs(ctx, m.DB(), c.ID, tags); err != nil {
+		return err
+	}
 	res := a.checker.Check(ctx, target)
 	lossy := c.Lane == LaneYouTube
 	switch {
@@ -812,9 +928,19 @@ func (a *Acquire) checkStep(ctx context.Context, m Machine, it Item) error {
 		}
 		return fmt.Errorf("check of %s was blind: %s", filepath.Base(target), res.Reason)
 	case lossy && res.Integrity.OK && res.Verdict != audiocheck.Corrupt:
-		return a.acceptChecked(ctx, m, it, *c, "LOSSY", res, target)
+		// Plan R15: Blair approved this lossy copy; it keeps its lossy container and label.
+		return a.acceptChecked(ctx, m, it, *c, "LOSSY", res, target, "")
 	case !lossy && res.Verdict == audiocheck.Genuine && res.Integrity.OK:
-		return a.acceptChecked(ctx, m, it, *c, string(res.Verdict), res, target)
+		// A spectral "Genuine" says nothing about the codec: AAC and MP3 can read as genuine.
+		if !acqLosslessCodec(res.Facts.Codec) {
+			return a.rejectChecked(ctx, m, it, *c, string(res.Verdict),
+				fmt.Sprintf("not a lossless codec (%q): only FLAC, ALAC, WAV and similar are accepted", res.Facts.Codec), &res, target)
+		}
+		reject, note := acqCheckIdentity(rec, *c, target, tags, tagsErr, res.Facts.DurationSec)
+		if reject != "" {
+			return a.rejectChecked(ctx, m, it, *c, string(res.Verdict), reject, &res, target)
+		}
+		return a.acceptChecked(ctx, m, it, *c, string(res.Verdict), res, target, note)
 	}
 	reason := fmt.Sprintf("%s: %s", res.Verdict, res.Reason)
 	if res.Verdict == audiocheck.Genuine && !res.Integrity.OK {
@@ -864,7 +990,7 @@ func acqApplyResult(ctx context.Context, tx store.Execer, c candRow, state, verd
 // acceptChecked marks the candidate chosen and hands the item to placement (a new track) or
 // the swap (an upgrade). Its staging_path from here on is the target track file; the rest of
 // the release stays beside it until the 7-day expiry (R10).
-func (a *Acquire) acceptChecked(ctx context.Context, m Machine, it Item, c candRow, verdict string, res audiocheck.Result, target string) error {
+func (a *Acquire) acceptChecked(ctx context.Context, m Machine, it Item, c candRow, verdict string, res audiocheck.Result, target, note string) error {
 	next := StatePlacing
 	if it.Kind != KindRequest {
 		next = StateSwapping
@@ -873,10 +999,30 @@ func (a *Acquire) acceptChecked(ctx context.Context, m Machine, it Item, c candR
 		if err := acqApplyResult(ctx, tx, c, "chosen", verdict, "", &res, target, m.Now()); err != nil {
 			return err
 		}
-		return m.TransitionTx(ctx, tx, it.ID, next, fmt.Sprintf("verified %s from %s: %s", verdict, c.Lane, clip(c.ReleaseName, 120)))
+		return m.TransitionTx(ctx, tx, it.ID, next, acqAcceptReason(verdict, c, note))
 	})
 	a.space.Release(ctx, it.ID)
 	return err
+}
+
+func acqAcceptReason(verdict string, c candRow, note string) string {
+	r := fmt.Sprintf("verified %s from %s: %s", verdict, c.Lane, clip(c.ReleaseName, 120))
+	if note != "" {
+		r += " (" + note + ")"
+	}
+	return r
+}
+
+// acqSetReleaseIDs stores the release and release group ids the downloaded file's own tags
+// carry. They are never taken from the requested recording: a file without those tags leaves
+// the columns empty (finding 11).
+func acqSetReleaseIDs(ctx context.Context, q store.Execer, candID int64, t AcquireFileTags) error {
+	if _, err := q.ExecContext(ctx,
+		`UPDATE mus_candidates SET release_mbid = ?, release_group_mbid = ? WHERE id = ?`,
+		t.ReleaseMBID, t.ReleaseGroupMBID, candID); err != nil {
+		return fmt.Errorf("recording release ids of candidate %d: %w", candID, err)
+	}
+	return nil
 }
 
 // rejectChecked records the verdict on the candidate (it stays in staging until its expiry)

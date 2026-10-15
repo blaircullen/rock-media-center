@@ -303,6 +303,8 @@ type acqHarness struct {
 	staging *Staging
 	libRoot string
 	vpnOK   bool
+	tags    map[string]AcquireFileTags // by file base name; an unknown file has no tags
+	tagErr  error
 	acq     *Acquire
 }
 
@@ -334,6 +336,12 @@ func (h *acqHarness) newAcquire() *Acquire {
 				return true, ""
 			}
 			return false, "gluetun is not attached"
+		},
+		FileTags: func(_ context.Context, path string) (AcquireFileTags, error) {
+			if h.tagErr != nil {
+				return AcquireFileTags{}, h.tagErr
+			}
+			return h.tags[filepath.Base(path)], nil
 		},
 		Now: h.clock.Now,
 	})
