@@ -20,7 +20,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/libroots"
 )
 
-// Folder is one folder the app works in: Role is the stable key ("movies", "books"),
+// Folder is one folder the app works in: Role is the stable key ("movies", "tv"),
 // Label how the UI names it.
 type Folder struct {
 	Role  string `json:"role"`
@@ -165,11 +165,10 @@ func existing(path string) (string, bool) {
 }
 
 // LibraryFolders lists the folders to check, in the order the UI shows them: Movies and
-// TV; Ebooks and Audiobooks when Books is on (one "Books & audiobooks" entry when they're
-// the same folder); Music when it's on; then Downloads. cfg should hold the folders the
-// user picked — the running config is overridden by the app's saved folders at boot, and
-// handlers overlay the saved values again so a pick made since boot is what's judged.
-func LibraryFolders(cfg config.Config, booksOn, musicOn bool) []Folder {
+// TV; Music when it's on; then Downloads. cfg should hold the folders the user picked —
+// the running config is overridden by the app's saved folders at boot, and handlers
+// overlay the saved values again so a pick made since boot is what's judged.
+func LibraryFolders(cfg config.Config, musicOn bool) []Folder {
 	var out []Folder
 	add := func(role, label, path string) {
 		if path != "" {
@@ -178,14 +177,6 @@ func LibraryFolders(cfg config.Config, booksOn, musicOn bool) []Folder {
 	}
 	add("movies", "Movies", cfg.MoviesDir)
 	add("tv", "TV", cfg.TVDir)
-	if booksOn {
-		if cfg.EbooksDir != "" && filepath.Clean(cfg.EbooksDir) == filepath.Clean(cfg.AudiobooksDir) {
-			add("books", "Books & audiobooks", cfg.EbooksDir)
-		} else {
-			add("ebooks", "Ebooks", cfg.EbooksDir)
-			add("audiobooks", "Audiobooks", cfg.AudiobooksDir)
-		}
-	}
 	if musicOn {
 		add("music", "Music", cfg.MusicDir)
 	}

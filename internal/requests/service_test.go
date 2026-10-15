@@ -191,8 +191,8 @@ func TestReadyNotificationFansOut(t *testing.T) {
 		t.Fatalf("add subscriber: %v", err)
 	}
 
-	s.notifyRequester(ctx, "movie", 11, "")
-	s.notifyRequester(ctx, "movie", 11, "") // repeat import must not double-notify
+	s.notifyRequester(ctx, "movie", 11)
+	s.notifyRequester(ctx, "movie", 11) // repeat import must not double-notify
 	for _, uid := range []int64{7, 8} {
 		inbox, _ := s.repo.listUserNotifications(ctx, uid)
 		if len(inbox) != 1 {

@@ -45,9 +45,4 @@ describe("signed-out signal", () => {
     await api.movies().catch(() => {});
     expect(events).toBe(0);
   });
-
-  it("covers the raw uploads too", async () => {
-    await api.uploadBookCover(1, new File(["x"], "c.jpg")).catch(() => {});
-    expect(events).toBe(1);
-  });
 });

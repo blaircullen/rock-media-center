@@ -34,7 +34,6 @@ func pathsAPI(t *testing.T) *api {
 		Settings: settings.NewService(st.DB()),
 		Config: config.Config{
 			LibraryDir: "/lib", MoviesDir: "/lib/movies", TVDir: "/lib/tvshows",
-			EbooksDir: "/lib/ebooks", AudiobooksDir: "/lib/audiobooks",
 			MusicDir: "/lib/music", DownloadsDir: "/dl",
 		},
 	}}
@@ -105,8 +104,6 @@ func folderTestAPI(t *testing.T) (a *api, base string) {
 	c.LibraryDir = filepath.Join(base, "library")
 	c.MoviesDir = filepath.Join(c.LibraryDir, "movies")
 	c.TVDir = filepath.Join(c.LibraryDir, "tvshows")
-	c.EbooksDir = filepath.Join(c.LibraryDir, "ebooks")
-	c.AudiobooksDir = filepath.Join(c.LibraryDir, "audiobooks")
 	c.MusicDir = filepath.Join(c.LibraryDir, "music")
 	c.DownloadsDir = filepath.Join(base, "downloads")
 	for _, d := range []string{c.DataDir, c.MoviesDir, c.TVDir, c.DownloadsDir, filepath.Join(base, "media", "movies")} {
@@ -277,7 +274,7 @@ func TestSetLibraryPathsRejectsMissing(t *testing.T) {
 	}
 
 	// Blank still means "use the install default".
-	if w := putPaths(t, a, map[string]any{"ebooks": ""}); w.Code != http.StatusOK {
+	if w := putPaths(t, a, map[string]any{"music": ""}); w.Code != http.StatusOK {
 		t.Errorf("blank refused: HTTP %d %s", w.Code, w.Body.String())
 	}
 }
@@ -416,8 +413,7 @@ func TestSystemHealthChecksEachLibraryFolder(t *testing.T) {
 			t.Errorf("the health check created %s", p)
 		}
 	}
-	// Books is on by default but its folders aren't there; Music is off, so its folder
-	// isn't judged at all.
+	// Music is off, so its folder isn't judged at all.
 	for _, w := range warns {
 		if strings.Contains(w.Message, "Music folder") {
 			t.Errorf("music is off but was checked: %s", w.Message)

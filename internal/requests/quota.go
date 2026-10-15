@@ -9,7 +9,7 @@ import (
 )
 
 // Request quotas: an optional limit on how much one person can ask for in a rolling
-// window — movies, seasons and books counted apart. Usage is a ledger (request_usage):
+// window — movies and seasons counted apart. Usage is a ledger (request_usage):
 // a row per new ask that counts, deleted or reduced when the ask is withdrawn, declined
 // or trimmed, so a refund is immediate. Staff and imports are never limited, and
 // following someone else's request is free.
@@ -18,17 +18,16 @@ import (
 const (
 	QuotaMovie  = "movie"
 	QuotaSeason = "season"
-	QuotaBook   = "book"
 )
 
 // DefaultQuotaDays is the window when none is set.
 const DefaultQuotaDays = 7
 
-// Limits are one person's limits: per Days days, at most Movie movies, Season seasons
-// and Book books. 0 is unlimited.
+// Limits are one person's limits: per Days days, at most Movie movies and Season seasons.
+// 0 is unlimited.
 type Limits struct {
-	Days                int
-	Movie, Season, Book int
+	Days          int
+	Movie, Season int
 }
 
 func (l Limits) of(kind string) int {
@@ -37,8 +36,6 @@ func (l Limits) of(kind string) int {
 		return l.Movie
 	case QuotaSeason:
 		return l.Season
-	case QuotaBook:
-		return l.Book
 	}
 	return 0
 }
@@ -88,7 +85,6 @@ type QuotaStatus struct {
 	Days   int      `json:"days"`
 	Movie  QuotaUse `json:"movie"`
 	Season QuotaUse `json:"season"`
-	Book   QuotaUse `json:"book"`
 }
 
 // quotaCharge is what a non-exempt ask is checked against and charged to.
@@ -107,7 +103,7 @@ func (s *Service) quotaFor(ctx context.Context, in Request, opts CreateOptions) 
 	if err != nil {
 		return nil, fmt.Errorf("read request limits: %w", err)
 	}
-	if l.Movie <= 0 && l.Season <= 0 && l.Book <= 0 {
+	if l.Movie <= 0 && l.Season <= 0 {
 		return nil, nil
 	}
 	return &quotaCharge{userID: in.RequestedBy, limits: l}, nil
@@ -194,7 +190,7 @@ func (s *Service) Quota(ctx context.Context, userID int64, exempt bool) (QuotaSt
 	for _, k := range []struct {
 		kind string
 		into *QuotaUse
-	}{{QuotaMovie, &st.Movie}, {QuotaSeason, &st.Season}, {QuotaBook, &st.Book}} {
+	}{{QuotaMovie, &st.Movie}, {QuotaSeason, &st.Season}} {
 		used, oldest, err := s.repo.usage(ctx, userID, k.kind, since)
 		if err != nil {
 			return st, err
@@ -209,22 +205,18 @@ func (s *Service) Quota(ctx context.Context, userID int64, exempt bool) (QuotaSt
 
 // quotaKind is what a request of mediaType counts as (series count seasons).
 func quotaKind(mediaType string) string {
-	switch mediaType {
-	case "movie":
+	if mediaType == "movie" {
 		return QuotaMovie
-	case "book":
-		return QuotaBook
 	}
 	return QuotaSeason
 }
 
 // Settings keys for the global limits: the window in days, and per window how many
-// movies, seasons and books ("0" or unset: unlimited).
+// movies and seasons ("0" or unset: unlimited).
 const (
 	KeyQuotaDays    = "request_quota_days"
 	KeyQuotaMovies  = "request_quota_movies"
 	KeyQuotaSeasons = "request_quota_seasons"
-	KeyQuotaBooks   = "request_quota_books"
 )
 
 // GlobalLimits reads the global limits through get (a settings lookup, "" when unset).
@@ -237,7 +229,7 @@ func GlobalLimits(get func(key string) string) Limits {
 		}
 		return v
 	}
-	l := Limits{Days: n(KeyQuotaDays), Movie: n(KeyQuotaMovies), Season: n(KeyQuotaSeasons), Book: n(KeyQuotaBooks)}
+	l := Limits{Days: n(KeyQuotaDays), Movie: n(KeyQuotaMovies), Season: n(KeyQuotaSeasons)}
 	if l.Days <= 0 {
 		l.Days = DefaultQuotaDays
 	}
@@ -246,12 +238,12 @@ func GlobalLimits(get func(key string) string) Limits {
 
 // LimitsFrom is a person's limits: their own where set (0 unlimited, n a limit), the
 // global one where it's -1.
-func LimitsFrom(global Limits, movies, seasons, books int) Limits {
+func LimitsFrom(global Limits, movies, seasons int) Limits {
 	pick := func(own, g int) int {
 		if own < 0 {
 			return g
 		}
 		return own
 	}
-	return Limits{Days: global.Days, Movie: pick(movies, global.Movie), Season: pick(seasons, global.Season), Book: pick(books, global.Book)}
+	return Limits{Days: global.Days, Movie: pick(movies, global.Movie), Season: pick(seasons, global.Season)}
 }

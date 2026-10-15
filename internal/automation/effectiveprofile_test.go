@@ -109,18 +109,6 @@ func TestGrabMissingDanglingRefRejectsCam(t *testing.T) {
 	})
 }
 
-// A book whose profile was deleted is scored with the default book profile, not the
-// hardcoded EPUB preference.
-func TestBookProfileDanglingRefUsesDefault(t *testing.T) {
-	_, q, ctx := profileStore(t)
-	createDefault(t, q, quality.StoredProfile{MediaType: quality.MediaBook, Name: "Audio", FormatScores: map[string]int{"M4B": 50}})
-	c := &Coordinator{quality: q}
-	sp := c.bookProfile(ctx, "custom:999")
-	if sp.FormatScores["M4B"] != 50 || sp.FormatScores["EPUB"] != 0 {
-		t.Errorf("format scores = %v, want the default book profile's", sp.FormatScores)
-	}
-}
-
 // A library-scanned title carries the profile "n/a", which otherwise scores against a
 // generic fallback that PREFERS Dolby Vision — so a manual search recommended a DV release
 // even to a user who set DV to Avoid. effectiveProfile must route "n/a" to the user's own

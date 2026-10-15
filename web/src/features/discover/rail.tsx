@@ -1,8 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { IconButton } from "../../ui";
 
-// A rail is a sideways-scrolling strip of posters: Discover's rows, the requests strip
-// and the Books tab's rows. The arrows page it by most of its width.
+// A rail is a sideways-scrolling strip of posters: Discover's rows, and the requests strip. The arrows page it by most of its width.
 
 export interface Rail {
   ref: React.RefObject<HTMLDivElement>;

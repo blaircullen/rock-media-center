@@ -12,7 +12,6 @@ import (
 
 	"github.com/tristenlammi/arrmada/internal/auth"
 	"github.com/tristenlammi/arrmada/internal/automation"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/eventbus"
 	"github.com/tristenlammi/arrmada/internal/indexer"
@@ -53,7 +52,6 @@ func newFakeTracker(t *testing.T) *fakeTracker {
 		fmt.Fprint(w, `<rss xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel>`+
 			item(1, "Alpha.2001.1080p.BluRay.x264-GRP")+
 			item(2, "Show.S01E01.1080p.WEB-DL.x264-GRP")+
-			item(3, "Timothy Zahn - Thrawn [EPUB]")+
 			`</channel></rss>`)
 	}))
 	t.Cleanup(ft.srv.Close)
@@ -66,8 +64,7 @@ func (ft *fakeTracker) fetches() []string {
 	return append([]string(nil), ft.fetched...)
 }
 
-// grabServer is the real router over one movie (1, "Alpha"), one show (1, "Show") and
-// one book (1, "Thrawn"), a fake Torznab indexer and a fake qBittorrent.
+// grabServer is the real router over one movie (1, "Alpha"), one show (1, "Show"), a fake Torznab indexer and a fake qBittorrent.
 func grabServer(t *testing.T) (*routeServer, *fakeTracker, *fakeQbit) {
 	t.Helper()
 	ft := newFakeTracker(t)
@@ -86,11 +83,9 @@ func grabServer(t *testing.T) (*routeServer, *fakeTracker, *fakeQbit) {
 		}
 		mv := movies.NewService(db, nil, nil, t.TempDir(), "", nil, d.Log)
 		sv := series.NewService(db, nil, t.TempDir(), d.Log)
-		bk := books.NewService(db, nil, d.Log)
 		co := automation.New(mv, ix, dl, quality.NewService(db), db, eventbus.New(d.Log), d.Log, t.TempDir())
 		co.SetSeries(sv, nil)
-		co.SetBooks(bk)
-		d.Indexers, d.Downloads, d.Movies, d.Series, d.Books, d.Automation = ix, dl, mv, sv, bk, co
+		d.Indexers, d.Downloads, d.Movies, d.Series, d.Automation = ix, dl, mv, sv, co
 
 		if _, err := db.Exec(`INSERT INTO movies (id, tmdb_id, title, year, monitored, min_availability) VALUES (1, 1, 'Alpha', 2001, 1, 'announced'), (2, 2, 'Bravo', 2001, 1, 'announced')`); err != nil {
 			t.Fatal(err)
@@ -102,9 +97,6 @@ func grabServer(t *testing.T) (*routeServer, *fakeTracker, *fakeQbit) {
 			t.Fatal(err)
 		}
 		if _, err := db.Exec(`INSERT INTO episodes (series_id, season_number, episode_number) VALUES (1, 1, 1)`); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := books.NewRepo(db).Create(ctx, books.Book{OLKey: "OL1W", Title: "Thrawn", Author: "Timothy Zahn"}); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -151,7 +143,7 @@ func TestReleaseResponsesCarryNoSecrets(t *testing.T) {
 	s, ft, _ := grabServer(t)
 	_, mgr := s.user(t, "mgr@example.com", auth.RoleManager)
 
-	for _, p := range []string{"/api/v1/movies/1/releases", "/api/v1/series/1/releases", "/api/v1/series/1/releases?season=1&episode=1", "/api/v1/books/1/releases"} {
+	for _, p := range []string{"/api/v1/movies/1/releases", "/api/v1/series/1/releases", "/api/v1/series/1/releases?season=1&episode=1"} {
 		rec := s.do("GET", p, mgr)
 		releasesOf(t, rec, true)
 		noSecrets(t, p, rec.Body.String())
@@ -187,7 +179,6 @@ func TestGrabByToken(t *testing.T) {
 
 	movieTok := tokenFor(t, releasesOf(t, s.do("GET", "/api/v1/movies/1/releases", mgr), true), "Alpha.2001.1080p.BluRay.x264-GRP")
 	seriesTok := tokenFor(t, releasesOf(t, s.do("GET", "/api/v1/series/1/releases?season=1", mgr), true), "Show.S01E01.1080p.WEB-DL.x264-GRP")
-	bookTok := tokenFor(t, releasesOf(t, s.do("GET", "/api/v1/books/1/releases", mgr), true), "Timothy Zahn - Thrawn [EPUB]")
 
 	refused := []struct {
 		name, path, body string
@@ -199,11 +190,9 @@ func TestGrabByToken(t *testing.T) {
 		{"no token", "/api/v1/grab", `{"movie_id":1}`, mgr, http.StatusBadRequest},
 		{"unknown token", "/api/v1/grab", `{"token":"bm90LWEtdG9rZW4","movie_id":1}`, mgr, http.StatusGone},
 		{"a movie token on a show", "/api/v1/series/1/grab", `{"token":"` + movieTok + `"}`, mgr, http.StatusBadRequest},
-		{"a show token on a book", "/api/v1/books/1/grab", `{"token":"` + seriesTok + `"}`, mgr, http.StatusBadRequest},
 		{"a movie token on another movie's blocklist", "/api/v1/movies/2/blocklist", `{"token":"` + movieTok + `"}`, mgr, http.StatusBadRequest},
 		{"legacy movie grab", "/api/v1/grab", `{"indexer":"Tracker","download_url":"http://10.0.0.1/x","title":"Alpha","movie_id":1}`, mgr, http.StatusBadRequest},
 		{"legacy series grab", "/api/v1/series/1/grab", `{"indexer":"Tracker","download_url":"http://10.0.0.1/x","title":"Show"}`, mgr, http.StatusBadRequest},
-		{"legacy book grab", "/api/v1/books/1/grab", `{"indexer":"Tracker","download_url":"http://10.0.0.1/x","title":"Thrawn"}`, mgr, http.StatusBadRequest},
 		{"legacy blocklist", "/api/v1/movies/1/blocklist", `{"title":"Alpha","download_url":"http://10.0.0.1/x"}`, mgr, http.StatusBadRequest},
 	}
 	for _, tc := range refused {
@@ -221,7 +210,6 @@ func TestGrabByToken(t *testing.T) {
 	for _, tc := range []struct{ path, body, wantFetch string }{
 		{"/api/v1/grab", `{"token":"` + movieTok + `","movie_id":1}`, "/dl/1?apikey=" + trackerKey},
 		{"/api/v1/series/1/grab", `{"token":"` + seriesTok + `"}`, "/dl/2?apikey=" + trackerKey},
-		{"/api/v1/books/1/grab", `{"token":"` + bookTok + `"}`, "/dl/3?apikey=" + trackerKey},
 	} {
 		before := len(ft.fetches())
 		rec := s.doJSON("POST", tc.path, mgr, tc.body)

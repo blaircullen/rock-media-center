@@ -52,3 +52,12 @@ func formatIssueReported(d map[string]any) (Message, bool) {
 	}
 	return m, true
 }
+
+// clipText shortens s to at most n runes, with an ellipsis when cut.
+func clipText(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n-1]) + "…"
+}

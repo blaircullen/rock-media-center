@@ -57,9 +57,6 @@ func TestImporterEmptyRootFails(t *testing.T) {
 	if _, _, err := im.ImportEpisode("Show", 2020, filepath.Join(src, ep, ep+".mkv")); !errors.Is(err, ErrNoLibraryFolder) {
 		t.Fatalf("episode import with no TV folder: err = %v, want ErrNoLibraryFolder", err)
 	}
-	if got := im.FindBookFolders(); len(got) != 0 {
-		t.Errorf("no book folders set, but the scan found %+v", got)
-	}
 }
 
 // Root reads race with folder changes during imports; the funcs carry their own locking

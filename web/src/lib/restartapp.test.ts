@@ -4,9 +4,7 @@ const status = vi.fn();
 const restartApp = vi.fn();
 vi.mock("./api", () => ({ api: { status: () => status(), restartApp: () => restartApp() } }));
 
-import { busyLines, fmtAge, restartAppAndWait, RESTART_TIMEOUT_MESSAGE } from "./restart";
-
-const idle = { convert_running: 0, convert_longest_sec: 0, convert_progress: 0, subtitles_running: 0, subtitles_queued: 0 };
+import { restartAppAndWait, RESTART_TIMEOUT_MESSAGE } from "./restart";
 
 describe("restartAppAndWait", () => {
   beforeEach(() => { status.mockReset(); restartApp.mockReset(); restartApp.mockResolvedValue({ status: "restarting" }); });
@@ -29,28 +27,5 @@ describe("restartAppAndWait", () => {
     const then = vi.fn();
     await expect(restartAppAndWait({ then, intervalMs: 1, timeoutMs: 20 })).rejects.toThrow(RESTART_TIMEOUT_MESSAGE);
     expect(then).not.toHaveBeenCalled();
-  });
-});
-
-describe("busyLines", () => {
-  it("says nothing when nothing is running", () => {
-    expect(busyLines(idle)).toEqual([]);
-  });
-
-  it("names a running conversion's age and progress", () => {
-    expect(busyLines({ ...idle, convert_running: 1, convert_longest_sec: 3 * 3600 + 12 * 60, convert_progress: 0.41 }))
-      .toEqual(["A conversion has been running 3h 12m (41%) and will start over."]);
-  });
-
-  it("counts subtitle jobs, running and queued", () => {
-    expect(busyLines({ ...idle, subtitles_running: 1, subtitles_queued: 2 })[0]).toMatch(/^3 subtitle jobs will stop/);
-  });
-});
-
-describe("fmtAge", () => {
-  it("reads like a person would say it", () => {
-    expect(fmtAge(40)).toBe("40s");
-    expect(fmtAge(12 * 60 + 5)).toBe("12m");
-    expect(fmtAge(2 * 3600)).toBe("2h 0m");
   });
 });

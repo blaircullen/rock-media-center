@@ -144,7 +144,7 @@ export function LibraryUpdates({ server }: { server: MediaServerKind }) {
     <Section
       id={id}
       title={title}
-      subtitle={`After Arrmada imports, upgrades, renames, deletes or converts a file, it asks ${name} to scan just that folder, so the change shows up in ${name} within a minute. Arrmada's folders usually have different names inside ${name}'s container; each line shows where its scans go.`}
+      subtitle={`After Arrmada imports, upgrades, renames or deletes a file, it asks ${name} to scan just that folder, so the change shows up in ${name} within a minute. Arrmada's folders usually have different names inside ${name}'s container; each line shows where its scans go.`}
     >
       {!view.configured && (
         <Note tone="info">

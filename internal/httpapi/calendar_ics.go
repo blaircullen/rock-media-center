@@ -25,7 +25,7 @@ import (
 //     (the old stops at once) or turn it off.
 //   - The token opens this feed and nothing else, and the feed shows what that person's
 //     own Calendar shows them — episodes and film releases in the library, the adult
-//     filter applied — never anything about audiobooks.
+//     filter applied — never anything about what anyone watches.
 //   - It's reachable from outside the network (calendar services fetch from there) and
 //     rate-limited per address. A wrong, old or turned-off token, or a disabled account,
 //     all get the same 404, so it says nothing about who exists.
@@ -106,6 +106,15 @@ func (a *api) handleRevokeCalendarFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.writeJSON(w, http.StatusOK, calendarFeedView{Mine: feedMineDefault(u)})
+}
+
+// baseURL is the scheme and host the request reached us on.
+func baseURL(r *http.Request) string {
+	scheme := "http"
+	if requestIsHTTPS(r) {
+		scheme = "https"
+	}
+	return scheme + "://" + r.Host
 }
 
 // feedURL is the https (or http) feed link: at the outside address when one is set, else

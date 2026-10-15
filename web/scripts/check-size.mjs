@@ -8,7 +8,7 @@
 //    the entry chunk, the Discover page and everything they import statically (vendor
 //    included). That is what a phone must download and parse before Discover appears.
 // 3. Fails the build if that first load grows past the budget, or if it pulls in an
-//    admin-only page (Quality, Convert, Insights, Settings, the audiobook admin tabs).
+//    admin-only page (Quality, Insights, Settings).
 // 4. Deletes dist/.vite: the manifest is a build input only, not something to embed.
 //
 // Plain node, no dependencies. Usage: node scripts/check-size.mjs [distDir]
@@ -26,7 +26,7 @@ const BUDGET_RAW = 350 * 1024;
 const BUDGET_BR = 97 * 1024;
 
 const REQUESTER_PAGE = "src/pages/Discover.tsx";
-const ADMIN_ONLY = ["Quality", "Convert", "Insights", "Settings", "AudiobooksAdmin"].map((p) => `src/pages/${p}.tsx`);
+const ADMIN_ONLY = ["Quality", "Insights", "Settings"].map((p) => `src/pages/${p}.tsx`);
 
 const manifestPath = join(dist, ".vite", "manifest.json");
 if (!existsSync(manifestPath)) {

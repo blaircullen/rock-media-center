@@ -5,12 +5,11 @@ import { api, type MyQuota } from "./api";
 // loaded parts of the app (the quota hint, the season picker, the Requests page) import
 // this, so it stays out of the first load.
 
-export type QuotaKind = "movie" | "season" | "book";
+export type QuotaKind = "movie" | "season";
 
 const NOUN: Record<QuotaKind, [string, string]> = {
   movie: ["movie request", "movie requests"],
   season: ["season", "seasons"],
-  book: ["book request", "book requests"],
 };
 
 /** How many more of kind fit now; null when there's no limit (or it isn't known). */

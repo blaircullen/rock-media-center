@@ -14,7 +14,7 @@ var ErrNoIndexers = errors.New("no enabled indexer serves this kind of search")
 
 // AllFailedError means every indexer that should have answered a search errored. The
 // sweeps used to see this as an empty result and count a search miss, so an outage of a
-// few hours pushed titles into a 12h backoff — and a wanted book could drop out of
+// few hours pushed titles into a 12h backoff — and a wanted title could drop out of
 // automatic search for good. A caller that only needs releases can still read the
 // partial SearchResult returned alongside it (its Errors map is filled in).
 //

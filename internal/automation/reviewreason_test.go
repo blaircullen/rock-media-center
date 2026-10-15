@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/music"
 )
 
@@ -90,17 +89,6 @@ func TestReviewReasonCodes(t *testing.T) {
 		t.Errorf("series mismatch: code %q", r.ReasonCode)
 	}
 
-	// Books: a download that matches no book in the library.
-	h.c.books = books.NewService(h.c.db, nil, h.c.log)
-	bookDL := h.download(t, "Nobody - Unknown Book (2020) [EPUB]")
-	bHash := h.completedTorrent("Nobody - Unknown Book (2020) [EPUB]", bookCategory, bookDL)
-	for i := 0; i < unmatchedReviewAfter; i++ {
-		h.c.ImportBookDownloads(ctx)
-	}
-	if r := reviewFor(t, h.c, bHash); r.ReasonCode != ReasonUnmatched {
-		t.Errorf("book unmatched: code %q", r.ReasonCode)
-	}
-
 	// Music: a download for a library album that holds no audio.
 	h.c.music = music.NewService(h.c.db, nil, h.c.log)
 	mustExec(t, h.c, `INSERT INTO artists (id, mbid, name) VALUES (1, 'a1', 'Radiohead')`)
@@ -118,7 +106,7 @@ func TestReviewReasonCodes(t *testing.T) {
 // The file list shows what's inside the download and what each name says, and never
 // anything outside it — a symlink planted in the download is neither listed nor followed.
 func TestReviewFilesStaysInsideTheDownload(t *testing.T) {
-	c, _, ctx := reviewTestCoord(t)
+	c, ctx := reviewTestCoord(t)
 	dl := filepath.Join(t.TempDir(), "Show.S01.1080p")
 	if err := os.MkdirAll(filepath.Join(dl, "Extras"), 0o755); err != nil {
 		t.Fatal(err)
@@ -166,7 +154,7 @@ func TestReviewFilesStaysInsideTheDownload(t *testing.T) {
 // Retry import clears the importer's back-off for the download and resolves the review so
 // the sweep tries again; it's refused for a review that isn't an import failure.
 func TestRetryReviewImport(t *testing.T) {
-	c, _, ctx := reviewTestCoord(t)
+	c, ctx := reviewTestCoord(t)
 	var retried []string
 	c.SetImportRetry(func(hash string) { retried = append(retried, hash) })
 	mustExec(t, c, `INSERT INTO import_reviews (hash, name, media_type, expected_id, reason, reason_code) VALUES ('h1', 'X', 'movie', 1, 'Import failed 5 times', 'import_failed')`)

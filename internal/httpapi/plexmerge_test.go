@@ -103,7 +103,6 @@ func TestPlexMergeEndpoint(t *testing.T) {
 	ctx := context.Background()
 	admin, adminCookie := s.user(t, "owner@example.com", auth.RoleAdmin)
 	dup, _ := s.auth.FindOrCreatePlexUser(ctx, "4242", "ownerplex", auth.RoleRequester, auth.AutoApproval{})
-	s.giveListeningData(t, dup.ID)
 	if _, err := s.st.DB().Exec(`INSERT INTO requests (media_type, tmdb_id, title, requested_by, requested_by_name) VALUES ('movie', 1, 'A', ?, 'ownerplex')`, dup.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -114,11 +113,8 @@ func TestPlexMergeEndpoint(t *testing.T) {
 	}
 	var p auth.MergePreview
 	_ = json.Unmarshal(rec.Body.Bytes(), &p)
-	if p.Requests != 1 || !p.AudiobookProgress {
+	if p.Requests != 1 {
 		t.Errorf("preview = %+v", p)
-	}
-	if strings.Contains(rec.Body.String(), "b1") {
-		t.Errorf("the preview names a book: %s", rec.Body)
 	}
 
 	// The copy fails: nothing is merged.

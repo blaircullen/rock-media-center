@@ -13,7 +13,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/tristenlammi/arrmada/internal/auth"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/quality"
 	"github.com/tristenlammi/arrmada/internal/requests"
@@ -78,11 +77,10 @@ func icsServer(t *testing.T, logTo *bytes.Buffer) (*routeServer, *auth.User, *ht
 			d.Log = slog.New(slog.NewTextHandler(logTo, &slog.HandlerOptions{Level: slog.LevelDebug}))
 		}
 		db := d.Store.DB()
-		d.Books = books.NewService(db, nil, d.Log)
 		d.Quality = quality.NewService(db)
 		d.Movies = movies.NewService(db, nil, nil, root, "", nil, d.Log)
 		d.Series = series.NewService(db, nil, root, d.Log)
-		d.Requests = requests.NewService(db, d.Movies, d.Series, d.Books, nil, d.Quality, nil, "", d.Log)
+		d.Requests = requests.NewService(db, d.Movies, d.Series, nil, d.Quality, nil, "", d.Log)
 	})
 	day := func(n int) string { return time.Now().AddDate(0, 0, n).Format("2006-01-02") }
 	for _, q := range []string{

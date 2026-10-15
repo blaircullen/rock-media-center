@@ -13,7 +13,7 @@ import (
 )
 
 // Manual import used to walk whatever ?path= it was given, so "/" listed every big
-// video, ebook and audio file on every disk of the host. Imports are now confined to
+// video and audio file on every disk of the host. Imports are now confined to
 // the folders Arrmada was actually given: downloads and the libraries.
 var (
 	errImportPathDataDir = errors.New("That's Arrmada's own data folder — pick a folder inside your downloads or library folders")
@@ -49,7 +49,7 @@ func (a *api) writeImportList(w http.ResponseWriter, r *http.Request, ctx contex
 	resp := map[string]any{"path": dir, "candidates": cands, "truncated": truncated}
 	if err := ctx.Err(); err != nil {
 		if rerr := r.Context().Err(); rerr != nil {
-			// No path in the line: it can name a book, and this is about the walk.
+			// No path in the line: it can name a title, and this is about the walk.
 			a.deps.Log.Debug("manual import listing stopped: the request ended", "kind", kind, "err", rerr)
 			return
 		}

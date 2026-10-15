@@ -60,14 +60,14 @@ func startMailFake(t *testing.T, o mailtest.Options) *mailtest.Server {
 // saveSMTP points the saved setup at the fake server (no TLS: it's on 127.0.0.1).
 func saveSMTP(t *testing.T, s *routeServer, c *http.Cookie, fake *mailtest.Server, user, pass string) {
 	t.Helper()
-	body := fmt.Sprintf(`{"host":%q,"port":%d,"security":"none","username":%q,"password":%q,"from":"Arrmada <books@example.com>"}`,
+	body := fmt.Sprintf(`{"host":%q,"port":%d,"security":"none","username":%q,"password":%q,"from":"Arrmada <arrmada@example.com>"}`,
 		fake.Host, fake.Port, user, pass)
 	if rec := s.doJSON("PUT", "/api/v1/settings/smtp", c, body); rec.Code != http.StatusOK {
 		t.Fatalf("save SMTP: HTTP %d %s", rec.Code, rec.Body)
 	}
 }
 
-// BOOK-23: the owner saves the mail setup; reading it back never returns the server, the
+// The owner saves the mail setup; reading it back never returns the server, the
 // login or the password, and no log line carries them. The Test button sends through it,
 // and a wrong password shows the server's own reply.
 func TestSMTPSettingsSaveTestAndRedact(t *testing.T) {
@@ -89,7 +89,7 @@ func TestSMTPSettingsSaveTestAndRedact(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &v); err != nil {
 		t.Fatal(err)
 	}
-	if !v.Configured || !v.HostSet || !v.UsernameSet || !v.PasswordSet || v.Port != fake.Port || v.Security != "none" || v.From != "Arrmada <books@example.com>" {
+	if !v.Configured || !v.HostSet || !v.UsernameSet || !v.PasswordSet || v.Port != fake.Port || v.Security != "none" || v.From != "Arrmada <arrmada@example.com>" {
 		t.Errorf("view = %+v", v)
 	}
 	// The API keys list doesn't show the mail credentials, and its routes can't touch them.
@@ -118,7 +118,7 @@ func TestSMTPSettingsSaveTestAndRedact(t *testing.T) {
 	}
 
 	// A blank password on save keeps the saved one; a wrong one shows the server's reply.
-	if rec := s.doJSON("PUT", "/api/v1/settings/smtp", admin, `{"from":"books@example.com"}`); rec.Code != http.StatusOK {
+	if rec := s.doJSON("PUT", "/api/v1/settings/smtp", admin, `{"from":"arrmada@example.com"}`); rec.Code != http.StatusOK {
 		t.Fatalf("partial save: HTTP %d %s", rec.Code, rec.Body)
 	}
 	if rec := s.doJSON("POST", "/api/v1/settings/smtp/test", admin, `{"to":"owner@example.com"}`); !strings.Contains(rec.Body.String(), `"ok":true`) {

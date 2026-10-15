@@ -50,30 +50,21 @@ var bannedCopy = []bannedPhrase{
 	phrase(`isn['’]t built yet`, "a bad URL is 'Page not found' (pages/NotFound.tsx)"),
 	phrase(`on the roadmap`, "describe what ships, not what's planned"),
 	phrase(`lands with the`, "don't promise future work in the UI"),
-	phrase(`AI are coming`, "AI transcription has shipped — say whether a model is installed"),
-	phrase(`AI \+ embedded only`, "list the sources that work right now (Subtitles header pill)"),
-	phrase(`stripped from the video`, "Subtitles never edits the video; Convert drops languages under its own setting"),
-	// large-v3-turbo transcribes any language; only translating into English needs large-v3.
-	phrase(`Turbo \(English\)|fast English transcription|turbo (is )?(for|only) English`, "large-v3-turbo transcribes speech in any language — say it can't translate, not that it's English-only"),
-	phrase(`turbo (can )?translates?\b`, "large-v3-turbo can't translate — translating foreign audio into English takes large-v3"),
 	// COPY-03: pages that don't exist.
 	phrase(`(appear|show)[a-z]* in Downloads|Downloads → (Searching|Upcoming|Seeding)`, "Downloads, Review, History and Blocklist are tabs of Activity — say Activity → Queue / Wanted (PAGE.activity)"),
 	// (REQ-05 routed /requests, so "Requests page" is no longer a dead end.)
 	// COPY-09: what requesters actually get.
-	phrase(`Discover-only`, "requesters get Discover, Requests, Calendar, Books and Audiobooks — list the real pages (requesterNav)"),
-	phrase(`only the Discover page`, "requesters get Discover, Requests, Calendar, Books and Audiobooks — list the real pages (requesterNav)"),
+	phrase(`Discover-only`, "requesters get Discover, Requests and Calendar — list the real pages (requesterNav)"),
+	phrase(`only the Discover page`, "requesters get Discover, Requests and Calendar — list the real pages (requesterNav)"),
 	webPhrase(`update\.sh`, "the UI never sends people to the install scripts; name the setting or the container"),
 	// CFG-13: Settings is a hub of sections with their own URLs.
 	phrase(`Settings → System → (Recycle bin|Disk guard|Download disk guard)`, "the recycle bin and disk guard live in Settings → Downloads (LINKS.recycleBin, LINKS.diskGuard)"),
 	webPhrase(`/settings\?tab=`, "each Settings section has its own URL — link through LINKS (/settings/<section>#card)"),
-	// CFG-17: module settings moved out of their pages' Settings tabs into the hub.
-	phrase(`(Convert|Subtitles) → Settings|Audiobooks → Server`, "module settings live in Settings → Subtitles, Settings → Convert and Settings → Audiobook server (LINKS.convertSettings, LINKS.subtitlesSettings, LINKS.audiobookServer)"),
-	webPhrase(`/(convert|subtitles)\?tab=settings|/audiobooks\?tab=server`, "the old Settings tabs only redirect now — link through LINKS"),
 	// CFG-18: Users became People & access.
 	phrase(`Settings → Users`, "the section is Settings → People & access (LINKS.users)"),
 	// CFG-16 / PLEX-17: the Plex connection is the Plex card on Settings → Connections.
 	phrase(`connect (your )?Plex( server)? in (Insights|Settings → Plex)`, "the Plex connection is the Plex card in Settings → Connections (LINKS.plexConnection)"),
-	webPhrase(`/settings/plex#plex-connection|/audiobooks\?tab=import`, "those cards moved (Settings → Connections' Plex card, Settings → Import & migrate) — link through LINKS"),
+	webPhrase(`/settings/plex#plex-connection`, "that card moved (Settings → Connections' Plex card) — link through LINKS"),
 	// J5b: Settings → Plex became Settings → Media servers (a Plex and a Jellyfin group).
 	phrase(`Settings → Plex\b`, "the section is Settings → Media servers (LINKS.mediaServers, or a card like LINKS.plexSignIn)"),
 	webPhrase("[\"'`]/settings/plex\\b", "/settings/plex only redirects now — link through LINKS (LINKS.mediaServers, LINKS.plexServer…)"),
@@ -87,27 +78,19 @@ var bannedCopy = []bannedPhrase{
 	phrase(`kept in memory, up to`, "the viewer loads up to LOG_LIMIT lines; Arrmada keeps 50,000 in memory and writes rotating log files"),
 	webPhrase(`ARRMADA_BASE_URL`, "sub-path hosting isn't supported — Arrmada is served at the root of its own port or hostname"),
 	webPhrase(`dev-docker`, "builds are stamped with a dated version and the short commit (update.sh)"),
-	// COPY-11: books come from Hardcover, Open Library or Google Books — name the right one.
-	webPhrase(`openlibrary\.org/works/\$\{`, "link the book's own catalogue with b.catalogue.url (books.CatalogueLink); Hardcover and Google Books keys aren't Open Library works"),
-	phrase(`search Open Library and re-link`, "Change match searches the current catalogue — say 'search the catalogue'"),
-	phrase(`this author on Open Library`, "name the catalogue that answered: Hardcover for hc:a: authors, else Open Library"),
 	// COPY-04: no music upgrade sweep exists.
 	phrase(`keeps upgrading until`, "music albums aren't upgraded after the first grab"),
 	phrase(`upgrades later if`, "music albums aren't upgraded after the first grab"),
 	phrase(`Replace an album when`, "music albums aren't upgraded after the first grab"),
 	// COPY-06: the upgrade sweep skips unmonitored films and non-upgrading profiles.
 	phrase(`If your quality profile allows upgrades`, "say what happens, from upgrades_allowed"),
-	// CONV-05: Convert copy.
-	phrase(`and it plays everywhere`, "HEVC plays on most devices made since about 2016 (H.264 is the one that plays everywhere)"),
-	phrase(`whatever the hours`, "a request starts when a conversion slot is free"),
-	phrase(`every audio track (is|are) copied`, "tracks filtered out in Convert → Settings are removed"),
 	// COPY-12: one status vocabulary (web/src/lib/status.ts) — Downloaded / Complete /
 	// Partial / Wanted / Unmonitored / File missing, from libraryStatus().
 	webPhrase(`(?-i:label: "(Missing|Available|Incomplete|In progress)")`, "library statuses and filters say Wanted / Downloaded / Partial — use libraryStatus() and isWanted() from lib/status"),
 	webPhrase(`(?-i:"In progress")`, "a partly downloaded series or album is 'Partial' (lib/status)"),
 	webPhrase(`(?-i:"Monitored" : "(Unmonitored|Paused)")`, "monitor toggles read 'Monitored' / 'Monitor'; the status chip says Unmonitored"),
 	webPhrase(`"have" : "missing"|"on disk" : "wanted"`, "row labels read 'downloaded' / 'wanted'"),
-	webPhrase(`placeholder="(Search titles|Filter artists|Search title or author)…"`, "library search boxes read 'Search movies…', 'Search series…', 'Search books or authors…', 'Search artists…'"),
+	webPhrase(`placeholder="(Search titles|Filter artists)…"`, "library search boxes read 'Search movies…', 'Search series…', 'Search artists…'"),
 }
 
 // match returns the first banned phrase on a line, or nil. web says whether the line is
@@ -234,11 +217,6 @@ func TestCopyGuardMatcher(t *testing.T) {
 		`Not found isn't built yet`,
 		`This module is on the roadmap.`,
 		`Health scoring lands with the sync phase`,
-		`image subs + AI are coming`,
-		`AI + embedded only`,
-		`everything else is stripped from the video`,
-		`{ label: "Turbo (English)" }`,
-		`turbo can translate it into English`,
 		`it'll appear in Downloads once grabbed`,
 		`follow it in Downloads → Searching`,
 		`a Requester account (Discover-only)`,
@@ -246,8 +224,6 @@ func TestCopyGuardMatcher(t *testing.T) {
 		`re-run ./update.sh`,
 		`restorable from Settings → System → Recycle bin`,
 		`<Link to="/settings?tab=system#api-keys">`,
-		`set that in Convert → Settings`,
-		`<Link to="/subtitles?tab=settings">Settings</Link>`,
 		`change them in Settings → Users.`,
 		`connect your Plex server in Insights first`,
 		`<Link to="/settings/plex#plex-connection">Plex connection</Link>`,
@@ -260,16 +236,10 @@ func TestCopyGuardMatcher(t *testing.T) {
 		`lines — kept in memory, up to 5000.`,
 		`set ARRMADA_BASE_URL to serve under a path`,
 		`version dev-docker`,
-		"<a href={`https://openlibrary.org/works/${b.ol_key}`}>Open Library</a>",
-		`This is the wrong book — search Open Library and re-link it to the right one`,
-		`Couldn't find more books for this author on Open Library.`,
 		`keeps upgrading until it reaches the top`,
 		`and upgrades later if one appears`,
 		`Replace an album when a higher tier turns up`,
 		`If your quality profile allows upgrades, Arrmada keeps watching`,
-		`the best quality and it plays everywhere`,
-		`it starts right away, whatever the hours`,
-		`Atmos and every audio track are copied untouched`,
 		`  { key: "missing", label: "Missing" },`,
 		`return { label: have > 0 ? "In progress" : "Wanted" };`,
 		`{version.monitored ? "Monitored" : "Unmonitored"}</button>`,
@@ -292,7 +262,6 @@ func TestCopyGuardMatcher(t *testing.T) {
 	}
 	for _, ok := range []string{
 		`Coming soon — copy-ok: quoting the old text on purpose`,
-		`subtitles as soon as it imports`,
 		`Activity → Wanted`,
 		`Settings → Connections`,
 		`Settings → Downloads → Recycle bin`,

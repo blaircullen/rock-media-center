@@ -7,7 +7,7 @@ import (
 
 // Restamping the codec of a converted file.
 //
-// After Convert re-encodes a file, the recorded source release has to say the new codec,
+// After a file is re-encoded, the recorded source release has to say the new codec,
 // or upgrade scoring costs the shrunken file at the old codec's efficiency and the sweep
 // re-downloads the very release it came from. Appending " AV1" to the name did not work:
 // the old token still read first ("...H.264-GRP AV1" parsed as x264) and the trailing word

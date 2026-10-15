@@ -13,8 +13,8 @@ import (
 // delete, a rescan). Each change goes out two ways:
 //
 //   - an outbox row (movie.imported / movie.changed), written in the same transaction as
-//     the change where there is one, for work that must happen: Convert's and Subtitles'
-//     indexes, the requester's "ready" message. A crash or a busy moment can't lose it.
+//     the change where there is one, for work that must happen: the requester's "ready"
+//     message, media server scans. A crash or a busy moment can't lose it.
 //   - a bus event (movie.downloaded / movie.renamed / movie.file_deleted / movie.deleted)
 //     carrying the affected paths, for the UI and admin alerts. 'id' stays an int64.
 
@@ -35,12 +35,11 @@ func (s *Service) enqueue(ctx context.Context, q store.Execer, topic string, pay
 }
 
 // enqueueChange writes a movie.changed row outside any transaction, for the paths whose
-// writes aren't transactional (rescan, Convert's repoint, a half-finished delete). A
-// failure is logged: the nightly Convert sweep and the 6-hourly Subtitles pass still
-// catch up.
+// writes aren't transactional (rescan, a half-finished delete). A failure is logged and
+// the change is not retried.
 func (s *Service) enqueueChange(ctx context.Context, ch outbox.MovieChanged) {
 	if err := s.enqueue(ctx, s.repo.db, outbox.TopicMovieChanged, ch, movieKey(ch.MovieID)); err != nil {
-		s.log.Warn("movies: couldn't queue the index update for a file change — the nightly sweep will catch it",
+		s.log.Warn("movies: couldn't queue the follow-up work for a file change",
 			"movie_id", ch.MovieID, "change", ch.Change, "err", err)
 	}
 }

@@ -11,12 +11,11 @@ const TYPES: { key: BlockType | ""; label: string }[] = [
   { key: "", label: "All" },
   { key: "movie", label: "Movies" },
   { key: "series", label: "Series" },
-  { key: "book", label: "Books" },
   { key: "music", label: "Music" },
   { key: "global", label: "Global" },
 ];
 
-const KIND_LABEL: Record<BlockType, string> = { movie: "movie", series: "series", book: "book", music: "album", global: "global" };
+const KIND_LABEL: Record<BlockType, string> = { movie: "movie", series: "series", music: "album", global: "global" };
 
 // Where a blocklist row's title lives in the app.
 function itemLink(r: BlocklistRow): string | null {
@@ -24,7 +23,6 @@ function itemLink(r: BlocklistRow): string | null {
   switch (r.type) {
     case "movie": return `/movies/${r.item_id}`;
     case "series": return `/series/${r.item_id}`;
-    case "book": return `/books/${r.item_id}`;
     case "music": return r.discography ? `/music/${r.item_id}` : `/music/album/${r.item_id}`;
     default: return null;
   }

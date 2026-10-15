@@ -118,7 +118,7 @@ func TestSeasonStates(t *testing.T) {
 func TestCreateSeriesRequestWithSeasons(t *testing.T) {
 	s := newRouteServer(t, func(d *Deps) {
 		d.Series = series.NewService(d.Store.DB(), nil, t.TempDir(), d.Log)
-		d.Requests = requests.NewService(d.Store.DB(), nil, d.Series, nil, nil, nil, nil, "", d.Log)
+		d.Requests = requests.NewService(d.Store.DB(), nil, d.Series, nil, nil, nil, "", d.Log)
 		d.Discovery = seasonsStub{stubDiscovery{ok: true}, []metadata.SeasonSummary{{Number: 1}, {Number: 2}, {Number: 3}}}
 	})
 	_, kid := s.user(t, "kid@example.com", auth.RoleRequester)
@@ -157,7 +157,7 @@ func (s seasonsStub) MediaDetails(context.Context, string, int) (*metadata.Media
 func TestSeriesSeasonsEndpoint(t *testing.T) {
 	s := newRouteServer(t, func(d *Deps) {
 		d.Series = series.NewService(d.Store.DB(), nil, t.TempDir(), d.Log)
-		d.Requests = requests.NewService(d.Store.DB(), nil, d.Series, nil, nil, nil, nil, "", d.Log)
+		d.Requests = requests.NewService(d.Store.DB(), nil, d.Series, nil, nil, nil, "", d.Log)
 		d.Discovery = seasonsStub{stubDiscovery{ok: true}, []metadata.SeasonSummary{
 			{Number: 1, EpisodeCount: 2, AirDate: "2020-01-01"},
 			{Number: 2, EpisodeCount: 1, AirDate: "2021-01-01"},

@@ -13,11 +13,10 @@ import (
 )
 
 // Outgoing email (Settings → Alerts → Outgoing email): the mail account Arrmada sends
-// from, for Send to Kindle. The server, the login and the password are credentials: they
+// from, for emails to people. The server, the login and the password are credentials: they
 // live in the API key store, are typed in this card only, and only ever come back to the
 // browser as "set" plus a masked hint. Port, security and the From address are ordinary
-// settings (the From address is shown to everyone who sends to a Kindle, since Amazon has
-// to be told to trust it). Logs carry the outcome, never the server, login or recipient.
+// settings (the From address is shown to everyone who gets an email from this server). Logs carry the outcome, never the server, login or recipient.
 
 const (
 	keySMTPPort     = "smtp_port"

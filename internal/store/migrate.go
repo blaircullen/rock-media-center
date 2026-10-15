@@ -33,14 +33,14 @@ import (
 //
 // Leave legacy_alter_table OFF (the default) so the rename keeps references intact.
 //
-// If any other table REFERENCES <t> (users, series, books, artists and albums today),
+// If any other table REFERENCES <t> (users, series, artists and albums today),
 // the file's first line must be the directive
 //
 //	-- arrmada:foreign-keys-off
 //
 // Our connections run with foreign_keys=ON, and SQLite ignores PRAGMA foreign_keys
 // inside a transaction, so without the directive step 3 is an implicit DELETE of
-// every row in <t>: ON DELETE CASCADE children (sessions, audiobook progress,
+// every row in <t>: ON DELETE CASCADE children (sessions, request usage,
 // episodes...) silently vanish and the migration still "succeeds". With the
 // directive the runner turns foreign keys off on a dedicated connection before the
 // transaction, runs PRAGMA foreign_key_check before committing (any dangling

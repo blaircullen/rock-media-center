@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/parser"
@@ -40,11 +39,11 @@ const missingGrace = 30 * time.Minute
 // Acquisition is one grab and where its download has got to.
 type Acquisition struct {
 	GrabID    int64  `json:"grab_id"`
-	MediaType string `json:"media_type"` // movie | series | book | music
-	// ItemID is the movie, series, book or album the grab is for (grabs.movie_id).
+	MediaType string `json:"media_type"` // movie | series | music
+	// ItemID is the movie, series or album the grab is for (grabs.movie_id).
 	ItemID int64 `json:"item_id"`
 	// VersionID is the movie version (0 is the default track, which interactive and
-	// uploaded grabs are recorded against) or the audiobook version (0: the standard edition).
+	// uploaded grabs are recorded against).
 	VersionID int64   `json:"version_id,omitempty"`
 	Title     string  `json:"title"`               // the release grabbed, as listed
 	InfoHash  string  `json:"info_hash,omitempty"` // "" for a legacy row (see legacyMatchByName)
@@ -52,7 +51,7 @@ type Acquisition struct {
 	Phase     string  `json:"phase"`               // the client's view; "" until first seen
 	Progress  float64 `json:"progress"`
 	// Scope is what the grab was for: v<version> (movie), S03 / S03E05 / S01-S04 /
-	// complete / abs (series), ebook / audiobook / v<id> (book), album (music).
+	// complete / abs (series), album (music).
 	Scope       string    `json:"scope,omitempty"`
 	ClientID    int64     `json:"client_id,omitempty"`
 	Profile     string    `json:"quality_profile,omitempty"` // as resolved when grabbed
@@ -105,11 +104,6 @@ func derivedScope(a Acquisition) string {
 		return "v" + strconv.FormatInt(a.VersionID, 10)
 	case "music":
 		return "album"
-	case "book":
-		if a.VersionID > 0 {
-			return "v" + strconv.FormatInt(a.VersionID, 10)
-		}
-		return books.EditionOf(detectBookFormat(a.Title))
 	}
 	// A series row without one is worked out where the series is at hand (alias seasons
 	// and anime numbering need it): see seriesInFlightScope.

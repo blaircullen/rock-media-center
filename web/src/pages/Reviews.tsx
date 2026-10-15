@@ -9,7 +9,7 @@ import { MapFilesModal } from "./reviews/MapFilesModal";
 import { guessLabel } from "./reviews/episodes";
 
 // What the user calls a library item of each review kind.
-const KIND_LABEL: Record<ReviewKind, string> = { series: "show", movie: "movie", book: "book", music: "album" };
+const KIND_LABEL: Record<ReviewKind, string> = { series: "show", movie: "movie", music: "album" };
 
 // Each reason's chip, and the one-line hint of what to do about it.
 const REASON: Record<ReviewReason, { label: string; tone: Tone }> = {
@@ -26,7 +26,6 @@ function titleLink(r: ImportReview): string | null {
   switch (r.media_type) {
     case "movie": return `/movies/${r.expected_id}`;
     case "series": return `/series/${r.expected_id}`;
-    case "book": return `/books/${r.expected_id}`;
     case "music": return `/music/album/${r.expected_id}`;
   }
 }
@@ -392,8 +391,8 @@ function kindLabel(kind: ReviewKind): string {
 
 // ReassignModal lets the admin pick an existing library item (of the review's
 // media type) to import the held content into. The server does the listing and the
-// filtering, so a book review lists books and an album review lists albums — never
-// movies, whose ids would land on an unrelated book or album.
+// filtering, so an album review lists albums — never movies, whose ids would land on
+// an unrelated album.
 function ReassignModal({ review, onClose, onPicked }: { review: ImportReview; onClose: () => void; onPicked: (targetId: number, label: string) => void }) {
   const label = kindLabel(review.media_type);
   return (
@@ -454,7 +453,7 @@ export function TargetPicker({ title, name, kind, load, loadKey, header, initial
     <Modal onClose={onClose} title={title} initialFocus={filterRef}>
       <p className="mb-3 text-sm text-ink-dim">Pick the library {label} to import <span className="break-all font-mono">{name}</span> into.</p>
       {header}
-      <input ref={filterRef} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Filter your library" placeholder={kind === "book" ? "Filter by title or author…" : kind === "music" ? "Filter by album or artist…" : "Filter your library…"} className="mb-3 w-full rounded-lg px-3 py-2 text-md" style={{ background: "var(--panel-2)", border: "1px solid var(--line)", color: "var(--ink)" }} />
+      <input ref={filterRef} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Filter your library" placeholder={kind === "music" ? "Filter by album or artist…" : "Filter your library…"} className="mb-3 w-full rounded-lg px-3 py-2 text-md" style={{ background: "var(--panel-2)", border: "1px solid var(--line)", color: "var(--ink)" }} />
       <div className="thin-scroll max-h-[52vh] overflow-y-auto rounded-lg" style={{ border: "1px solid var(--line)" }}>
         {error ? (
           <div className="p-6 text-center text-sm" style={{ color: "var(--avoid-text)" }}>{error}</div>

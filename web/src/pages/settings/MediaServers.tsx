@@ -413,19 +413,17 @@ function PlexTautulli() {
 // PlexSignIn (admin): whether family members may sign in with Plex, and what a new Plex
 // sign-in may request without asking. Each control saves itself.
 function PlexSignIn() {
-  const { booksEnabled } = useMe();
   const allow = useSetting("plex_login_enabled");
   const staff = useSetting("plex_signin_staff");
   const autoTypes = useSetting("plex_login_auto_approve_types", { keepOnError: false });
   return (
-    <Section id="plex-sign-in" title="Plex sign-in" subtitle={<>Let your Plex Home members and shared users sign in with Plex — no accounts to hand out. They get a Requester account ({requesterPages(booksEnabled)}), and only people with access to your Plex server get in. Needs the Plex server above to be connected.</>}>
+    <Section id="plex-sign-in" title="Plex sign-in" subtitle={<>Let your Plex Home members and shared users sign in with Plex — no accounts to hand out. They get a Requester account ({requesterPages()}), and only people with access to your Plex server get in. Needs the Plex server above to be connected.</>}>
       <AutoToggle label="Allow Sign in with Plex" hint="Adds a 'Sign in with Plex' button to the login page." save={allow} />
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-2 text-base font-semibold">Auto-approve new Plex sign-ins' requests <SavedTick save={autoTypes} /></div>
         <AutoApproveChecks
           value={typesFromCSV(autoTypes.value ?? "movie")}
           onChange={(v) => void autoTypes.commit(typesToCSV(v))}
-          books={booksEnabled}
           label="New Plex sign-ins auto-approve"
         />
         <p className="m-0 text-xs text-ink-faint">Ticked types download straight away for someone who signs in with Plex for the first time; the rest wait for you. A series request can pull every season of a long show, so it starts with movies only. Existing accounts keep their own settings — change them in Settings → People & access.</p>

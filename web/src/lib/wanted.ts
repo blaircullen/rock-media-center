@@ -10,8 +10,6 @@ export function wantedHref(r: WantedRow): string {
   switch (r.media_type) {
     case "series":
       return `/series/${r.id}`;
-    case "book":
-      return `/books/${r.id}`;
     case "music":
       return `/music/album/${r.id}`;
     default:

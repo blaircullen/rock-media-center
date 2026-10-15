@@ -18,7 +18,7 @@ interface SettingsStore {
 const SettingsContext = createContext<SettingsStore | null>(null);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const { setBooksEnabled, setMusicEnabled } = useMe();
+  const { setMusicEnabled } = useMe();
   const [s, setS] = useState<AppSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,10 +37,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       return merged as unknown as AppSettings;
     });
     // Module on/off shows in the nav and Discover straight away.
-    if ("books_enabled" in p) setBooksEnabled(next.books_enabled);
     if ("music_enabled" in p) setMusicEnabled(next.music_enabled);
     return next;
-  }, [setBooksEnabled, setMusicEnabled]);
+  }, [setMusicEnabled]);
 
   return <SettingsContext.Provider value={{ s, error, commit }}>{children}</SettingsContext.Provider>;
 }

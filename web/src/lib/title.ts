@@ -48,7 +48,7 @@ export function useDocumentTitle(): void {
   }, [title]);
 }
 
-// useTitle lets a page name the tab after what it shows (a movie, an author). An empty
+// useTitle lets a page name the tab after what it shows (a movie, a series). An empty
 // title leaves the route's own title in place.
 export function useTitle(title: string | undefined): void {
   useEffect(() => {

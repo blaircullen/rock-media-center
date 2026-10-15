@@ -20,7 +20,7 @@ import (
 
 // handleLogs returns recent application logs for the in-app Logs viewer.
 //
-//	GET /api/v1/logs?limit=500&level=info&q=ben10&hide=torznab,indexer+search&module=convert&after_seq=1234
+//	GET /api/v1/logs?limit=500&level=info&q=ben10&hide=torznab,indexer+search&module=indexer&after_seq=1234
 //
 // after_seq makes it incremental: only lines captured after that one come back, and
 // last_seq is the cursor for the next call. reset=true says the cursor was from before a

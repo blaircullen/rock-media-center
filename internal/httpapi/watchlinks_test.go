@@ -14,7 +14,6 @@ import (
 
 	"github.com/tristenlammi/arrmada/internal/apikeys"
 	"github.com/tristenlammi/arrmada/internal/auth"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/jellyfinsvc"
 	"github.com/tristenlammi/arrmada/internal/mediaserver"
 	"github.com/tristenlammi/arrmada/internal/movies"
@@ -100,7 +99,7 @@ func TestWatchLinksLeadWithTheViewersServer(t *testing.T) {
 	if got := linksOf(t, s.do("GET", "/api/v1/media/links?media=movie&tmdb=9", plexCookie)); len(got) != 0 {
 		t.Errorf("on neither: %+v, want an empty list", got)
 	}
-	for _, p := range []string{"/api/v1/media/links?media=book&tmdb=1", "/api/v1/media/links?media=movie", "/api/v1/media/links?media=movie&tmdb=-3"} {
+	for _, p := range []string{"/api/v1/media/links?media=podcast&tmdb=1", "/api/v1/media/links?media=movie", "/api/v1/media/links?media=movie&tmdb=-3"} {
 		if rec := s.do("GET", p, plexCookie); rec.Code != http.StatusBadRequest {
 			t.Errorf("%s: HTTP %d, want 400", p, rec.Code)
 		}
@@ -202,11 +201,10 @@ func TestWatchLinkResponsesCarryNoSecrets(t *testing.T) {
 			}})
 		d.Jellyfin = jf
 		d.MediaServers = mediaserver.NewRegistry(jf)
-		d.Books = books.NewService(db, nil, d.Log)
 		d.Quality = quality.NewService(db)
 		d.Movies = movies.NewService(db, nil, nil, root, "", nil, d.Log)
 		d.Series = series.NewService(db, nil, root, d.Log)
-		d.Requests = requests.NewService(db, d.Movies, d.Series, d.Books, nil, d.Quality, nil, "", d.Log)
+		d.Requests = requests.NewService(db, d.Movies, d.Series, nil, d.Quality, nil, "", d.Log)
 		d.Discovery = detailStub{stubDiscovery{ok: true}}
 	})
 	ctx, cancel := context.WithCancel(context.Background())

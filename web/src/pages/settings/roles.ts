@@ -11,20 +11,19 @@ export function andList(xs: string[]): string {
 }
 
 // requesterPages is a requester's top bar at home, with any page they lose from outside
-// the network marked as such: "Discover, Calendar (at home only), My shelf, Audiobooks".
-export function requesterPages(booksEnabled: boolean): string {
-  const outside = new Set(requesterNav({ external: true, booksEnabled }).map((n) => n.to));
-  return requesterNav({ external: false, booksEnabled })
+// the network marked as such: "Discover, Requests, Calendar (at home only)".
+export function requesterPages(): string {
+  const outside = new Set(requesterNav({ external: true }).map((n) => n.to));
+  return requesterNav({ external: false })
     .filter((n) => n.header)
     .map((n) => (outside.has(n.to) ? n.label : `${n.label} (at home only)`))
     .join(", ");
 }
 
-// managerExceptions is what a manager can't open: the admin-only sidebar pages, the admin
-// tabs on Audiobooks (who may connect and everyone's listening) and the admin-only Settings
-// sections. They can see the library folders but only an admin can move them.
+// managerExceptions is what a manager can't open: the admin-only sidebar pages and the
+// admin-only Settings sections. They can see the library folders but only an admin can move them.
 export function managerExceptions(): string {
   const pages = NAV.flatMap((g) => g.items).filter((i) => i.adminOnly).map((i) => i.label);
   const sections = SECTIONS.filter((s) => s.adminOnly).map((s) => s.label);
-  return `the whole console except ${andList([...pages, "Audiobooks' admin tabs", `Settings → ${sections.join(", ")}`])}. They can see the library folders but not move them.`;
+  return `the whole console except ${andList([...pages, `Settings → ${sections.join(", ")}`])}. They can see the library folders but not move them.`;
 }

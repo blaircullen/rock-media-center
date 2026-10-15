@@ -3,25 +3,23 @@ import { Link } from "react-router-dom";
 import { PlexMergeDialog } from "../../components/PlexMergeDialog";
 import { AutoNumber, SavedTick, wholeNumber } from "../../components/settings/auto";
 import { Section, inputStyle } from "../../components/settings/ui";
-import { api, type JellyfinBlock, type Person, type PlexBlock, type UserImpact, type UserQuota, type UserRole } from "../../lib/api";
+import { type JellyfinBlock, type Person, type PlexBlock, type UserImpact, type UserQuota, type UserRole } from "../../lib/api";
 import { peopleApi } from "../../lib/peopleApi";
 import { accountApi } from "../../lib/accountApi";
 import { LINKS } from "../../lib/links";
 import { useMe } from "../../lib/me";
 import { useUnsavedGuard } from "../../lib/useUnsavedGuard";
 import { ago } from "../../lib/taskTime";
-import { useAutoSave, type AutoSave } from "../../lib/useAutoSave";
+import { useAutoSave } from "../../lib/useAutoSave";
 import { useLoadedSettings } from "../../lib/useSettings";
 import { Button, ConfirmDialog, useConfirm, useToast } from "../../ui";
 import { managerExceptions, requesterPages } from "./roles";
 
 // Settings → People & access (admin only): everyone once — their role, what they
-// auto-approve, their Plex link, when they were last around, where they're signed in,
-// whether they may use the audiobook server — with Disable and Delete. It replaces the
-// old Users list and the audiobook access list. Every control saves itself. Listening is
-// shown as when, never what.
+// auto-approve, their Plex link, when they were last around, where they're signed in —
+// with Disable and Delete. It replaces the old Users list. Every control saves itself.
 export function PeopleSettings() {
-  const { user, booksEnabled } = useMe();
+  const { user } = useMe();
   return (
     <div className="flex flex-col gap-6">
       <PeopleList meId={user?.id} />
@@ -29,15 +27,15 @@ export function PeopleSettings() {
         Who may sign in with Plex or Jellyfin, and what their new sign-ins auto-approve, is in Settings → Media servers: <Link to={LINKS.plexSignIn} style={{ color: "var(--accent-text)" }}>Plex sign-in</Link> and <Link to={LINKS.jellyfinSignIn} style={{ color: "var(--accent-text)" }}>Jellyfin sign-in</Link>.
       </p>
       <Section id="request-limits" title="Request limits" subtitle="Optional: how much one person can ask for in a stretch of days. Following someone else's request is free, a withdrawn or declined request gives its share back, and admins and managers are never limited. 0 means no limit.">
-        <RequestLimits books={booksEnabled} />
-        <p className="m-0 text-xs text-ink-faint">Typical household: 10 movies, 5 seasons and 10 books a week. A season request counts each season; asking for a whole show counts all of its seasons. Set a different limit for one person under More on their row.</p>
+        <RequestLimits />
+        <p className="m-0 text-xs text-ink-faint">Typical household: 10 movies and 5 seasons a week. A season request counts each season; asking for a whole show counts all of its seasons. Set a different limit for one person under More on their row.</p>
       </Section>
     </div>
   );
 }
 
-type QuotaKey = "request_quota_movies" | "request_quota_seasons" | "request_quota_books" | "request_quota_days";
-const TYPICAL: Record<QuotaKey, number> = { request_quota_movies: 10, request_quota_seasons: 5, request_quota_books: 10, request_quota_days: 7 };
+type QuotaKey = "request_quota_movies" | "request_quota_seasons" | "request_quota_days";
+const TYPICAL: Record<QuotaKey, number> = { request_quota_movies: 10, request_quota_seasons: 5, request_quota_days: 7 };
 
 // useQuota is one number in the request limits card, saved when its field is left.
 function useQuota(key: QuotaKey, label: string, min: number, max: number) {
@@ -46,12 +44,11 @@ function useQuota(key: QuotaKey, label: string, min: number, max: number) {
 }
 
 // RequestLimits is the global request limits; each number saves itself, and Typical
-// household saves all four at once.
-function RequestLimits({ books }: { books: boolean }) {
+// household saves all three at once.
+function RequestLimits() {
   const { commit } = useLoadedSettings();
   const movies = useQuota("request_quota_movies", "Movies", 0, 1000);
   const seasons = useQuota("request_quota_seasons", "Seasons", 0, 1000);
-  const bookQ = useQuota("request_quota_books", "Books", 0, 1000);
   const days = useQuota("request_quota_days", "Every … days", 1, 365);
   const typical = useAutoSave<string>("", async () => { await commit(TYPICAL); });
   const field = "w-[96px] rounded-lg px-3 py-2 text-base";
@@ -59,7 +56,6 @@ function RequestLimits({ books }: { books: boolean }) {
     <div className="flex flex-wrap items-start gap-3">
       <AutoNumber label="Movies" save={movies} min={0} max={1000} className={field} />
       <AutoNumber label="Seasons" save={seasons} min={0} max={1000} className={field} />
-      {books && <AutoNumber label="Books" save={bookQ} min={0} max={1000} className={field} />}
       <AutoNumber label="Every … days" save={days} min={1} max={365} className={field} />
       <div className="flex flex-col gap-1 pt-[18px]">
         <button
@@ -76,25 +72,24 @@ function RequestLimits({ books }: { books: boolean }) {
   );
 }
 
-// Auto-approve is per media type: { movie, series, book }.
-export type AutoTypes = { movie: boolean; series: boolean; book: boolean };
-const NO_TYPES: AutoTypes = { movie: false, series: false, book: false };
-const TYPE_LABEL: [keyof AutoTypes, string][] = [["movie", "Movies"], ["series", "Series"], ["book", "Books"]];
+// Auto-approve is per media type: { movie, series }.
+export type AutoTypes = { movie: boolean; series: boolean };
+const NO_TYPES: AutoTypes = { movie: false, series: false };
+const TYPE_LABEL: [keyof AutoTypes, string][] = [["movie", "Movies"], ["series", "Series"]];
 export const typesFromCSV = (csv: string): AutoTypes => {
   const on = csv.split(",").map((t) => t.trim());
-  return { movie: on.includes("movie"), series: on.includes("series"), book: on.includes("book") };
+  return { movie: on.includes("movie"), series: on.includes("series") };
 };
 export const typesToCSV = (t: AutoTypes) => TYPE_LABEL.filter(([k]) => t[k]).map(([k]) => k).join(",");
-const typesOf = (p: Person): AutoTypes => ({ movie: p.auto_approve_movie, series: p.auto_approve_series, book: p.auto_approve_book });
-const typeFlags = (t: AutoTypes) => ({ auto_approve_movie: t.movie, auto_approve_series: t.series, auto_approve_book: t.book });
-const sameTypes = (a: AutoTypes, b: AutoTypes) => a.movie === b.movie && a.series === b.series && a.book === b.book;
+const typesOf = (p: Person): AutoTypes => ({ movie: p.auto_approve_movie, series: p.auto_approve_series });
+const typeFlags = (t: AutoTypes) => ({ auto_approve_movie: t.movie, auto_approve_series: t.series });
+const sameTypes = (a: AutoTypes, b: AutoTypes) => a.movie === b.movie && a.series === b.series;
 
-// AutoApproveChecks is "Auto-approve: ☐ Movies ☐ Series ☐ Books" (Books only while the
-// module is on; a hidden type keeps its value).
-export function AutoApproveChecks({ value, onChange, books, label }: { value: AutoTypes; onChange: (v: AutoTypes) => void; books: boolean; label: string }) {
+// AutoApproveChecks is "Auto-approve: ☐ Movies ☐ Series".
+export function AutoApproveChecks({ value, onChange, label }: { value: AutoTypes; onChange: (v: AutoTypes) => void; label: string }) {
   return (
     <div role="group" aria-label={label} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-ink-dim">
-      {TYPE_LABEL.filter(([k]) => k !== "book" || books).map(([k, name]) => (
+      {TYPE_LABEL.map(([k, name]) => (
         <label key={k} className="flex min-h-[28px] items-center gap-1.5">
           <input type="checkbox" checked={value[k]} onChange={(e) => onChange({ ...value, [k]: e.target.checked })} />
           {name}
@@ -165,14 +160,8 @@ function PeopleList({ meId }: { meId?: number }) {
       role: r.role ?? cur.role, disabled: r.disabled ?? cur.disabled,
       auto_approve_movie: r.auto_approve_movie ?? cur.auto_approve_movie,
       auto_approve_series: r.auto_approve_series ?? cur.auto_approve_series,
-      auto_approve_book: r.auto_approve_book ?? cur.auto_approve_book,
       ...(body.quota ? { quota: body.quota } : {}),
     });
-  }), [queue, merge]);
-
-  const setAudio = useCallback((id: number, allowed: boolean) => queue(id, async () => {
-    await api.setAudioUser(id, allowed);
-    merge(id, { audio_allowed: allowed });
   }), [queue, merge]);
 
   const unblock = async (b: PlexBlock) => {
@@ -186,7 +175,7 @@ function PeopleList({ meId }: { meId?: number }) {
     catch (e) { setBlockErr((e as Error).message); }
   };
 
-  const ctx: RowContext = { update, setAudio, reload: load, toast, people: people ?? [] };
+  const ctx: RowContext = { update, reload: load, toast, people: people ?? [] };
 
   return (
     <Section id="users" title="People & access" subtitle="Everyone who can use Arrmada, and what each of them may do. Changes save as you make them. Auto-approve lets someone's requests download without waiting for you.">
@@ -236,7 +225,6 @@ function PeopleList({ meId }: { meId?: number }) {
 
 interface RowContext {
   update: (id: number, build: (cur: Person) => UserPatch) => Promise<void>;
-  setAudio: (id: number, allowed: boolean) => Promise<void>;
   reload: () => void;
   toast: ReturnType<typeof useToast>;
   people: Person[];
@@ -246,7 +234,6 @@ const chip = "rounded-full px-2 py-0.5 font-mono text-2xs font-bold uppercase";
 
 // PersonRow is one person. The row wraps into a stack on a phone.
 function PersonRow({ p, isMe, ctx }: { p: Person; isMe: boolean; ctx: RowContext }) {
-  const { booksEnabled } = useMe();
   const confirm = useConfirm();
   const [more, setMore] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -254,13 +241,12 @@ function PersonRow({ p, isMe, ctx }: { p: Person; isMe: boolean; ctx: RowContext
 
   const role = useAutoSave<UserRole>(p.role, (v) => ctx.update(p.id, () => ({ role: v })), { keepOnError: false });
   const auto = useAutoSave<AutoTypes>(typesOf(p), (v) => ctx.update(p.id, () => typeFlags(v)), { equal: sameTypes, keepOnError: false });
-  const audio = useAutoSave(p.audio_allowed, (v) => ctx.setAudio(p.id, v));
 
   const setSignIn = async (enable: boolean) => {
     if (!enable) {
       const ok = await confirm({
         title: `Turn off ${p.username}'s sign-in?`,
-        body: "They're signed out of the web app and their audiobook apps, and can't sign in again until you turn it back on. Nothing of theirs is deleted.",
+        body: "They're signed out everywhere and can't sign in again until you turn it back on. Nothing of theirs is deleted.",
         confirmLabel: "Turn off sign-in",
         tone: "danger",
       });
@@ -270,7 +256,7 @@ function PersonRow({ p, isMe, ctx }: { p: Person; isMe: boolean; ctx: RowContext
     try {
       await ctx.update(p.id, () => ({ disabled: !enable }));
       ctx.toast(enable ? `${p.username} can sign in again.` : `${p.username} is signed out and can't sign in.`, { tone: "good" });
-      ctx.reload(); // turning sign-in off ends their sessions and apps
+      ctx.reload(); // turning sign-in off ends their sessions
     } catch (e) { ctx.toast((e as Error).message, { tone: "error" }); }
     finally { setBusy(null); }
   };
@@ -278,7 +264,7 @@ function PersonRow({ p, isMe, ctx }: { p: Person; isMe: boolean; ctx: RowContext
   const signOutEverywhere = async () => {
     const ok = await confirm({
       title: `Sign ${p.username} out everywhere?`,
-      body: "Every browser and phone signed in as them will have to sign in again. Their password, requests and audiobook apps stay as they are.",
+      body: "Every browser and phone signed in as them will have to sign in again. Their password and requests stay as they are.",
       confirmLabel: "Sign out everywhere",
       tone: "danger",
     });
@@ -327,19 +313,18 @@ function PersonRow({ p, isMe, ctx }: { p: Person; isMe: boolean; ctx: RowContext
       </div>
       {role.status !== "idle" && <SavedTick save={role} />}
 
-      {/* When and where: last seen, browsers, audiobooks. */}
+      {/* When and where: last seen, browsers. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-ink-dim">
         <span title={p.last_seen ? new Date(p.last_seen).toLocaleString() : undefined}>Last seen {ago(p.last_seen)}</span>
         <span className="flex items-center gap-2">
           {p.sessions === 0 ? "Not signed in" : `Signed in on ${p.sessions} ${p.sessions === 1 ? "browser" : "browsers"}`}
           {!isMe && p.sessions > 0 && <Button size="sm" variant="secondary" busy={busy === "signout"} busyLabel="Signing out…" onClick={signOutEverywhere}>Sign out everywhere</Button>}
         </span>
-        <AudiobookAccess p={p} save={audio} />
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-sm text-ink-dim">Auto-approve:</span>
-        <AutoApproveChecks value={auto.value} onChange={(v) => void auto.commit(v)} books={booksEnabled} label={`Auto-approve ${p.username}'s requests for`} />
+        <AutoApproveChecks value={auto.value} onChange={(v) => void auto.commit(v)} label={`Auto-approve ${p.username}'s requests for`} />
         <SavedTick save={auto} />
       </div>
 
@@ -354,25 +339,6 @@ function PersonRow({ p, isMe, ctx }: { p: Person; isMe: boolean; ctx: RowContext
       {more && <PersonMore p={p} isMe={isMe} ctx={ctx} />}
       {removing && <DeleteUserDialog p={p} onClose={() => setRemoving(false)} onDeleted={() => { setRemoving(false); ctx.reload(); }} />}
     </div>
-  );
-}
-
-// AudiobookAccess is whether they may connect a listening app, and whether they've set
-// the audiobook password apps sign in with.
-function AudiobookAccess({ p, save }: { p: Person; save: AutoSave<boolean> }) {
-  if (!p.audio_eligible) {
-    return <span className="text-ink-faint">Audiobook apps: {p.disabled ? "sign-in is off" : "read-only accounts can't connect"}</span>;
-  }
-  return (
-    <span className="flex flex-wrap items-center gap-2">
-      <label className="flex items-center gap-1.5">
-        <input type="checkbox" checked={save.value} onChange={(e) => void save.commit(e.target.checked)} aria-label={`${p.username} may use audiobook apps`} />
-        Audiobook apps
-      </label>
-      <span style={{ color: p.audio_password_set ? "var(--good-text)" : "var(--ink-faint)" }}>{p.audio_password_set ? "password set" : "no password yet"}</span>
-      {p.audio_devices > 0 && <span className="text-ink-faint">· {p.audio_devices} {p.audio_devices === 1 ? "app" : "apps"}</span>}
-      <SavedTick save={save} />
-    </span>
   );
 }
 
@@ -410,10 +376,8 @@ export function jellyfinUnlinkConfirm(p: Person) {
 // PersonMore is what's changed less often: their own request limits, a new password, and
 // their Plex and Jellyfin links (unlink, block, or merge a duplicate account into another).
 function PersonMore({ p, isMe, ctx }: { p: Person; isMe: boolean; ctx: RowContext }) {
-  const { booksEnabled } = useMe();
   const movies = useOwnLimit(p, "movies", "Movies", ctx);
   const seasons = useOwnLimit(p, "seasons", "Seasons", ctx);
-  const books = useOwnLimit(p, "books", "Books", ctx);
 
   const [password, setPassword] = useState("");
   const [pwBusy, setPwBusy] = useState(false);
@@ -471,7 +435,6 @@ function PersonMore({ p, isMe, ctx }: { p: Person; isMe: boolean; ctx: RowContex
         <div className="flex flex-wrap items-start gap-2">
           <AutoNumber label="Movies" save={movies} min={0} max={1000} placeholder="Default" className={field} />
           <AutoNumber label="Seasons" save={seasons} min={0} max={1000} placeholder="Default" className={field} />
-          {booksEnabled && <AutoNumber label="Books" save={books} min={0} max={1000} placeholder="Default" className={field} />}
         </div>
         <p className="m-0 mt-1 text-xs text-ink-faint">Blank uses the limits under Request limits; 0 means no limit for them.</p>
       </div>
@@ -511,7 +474,7 @@ function PersonMore({ p, isMe, ctx }: { p: Person; isMe: boolean; ctx: RowContex
           Jellyfin before their own account was linked) can be folded into that account. */}
       {linked && !isMe && (p.role === "requester" || p.role === "readonly") && mergeTargets.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-sm text-ink-dim">
-          <span className="min-w-[12rem] flex-1">Same person as another account? Merge this one into it: requests, inbox, phones, audiobook progress and the {linkWords} move there.</span>
+          <span className="min-w-[12rem] flex-1">Same person as another account? Merge this one into it: requests, inbox, phones and the {linkWords} move there.</span>
           <select aria-label="Merge into" value={mergeInto ?? ""} onChange={(e) => setMergeInto(e.target.value ? Number(e.target.value) : null)} className="rounded-lg px-2 py-1.5 text-sm" style={inputStyle}>
             <option value="">Merge into…</option>
             {mergeTargets.map((t) => <option key={t.id} value={t.id}>{t.username} ({t.role})</option>)}
@@ -528,7 +491,6 @@ function PersonMore({ p, isMe, ctx }: { p: Person; isMe: boolean; ctx: RowContex
 // AddPerson is the add-a-person form: an email and password (Plex sign-ins make their
 // own accounts), a role and what they auto-approve.
 function AddPerson({ onAdded }: { onAdded: () => void }) {
-  const { booksEnabled } = useMe();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("requester");
@@ -559,7 +521,7 @@ function AddPerson({ onAdded }: { onAdded: () => void }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-dim">
           <span>Auto-approve:</span>
-          <AutoApproveChecks value={autoApprove} onChange={setAutoApprove} books={booksEnabled} label="Auto-approve this user's requests" />
+          <AutoApproveChecks value={autoApprove} onChange={setAutoApprove} label="Auto-approve this user's requests" />
         </div>
         <Button type="submit" variant="primary" busy={busy} busyLabel="Adding…">Add person</Button>
       </div>
@@ -571,8 +533,7 @@ function AddPerson({ onAdded }: { onAdded: () => void }) {
 // RoleLegend says what each role can do, from today's gates (see roles.ts): the requester
 // pages are their top bar's, and Read-only can't request (POST /requests needs Requester).
 function RoleLegend() {
-  const { booksEnabled } = useMe();
-  const pages = requesterPages(booksEnabled);
+  const pages = requesterPages();
   const rows: [string, string][] = [
     ["Requester", `${pages}, and can request.`],
     ["Read-only", `the same pages, but can't request.`],
@@ -588,9 +549,8 @@ function RoleLegend() {
 
 const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? one : many}`;
 
-// DeleteUserDialog says what a delete would erase before it happens — as counts only, never
-// which books (admins see how much, not what) — and asks for the username when it would
-// erase someone's audiobook places. The server copies the database first either way.
+// DeleteUserDialog says what a delete would erase before it happens, as counts only. The
+// server copies the database first.
 function DeleteUserDialog({ p, onClose, onDeleted }: { p: Person; onClose: () => void; onDeleted: () => void }) {
   const [impact, setImpact] = useState<UserImpact | null>(null);
   const [busy, setBusy] = useState(false);
@@ -604,14 +564,12 @@ function DeleteUserDialog({ p, onClose, onDeleted }: { p: Person; onClose: () =>
     peopleApi.userImpact(p.id).then(setImpact).catch((e: Error) => setErr(`Couldn't check what this would remove: ${e.message}`));
   }, [p.id]);
 
-  const listening = !!impact && (impact.places > 0 || impact.listening_hours > 0);
-  const hours = impact ? (impact.listening_hours >= 10 ? Math.round(impact.listening_hours) : Math.round(impact.listening_hours * 10) / 10) : 0;
   const canBlock = p.plex_linked && !p.plex_blocked;
   const canBlockJF = !!p.jellyfin_linked && !p.jellyfin_blocked;
 
   const confirm = async () => {
     setBusy(true); setErr(null);
-    try { await peopleApi.deleteUser(p.id, listening ? p.username : undefined, { plex: canBlock && blockPlex, jellyfin: canBlockJF && blockJellyfin }); onDeleted(); }
+    try { await peopleApi.deleteUser(p.id, { plex: canBlock && blockPlex, jellyfin: canBlockJF && blockJellyfin }); onDeleted(); }
     catch (e) { setErr((e as Error).message); setBusy(false); }
   };
   const comeBack = [canBlock && !blockPlex && "Plex", canBlockJF && !blockJellyfin && "Jellyfin"].filter(Boolean).join(" or ");
@@ -622,7 +580,7 @@ function DeleteUserDialog({ p, onClose, onDeleted }: { p: Person; onClose: () =>
       body={impact ? (
         <>
           <p className="m-0">
-            This permanently removes their place in {plural(impact.places, "audiobook")}, {hours} hour{hours === 1 ? "" : "s"} of listening history, {plural(impact.bookmarks, "bookmark")} and {plural(impact.devices, "signed-in device")}.
+            This permanently removes their account and signs them out of {plural(impact.sessions, "browser")}.
             {" "}Their {plural(impact.requests, "request")} stay.
           </p>
           <p className="m-0 mt-2">A copy of the database from just before is kept under Backups.</p>
@@ -645,7 +603,6 @@ function DeleteUserDialog({ p, onClose, onDeleted }: { p: Person; onClose: () =>
           )}
         </div>
       ) : undefined}
-      typedPhrase={listening ? p.username : undefined}
       confirmLabel="Delete user"
       busyLabel="Deleting…"
       busy={busy}

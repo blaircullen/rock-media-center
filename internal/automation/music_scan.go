@@ -31,7 +31,7 @@ type albumFolder struct {
 
 // ScanMusicLibrary catalogues music already on disk.
 //
-// Deliberately conservative about matching. The Books scan takes the FIRST search hit for
+// Deliberately conservative about matching. An older scan took the FIRST search hit for
 // whatever it parsed out of a folder name, which quietly files real audio under the wrong
 // title and then makes that wrong entry a delete hazard. This refuses to guess: an artist
 // is only created when a MusicBrainz search returns an exact name match, an album is only

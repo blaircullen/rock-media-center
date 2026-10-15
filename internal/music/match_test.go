@@ -56,7 +56,7 @@ func TestMatchTracks(t *testing.T) {
 }
 
 // The gate that stops a search for one album grabbing a different one by the same artist —
-// the exact hole the Books module had.
+// the exact hole an earlier importer had.
 func TestReleaseIsForAlbum(t *testing.T) {
 	if !ReleaseIsForAlbum("Radiohead - OK Computer (1997) [FLAC]", "Radiohead", "OK Computer") {
 		t.Error("the album's own release should pass")

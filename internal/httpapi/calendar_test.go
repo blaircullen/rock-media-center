@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/tristenlammi/arrmada/internal/auth"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/quality"
 	"github.com/tristenlammi/arrmada/internal/requests"
@@ -19,11 +18,10 @@ func calendarServer(t *testing.T) *routeServer {
 	root := t.TempDir()
 	return newRouteServer(t, func(d *Deps) {
 		db := d.Store.DB()
-		d.Books = books.NewService(db, nil, d.Log)
 		d.Quality = quality.NewService(db)
 		d.Movies = movies.NewService(db, nil, nil, root, "", nil, d.Log)
 		d.Series = series.NewService(db, nil, root, d.Log)
-		d.Requests = requests.NewService(db, d.Movies, d.Series, d.Books, nil, d.Quality, nil, "", d.Log)
+		d.Requests = requests.NewService(db, d.Movies, d.Series, nil, d.Quality, nil, "", d.Log)
 	})
 }
 

@@ -40,9 +40,6 @@ func TestConvertedRoutesSubmitJobs(t *testing.T) {
 		{"POST", "/api/v1/series/6/autograb", `{"season":2,"episode":3}`, "series.grab-scope", "series:6:s2e3", jobs.ClassIndexerSearch},
 		{"POST", "/api/v1/series/6/seasons/2/episodes/3/regrab", "", "series.regrab-episode", "series:6:s2e3", jobs.ClassIndexerSearch},
 		{"POST", "/api/v1/series/scan", "", "series.scan", "all", jobs.ClassLibraryScan},
-		{"POST", "/api/v1/books/7/search", "", "book.search", "book:7", jobs.ClassIndexerSearch},
-		{"POST", "/api/v1/books/scan", "", "books.scan", "all", jobs.ClassLibraryScan},
-		{"POST", "/api/v1/books/series-backfill", "", "books.backfill-series", "all", jobs.ClassIndexerSearch},
 		{"POST", "/api/v1/music/scan", "", "music.scan", "all", "music.scan"},
 	}
 	for i, c := range cases {
@@ -153,38 +150,6 @@ func TestConcurrentSearchClicksShareAJob(t *testing.T) {
 	list, _ := r.List(context.Background(), jobs.Filter{Kind: "movie.search"})
 	if len(list) != 1 || list[0].Status != jobs.StatusQueued {
 		t.Fatalf("movie.search jobs = %+v", list)
-	}
-}
-
-// The Books sweep keeps its response shape: started plus a status that already says
-// running (the page starts polling on it), now with the job's id; a second click while
-// it runs answers started=false and starts nothing.
-func TestBookSweepKeepsItsShape(t *testing.T) {
-	fj := newFakeJobs(false)
-	s := newRouteServer(t, func(d *Deps) {
-		d.Jobs = fj
-		d.Automation = &automation.Coordinator{}
-	})
-	_, mgr := s.user(t, "mgr@example.com", auth.RoleManager)
-	rec := s.do("POST", "/api/v1/books/search-missing", mgr)
-	var body struct {
-		Started bool                       `json:"started"`
-		JobID   int64                      `json:"job_id"`
-		Status  automation.BookSweepStatus `json:"status"`
-	}
-	if rec.Code != http.StatusAccepted || json.Unmarshal(rec.Body.Bytes(), &body) != nil || !body.Started || !body.Status.Running || body.JobID != 1 {
-		t.Fatalf("first: HTTP %d %s", rec.Code, rec.Body)
-	}
-	if sp := fj.specs(); len(sp) != 1 || sp[0].Kind != "books.search-missing" || sp[0].Target != "all" {
-		t.Fatalf("specs = %+v", sp)
-	}
-	rec = s.do("POST", "/api/v1/books/search-missing", mgr)
-	body.Started = true
-	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &body) != nil || body.Started || len(fj.specs()) != 1 {
-		t.Fatalf("second: HTTP %d %s", rec.Code, rec.Body)
-	}
-	if rec := s.do("GET", "/api/v1/books/search-missing", mgr); rec.Code != http.StatusOK || !json.Valid(rec.Body.Bytes()) {
-		t.Fatalf("status: HTTP %d", rec.Code)
 	}
 }
 

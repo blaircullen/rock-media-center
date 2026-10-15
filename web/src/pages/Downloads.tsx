@@ -19,13 +19,12 @@ import { isUsenetDownload, leftLine, usenetFailLine, usenetFailed } from "../lib
 import { CardActions, ItemChips, TransferPoster, TransferTitle } from "./activity/transfer";
 import { EmptyState, ErrorState, IconButton, Skeleton, StatusChip, useToast } from "../ui";
 
-type MediaFilter = "all" | "movie" | "series" | "book" | "music";
-const MEDIA_FILTERS: readonly MediaFilter[] = ["all", "movie", "series", "book", "music"];
+type MediaFilter = "all" | "movie" | "series" | "music";
+const MEDIA_FILTERS: readonly MediaFilter[] = ["all", "movie", "series", "music"];
 const TYPE_PILLS: { key: MediaFilter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "movie", label: "Movies" },
   { key: "series", label: "Series" },
-  { key: "book", label: "Books" },
   { key: "music", label: "Music" },
 ];
 
@@ -416,7 +415,7 @@ export function QueuePanel() {
 }
 
 // WantedPanel is Activity → Wanted: the titles Arrmada is still looking for (Searching)
-// and the ones that aren't out yet (Upcoming), across movies, series, books and albums.
+// and the ones that aren't out yet (Upcoming), across movies, series and albums.
 export function WantedPanel() {
   const [query, setQuery] = useSearchParamState<string>("q", "", { debounceMs: 300 });
   const [view, setView] = useTabParam(WANTED_VIEWS, "searching", "show");
@@ -516,11 +515,11 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <div className="rounded-xl p-10 text-center text-base text-ink-dim" style={{ border: "1px solid var(--line)" }}>{children}</div>;
 }
 
-// wantedMatches is the page's search box over a Wanted row: its title, author or artist.
+// wantedMatches is the page's search box over a Wanted row: its title or artist.
 const wantedMatches = (s: WantedRow, q: string) => s.title.toLowerCase().includes(q) || (s.byline ?? "").toLowerCase().includes(q);
 
 function TypeChip({ mediaType }: { mediaType?: string }) {
-  const label = mediaType === "series" ? "TV" : mediaType === "book" ? "Book" : mediaType === "music" ? "Music" : "Movie";
+  const label = mediaType === "series" ? "TV" : mediaType === "music" ? "Music" : "Movie";
   return <span className="rounded px-1.5 py-0.5 font-mono text-2xs uppercase" style={{ background: "var(--panel-2)", color: "var(--ink-faint)" }}>{label}</span>;
 }
 
@@ -701,7 +700,7 @@ function SeedingCard({ it, guard, busy, act, onRemoved }: { it: ActivityDownload
   );
 }
 
-// WantedItem is one Searching/Upcoming row: a movie, show, book or album, linking to its
+// WantedItem is one Searching/Upcoming row: a movie, show or album, linking to its
 // page, saying what is really happening to it (wantedChip) and why it isn't downloading
 // (wantedLine), with Search now. The button sits beside the link, not inside it.
 function WantedItem({ item, kind, onSearched, onError }: { item: WantedRow; kind: "searching" | "upcoming"; onSearched: () => void; onError: (m: string) => void }) {
@@ -756,7 +755,6 @@ function WantedItem({ item, kind, onSearched, onError }: { item: WantedRow; kind
         </div>
         <span className="hidden flex-none items-center gap-1.5 sm:flex">
           <TypeChip mediaType={item.media_type} />
-          {item.missing?.map((m) => <span key={m} className="rounded px-1.5 py-0.5 font-mono text-2xs uppercase" style={{ background: "var(--panel-2)", color: "var(--ink-faint)" }}>{m}</span>)}
           <ProfileChip profile={item.quality_profile} />
         </span>
       </Link>

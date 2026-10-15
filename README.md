@@ -4,7 +4,7 @@
 
 # Arrmada
 
-**Your whole media server in one app — movies, TV, books and requests, without the `*arr` stack.**
+**Your whole media server in one app — movies, TV, music and requests, without the `*arr` stack.**
 
 [Install](#install) · [Features](docs/features.md) · [Docs](#documentation) · [Issues](https://github.com/tristenlammi/Arrmada/issues)
 
@@ -12,7 +12,7 @@
 
 </div>
 
-Arrmada finds, downloads and organises your movies, TV, books and audiobooks, lets your
+Arrmada finds, downloads and organises your movies and TV, lets your
 household request what they want to watch, and keeps your Plex or Jellyfin library tidy — with one
 database and one web page instead of half a dozen apps. qBittorrent comes with it, already
 set up.
@@ -23,10 +23,8 @@ set up.
 ## What it does
 
 - 🎬 **Movies and TV** — search, download, import, rename and upgrade, the way Radarr and Sonarr do. Anime numbering included.
-- 📚 **Books and audiobooks** — ebooks and audiobooks with series tracking, plus a built-in audiobook server for listening apps like Lissen.
+- 🎵 **Music (preview)** — artists and albums, searched and imported into their own library folder.
 - 🙋 **Requests** — family and friends browse and request titles, Overseerr-style, and get told when they're ready. Sign in with Plex or Jellyfin.
-- 💬 **Subtitles** — pulls them out of the file, downloads them, or writes them with local AI.
-- 🗜️ **Convert** — shrinks wasteful video overnight to HEVC or AV1, checking every result against the original.
 - 📺 **Plex and Jellyfin** — connect either or both: Watch buttons, library updates after every change, and Insights — who's watching what, history and stats, Tautulli-style.
 - 📰 **Usenet, optional** — SABnzbd alongside qBittorrent (`--with-sabnzbd` sets one up for you); bring your own Usenet provider and indexers.
 - 🛟 **Safety nets** — hardlinked imports, a recycle bin, nightly backups and one-step rollbacks.
@@ -109,7 +107,7 @@ server ([Following main](docs/updating.md#following-main-developers)).
 - A 64-bit Intel or AMD (x86-64) server running Linux — Unraid, Debian, Ubuntu and the like.
 - Docker with Compose v2.
 - A free [TMDB API key](https://www.themoviedb.org/settings/api) (entered in the app).
-- Optional: Intel or AMD graphics for faster Convert and AI subtitles, and a Plex or Jellyfin server.
+- Optional: a Plex or Jellyfin server.
 
 ## Documentation
 
@@ -117,7 +115,7 @@ server ([Following main](docs/updating.md#following-main-developers)).
 |---|---|
 | [Install](docs/install.md) | The one-liner, its options, Unraid, the git checkout way |
 | [Updating](docs/updating.md) | Updates, rollbacks, published images |
-| [Configuration](docs/configuration.md) | Ports, `.env`, media folders and hardlinks, GPU, recycle bin, reverse proxies |
+| [Configuration](docs/configuration.md) | Ports, `.env`, media folders and hardlinks, recycle bin, reverse proxies |
 | [Backups](docs/backups.md) | Backups, restoring, a forgotten admin password |
 | [Troubleshooting](docs/troubleshooting.md) | Common problems and fixes |
 | [Features](docs/features.md) | Everything Arrmada does |

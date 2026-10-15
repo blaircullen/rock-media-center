@@ -23,16 +23,12 @@ const (
 	StatusDeclined = "declined"
 )
 
-// Request is one user request for a movie, series, or book.
+// Request is one user request for a movie or series.
 type Request struct {
 	ID               int64   `json:"id"`
-	MediaType        string  `json:"media_type"`        // "movie" | "series" | "book"
-	TMDBID           int     `json:"tmdb_id"`           // movies/series
-	OLKey            string  `json:"ol_key,omitempty"`  // books (Open Library work key)
-	BookID           int64   `json:"book_id,omitempty"` // books: the library row it became; survives that row's key changing
+	MediaType        string  `json:"media_type"` // "movie" | "series"
+	TMDBID           int     `json:"tmdb_id"`
 	Title            string  `json:"title"`
-	Author           string  `json:"author,omitempty"`  // books
-	Formats          string  `json:"formats,omitempty"` // books: ebook | audiobook | both; "" = from before the choice (formats.go)
 	Year             int     `json:"year"`
 	PosterURL        string  `json:"poster_url,omitempty"`
 	Overview         string  `json:"overview,omitempty"`
@@ -97,15 +93,9 @@ type Request struct {
 	// notApproved is the sentence naming the seasons staff trimmed off on approve
 	// ("Season 3 wasn't approved."), for the "approved" notice. Never stored.
 	notApproved string
-	// Searches in a row that found nothing and when the sweep last looked (as stored);
-	// books also say when the next one is due (RFC3339).
+	// Searches in a row that found nothing and when the sweep last looked (as stored).
 	searchMisses int
 	lastSearchAt string
-	nextCheckAt  string
-	// releaseDate: a book that isn't out yet, the day it is (YYYY-MM-DD).
-	releaseDate string
-	// Books: for a "both" request with one format here, which one and what's coming.
-	partNote string
 	// onDiskAt is when a movie or series request was first seen complete while Plex is
 	// set up, waiting for Plex to show it (plexready.go); 0 = not waiting. seasonDisk is
 	// the same per season for a request of several seasons, as stored.
@@ -119,18 +109,20 @@ type Repo struct{ db *sql.DB }
 // NewRepo builds a repository over the given pool.
 func NewRepo(db *sql.DB) *Repo { return &Repo{db: db} }
 
-const cols = `id, media_type, tmdb_id, ol_key, title, author, year, poster_url, overview, status,
-	quality_profile, requested_by, requested_by_name, note, created_at, updated_at, book_id, formats, seasons, ready_at,
+const cols = `id, media_type, tmdb_id, title, year, poster_url, overview, status,
+	quality_profile, requested_by, requested_by_name, note, created_at, updated_at, seasons, ready_at,
 	decline_reason, decided_by, decided_by_name, decided_at, rerequest, on_disk_at, season_disk_at`
+
+// knownKinds keeps the lists and sweeps to the request kinds this version handles: an
+// older version's book requests stay in the table, unread.
+const knownKinds = `media_type IN ('movie', 'series')`
 
 func scan(row interface{ Scan(...any) error }) (Request, error) {
 	var r Request
-	var bookID sql.NullInt64
 	var seasons string
-	err := row.Scan(&r.ID, &r.MediaType, &r.TMDBID, &r.OLKey, &r.Title, &r.Author, &r.Year, &r.PosterURL, &r.Overview,
-		&r.Status, &r.QualityProfile, &r.RequestedBy, &r.RequestedByName, &r.Note, &r.CreatedAt, &r.UpdatedAt, &bookID, &r.Formats, &seasons,
+	err := row.Scan(&r.ID, &r.MediaType, &r.TMDBID, &r.Title, &r.Year, &r.PosterURL, &r.Overview,
+		&r.Status, &r.QualityProfile, &r.RequestedBy, &r.RequestedByName, &r.Note, &r.CreatedAt, &r.UpdatedAt, &seasons,
 		&r.ReadyAt, &r.DeclineReason, &r.DecidedBy, &r.DecidedByName, &r.DecidedAt, &r.ReRequest, &r.onDiskAt, &r.seasonDisk)
-	r.BookID = bookID.Int64
 	r.Seasons = decodeSeasons(seasons)
 	return r, err
 }
@@ -163,22 +155,14 @@ func decodeSeasons(s string) []int {
 	return out
 }
 
-// nullID stores 0 as NULL: the column references books(id), and there is no book 0.
-func nullID(id int64) any {
-	if id <= 0 {
-		return nil
-	}
-	return id
-}
-
 // Create inserts a request. Returns ErrExists (wrapped) on a duplicate media.
 func (r *Repo) Create(ctx context.Context, req Request) (Request, error) {
 	res, err := r.db.ExecContext(ctx,
-		`INSERT INTO requests (media_type, tmdb_id, ol_key, title, author, year, poster_url, overview, status,
-			quality_profile, requested_by, requested_by_name, note, book_id, formats, seasons, rerequest, decline_reason)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		req.MediaType, req.TMDBID, req.OLKey, req.Title, req.Author, req.Year, req.PosterURL, req.Overview, req.Status,
-		req.QualityProfile, req.RequestedBy, req.RequestedByName, req.Note, nullID(req.BookID), req.Formats, encodeSeasons(req.Seasons),
+		`INSERT INTO requests (media_type, tmdb_id, title, year, poster_url, overview, status,
+			quality_profile, requested_by, requested_by_name, note, seasons, rerequest, decline_reason)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		req.MediaType, req.TMDBID, req.Title, req.Year, req.PosterURL, req.Overview, req.Status,
+		req.QualityProfile, req.RequestedBy, req.RequestedByName, req.Note, encodeSeasons(req.Seasons),
 		req.ReRequest, req.DeclineReason)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "unique") {
@@ -233,69 +217,6 @@ func (r *Repo) GetByMedia(ctx context.Context, mediaType string, tmdbID int) (Re
 	return req, true
 }
 
-// GetByBook returns an existing request for the given Open Library work, if any.
-func (r *Repo) GetByBook(ctx context.Context, olKey string) (Request, bool) {
-	row := r.db.QueryRowContext(ctx, `SELECT `+cols+` FROM requests WHERE media_type = 'book' AND ol_key = ?`, olKey)
-	req, err := scan(row)
-	if err != nil {
-		return Request{}, false
-	}
-	return req, true
-}
-
-// SetBookID links a book request to the library row it became.
-func (r *Repo) SetBookID(ctx context.Context, id, bookID int64) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE requests SET book_id = ? WHERE id = ?`, nullID(bookID), id)
-	return err
-}
-
-// ListByBookID returns the book requests linked to one library row (oldest first).
-func (r *Repo) ListByBookID(ctx context.Context, bookID int64) ([]Request, error) {
-	return r.query(ctx, `SELECT `+cols+` FROM requests WHERE media_type = 'book' AND book_id = ? ORDER BY id`, bookID)
-}
-
-// SetFormats records a book request's format choice and the profile that goes with it
-// (an empty profile leaves the stored one alone). A change of formats un-stamps ready_at:
-// the request has to be judged ready again over what it asks for now (an audiobook added
-// to a delivered ebook request is still on its way). Each format's message has its own
-// inbox reference, so nobody hears about one twice when it is stamped again.
-func (r *Repo) SetFormats(ctx context.Context, id int64, formats, profile string) error {
-	_, err := r.db.ExecContext(ctx,
-		`UPDATE requests
-		    SET ready_at = CASE WHEN formats = ? THEN ready_at ELSE 0 END,
-		        formats = ?,
-		        quality_profile = CASE WHEN ? = '' THEN quality_profile ELSE ? END,
-		        updated_at = CURRENT_TIMESTAMP
-		  WHERE id = ?`,
-		formats, formats, profile, profile, id)
-	return err
-}
-
-// ListForBook returns the book requests for one library row, oldest first: those linked
-// to it, and those not linked to any row yet that were made under one of its keys
-// (keys holds every catalogue key the book has had).
-func (r *Repo) ListForBook(ctx context.Context, bookID int64, keys []string) ([]Request, error) {
-	q := `SELECT ` + cols + ` FROM requests WHERE media_type = 'book' AND (book_id = ?`
-	args := []any{bookID}
-	if len(keys) > 0 {
-		q += ` OR (book_id IS NULL AND ol_key IN (?` + strings.Repeat(`, ?`, len(keys)-1) + `))`
-		for _, k := range keys {
-			args = append(args, k)
-		}
-	}
-	return r.query(ctx, q+`) ORDER BY id`, args...)
-}
-
-// bookRequests returns every book request, oldest first.
-func (r *Repo) bookRequests(ctx context.Context) ([]Request, error) {
-	return r.query(ctx, `SELECT `+cols+` FROM requests WHERE media_type = 'book' ORDER BY id`)
-}
-
-// unlinkedBookRequests returns the book requests not yet linked to a library row.
-func (r *Repo) unlinkedBookRequests(ctx context.Context) ([]Request, error) {
-	return r.query(ctx, `SELECT `+cols+` FROM requests WHERE media_type = 'book' AND book_id IS NULL ORDER BY id`)
-}
-
 func (r *Repo) query(ctx context.Context, q string, args ...any) ([]Request, error) {
 	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -316,7 +237,7 @@ func (r *Repo) query(ctx context.Context, q string, args ...any) ([]Request, err
 // ListAwaitingReady returns the approved requests whose requester hasn't been told it's
 // ready yet: the ready sweep's work list.
 func (r *Repo) ListAwaitingReady(ctx context.Context) ([]Request, error) {
-	return r.query(ctx, `SELECT `+cols+` FROM requests WHERE status = ? AND ready_at = 0 ORDER BY id`, StatusApproved)
+	return r.query(ctx, `SELECT `+cols+` FROM requests WHERE `+knownKinds+` AND status = ? AND ready_at = 0 ORDER BY id`, StatusApproved)
 }
 
 // MarkReady records when the requester was told a request is ready. Only the first time
@@ -423,7 +344,7 @@ func decodeSeasonDisk(raw string) map[int]int64 {
 // check's work list.
 func (r *Repo) ListPlexWaiting(ctx context.Context) ([]Request, error) {
 	return r.query(ctx, `SELECT `+cols+` FROM requests
-		WHERE status = ? AND ready_at = 0
+		WHERE `+knownKinds+` AND status = ? AND ready_at = 0
 		  AND (on_disk_at > 0 OR (season_disk_at != '' AND EXISTS (SELECT 1 FROM json_each(`+seasonDiskJSON+`) WHERE value > 0)))
 		ORDER BY id`, StatusApproved)
 }

@@ -115,9 +115,9 @@ test.describe("Quality editor", () => {
     await expect(page.getByRole("dialog", { name: "New movie profile" })).toBeVisible();
   });
 
-  test("book and music profiles open their own builders at their own addresses", async ({ page, api }) => {
+  test("music profiles open their own builder at their own address", async ({ page, api }) => {
     await mockEditor(page, api);
-    for (const [media, heading] of [["book", "New book profile"], ["music", "New music profile"]] as const) {
+    for (const [media, heading] of [["music", "New music profile"]] as const) {
       await page.goto(`/quality?media=${media}`);
       await page.getByRole("button", { name: "+ New profile" }).click();
       await expect(page).toHaveURL(new RegExp(`/quality/${media}/new$`));

@@ -14,7 +14,7 @@ import { SetupWizard } from "./SetupWizard";
 
 // INT-06: a wrong TMDB key shows ✗ in the wizard before it's saved, and Next asks first.
 
-const paths = { movies: "", tv: "", ebooks: "", audiobooks: "", music: "", downloads: "" };
+const paths = { movies: "", tv: "", music: "", downloads: "" };
 const tmdbKey: APIKeyStatus = { id: "tmdb", label: "TMDB", purpose: "", help_url: "", steps: "", secret: true, testable: true, tests_candidate: true, configured: false, source: "", env_set: false };
 const state: SetupState = {
   needed: true, complete: false, tmdb_configured: false, libraries_chosen: false, keys: [tmdbKey],
@@ -80,45 +80,21 @@ describe("SetupWizard TMDB key check", () => {
   });
 });
 
-// The optional keys sit open under TMDB, Hardcover first and recommended; each typed one is
+// The optional keys sit open under TMDB; each typed one is
 // checked before it's saved, and none of them is needed to carry on.
 describe("SetupWizard optional keys", () => {
   const status = (id: string, over: Partial<APIKeyStatus> = {}): APIKeyStatus => ({
-    id, label: id, purpose: "", help_url: "", steps: "", secret: id !== "opensubtitles_username", testable: true, tests_candidate: true,
+    id, label: id, purpose: "", help_url: "", steps: "", secret: true, testable: true, tests_candidate: true,
     configured: false, source: "", env_set: false, ...over,
   });
 
-  it("shows every optional key, Hardcover first and recommended, with a link to a free key", async () => {
+  it("shows every optional key with a link to a free key", async () => {
     page();
     const section = await screen.findByRole("region", { name: "Optional keys — Arrmada works without them" });
-    const names = within(section).getAllByText(/^(Hardcover|TheTVDB|OMDb|OpenSubtitles)$/).map((n) => n.textContent);
-    expect(names).toEqual(["Hardcover", "TheTVDB", "OMDb", "OpenSubtitles"]);
-    expect(within(section).getAllByText("Recommended")).toHaveLength(1);
-    expect(within(section).getAllByText("Optional")).toHaveLength(3);
-    expect(within(section).getByRole("link", { name: /Get a free Hardcover key/ }).getAttribute("href")).toBe("https://hardcover.app/account/api");
-    expect(within(section).getByRole("link", { name: /Get a free OpenSubtitles key/ }).getAttribute("href")).toBe("https://www.opensubtitles.com/en/consumers");
-    const os = within(section).getByRole("group", { name: /^OpenSubtitles/ });
-    expect(within(os).getByLabelText("API key")).toBeTruthy();
-    expect(within(os).getByLabelText("Username")).toBeTruthy();
-    expect((within(os).getByLabelText("Password") as HTMLInputElement).type).toBe("password");
-    expect(screen.getByText(/the key alone only searches/i)).toBeTruthy();
-  });
-
-  it("checks a pasted Hardcover key before saving and saves it once it passes", async () => {
-    const test = vi.spyOn(api, "testAPIKey").mockResolvedValue({ ok: true, detail: "OK: Hardcover accepted the key (signed in as reader)." });
-    const save = vi.spyOn(api, "setAPIKey").mockResolvedValue([]);
-    page();
-    const field = await screen.findByLabelText("Hardcover");
-    await act(async () => {
-      fireEvent.paste(field);
-      fireEvent.change(field, { target: { value: "hc-token" } });
-    });
-    expect(test).toHaveBeenCalledWith("hardcover", "hc-token");
-    expect(await screen.findByText(/✓ OK: Hardcover accepted the key/)).toBeTruthy();
-    await act(async () => { fireEvent.click(screen.getByText("Save and continue")); });
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(save).toHaveBeenCalledWith("hardcover", "hc-token");
-    expect(test).toHaveBeenCalledTimes(1);
+    const names = within(section).getAllByText(/^(TheTVDB|OMDb)$/).map((n) => n.textContent);
+    expect(names).toEqual(["TheTVDB", "OMDb"]);
+    expect(within(section).getAllByText("Optional")).toHaveLength(2);
+    expect(within(section).getByRole("link", { name: /Get a free TheTVDB key/ }).getAttribute("href")).toBe("https://thetvdb.com/api-information");
   });
 
   it("asks before saving an optional key its provider turned down", async () => {
@@ -153,38 +129,16 @@ describe("SetupWizard optional keys", () => {
     expect(await screen.findByText("Where's your media?")).toBeTruthy();
   });
 
-  it("checks the OpenSubtitles key with the login typed beside it, once focus leaves the group", async () => {
-    const os = vi.spyOn(setupApi, "testOpenSubtitles").mockResolvedValue({ ok: true, detail: "OK: signed in as me, 20 downloads left today." });
-    const save = vi.spyOn(api, "setAPIKey").mockResolvedValue([]);
-    page();
-    const group = await screen.findByRole("group", { name: /^OpenSubtitles/ });
-    const key = within(group).getByLabelText("API key");
-    const user = within(group).getByLabelText("Username");
-    const pass = within(group).getByLabelText("Password");
-    fireEvent.change(key, { target: { value: "os-key" } });
-    fireEvent.blur(key, { relatedTarget: user });
-    fireEvent.change(user, { target: { value: "me" } });
-    fireEvent.change(pass, { target: { value: "secret" } });
-    expect(os).not.toHaveBeenCalled(); // moving between its own fields isn't leaving it
-    await act(async () => { fireEvent.blur(pass, { relatedTarget: null }); });
-    expect(os).toHaveBeenCalledWith("os-key", "me", "secret");
-    expect(await screen.findByText(/✓ OK: signed in as me/)).toBeTruthy();
-    await act(async () => { fireEvent.click(screen.getByText("Save and continue")); });
-    expect(os).toHaveBeenCalledTimes(1);
-    expect(save.mock.calls).toEqual([["opensubtitles_api", "os-key"], ["opensubtitles_username", "me"], ["opensubtitles_password", "secret"]]);
-  });
-
   it("shows which keys are already set, masked, when setup runs again — and fills nothing in", async () => {
     vi.spyOn(api, "setupState").mockResolvedValue({
       ...state,
-      keys: [tmdbKey, status("hardcover", { configured: true, source: "settings", hint: "…ab12" }), status("opensubtitles_username", { configured: true, source: "settings", hint: "me" })],
+      keys: [tmdbKey, status("tvdb", { configured: true, source: "settings", hint: "…ab12" })],
     });
     page();
-    const hc = await screen.findByLabelText("Hardcover");
+    const hc = await screen.findByLabelText("TheTVDB");
     expect((hc as HTMLInputElement).value).toBe("");
     expect(hc.getAttribute("placeholder")).toBe("Leave blank to keep the saved key");
     expect(screen.getByText("✓ saved (…ab12)")).toBeTruthy();
-    expect(screen.getByText("✓ saved (me)")).toBeTruthy();
   });
 });
 

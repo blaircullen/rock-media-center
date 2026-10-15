@@ -8,9 +8,6 @@ import (
 	"syscall"
 )
 
-// CanPause reports whether Pause and Resume work on this platform.
-const CanPause = true
-
 // ioprio_set(2) values (linux/ioprio.h). The standard library has the syscall number but
 // not these.
 const (
@@ -20,8 +17,8 @@ const (
 	ioprioClassShift = 13
 )
 
-// ownGroup puts the tool in its own process group, so niceness, the I/O class, a pause and
-// a kill all reach anything it spawns too, and makes cancelling kill that whole group.
+// ownGroup puts the tool in its own process group, so niceness, the I/O class and a kill
+// all reach anything it spawns too, and makes cancelling kill that whole group.
 func ownGroup(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error {
@@ -31,7 +28,6 @@ func ownGroup(cmd *exec.Cmd) {
 		if err := cmd.Process.Signal(syscall.Signal(0)); err != nil {
 			return os.ErrProcessDone
 		}
-		// SIGKILL also ends a group frozen by Pause: a stopped process can't catch it.
 		if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil {
 			return cmd.Process.Kill()
 		}
@@ -55,6 +51,3 @@ func lower(pgid int, class Class) {
 	_ = syscall.Setpriority(syscall.PRIO_PGRP, pgid, Nice)
 	_, _, _ = syscall.Syscall(syscall.SYS_IOPRIO_SET, ioprioWhoPgrp, uintptr(pgid), uintptr(ioprio))
 }
-
-func pauseGroup(pgid int) error  { return syscall.Kill(-pgid, syscall.SIGSTOP) }
-func resumeGroup(pgid int) error { return syscall.Kill(-pgid, syscall.SIGCONT) }

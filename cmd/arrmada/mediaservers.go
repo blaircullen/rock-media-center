@@ -59,7 +59,7 @@ func setupMediaServers(d mediaServerDeps) *mediaServers {
 	// after each scan.
 	d.Group.Loop("jellyfin: library index", jf.RunIndex)
 	// Insights watches Jellyfin too: its own poller records plays (while Jellyfin's
-	// monitoring switch is on) and counts towards Convert's "someone is watching".
+	// monitoring switch is on).
 	if d.Insights != nil {
 		d.Insights.SetJellyfin(jf)
 		d.Group.Loop("insights: jellyfin poller", d.Insights.RunJellyfin)

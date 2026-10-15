@@ -11,7 +11,7 @@ import (
 )
 
 // storeService is a quality service over a fully migrated temp database, so deletes
-// and repairs run against the real movies/series/books/requests/grabs tables.
+// and repairs run against the real movies/series/artists/requests/grabs tables.
 func storeService(t *testing.T) (*Service, *sql.DB, context.Context) {
 	t.Helper()
 	st, err := store.Open(t.TempDir())
@@ -52,12 +52,11 @@ func profileID(ref string) int64 { id, _ := customID(ref); return id }
 
 // seedOnProfile puts one row of every kind on ref (plus an approved request and an
 // imported grab, which must not move).
-func seedOnProfile(t *testing.T, db *sql.DB, movieRef, seriesRef, bookRef, musicRef string) {
+func seedOnProfile(t *testing.T, db *sql.DB, movieRef, seriesRef, musicRef string) {
 	t.Helper()
 	mustExec(t, db, `INSERT INTO movies (id, tmdb_id, title, quality_profile) VALUES (1, 101, 'Heat', ?)`, movieRef)
 	mustExec(t, db, `INSERT INTO movie_versions (id, movie_id, label, quality_profile) VALUES (1, 1, '4K', ?)`, movieRef)
 	mustExec(t, db, `INSERT INTO series (id, tmdb_id, title, quality_profile) VALUES (1, 201, 'Show', ?)`, seriesRef)
-	mustExec(t, db, `INSERT INTO books (id, ol_key, title, quality_profile) VALUES (1, 'OL1W', 'Dune', ?)`, bookRef)
 	mustExec(t, db, `INSERT INTO artists (id, mbid, name, quality_profile) VALUES (1, 'mb1', 'Band', ?)`, musicRef)
 	mustExec(t, db, `INSERT INTO requests (id, media_type, tmdb_id, title, status, quality_profile) VALUES (1, 'movie', 301, 'Pending', 'pending', ?)`, movieRef)
 	mustExec(t, db, `INSERT INTO requests (id, media_type, tmdb_id, title, status, quality_profile) VALUES (2, 'movie', 302, 'Approved', 'approved', ?)`, movieRef)
@@ -74,7 +73,7 @@ func TestDeleteAndReassignMovesEverything(t *testing.T) {
 	if err := s.SetDefaultProfile(ctx, MediaMovie, gone); err != nil {
 		t.Fatal(err)
 	}
-	seedOnProfile(t, db, gone, gone, gone, gone)
+	seedOnProfile(t, db, gone, gone, gone)
 
 	moved, to, err := s.Delete(ctx, profileID(gone), keep)
 	if err != nil {
@@ -83,16 +82,16 @@ func TestDeleteAndReassignMovesEverything(t *testing.T) {
 	if to != keep {
 		t.Errorf("moved to %q, want %q", to, keep)
 	}
-	// Series, books and artists rows can't carry a movie profile in practice; seeding them
+	// Series and artists rows can't carry a movie profile in practice; seeding them
 	// on it proves the update covers every table the ref can sit in.
-	want := Reassigned{Movies: 1, Versions: 1, Series: 1, Books: 1, Artists: 1, Requests: 1, Grabs: 1}
+	want := Reassigned{Movies: 1, Versions: 1, Series: 1, Artists: 1, Requests: 1, Grabs: 1}
 	if moved != want {
 		t.Errorf("moved = %+v, want %+v", moved, want)
 	}
 	for _, c := range []struct {
 		table string
 		id    int64
-	}{{"movies", 1}, {"movie_versions", 1}, {"series", 1}, {"books", 1}, {"artists", 1}, {"requests", 1}, {"grabs", 1}} {
+	}{{"movies", 1}, {"movie_versions", 1}, {"series", 1}, {"artists", 1}, {"requests", 1}, {"grabs", 1}} {
 		if got := profileOf(t, db, c.table, c.id); got != keep {
 			t.Errorf("%s %d on %q, want %q", c.table, c.id, got, keep)
 		}
@@ -169,7 +168,7 @@ func TestDeleteRefusesMediaMismatch(t *testing.T) {
 	gone := mustProfile(t, s, ctx, MediaMovie, "Going")
 	mustProfile(t, s, ctx, MediaMovie, "Other movie")
 	show := mustProfile(t, s, ctx, MediaSeries, "Show profile")
-	seedOnProfile(t, db, gone, show, "", "")
+	seedOnProfile(t, db, gone, show, "")
 
 	if _, _, err := s.Delete(ctx, profileID(gone), show); !errors.Is(err, ErrMediaMismatch) {
 		t.Fatalf("err = %v, want ErrMediaMismatch", err)

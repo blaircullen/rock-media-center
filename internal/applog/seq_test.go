@@ -63,17 +63,17 @@ func TestLogsAfterSeqReturnsOnlyNewer(t *testing.T) {
 func TestLogsModuleFilter(t *testing.T) {
 	ring := NewRing(100)
 	root := slog.New(NewHandler(slog.NewTextHandler(discard{}, nil), ring))
-	root.With("module", "convert").Info("encode started", "file", "a.mkv")
+	root.With("module", "download").Info("encode started", "file", "a.mkv")
 	root.With("module", "indexer").Info("search", "q", "dune")
 	root.Info("core line")
-	root.With("module", "convert").With("job", 4).Warn("encode slow")
+	root.With("module", "download").With("job", 4).Warn("encode slow")
 
-	got := ring.Read(Filter{Module: "convert"}).Entries
+	got := ring.Read(Filter{Module: "download"}).Entries
 	if len(got) != 2 || got[0].Message != "encode started" || got[1].Message != "encode slow" {
-		t.Fatalf("convert = %+v", got)
+		t.Fatalf("download = %+v", got)
 	}
 	for _, e := range got {
-		if e.Module != "convert" || strings.Contains(e.Attrs, "module=") {
+		if e.Module != "download" || strings.Contains(e.Attrs, "module=") {
 			t.Errorf("entry %+v: module should be a field, not an attr", e)
 		}
 	}
@@ -96,7 +96,7 @@ func TestSeqNotPersistedAndFlush(t *testing.T) {
 		t.Fatal(err)
 	}
 	log := slog.New(NewHandler(slog.NewTextHandler(discard{}, nil), ring))
-	log.With("module", "books").Info("persist me")
+	log.With("module", "series").Info("persist me")
 	ring.Flush(5 * time.Second)
 
 	raw, err := os.ReadFile(path)
@@ -107,7 +107,7 @@ func TestSeqNotPersistedAndFlush(t *testing.T) {
 	if err := json.Unmarshal([]byte(strings.TrimSpace(string(raw))), &e); err != nil {
 		t.Fatalf("file %q: %v", raw, err)
 	}
-	if e.Message != "persist me" || e.Seq != 0 || e.Module != "books" || strings.Contains(string(raw), `"seq"`) {
+	if e.Message != "persist me" || e.Seq != 0 || e.Module != "series" || strings.Contains(string(raw), `"seq"`) {
 		t.Errorf("on disk: %s", raw)
 	}
 	if files := ring.Files(); len(files) != 1 || files[0] != path {
@@ -119,7 +119,7 @@ func TestSeqNotPersistedAndFlush(t *testing.T) {
 	again.add(Entry{TimeMS: 1, Level: "INFO", Message: "already here"})
 	again.Restore(path)
 	got := again.Read(Filter{}).Entries
-	if len(got) != 2 || got[1].Message != "persist me" || got[1].Seq != 2 || got[1].Module != "books" {
+	if len(got) != 2 || got[1].Message != "persist me" || got[1].Seq != 2 || got[1].Module != "series" {
 		t.Errorf("restored = %+v", got)
 	}
 	if NewRing(100).Files() != nil {

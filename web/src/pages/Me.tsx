@@ -17,9 +17,6 @@ const PlexAccountLink = lazy(() => import("../components/PlexAccountLink"));
 const JellyfinAccountLink = lazy(() => import("../components/JellyfinAccountLink"));
 // Your password and your other devices (every role).
 const AccountSettings = lazyPage(() => import("../components/AccountSettings"), "AccountSettings");
-// Your Kindle's address, for Send to Kindle on My shelf or, for staff, the book page
-// (anyone requester and up).
-const KindleCard = lazyPage(() => import("../components/Kindle"), "KindleCard");
 // Your private calendar link for Google / Apple Calendar (LAN only, like the Calendar).
 const CalendarFeedPanel = lazyPage(() => import("../components/CalendarFeed"), "CalendarFeedPanel");
 
@@ -38,15 +35,13 @@ const ROLE: Record<UserRole, string> = {
 //                  be on, then Apprise under Advanced;
 //   Media servers — link your Plex account (PLEX-14; plex.tv's redirect comes back here)
 //                  and your Jellyfin user;
-//   Send to Kindle — your Kindle's address (Books on, requester and up);
 //   Calendar feed — your private link for Google / Apple Calendar (not from outside);
 //   Account      — change your password (or set a first one after Plex sign-in) and sign
 //                  out your other devices;
-//   More, Sign out.
+//   More (Calendar, not from outside), Sign out.
 export function Me({ chrome = false }: { chrome?: boolean }) {
-  const { user, external, booksEnabled } = useMe();
+  const { user, external } = useMe();
   const name = user?.username || "Guest";
-  const kindle = booksEnabled && !!user && user.role !== "readonly";
   useHashScroll();
   return (
     <>
@@ -78,14 +73,6 @@ export function Me({ chrome = false }: { chrome?: boolean }) {
           </Suspense>
         </MeSection>
 
-        {kindle && (
-          <MeSection id="kindle" title="Send to Kindle">
-            <Suspense fallback={<Loading />}>
-              <KindleCard />
-            </Suspense>
-          </MeSection>
-        )}
-
         {!external && (
           <MeSection id="calendar-feed" title="Calendar feed">
             <div className="p-3.5">
@@ -102,12 +89,13 @@ export function Me({ chrome = false }: { chrome?: boolean }) {
           </Suspense>
         </MeSection>
 
-        <MeSection id="more" title="More">
-          {/* Calendar has no phone tab while Requests does; from outside the network the
-              server doesn't serve it at all. */}
-          {!external && <MeRow to="/calendar">Calendar</MeRow>}
-          <MeRow to="/audiobooks?tab=apps">Audiobook apps &amp; password</MeRow>
-        </MeSection>
+        {/* Calendar has no phone tab while Requests does; from outside the network the
+            server doesn't serve it at all. */}
+        {!external && (
+          <MeSection id="more" title="More">
+            <MeRow to="/calendar">Calendar</MeRow>
+          </MeSection>
+        )}
 
         <MeSection id="session">
           <button onClick={() => { void signOut(); }} className="flex min-h-[48px] w-full items-center px-3.5 text-left text-md font-semibold" style={{ color: "var(--reject-text)" }}>

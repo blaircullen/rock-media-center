@@ -115,7 +115,7 @@ type jellyfinSource struct {
 func (*jellyfinSource) Kind() mediaserver.Kind { return mediaserver.Jellyfin }
 
 // Sessions lists what's playing on Jellyfin as neutral sessions. Idle apps (no
-// NowPlayingItem) and things Insights doesn't record (books, photos, live TV) are left out.
+// NowPlayingItem) and things Insights doesn't record (photos, live TV) are left out.
 func (j *jellyfinSource) Sessions(ctx context.Context) ([]mediaserver.Session, error) {
 	c := j.jf.Client(ctx)
 	raw, err := c.Sessions(ctx, 0)
@@ -196,8 +196,7 @@ func streamsKbps(streams []jellyfin.MediaStream) int64 {
 }
 
 // jellyfinMediaType is Insights' word for a Jellyfin item type, "" for one it doesn't
-// record. Books and audiobooks are left out on purpose: listening is Arrmada's audiobook
-// server's to report, and staff never see what someone reads.
+// record. Books and audiobooks are left out on purpose: staff never see what someone reads or listens to.
 func jellyfinMediaType(t string) string {
 	switch t {
 	case jellyfin.TypeMovie, "Video", "MusicVideo":

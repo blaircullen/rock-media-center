@@ -40,7 +40,7 @@ export interface LibraryToolbarProps {
   /** Beside the count: a page switch, a queue chip. */
   lead?: ReactNode;
   segments?: ToolbarSegment[];
-  /** Dropdown pickers ("View: Books · grid"), for a choice too long for a segmented toggle. */
+  /** Dropdown pickers ("View: Posters · grid"), for a choice too long for a segmented toggle. */
   pickers?: ToolbarSegment[];
   /** A sort picker ("Sort: Recently added"), for views without sortable columns. */
   sort?: ToolbarSegment;
@@ -50,14 +50,14 @@ export interface LibraryToolbarProps {
   toolsBadge?: number;
   /** Everyday buttons between the tools menu and the add buttons ("Search missing (4)"). */
   actions?: ToolbarAction[];
-  /** A second add button before the primary ("+ Add author"). */
+  /** A second add button before the primary ("+ Add series"). */
   secondary?: ToolbarAction;
   primary?: ToolbarAction;
 }
 
 const PANEL = { background: "var(--panel-2)", border: "1px solid var(--line)" };
 
-// LibraryToolbar is the one header row of every library page (Movies, Series, Books,
+// LibraryToolbar is the one header row of every library page (Movies, Series,
 // Music): the count on the left; on the right the segmented toggles, Select, a "Library
 // tools" menu for the occasional jobs (Scan library, sweeps) and the "+ Add …" buttons.
 // It wraps rather than squeezing: below sm the count takes its own line, and no button

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAgo, formatBytes, formatCheckDay, formatDuration, formatEta, formatReleaseAge, notFoundYet } from "./format";
+import { formatAgo, formatBytes, formatDuration, formatEta, formatReleaseAge } from "./format";
 
 describe("formatReleaseAge", () => {
   const now = Date.parse("2026-10-09T12:00:00Z");
@@ -14,27 +14,6 @@ describe("formatReleaseAge", () => {
     expect(formatReleaseAge(undefined, now)).toBe("");
     expect(formatReleaseAge("", now)).toBe("");
     expect(formatReleaseAge("garbage", now)).toBe("");
-  });
-});
-
-describe("formatCheckDay", () => {
-  const now = Date.parse("2026-10-09T12:00:00Z");
-  it("names the day in the viewer's locale", () => {
-    expect(formatCheckDay("2026-10-13T09:00:00Z", now, "en-GB")).toBe("Tue 13 Oct");
-  });
-  it("reads soon when due, overdue or unknown", () => {
-    expect(formatCheckDay("2026-10-09T11:00:00Z", now)).toBe("soon");
-    expect(formatCheckDay("", now)).toBe("soon");
-    expect(formatCheckDay(undefined, now)).toBe("soon");
-    expect(formatCheckDay("not a date", now)).toBe("soon");
-  });
-});
-
-describe("notFoundYet", () => {
-  const now = Date.parse("2026-10-09T12:00:00Z");
-  it("says when it looks next, and when it last looked if known", () => {
-    expect(notFoundYet("2026-10-08T09:00:00Z", undefined, now)).toBe("Not found yet · next check soon");
-    expect(notFoundYet(undefined, "2026-10-06T12:00:00Z", now)).toBe("Not found yet — last checked 3d ago, next check soon");
   });
 });
 

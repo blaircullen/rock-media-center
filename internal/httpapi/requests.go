@@ -28,7 +28,7 @@ const (
 // the ones they follow, whatever the query asks — the scope is forced here.
 //
 //	GET /api/v1/requests?section=needs_approval|in_progress|ready|declined|all|strip
-//	                    &limit=&offset=&media_type=movie|series|book&q=&status=
+//	                    &limit=&offset=&media_type=movie|series&q=&status=
 //	                    &ready_within_days=&mine=1
 //
 // It answers {requests, counts, total, auto_approve, client_health}. With no section and
@@ -54,9 +54,9 @@ func (a *api) handleListRequests(w http.ResponseWriter, r *http.Request) {
 		f.ReadyWithinDays = min(n, 365)
 	}
 	switch f.MediaType {
-	case "", "movie", "series", "book":
+	case "", "movie", "series":
 	default:
-		a.writeError(w, http.StatusBadRequest, "media_type must be movie, series or book")
+		a.writeError(w, http.StatusBadRequest, "media_type must be movie or series")
 		return
 	}
 	var (
@@ -253,17 +253,14 @@ func (a *api) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		MediaType      string `json:"media_type"`
 		TMDBID         int    `json:"tmdb_id"`
-		OLKey          string `json:"ol_key"`
 		Title          string `json:"title"`
-		Author         string `json:"author"`
 		Year           int    `json:"year"`
 		PosterURL      string `json:"poster_url"`
 		Overview       string `json:"overview"`
 		Note           string `json:"note"`
 		QualityProfile string `json:"quality_profile"`
-		Formats        string `json:"formats"` // books: ebook | audiobook | both; absent = the default profile's editions
 		// Seasons a series request asks for; empty or absent is the whole show. Ignored
-		// for movies and books.
+		// for movies.
 		Seasons []int `json:"seasons"`
 	}
 	if !a.decodeJSON(w, r, &req) {
@@ -277,8 +274,8 @@ func (a *api) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	u, _ := userFrom(r)
 	in := requests.Request{
-		MediaType: req.MediaType, TMDBID: req.TMDBID, OLKey: req.OLKey, Title: req.Title, Author: req.Author, Year: req.Year,
-		PosterURL: req.PosterURL, Overview: req.Overview, Note: req.Note, QualityProfile: req.QualityProfile, Formats: req.Formats,
+		MediaType: req.MediaType, TMDBID: req.TMDBID, Title: req.Title, Year: req.Year,
+		PosterURL: req.PosterURL, Overview: req.Overview, Note: req.Note, QualityProfile: req.QualityProfile,
 		RequestedBy: u.ID, RequestedByName: u.Username,
 	}
 	if in.MediaType == "series" {

@@ -212,7 +212,7 @@ export function ClientEditor({ client, onSaved, onChanged }: { client: DownloadC
   );
 }
 
-const FOR_LABEL: Record<string, string> = { movies: "movies", tv: "TV", books: "books", music: "music" };
+const FOR_LABEL: Record<string, string> = { movies: "movies", tv: "TV", music: "music" };
 
 // serversLine sums up SABnzbd's news servers: "1 server, working", "3 servers, all
 // working", "2 servers, 1 working", or that there's none.
@@ -357,7 +357,7 @@ function OpenBundledSAB({ port, noServer }: { port: string; noServer: boolean })
 export function CategoryLine({ c, usenet }: { c: DownloadCategories; usenet?: boolean }) {
   return (
     <p className="m-0 text-xs text-ink-dim" title="Arrmada files every download under one of these, so each importer finds its own.">
-      Categories in {usenet ? "qBittorrent and SABnzbd" : "qBittorrent"}: <span className="font-mono">{c.movies}</span> (movies) · <span className="font-mono">{c.tv}</span> · <span className="font-mono">{c.books}</span> · <span className="font-mono">{c.music}</span>
+      Categories in {usenet ? "qBittorrent and SABnzbd" : "qBittorrent"}: <span className="font-mono">{c.movies}</span> (movies) · <span className="font-mono">{c.tv}</span> · <span className="font-mono">{c.music}</span>
     </p>
   );
 }

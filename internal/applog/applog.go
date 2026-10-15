@@ -20,7 +20,7 @@ type Entry struct {
 	// Live view asks only for entries after the last one it has. Lines read back from disk
 	// at startup are numbered afresh, and the number isn't written to disk.
 	Seq uint64 `json:"seq,omitempty"`
-	// Module is the part of the app that wrote the line ("convert", "indexer", …), from
+	// Module is the part of the app that wrote the line ("indexer", "download", …), from
 	// the logger it was handed in main; empty for the app's own core lines.
 	Module string `json:"module,omitempty"`
 }
@@ -28,9 +28,9 @@ type Entry struct {
 // Modules are the module tags main hands out, for the Logs page's filter. Keep in step
 // with the log.With("module", …) calls in cmd/arrmada.
 var Modules = []string{
-	"api", "audioserver", "automation", "books", "convert", "download", "import",
+	"api", "automation", "download", "import",
 	"indexer", "insights", "jellyfin", "movies", "music", "notify", "requests", "scheduler",
-	"series", "subtitles",
+	"series",
 }
 
 // moduleKey is the logger attribute that tags a module.
@@ -216,7 +216,7 @@ type Handler struct {
 	ring  *Ring
 	attrs []slog.Attr
 	group string
-	// module is the logger's "module" tag (log.With("module", "convert")); it goes in
+	// module is the logger's "module" tag (log.With("module", "indexer")); it goes in
 	// Entry.Module rather than the attrs, so the Logs page can filter on it.
 	module string
 }

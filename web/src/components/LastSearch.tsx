@@ -40,7 +40,7 @@ export function LastSearchLine({ summary, nextSearchAt, className = "mt-2" }: { 
 }
 
 // LastSearches lists the newest search under each scope for a series (whole show,
-// seasons, episodes) or a book (each edition). Renders nothing until there is one.
+// seasons, episodes) or an album. Renders nothing until there is one.
 export function LastSearches({ kind, id, className = "mt-2", max = 4 }: { kind: Kind; id: number; className?: string; max?: number }) {
   const rows = latestPerScope(useSearchAttempts(kind, id), max);
   if (rows.length === 0) return null;

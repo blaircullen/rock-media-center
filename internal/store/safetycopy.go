@@ -8,8 +8,7 @@ import (
 
 // SafetyCopy writes a consistent copy of the live database to
 // <dataDir>/backups/arrmada-<kind>-<UTC timestamp>.db before something rewrites data that
-// can't be put back (deleting a user cascades to their audiobook places and listening
-// history), then keeps only the newest `keep` copies of that kind. Other files in the
+// can't be put back (deleting a user cascades to everything keyed to them), then keeps only the newest `keep` copies of that kind. Other files in the
 // backups folder are never touched.
 //
 // It is Snapshot plus pruning: the same checked VACUUM INTO copy the pre-migration backup

@@ -6,8 +6,7 @@ import (
 	"testing"
 )
 
-// The upgrade hold ("keep existing files"): set in bulk on rows with a file, kept through a
-// convert's repoint, ended by a new import, a profile change or Resume.
+// The upgrade hold ("keep existing files"): set in bulk on rows with a file, ended by a new import, a profile change or Resume.
 func TestUpgradeHoldLifecycle(t *testing.T) {
 	svc, ctx := testService(t)
 	dir := t.TempDir()
@@ -55,15 +54,6 @@ func TestUpgradeHoldLifecycle(t *testing.T) {
 	}
 	if hm, hv, hr := held(); !hm || !hv || hr {
 		t.Fatalf("after hold: movie %v version %v missing %v", hm, hv, hr)
-	}
-
-	// A convert repoints the file and keeps the hold.
-	converted := mk("Heat.1995.1080p.BluRay.AV1-GRP.mkv")
-	if _, err := svc.RepointMovieFile(ctx, 1, main, converted, 1<<30, "AV1"); err != nil {
-		t.Fatal(err)
-	}
-	if hm, _, _ := held(); !hm {
-		t.Error("a convert's repoint ended the hold")
 	}
 
 	// Setting the same profile again isn't a change; another profile is.

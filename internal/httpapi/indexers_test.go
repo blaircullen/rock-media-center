@@ -230,7 +230,7 @@ func TestUpdateIndexerIgnoresProwlarrOwnedFields(t *testing.T) {
 	}
 	id := strconv.FormatInt(row.ID, 10)
 	w := callIndexer(t, a.handleUpdateIndexer, http.MethodPut, "/api/v1/indexers/"+id, id,
-		`{"name":"Mine","kind":"newznab","url":"http://evil/api","api_key":"new","priority":3,"media_types":["book"],"enabled":true}`)
+		`{"name":"Mine","kind":"newznab","url":"http://evil/api","api_key":"new","priority":3,"media_types":["music"],"enabled":true}`)
 	if w.Code != http.StatusNoContent {
 		t.Fatalf("update = %d: %s", w.Code, w.Body.String())
 	}
@@ -238,7 +238,7 @@ func TestUpdateIndexerIgnoresProwlarrOwnedFields(t *testing.T) {
 	if got.Name != "Prowlarr · TL" || got.Kind != indexer.KindTorznab || got.URL != "http://p:9696/1/api" || got.APIKey != "pk" {
 		t.Fatalf("Prowlarr's fields changed: %+v", got)
 	}
-	if got.Priority != 3 || len(got.MediaTypes) != 1 || got.MediaTypes[0] != "book" {
+	if got.Priority != 3 || len(got.MediaTypes) != 1 || got.MediaTypes[0] != "music" {
 		t.Fatalf("the owner's settings didn't save: %+v", got)
 	}
 

@@ -10,7 +10,6 @@ import (
 
 	"github.com/tristenlammi/arrmada/internal/auth"
 	"github.com/tristenlammi/arrmada/internal/automation"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/music"
@@ -19,7 +18,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/settings"
 )
 
-// wantedServer is a route server with movies, series, books and the coordinator wired,
+// wantedServer is a route server with movies, series and the coordinator wired,
 // and no download client (so the queue reads as known and empty).
 func wantedServer(t *testing.T, fj *fakeJobs) *routeServer {
 	t.Helper()
@@ -29,7 +28,6 @@ func wantedServer(t *testing.T, fj *fakeJobs) *routeServer {
 		dl := download.NewService(db, d.Log)
 		d.Movies, d.Downloads, d.Quality = mv, dl, quality.NewService(db)
 		d.Series = series.NewService(db, nil, t.TempDir(), d.Log)
-		d.Books = books.NewService(db, nil, d.Log)
 		d.Automation = automation.New(mv, nil, dl, nil, db, nil, d.Log, "")
 		if fj != nil {
 			d.Jobs = fj
@@ -70,7 +68,7 @@ func rowFor(rows []wantedRow, kind string, id int64) (wantedRow, bool) {
 
 // ACQ-18: every Searching row says what is really happening to the title — searching on
 // its ladder (with the last search, the empty run and the next try), waiting on a pack
-// that covers it, or held for review — and wanted books appear beside films and shows.
+// that covers it, or held for review.
 func TestWantedRowsSayWhatIsHappening(t *testing.T) {
 	s := wantedServer(t, nil)
 	_, mgr := s.user(t, "mgr@example.com", auth.RoleManager)
@@ -98,8 +96,6 @@ func TestWantedRowsSayWhatIsHappening(t *testing.T) {
 		`INSERT INTO grabs (movie_id, title, media_type, info_hash, status, acq_scope, phase)
 			VALUES (10, 'Whole.Show.Complete.Series.1080p', 'series', 'cccc', 'grabbed', 'complete', 'stalled'),
 			       (11, 'Half.Show.S01.1080p', 'series', 'dddd', 'grabbed', 'S01', 'downloading')`,
-		// A monitored book with no file: its profile wants an ebook.
-		`INSERT INTO books (id, ol_key, title, author, monitored) VALUES (20, 'OL20W', 'Red Rising', 'Pierce Brown', 1)`,
 	)
 	// Movie 4 waits for its release (no date known, and not marked released yet).
 	mustExecAll(t, s, `INSERT INTO movies (id, tmdb_id, title, year, monitored, min_availability) VALUES (4, 4, 'Delta', 2099, 1, 'released')`)
@@ -146,11 +142,6 @@ func TestWantedRowsSayWhatIsHappening(t *testing.T) {
 	half, ok := rowFor(w.Searching, "series", 11)
 	if !ok || half.State != wantedSearching || half.WaitingNote != "S01 downloading" || half.EpisodeCount != 2 {
 		t.Errorf("show with one season downloading = %+v, want searching with 'S01 downloading'", half)
-	}
-
-	book, ok := rowFor(w.Searching, "book", 20)
-	if !ok || book.State != wantedSearching || !book.Due || book.Byline != "Pierce Brown" || len(book.Missing) != 1 || book.Missing[0] != "Ebook" {
-		t.Errorf("wanted book = %+v (listed %v), want a due searching row missing its ebook", book, ok)
 	}
 
 	// ?kind narrows the list (what the Movies Wanted view asks for).
@@ -230,7 +221,6 @@ func TestWantedSearchNowResetsAndDispatches(t *testing.T) {
 	mustExecAll(t, s,
 		`INSERT INTO movies (id, tmdb_id, title, year, monitored, min_availability, last_search_at, search_misses) VALUES (1, 1, 'Alpha', 2001, 1, 'announced', '2026-01-01 00:00:00', 6)`,
 		`INSERT INTO series (id, tmdb_id, title, monitored, last_search_at, search_misses) VALUES (2, 2, 'Show', 1, '2026-01-01 00:00:00', 5)`,
-		`INSERT INTO books (id, ol_key, title, monitored, last_search_at, search_misses) VALUES (3, 'OL3W', 'Book', 1, '2026-01-01 00:00:00', 12)`,
 	)
 	cases := []struct {
 		path, table, kind, target string
@@ -238,7 +228,6 @@ func TestWantedSearchNowResetsAndDispatches(t *testing.T) {
 	}{
 		{"/api/v1/wanted/movie/1/search", "movies", "movie.search", "movie:1", 1},
 		{"/api/v1/wanted/series/2/search", "series", "series.search", "series:2", 2},
-		{"/api/v1/wanted/book/3/search", "books", "book.search", "book:3", 3},
 	}
 	for _, c := range cases {
 		rec := s.do("POST", c.path, mgr)

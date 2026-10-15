@@ -96,7 +96,7 @@ func TestManagerCannotChangeAdminSettings(t *testing.T) {
 	}
 
 	for _, body := range []string{
-		`{"books_enabled":false}`, `{"music_enabled":true}`, `{"plex_login_auto_approve":false}`,
+		`{"music_enabled":true}`, `{"plex_login_auto_approve":false}`,
 		`{"plex_login_auto_approve_types":"movie,series"}`,
 		`{"tmdb_region":"US"}`, `{"recycle_retention_days":"1"}`, `{"downloads_disk_guard":false}`,
 		`{"downloads_disk_guard_pause_pct":"80"}`, `{"downloads_disk_guard_resume_pct":"5"}`,
@@ -236,33 +236,6 @@ func TestSettingsUpgradeBudget(t *testing.T) {
 	}
 }
 
-// Book languages default to English, are stored as canonical codes whatever spelling was
-// sent, may be emptied (any language), and refuse anything that isn't a language. [BOOK-16]
-func TestSettingsBookLanguages(t *testing.T) {
-	a := settingsAPI(t)
-	if _, got := getSettings(t, a); !reflect.DeepEqual(got["books_languages"], []any{"en"}) {
-		t.Fatalf("default = %v, want [en]", got["books_languages"])
-	}
-	if w := putSettingsAs(t, a, auth.RoleManager, `{"books_languages":["English","SPA","es"]}`); w.Code != http.StatusOK {
-		t.Fatalf("manager PUT: HTTP %d %s", w.Code, w.Body.String())
-	}
-	if _, got := getSettings(t, a); !reflect.DeepEqual(got["books_languages"], []any{"en", "es"}) {
-		t.Errorf("saved = %v, want [en es]", got["books_languages"])
-	}
-	if w := putSettings(t, a, `{"books_languages":["en","klingonish"]}`); w.Code != http.StatusBadRequest {
-		t.Errorf("unknown language: HTTP %d, want 400", w.Code)
-	}
-	if _, got := getSettings(t, a); !reflect.DeepEqual(got["books_languages"], []any{"en", "es"}) {
-		t.Errorf("a refused PUT changed the list: %v", got["books_languages"])
-	}
-	if w := putSettings(t, a, `{"books_languages":[]}`); w.Code != http.StatusOK {
-		t.Fatalf("empty list: HTTP %d %s", w.Code, w.Body.String())
-	}
-	if _, got := getSettings(t, a); !reflect.DeepEqual(got["books_languages"], []any{}) {
-		t.Errorf("emptied = %v, want [] (any language)", got["books_languages"])
-	}
-}
-
 func mustAtoi(t *testing.T, s string) int {
 	t.Helper()
 	n, err := strconv.Atoi(s)
@@ -307,7 +280,7 @@ func TestUpdateSettingsSingleKey(t *testing.T) {
 		"tmdb_region":                       `"AU"`,
 		"plex_login_auto_approve":           `true`,
 		"plex_login_auto_approve_types":     `"movie,series"`,
-		"jellyfin_login_auto_approve_types": `"series,book"`,
+		"jellyfin_login_auto_approve_types": `"series"`,
 		"recycle_max_gb":                    `"7"`,
 		"recycle_retention_days":            `"9"`,
 		"downloads_disk_guard_pause_pct":    `"90"`,
@@ -317,8 +290,6 @@ func TestUpdateSettingsSingleKey(t *testing.T) {
 		"request_quota_days":                `14`,
 		"request_quota_movies":              `3`,
 		"request_quota_seasons":             `2`,
-		"request_quota_books":               `4`,
-		"books_languages":                   `["en","es"]`,
 		"quality_ranking":                   `"v2"`,
 		"download_network_preference":       `"usenet"`,
 		"app_public_url":                    `"https://arrmada.example.com"`,

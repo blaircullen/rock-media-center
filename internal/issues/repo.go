@@ -13,7 +13,7 @@ import (
 // issueCols is every column an Issue is read from, in scanIssue's order.
 const issueCols = `id, media_type, library_id, tmdb_id, title, year, poster_url, season, episode, category,
 	note, reported_by, reported_by_name, status, resolution, action, action_note, action_file, action_size,
-	action_job, action_at, created_at, updated_at, resolved_at, resolved_by, resolved_by_name, told_at`
+	action_at, created_at, updated_at, resolved_at, resolved_by, resolved_by_name, told_at`
 
 type scanner interface{ Scan(dest ...any) error }
 
@@ -21,7 +21,7 @@ func scanIssue(r scanner) (Issue, error) {
 	var i Issue
 	err := r.Scan(&i.ID, &i.MediaType, &i.LibraryID, &i.TMDBID, &i.Title, &i.Year, &i.PosterURL, &i.Season, &i.Episode, &i.Category,
 		&i.Note, &i.ReportedBy, &i.ReportedByName, &i.Status, &i.Resolution, &i.Action, &i.ActionNote, &i.ActionFile, &i.ActionSize,
-		&i.ActionJob, &i.ActionAt, &i.CreatedAt, &i.UpdatedAt, &i.ResolvedAt, &i.ResolvedBy, &i.ResolvedByName, &i.toldAt)
+		&i.ActionAt, &i.CreatedAt, &i.UpdatedAt, &i.ResolvedAt, &i.ResolvedBy, &i.ResolvedByName, &i.toldAt)
 	return i, err
 }
 

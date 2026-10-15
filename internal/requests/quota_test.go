@@ -5,8 +5,6 @@ import (
 	"errors"
 	"testing"
 	"time"
-
-	"github.com/tristenlammi/arrmada/internal/books"
 )
 
 // limitAll gives every requester the same limits and a clock the test moves.
@@ -140,35 +138,5 @@ func TestQuotaExemptStaffImportAndSubscribe(t *testing.T) {
 	var over *ErrQuotaExceeded
 	if _, _, err := f.s.Create(f.ctx, Request{MediaType: "series", TMDBID: 77, Title: "Show", KnownSeasons: []int{0, 1, 2, 3}, RequestedBy: 7}, CreateOptions{}); !errors.As(err, &over) || over.Asked != 3 {
 		t.Fatalf("the whole show with two left: %v, want 3 seasons asked", err)
-	}
-}
-
-// A limited requester joining an approved book request with the other format widens it
-// (a download nobody approved), so it counts as a book; joining a pending one is free.
-func TestQuotaBookWideningCounts(t *testing.T) {
-	s, repo, _, ctx := bookLinkFixture(t, duneCatalogue())
-	searchSpy(s)
-	s.SetQuotaLimits(func(context.Context, int64) (Limits, error) { return Limits{Days: 7, Book: 1}, nil })
-	b, err := repo.Create(ctx, books.Book{OLKey: "OL1W", Title: "Dune", Author: "Frank Herbert", QualityProfile: presetRef(t, s, "Ebook")})
-	if err != nil {
-		t.Fatal(err)
-	}
-	giveEbook(t, repo, ctx, b.ID)
-	// Staff ask for the ebook (approved, exempt); a pending Emma by someone else.
-	if _, _, err := s.Create(ctx, Request{MediaType: "book", OLKey: "OL1W", Title: "Dune", Author: "Frank Herbert", RequestedBy: 1, Formats: FormatsEbook}, CreateOptions{AutoApprove: true, QuotaExempt: true}); err != nil {
-		t.Fatal(err)
-	}
-	if _, _, err := s.Create(ctx, Request{MediaType: "book", OLKey: "OL2W", Title: "Emma", Author: "Jane Austen", RequestedBy: 1, Formats: FormatsEbook}, CreateOptions{QuotaExempt: true}); err != nil {
-		t.Fatal(err)
-	}
-	// Joining the pending one in the other format: free (staff still decide).
-	if _, _, err := s.Create(ctx, Request{MediaType: "book", OLKey: "OL2W", Title: "Emma", Author: "Jane Austen", RequestedBy: 7, Formats: FormatsAudiobook}, CreateOptions{}); err != nil {
-		t.Fatalf("joining a pending request: %v", err)
-	}
-	if _, _, err := s.Create(ctx, Request{MediaType: "book", OLKey: "OL1W", Title: "Dune", Author: "Frank Herbert", RequestedBy: 7, Formats: FormatsAudiobook}, CreateOptions{}); err != nil {
-		t.Fatalf("widening: %v", err)
-	}
-	if st, _ := s.Quota(ctx, 7, false); st.Book.Used != 1 {
-		t.Errorf("used = %d after widening an approved book, want 1", st.Book.Used)
 	}
 }

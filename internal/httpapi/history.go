@@ -15,10 +15,9 @@ import (
 
 // History is one log of what Arrmada did to every title — grabs, imports, upgrades,
 // failures, blocklists, removals, seed clean-ups — read from the per-title event tables
-// (movie_events, series_events, book_events, artist_events) that each detail page already
-// shows on its own. The Dashboard's "Recent activity" is the newest slice of the same
-// feed. These are acquisition events only: audiobook listening lives elsewhere and never
-// appears here.
+// (movie_events, series_events, artist_events) that each detail page already shows on its
+// own. The Dashboard's "Recent activity" is the newest slice of the same feed. These are
+// acquisition events only: what anyone watches never appears here.
 
 // Event categories: the free-text event names, folded into a small fixed set the page
 // filters on. A name not listed is "other" (added, refreshed, searched, monitored…), left
@@ -92,7 +91,6 @@ type eventBranch struct {
 var eventBranches = []eventBranch{
 	{kind: "movie", table: "movie_events", fk: "movie_id", items: "movies", title: "title", poster: "poster_url", rank: 4},
 	{kind: "series", table: "series_events", fk: "series_id", items: "series", title: "title", poster: "poster_url", rank: 3},
-	{kind: "book", table: "book_events", fk: "book_id", items: "books", title: "title", poster: "cover_url", rank: 2},
 	{kind: "music", table: "artist_events", fk: "artist_id", items: "artists", title: "name", poster: "image_url", rank: 1},
 }
 
@@ -132,7 +130,7 @@ func parseEventsCursor(s string) (eventsCursor, error) {
 
 // eventsFilter narrows the feed. Zero values mean "everything".
 type eventsFilter struct {
-	Kinds []string // movie, series, book, music
+	Kinds []string // movie, series, music
 	// Categories to include (eventCategory values). Empty means every event, "other"
 	// included; the History endpoint fills in its own default.
 	Categories []string
@@ -143,8 +141,8 @@ type eventsFilter struct {
 
 // historyEvent is one row of the feed.
 type historyEvent struct {
-	Kind      string `json:"kind"`    // movie | series | book | music
-	ItemID    int64  `json:"item_id"` // the movie, series, book or artist
+	Kind      string `json:"kind"`    // movie | series | music
+	ItemID    int64  `json:"item_id"` // the movie, series or artist
 	Title     string `json:"title"`
 	PosterURL string `json:"poster_url,omitempty"`
 	Event     string `json:"event"`
@@ -398,8 +396,8 @@ func (a *api) handleHistory(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleImportsList is the old History: the files imported most recently and where each
-// went. Rows with no file (a dismissed review, a pack that placed nothing, a series or
-// book import recorded only so it isn't imported twice) aren't imports and are left out.
+// went. Rows with no file (a dismissed review, a pack that placed nothing, a series
+// import recorded only so it isn't imported twice) aren't imports and are left out.
 func (a *api) handleImportsList(w http.ResponseWriter, r *http.Request) {
 	recs, err := a.deps.Library.Recent(r.Context(), 100)
 	if err != nil {

@@ -6,8 +6,7 @@ import { useSearchParamState } from "../../lib/useSearchState";
 import { Chip, FilterGroup, ImportedNotice, RowServer, SetupState, fmtDay, fmtHours, type Metric } from "./shared";
 
 // Library: what's watched most, what has sat unwatched since it was added, and which
-// titles keep making Plex transcode — linked to the title in Arrmada and to Convert's
-// library, where it can be converted. The tab only links: it never starts a conversion.
+// titles keep making Plex transcode — linked to the title in Arrmada.
 
 const WINDOWS = ["30", "90", "365"] as const;
 type Win = (typeof WINDOWS)[number];
@@ -20,13 +19,6 @@ const linkStyle = { color: "var(--accent-text)" };
 export function arrmadaPath(it: LibraryItem): string | null {
   if (!it.arrmada_id) return null;
   return it.media === "series" ? `/series/${it.arrmada_id}` : `/movies/${it.arrmada_id}`;
-}
-
-// convertPath is the title in Convert's library list (search pre-filled). It only opens
-// the list; converting is still a choice made there.
-export function convertPath(it: LibraryItem): string {
-  const qs = new URLSearchParams({ tab: "library", media: it.media === "series" || it.kind === "show" ? "tv" : "movies", q: it.title });
-  return `/convert?${qs.toString()}`;
 }
 
 function Poster({ url, w = 32 }: { url: string; w?: number }) {
@@ -81,7 +73,7 @@ export function LibraryView({ connected, server }: { connected: boolean; server?
 
       <section className="rounded-xl p-4" style={card}>
         <h3 className="m-0 text-md font-bold">Transcode hot spots</h3>
-        <p className="mb-2.5 mt-0.5 text-sm text-ink-dim">The titles Plex converted most often in this window — candidates for Convert, which makes a copy more players can play directly.</p>
+        <p className="mb-2.5 mt-0.5 text-sm text-ink-dim">The titles Plex converted most often in this window.</p>
         {v.hot_spots.length === 0 ? <div className="text-sm text-ink-faint">Nothing was transcoded in this window.</div> : (
           <ul className="m-0 flex list-none flex-col p-0">
             {v.hot_spots.map((h, i) => (
@@ -101,10 +93,7 @@ export function LibraryView({ connected, server }: { connected: boolean; server?
                 </div>
                 <div className="flex flex-none flex-col items-end gap-1 text-sm">
                   {arrmadaPath(h) ? (
-                    <>
-                      <Link to={arrmadaPath(h)!} className="font-semibold" style={linkStyle}>Open</Link>
-                      <Link to={convertPath(h)} className="font-semibold" style={linkStyle} title="Opens this title in Convert's library list">Find in Convert</Link>
-                    </>
+                    <Link to={arrmadaPath(h)!} className="font-semibold" style={linkStyle}>Open</Link>
                   ) : <span className="text-xs text-ink-faint">Not in Arrmada</span>}
                 </div>
               </li>

@@ -74,7 +74,6 @@ describe("wantedChip", () => {
     expect(wantedChip(row({ state: "held_for_review", due: true })).text).toBe("Held for review");
     expect(wantedChip(row({ state: "unknown", due: true }))).toMatchObject({ text: "Status unknown", pulse: false });
     expect(wantedChip(row({ state: "indexers_failed" })).text).toBe("Indexers failed last try");
-    expect(wantedChip(row({ media_type: "book", state: "slowed" })).text).toBe("Checked monthly");
     expect(wantedChip(row({ media_type: "music", state: "slowed" })).text).toBe("Checked weekly");
   });
 });
@@ -83,7 +82,6 @@ describe("wantedHref", () => {
   it("links each kind to its page", () => {
     expect(wantedHref(row({}))).toBe("/movies/4");
     expect(wantedHref(row({ media_type: "series", id: 7 }))).toBe("/series/7");
-    expect(wantedHref(row({ media_type: "book", id: 8 }))).toBe("/books/8");
     expect(wantedHref(row({ media_type: "music", id: 9 }))).toBe("/music/album/9");
   });
 });

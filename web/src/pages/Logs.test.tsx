@@ -10,7 +10,7 @@ import { Logs } from "./Logs";
 // the view over; the debug switch is timed.
 
 const line = (seq: number, msg: string, module?: string) => ({ seq, time_ms: 1_700_000_000_000 + seq, level: "INFO", msg, module });
-const page = (p: Partial<LogPage>): LogPage => ({ entries: [], last_seq: 0, run: 1, modules: ["convert", "indexer"], capacity: 50000, ...p });
+const page = (p: Partial<LogPage>): LogPage => ({ entries: [], last_seq: 0, run: 1, modules: ["import", "indexer"], capacity: 50000, ...p });
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -27,12 +27,12 @@ const show = () => render(<MemoryRouter><ToastProvider><Logs /></ToastProvider><
 describe("Logs", () => {
   it("polls with the last cursor and appends only the new lines", async () => {
     const logs = vi.spyOn(systemApi, "logs")
-      .mockResolvedValueOnce(page({ entries: [line(1, "first"), line(2, "second", "convert")], last_seq: 2 }))
+      .mockResolvedValueOnce(page({ entries: [line(1, "first"), line(2, "second", "import")], last_seq: 2 }))
       .mockResolvedValueOnce(page({ entries: [line(3, "third")], last_seq: 3 }))
       .mockResolvedValue(page({ entries: [], last_seq: 3 }));
     show();
     expect(await screen.findByText("second")).toBeTruthy();
-    expect(screen.getByText("[convert]")).toBeTruthy();
+    expect(screen.getByText("[import]")).toBeTruthy();
     expect(logs.mock.calls[0][0].after_seq).toBeUndefined();
 
     await act(async () => { await vi.advanceTimersByTimeAsync(3100); });

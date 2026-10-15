@@ -822,7 +822,7 @@ func detectCodec(lc string) Codec {
 	// converted before codec tokens were swapped in place carries both — the old codec in
 	// the name and " AV1" appended ("...H.264-GRP AV1") — which must read as what's on disk.
 	// Brackets count as bounds too: normalize leaves them, and a library-style name
-	// restamped by Convert reads "Movie (2020) [1080p] [AV1]".
+	// restamped by an older version's Convert reads "Movie (2020) [1080p] [AV1]".
 	case bracketedWord(lc, "av1"):
 		return CodecAV1
 	case strings.Contains(lc, "x265"), strings.Contains(lc, "h265"),

@@ -26,7 +26,7 @@ import (
 //     the stale one takes that outcome quietly, and one waiting in Review is left to the
 //     review (settleVanished);
 //   - if what it was for is already in the library, it closes as imported (stallTarget.landed;
-//     movies, books and music test that before judging at all).
+//     movies and music test that before judging at all).
 //
 // None of these searches, so none spends the per-check fail-over budget, and DetectStalled
 // says once per check how many it closed. The evidence rule is untouched: nothing here acts

@@ -128,7 +128,7 @@ func tracksWithNumber(tracks []Track, n int) []Track {
 
 // ReleaseIsForAlbum reports whether a release name names this artist and album as whole
 // words — the gate that stops a search for one album grabbing a different one by the same
-// artist, which is exactly the hole the Books module had.
+// artist, which would be a bad match.
 //
 // A discography release is refused outright: grabbing one against a single album would fill
 // that album's folder with the artist's entire catalogue.

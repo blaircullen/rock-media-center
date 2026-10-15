@@ -44,7 +44,7 @@ func logEnvironment(log *slog.Logger, cfg config.Config) {
 	for _, bin := range []string{"ffmpeg", "ffprobe"} {
 		if path, err := exec.LookPath(bin); err != nil {
 			log.Warn("environment: helper binary missing", "binary", bin,
-				"impact", "conversion, subtitle extraction and audiobook merging are unavailable")
+				"impact", "reading media file details is unavailable")
 		} else {
 			log.Info("environment: helper binary", "binary", bin, "path", path)
 		}
@@ -60,8 +60,8 @@ func logEnvironment(log *slog.Logger, cfg config.Config) {
 // in the log the user already exports. cfg holds the folders as resolved at startup
 // (libroots.Roots.Config); a folder changed later applies live and is logged by the
 // Settings save instead.
-func logFolders(log *slog.Logger, cfg config.Config, booksOn, musicOn bool) {
-	folders := health.LibraryFolders(cfg, booksOn, musicOn)
+func logFolders(log *slog.Logger, cfg config.Config, musicOn bool) {
+	folders := health.LibraryFolders(cfg, musicOn)
 	for _, f := range folders {
 		logFolder(log, f.Role, f.Path)
 	}

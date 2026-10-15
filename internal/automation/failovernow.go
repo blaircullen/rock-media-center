@@ -108,14 +108,7 @@ func (c *Coordinator) stallTargetFor(ctx context.Context, g grab) (stallTarget, 
 		}
 		return c.seriesStallTarget(ctx, g)
 	case "book":
-		if c.books == nil {
-			return stallTarget{}, false
-		}
-		b, err := c.books.Get(ctx, g.MovieID)
-		if err != nil {
-			return stallTarget{}, false
-		}
-		return c.bookStallTarget(b, g), true
+		return stallTarget{}, false // an older version's book grab: nothing to fail over to
 	case "music":
 		if c.music == nil {
 			return stallTarget{}, false
@@ -137,8 +130,6 @@ func claimKey(kind string, id int64) string {
 	switch kind {
 	case "series":
 		return seriesKey(id)
-	case "book":
-		return bookKey(id)
 	case "music":
 		return albumKey(id)
 	}

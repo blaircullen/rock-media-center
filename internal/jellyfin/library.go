@@ -13,7 +13,7 @@ import (
 // VirtualFolder is one library as Dashboard → Libraries shows it.
 type VirtualFolder struct {
 	Name string `json:"Name"`
-	// CollectionType is movies | tvshows | music | books | homevideos | mixed ("" for mixed
+	// CollectionType is movies | tvshows | music | homevideos | mixed ("" for mixed
 	// on some servers).
 	CollectionType string `json:"CollectionType"`
 	// Locations are the library's folders as the Jellyfin server sees them (its own paths).

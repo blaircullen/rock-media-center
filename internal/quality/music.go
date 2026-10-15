@@ -2,9 +2,8 @@ package quality
 
 // Music quality is a LADDER, not a set of preferences.
 //
-// For books, EPUB vs MOBI is taste — neither is better, so a book profile is a flat
-// "which of these do I want" map. Music is not like that: MP3-128 and MP3-320 are two and a
-// half times apart, and FLAC is categorically above both. The tiers are ordered.
+// MP3-128 and MP3-320 are two and a half times apart, and FLAC is categorically above
+// both: the tiers are ordered, not a flat "which of these do I want" map.
 //
 // They're still expressed as format_scores rather than a separate ladder field: score the
 // tiers in rank order and the existing engine picks the best tier available at grab time and

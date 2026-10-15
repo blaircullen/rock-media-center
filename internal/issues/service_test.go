@@ -168,7 +168,7 @@ func TestCreateValidation(t *testing.T) {
 		{"note too long", Report{MediaType: MediaMovie, TMDBID: 603, Category: "audio", Note: strings.Repeat("é", NoteMax+1)}, nil, true},
 		{"episode not in the show", Report{MediaType: MediaSeries, TMDBID: 1399, Season: 1, Episode: 9, Category: "audio"}, ErrNotInLibrary, false},
 		{"series without an episode", Report{MediaType: MediaSeries, TMDBID: 1399, Season: 1, Category: "audio"}, nil, true},
-		{"not a media type issues cover", Report{MediaType: "book", TMDBID: 603, Category: "audio"}, nil, true},
+		{"not a media type issues cover", Report{MediaType: "podcast", TMDBID: 603, Category: "audio"}, nil, true},
 	}
 	for _, c := range cases {
 		c.r.UserID, c.r.UserName = alice, "alice"

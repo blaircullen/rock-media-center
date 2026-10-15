@@ -13,7 +13,7 @@ import (
 // ARRMADA_BASE_URL sub-path option was removed (CFG-08) and FE-29 settled on keeping it
 // removed rather than finishing it: a sub-path would have to reach ~500 hard-coded
 // /api/v1 paths in the web app, the websocket, the service worker and manifest scope,
-// OPDS absolute links and its OpenSearch template (which e-reader apps store), the Plex
+// absolute links in its feeds and templates, the Plex
 // sign-in return URL, push and notification links — and anything missed is a blank page
 // or a dead link for one feature only. So the name may appear only where a stale value is
 // noticed and explained to someone upgrading: the startup warning, update.sh's .env

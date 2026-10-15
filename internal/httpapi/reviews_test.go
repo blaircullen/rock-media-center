@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/tristenlammi/arrmada/internal/automation"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/music"
 	"github.com/tristenlammi/arrmada/internal/store"
 )
@@ -24,7 +23,6 @@ func reviewAPI(t *testing.T) (*api, *store.Store) {
 	t.Cleanup(func() { _ = st.Close() })
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	co := automation.New(nil, nil, nil, nil, st.DB(), nil, log, "")
-	co.SetBooks(books.NewService(st.DB(), nil, log))
 	co.SetMusic(music.NewService(st.DB(), nil, log))
 	return &api{deps: Deps{Store: st, Log: log, Automation: co}}, st
 }

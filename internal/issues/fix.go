@@ -9,62 +9,38 @@ import (
 // One-click fixes and how an issue resolves itself.
 //
 // Staff start a fix from the issue (StartFix): "replace" blocklists the release the current
-// file came from and grabs another copy; "subtitles" queues a subtitle job that makes the
-// kept languages again. The issue then waits in "fixing", remembering the file that was
-// there (action_file, action_size) and the subtitle job (action_job), and resolves itself
-// — telling the reporters — when:
+// file came from and grabs another copy. The issue then waits in "fixing", remembering the
+// file that was there (action_file, action_size), and resolves itself — telling the
+// reporters — when:
 //
 //   - a new file lands for exactly that item: OnMovieImported (the default track) and
 //     OnSeriesImported (only the episodes the import placed), run as outbox consumers on
 //     movie.imported and series.imported, so a busy moment or a restart can't lose it;
-//   - the subtitle job finishes having made subtitles: OnSubtitleJobDone. Today Sweep
-//     polls the subtitles queue for it (SubtitleJobs.Outcome); a job-completion callback
-//     can call OnSubtitleJobDone directly instead;
 //   - the backstop (Sweep, every minute) finds the item's file is no longer the one the
 //     fix started from — a missed signal.
 //
-// A subtitle job that ends without making any, or can no longer be found, puts the issue
-// back to open with a note saying so; so does a fix that has brought nothing in a week.
+// A fix that has brought nothing in a week puts the issue back to open with a note saying
+// so.
 
-// Resolutions an issue closes itself with: what the reporters are told.
-const (
-	ResolvedNewCopy      = "A new copy was downloaded."
-	ResolvedNewSubtitles = "New subtitles were made."
-)
+// ResolvedNewCopy is the resolution an issue closes itself with: what the reporters are
+// told.
+const ResolvedNewCopy = "A new copy was downloaded."
 
 // fixStaleAfter is how long a fix may wait for a new file before the issue goes back to
 // open: a replace whose search found nothing would otherwise sit in "fixing" forever.
 const fixStaleAfter = 7 * 24 * time.Hour
 
-// FixFunc starts a fix for an issue's item, whose file is cur. It returns the subtitle job
-// it queued (0 for none) and a short note for staff ("Searching for another copy").
-type FixFunc func(ctx context.Context, i Issue, cur Item) (jobID int64, note string, err error)
+// FixFunc starts a fix for an issue's item, whose file is cur. It returns a short note for
+// staff ("Searching for another copy").
+type FixFunc func(ctx context.Context, i Issue, cur Item) (note string, err error)
 
-// SubtitleOutcome is what became of the subtitle job a subtitles fix started.
-type SubtitleOutcome struct {
-	// Found: the job is known. Pending: still queued or running. Done: it finished and made
-	// subtitles. Found and neither: it ended without making any, and Note says why.
-	Found, Pending, Done bool
-	Note                 string
-}
-
-// SubtitleJobs answers what became of a subtitle job, for the poll in Sweep. since is when
-// the fix queued it (unix seconds). Subtitle job ids are saved with the queue and never
-// repeat, so an implementation may ignore it.
-type SubtitleJobs interface {
-	Outcome(jobID int64, t Target, since int64) SubtitleOutcome
-}
-
-// SetSubtitles wires the subtitle-job poll.
-func (s *Service) SetSubtitles(j SubtitleJobs) { s.subs = j }
-
-func validAction(a string) bool { return a == ActionReplace || a == ActionSubtitles }
+func validAction(a string) bool { return a == ActionReplace }
 
 // StartFix runs a fix for an open (or already fixing) issue and moves it to "fixing". The
-// item must still have a file: that's what is being replaced, or given subtitles.
+// item must still have a file: that's what is being replaced.
 func (s *Service) StartFix(ctx context.Context, id int64, action string, run FixFunc) (Issue, error) {
 	if !validAction(action) {
-		return Issue{}, invalid("action must be %s or %s", ActionReplace, ActionSubtitles)
+		return Issue{}, invalid("action must be %s", ActionReplace)
 	}
 	if run == nil {
 		return Issue{}, ErrNoFix
@@ -83,14 +59,14 @@ func (s *Service) StartFix(ctx context.Context, id int64, action string, run Fix
 	if cur.Path == "" {
 		return Issue{}, ErrNoFile
 	}
-	job, note, err := run(ctx, i, cur)
+	note, err := run(ctx, i, cur)
 	if err != nil {
 		return Issue{}, err
 	}
 	now := s.now().Unix()
 	res, err := s.db.ExecContext(ctx, `UPDATE issues SET status = 'fixing', action = ?, action_note = ?, action_file = ?, action_size = ?,
-		action_job = ?, action_at = ?, updated_at = ? WHERE id = ? AND status IN ('open', 'fixing')`,
-		action, note, cur.Path, cur.Size, job, now, now, id)
+		action_at = ?, updated_at = ? WHERE id = ? AND status IN ('open', 'fixing')`,
+		action, note, cur.Path, cur.Size, now, now, id)
 	if err != nil {
 		return Issue{}, err
 	}
@@ -101,7 +77,7 @@ func (s *Service) StartFix(ctx context.Context, id int64, action string, run Fix
 		return Issue{}, err
 	}
 	s.changed(i)
-	s.log.Info("issues: fix started", "issue", id, "action", action, "job", job)
+	s.log.Info("issues: fix started", "issue", id, "action", action)
 	return i, nil
 }
 
@@ -147,41 +123,6 @@ func (s *Service) OnSeriesImported(ctx context.Context, seriesID int64, eps []Ep
 	return nil
 }
 
-// OnSubtitleJobDone settles the issue whose subtitles fix queued jobID for t, once that
-// job has finished: resolved when it made subtitles, back to open (with why) when it
-// didn't. A job no issue is waiting on is ignored.
-func (s *Service) OnSubtitleJobDone(ctx context.Context, t Target, jobID int64, o SubtitleOutcome) error {
-	if jobID <= 0 || o.Pending {
-		return nil
-	}
-	list, err := fixingFor(ctx, s.db, t.MediaType, t.LibraryID)
-	if err != nil {
-		return err
-	}
-	for _, i := range list {
-		if i.Action != ActionSubtitles || i.ActionJob != jobID || i.Season != t.Season || i.Episode != t.Episode {
-			continue
-		}
-		s.settleSubtitles(ctx, i, o)
-	}
-	return nil
-}
-
-func (s *Service) settleSubtitles(ctx context.Context, i Issue, o SubtitleOutcome) {
-	switch {
-	case o.Done:
-		s.autoResolve(ctx, i, ResolvedNewSubtitles)
-	case !o.Found:
-		s.reopen(ctx, i, "Couldn't find the subtitle job any more, so it's unclear whether it finished. Check the subtitles, then mark it fixed or try again.")
-	default:
-		note := "The subtitle job didn't make any subtitles"
-		if o.Note != "" {
-			note += ": " + o.Note
-		}
-		s.reopen(ctx, i, note)
-	}
-}
-
 // autoResolve closes an issue a fix has dealt with and tells the reporters.
 func (s *Service) autoResolve(ctx context.Context, i Issue, resolution string) {
 	ok, err := closeIssue(ctx, s.db, i.ID, StatusResolved, resolution, 0, "", s.now().Unix())
@@ -205,7 +146,7 @@ func (s *Service) autoResolve(ctx context.Context, i Issue, resolution string) {
 // reopen puts an issue whose fix didn't work back to open, saying why, for staff to try
 // something else. Nobody is told: it isn't fixed yet.
 func (s *Service) reopen(ctx context.Context, i Issue, note string) {
-	res, err := s.db.ExecContext(ctx, `UPDATE issues SET status = 'open', action_note = ?, action_job = 0, updated_at = ?
+	res, err := s.db.ExecContext(ctx, `UPDATE issues SET status = 'open', action_note = ?, updated_at = ?
 		WHERE id = ? AND status = 'fixing'`, note, s.now().Unix(), i.ID)
 	if err != nil {
 		s.log.Warn("issues: couldn't reopen an issue", "issue", i.ID, "err", err)
@@ -219,8 +160,8 @@ func (s *Service) reopen(ctx context.Context, i Issue, note string) {
 	s.log.Info("issues: fix didn't work, back to open", "issue", i.ID, "note", note)
 }
 
-// checkFixing is Sweep's pass over the issues being fixed: the subtitle-job poll, the
-// new-file backstop and the stale-fix timeout.
+// checkFixing is Sweep's pass over the issues being fixed: the new-file backstop and the
+// stale-fix timeout.
 func (s *Service) checkFixing(ctx context.Context) error {
 	list, err := fixing(ctx, s.db)
 	if err != nil {
@@ -243,12 +184,6 @@ func (s *Service) checkFixing(ctx context.Context) error {
 				continue
 			case newFile(i, cur):
 				s.autoResolve(ctx, i, ResolvedNewCopy)
-				continue
-			}
-		}
-		if i.Action == ActionSubtitles && i.ActionJob > 0 && s.subs != nil {
-			if o := s.subs.Outcome(i.ActionJob, t, i.ActionAt); !o.Pending {
-				s.settleSubtitles(ctx, i, o)
 				continue
 			}
 		}

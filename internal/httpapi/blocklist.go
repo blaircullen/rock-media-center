@@ -8,14 +8,14 @@ import (
 	"github.com/tristenlammi/arrmada/internal/automation"
 )
 
-// handleListAllBlocks lists blocklist entries of every kind — movies, shows, books,
+// handleListAllBlocks lists blocklist entries of every kind — movies, shows,
 // albums and the global ones that block a release for every title — newest first.
 // ?type= narrows to one kind, ?q= matches the release or the title, ?limit=&offset= page.
 func (a *api) handleListAllBlocks(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	typ := q.Get("type")
 	if !automation.ValidBlockType(typ) {
-		a.writeError(w, http.StatusBadRequest, "type must be movie, series, book, music or global")
+		a.writeError(w, http.StatusBadRequest, "type must be movie, series, music or global")
 		return
 	}
 	limit, _ := strconv.Atoi(q.Get("limit"))

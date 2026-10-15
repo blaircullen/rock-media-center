@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 // usePersisted is useState whose value survives navigating away: a view toggle
-// (grid/table, by author/by book) that reset on every visit read as the page
+// (grid/table) that reset on every visit read as the page
 // forgetting what you told it. Stored per key in localStorage; a missing or
 // unparseable value, or a browser that blocks storage, falls back to the default.
 export function usePersisted<T extends string>(key: string, initial: T, allowed?: readonly T[]): [T, (v: T) => void] {

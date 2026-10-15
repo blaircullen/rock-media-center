@@ -120,7 +120,7 @@ func TestStatusNeverLeaksSecrets(t *testing.T) {
 	st := memStore{}
 	s := NewStore(st)
 	_ = s.Set(ctx, "tvdb", "d4e9978a-76f9-4601-a072-8c42585d150b")
-	_ = s.Set(ctx, "opensubtitles_username", "alice")
+	_ = s.Set(ctx, "flaresolverr", "http://flare:8191")
 
 	byID := map[string]KeyStatus{}
 	for _, k := range s.Status(ctx) {
@@ -138,9 +138,9 @@ func TestStatusNeverLeaksSecrets(t *testing.T) {
 		t.Errorf("secret hint = %q, want the last 4 chars", tvdb.Hint)
 	}
 
-	// A username is not a secret and is shown in full — you need to see which account.
-	if got := byID["opensubtitles_username"].Hint; got != "alice" {
-		t.Errorf("username hint = %q, want it shown in full", got)
+	// A URL is not a secret and is shown in full — you need to see where it points.
+	if got := byID["flaresolverr"].Hint; got != "http://flare:8191" {
+		t.Errorf("URL hint = %q, want it shown in full", got)
 	}
 
 	// An unset key reports unconfigured with no hint.

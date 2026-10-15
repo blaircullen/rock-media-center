@@ -70,27 +70,20 @@ func TestExternalGateUsesRouteSpecs(t *testing.T) {
 	rt := testRouter(t, true)
 	requester := &auth.User{ID: 7, Role: auth.RoleRequester}
 	for call, want := range map[string]int{
-		"GET /api/v1/discover/trending":          sentinelStatus,
-		"GET /api/v1/books/12/ebook":             sentinelStatus,
-		"GET /api/v1/books/12/audiobook":         sentinelStatus,
-		"GET /api/v1/books/12/cover-image":       sentinelStatus,
-		"GET /api/v1/books/discover/trending":    sentinelStatus,
-		"GET /api/v1/me/books":                   sentinelStatus,
-		"GET /api/v1/requests":                   sentinelStatus,
-		"POST /api/v1/requests":                  sentinelStatus,
-		"GET /api/v1/auth/me":                    sentinelStatus,
-		"GET /api/v1/status":                     sentinelStatus,
-		"GET /api/v1/books/12":                   http.StatusForbidden,
-		"GET /api/v1/books/12/edition-files":     http.StatusForbidden,
-		"GET /api/v1/calendar":                   http.StatusForbidden,
-		"GET /api/v1/ws":                         http.StatusForbidden,
-		"GET /api/v1/queue":                      http.StatusForbidden,
-		"POST /api/v1/requests/12/approve":       http.StatusForbidden, // staff route: the role check refuses
-		"GET /movies/12":                         sentinelStatus,       // the app shell itself
-		"GET /api/v1/discover/rows/top_rated":    sentinelStatus,
-		"GET /api/v1/media/movie/12":             sentinelStatus,
-		"GET /api/v1/media/series/12/seasons":    sentinelStatus,
-		"DELETE /api/v1/me/audio/devices/lissen": sentinelStatus,
+		"GET /api/v1/discover/trending":       sentinelStatus,
+		"GET /api/v1/requests":                sentinelStatus,
+		"POST /api/v1/requests":               sentinelStatus,
+		"GET /api/v1/auth/me":                 sentinelStatus,
+		"GET /api/v1/status":                  sentinelStatus,
+		"GET /api/v1/movies":                  http.StatusForbidden,
+		"GET /api/v1/calendar":                http.StatusForbidden,
+		"GET /api/v1/ws":                      http.StatusForbidden,
+		"GET /api/v1/queue":                   http.StatusForbidden,
+		"POST /api/v1/requests/12/approve":    http.StatusForbidden, // staff route: the role check refuses
+		"GET /movies/12":                      sentinelStatus,       // the app shell itself
+		"GET /api/v1/discover/rows/top_rated": sentinelStatus,
+		"GET /api/v1/media/movie/12":          sentinelStatus,
+		"GET /api/v1/media/series/12/seasons": sentinelStatus,
 	} {
 		method, path, _ := strings.Cut(call, " ")
 		if got := callFromOutside(rt, method, path, requester).Code; got != want {
@@ -101,7 +94,7 @@ func TestExternalGateUsesRouteSpecs(t *testing.T) {
 	// A path no route claims is the API's JSON 404 from outside too, not a 403 and not
 	// the app's index page.
 	live := testRouter(t, false)
-	for _, path := range []string{"/api/v1/books/12/ebook/extra", "/api/v1/nope"} {
+	for _, path := range []string{"/api/v1/movies/12/extra/more/x", "/api/v1/nope"} {
 		if got := callFromOutside(live, "GET", path, requester).Code; got != http.StatusNotFound {
 			t.Errorf("GET %s from outside: HTTP %d, want 404", path, got)
 		}

@@ -156,7 +156,7 @@ func (c *Coordinator) PlanReviewMap(ctx context.Context, id, seriesID int64, map
 // and recorded for every episode it covers (a double episode marks both), replacing any
 // file those episodes had through the recycle bin. The quality gate isn't applied — the
 // person chose these files. When every file landed, the download is closed out like any
-// review import (Convert, Subtitles and the requester hear about it through the outbox,
+// review import (the requester hears about it through the outbox,
 // its grab becomes 'imported' so it seeds out) and the review resolves as 'mapped'.
 // Returns how many episodes got a file.
 func (c *Coordinator) ApplyReviewMap(ctx context.Context, p ReviewMapPlan) (int, error) {

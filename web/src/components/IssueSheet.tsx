@@ -13,10 +13,9 @@ const CLOSE_NOTE_MAX = 500;
 // they said, and what to do about it. Resolving or dismissing tells everyone who reported
 // it, with the note when one is given.
 //
-// The one-click fixes put it in "fixing": "Blocklist this copy & find another" (confirmed
-// first — the current file goes to the recycle bin when the new one is imported) or
-// "Make the subtitles again". It then resolves itself when the new file lands or the
-// subtitle job has made subtitles, and the reporters are told.
+// The one-click fix puts it in "fixing": "Blocklist this copy & find another" (confirmed
+// first — the current file goes to the recycle bin when the new one is imported). It then
+// resolves itself when the new file lands, and the reporters are told.
 export function IssueSheet({ issueId, initial, onChanged, onClose }: {
   issueId: number;
   /** What the list already has, shown while the fresh copy loads. */
@@ -74,21 +73,19 @@ export function IssueSheet({ issueId, initial, onChanged, onClose }: {
     }
   };
 
-  const fix = async (action: "replace" | "subtitles") => {
-    if (action === "replace") {
-      const yes = await confirm({
-        title: `Blocklist this copy of “${issue.title}”${ep ? ` ${ep}` : ""} and find another?`,
-        body: "The release this file came from is blocklisted and a new copy is searched for. When it’s imported, the current file goes to the recycle bin, the problem is marked fixed and everyone who reported it is told.",
-        confirmLabel: "Blocklist and search",
-        tone: "danger",
-      });
-      if (!yes) return;
-    }
-    setBusy(action); setError(null);
+  const fix = async () => {
+    const yes = await confirm({
+      title: `Blocklist this copy of “${issue.title}”${ep ? ` ${ep}` : ""} and find another?`,
+      body: "The release this file came from is blocklisted and a new copy is searched for. When it’s imported, the current file goes to the recycle bin, the problem is marked fixed and everyone who reported it is told.",
+      confirmLabel: "Blocklist and search",
+      tone: "danger",
+    });
+    if (!yes) return;
+    setBusy("replace"); setError(null);
     try {
-      const started = await issuesApi.fix(issue.id, action);
+      const started = await issuesApi.fix(issue.id, "replace");
       setIssue(started);
-      toast(action === "replace" ? "Searching for another copy — it’ll resolve when it lands" : "Making the subtitles again — it’ll resolve when they’re done");
+      toast("Searching for another copy — it’ll resolve when it lands");
       onChanged();
     } catch (e) {
       setError((e as Error).message);
@@ -96,13 +93,9 @@ export function IssueSheet({ issueId, initial, onChanged, onClose }: {
       setBusy(null);
     }
   };
-  // A subtitles problem leads with the subtitle fix; anything else with a new copy.
-  const subsFirst = issue.category === "subtitles";
   const fixes = [
-    <Button key="replace" variant={subsFirst ? "secondary" : "primary"} className={big} onClick={() => { void fix("replace"); }} busy={busy === "replace"} busyLabel="Starting…" disabled={!!busy}>Blocklist this copy &amp; find another</Button>,
-    <Button key="subtitles" variant={subsFirst ? "primary" : "secondary"} className={big} onClick={() => { void fix("subtitles"); }} busy={busy === "subtitles"} busyLabel="Starting…" disabled={!!busy}>Make the subtitles again</Button>,
+    <Button key="replace" variant="primary" className={big} onClick={() => { void fix(); }} busy={busy === "replace"} busyLabel="Starting…" disabled={!!busy}>Blocklist this copy &amp; find another</Button>,
   ];
-  if (subsFirst) fixes.reverse();
 
   return (
     <Sheet onClose={onClose} closeOnBack={false} ariaLabel={`Problem with ${issue.title}`} size="lg" dismissible={!busy}>

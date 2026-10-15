@@ -7,10 +7,10 @@ import (
 
 func TestAutoApprovesByMediaType(t *testing.T) {
 	u := User{AutoApproveMovie: true}
-	if !u.AutoApproves("movie") || u.AutoApproves("series") || u.AutoApproves("book") || u.AutoApproves("music") {
+	if !u.AutoApproves("movie") || u.AutoApproves("series") || u.AutoApproves("music") {
 		t.Errorf("movie-only user: %+v", u)
 	}
-	if got := ParseAutoApproval(" Movie, book ,nonsense"); got != (AutoApproval{Movie: true, Book: true}) || got.String() != "movie,book" {
+	if got := ParseAutoApproval(" Movie, book ,nonsense"); got != (AutoApproval{Movie: true}) || got.String() != "movie" {
 		t.Errorf("ParseAutoApproval = %+v %q", got, got.String())
 	}
 	if ParseAutoApproval("") != (AutoApproval{}) || !AllTypes(true).All() {

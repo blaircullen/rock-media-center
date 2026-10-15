@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/series"
 )
@@ -42,7 +41,7 @@ func (s *Service) nudge(ctx context.Context, reqs []Request) {
 	}
 }
 
-// requestsForItem is every request a library movie, show or book answers.
+// requestsForItem is every request a library movie or show answers.
 func (s *Service) requestsForItem(ctx context.Context, mediaType string, itemID int64) ([]Request, error) {
 	switch mediaType {
 	case "movie":
@@ -69,25 +68,6 @@ func (s *Service) requestsForItem(ctx context.Context, mediaType string, itemID 
 			return nil, err
 		}
 		return s.repo.ListByMedia(ctx, "series", sr.TMDBID)
-	case "book":
-		if s.books == nil {
-			return nil, nil
-		}
-		b, err := s.books.Get(ctx, itemID)
-		if errors.Is(err, books.ErrNotFound) {
-			return nil, nil
-		}
-		if err != nil {
-			return nil, err
-		}
-		keys := []string{b.OLKey}
-		if ks, err := s.books.KeysFor(ctx, b.ID); err == nil {
-			keys = keys[:0]
-			for _, k := range ks {
-				keys = append(keys, k.Key)
-			}
-		}
-		return s.repo.ListForBook(ctx, b.ID, keys)
 	}
 	return nil, nil
 }

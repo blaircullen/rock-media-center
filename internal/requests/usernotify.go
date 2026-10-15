@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/mediaserver"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/notify"
@@ -190,7 +189,7 @@ func (s *Service) NotifyMovieReady(ctx context.Context, movieID int64) error {
 	if reqs, lerr := s.repo.ListByMedia(ctx, "movie", m.TMDBID); lerr == nil {
 		s.nudge(ctx, reqs)
 	}
-	return s.notifyRequester(ctx, "movie", m.TMDBID, "")
+	return s.notifyRequester(ctx, "movie", m.TMDBID)
 }
 
 // NotifySeriesReady tells whoever asked for a show that what they asked for is ready —
@@ -285,29 +284,14 @@ func (s *Service) notifySeasonsReady(ctx context.Context, req Request, prog map[
 	return errors.Join(errs...)
 }
 
-// NotifyBookReady tells everyone behind the requests for a book that it has arrived.
-func (s *Service) NotifyBookReady(ctx context.Context, bookID int64) error {
-	b, err := s.books.Get(ctx, bookID)
-	if errors.Is(err, books.ErrNotFound) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	return s.notifyBookRequesters(ctx, b)
-}
-
 // requestRef is the stable de-dupe key for a request's media ("movie:123",
-// "series:456", "book:OL123W"). Suffixes distinguish notification kinds so an
+// "series:456"). Suffixes distinguish notification kinds so an
 // "approved" note doesn't block the later "ready" one.
 //
 // A season-scoped series request is keyed by its own id ("series:456:r12"): a show can
 // have several, and each must be told apart. Whole-show requests keep "series:456", so
 // nobody who already heard is told again.
 func requestRef(req Request) string {
-	if req.MediaType == "book" {
-		return "book:" + req.OLKey
-	}
 	if req.MediaType == "series" && len(req.Seasons) > 0 {
 		return fmt.Sprintf("series:%d:r%d", req.TMDBID, req.ID)
 	}
@@ -329,98 +313,12 @@ func requestedWhat(req Request) string {
 
 // notifyRequester finds the request behind a just-imported item and alerts its
 // requester plus everyone subscribed to it.
-func (s *Service) notifyRequester(ctx context.Context, mediaType string, tmdbID int, olKey string) error {
-	var (
-		req Request
-		ok  bool
-	)
-	if mediaType == "book" {
-		req, ok = s.repo.GetByBook(ctx, olKey)
-	} else {
-		req, ok = s.repo.GetByMedia(ctx, mediaType, tmdbID)
-	}
+func (s *Service) notifyRequester(ctx context.Context, mediaType string, tmdbID int) error {
+	req, ok := s.repo.GetByMedia(ctx, mediaType, tmdbID)
 	if !ok {
 		return nil
 	}
 	return s.notifyReady(ctx, req)
-}
-
-// notifyBookRequesters alerts everyone behind the requests for a just-imported book. The
-// link survives the book's catalogue key changing; a request not linked yet is still
-// found by the key it was made under, current or former.
-//
-// The import's edition isn't trusted to say what arrived: two imports can share one
-// outbox row. Each request is told about every format it asked for that is on disk now,
-// and the per-format refs keep that to once each.
-func (s *Service) notifyBookRequesters(ctx context.Context, b books.Book) error {
-	keys := []string{b.OLKey}
-	if ks, err := s.books.KeysFor(ctx, b.ID); err == nil {
-		keys = keys[:0]
-		for _, k := range ks {
-			keys = append(keys, k.Key)
-		}
-	}
-	linked, err := s.repo.ListForBook(ctx, b.ID, keys)
-	if err != nil {
-		// Without the list the linked requesters would be skipped for good; fail so a
-		// retrying caller (an outbox row) tries again.
-		return fmt.Errorf("list requests for book %d: %w", b.ID, err)
-	}
-	s.nudge(ctx, linked) // a format arrived: open request views move on
-	var errs []error
-	for _, req := range linked {
-		errs = append(errs, s.notifyBookReady(ctx, req, b, true))
-	}
-	return errors.Join(errs...)
-}
-
-// notifyBookReady sends a book request's "ready" messages: one per format it asked for
-// that is on disk — "ready to read" for the ebook, "ready to listen to" for the
-// audiobook. A request from before the format choice gets the one message it always
-// did: on any import, or (from the sweep) once the book has a file.
-//
-// The ebook's message keeps the old single ref, so a request that predates the choice
-// and is widened later isn't told about its ebook a second time. The request's ready_at
-// is stamped once every format it asked for is here and everyone has been told.
-func (s *Service) notifyBookReady(ctx context.Context, req Request, b books.Book, imported bool) error {
-	if req.ReadyAt > 0 {
-		return nil
-	}
-	if req.Formats == "" {
-		if !imported && !b.HasFile {
-			return nil
-		}
-		return s.notifyReady(ctx, req)
-	}
-	wantE, wantA := editionsOf(req.Formats)
-	told := 0
-	var errs []error
-	if wantE && hasEbook(b) {
-		n, err := s.notifyPartiesCount(ctx, req, "Your request is ready",
-			fmt.Sprintf("“%s” is ready to read.", req.Title), requestRef(req), "request-ready", nil)
-		told, errs = told+n, append(errs, err)
-	}
-	if wantA && hasAudiobook(b) {
-		n, err := s.notifyPartiesCount(ctx, req, "Your request is ready",
-			fmt.Sprintf("The audiobook of “%s” is ready to listen to.", req.Title), requestRef(req)+":"+books.KindAudiobook, "request-ready", nil)
-		told, errs = told+n, append(errs, err)
-	}
-	err := errors.Join(errs...)
-	complete := bookReady(req.Formats, b)
-	if complete && err == nil {
-		// Every format asked for is here and everyone was told about each.
-		if merr := s.markReady(ctx, req.ID); merr != nil {
-			s.log.Warn("request-ready: could not record that the requester was told", "request", req.ID, "err", merr)
-		}
-	}
-	if told > 0 {
-		status := req.Status // half of a "both" request: changed, not yet ready
-		if complete {
-			status = eventAvailable
-		}
-		s.publishUpdated(req, status, s.parties(ctx, req))
-	}
-	return err
 }
 
 // notifyReady sends the "your request is ready" notification for one request, then
@@ -565,8 +463,8 @@ func (s *Service) notifyParties(ctx context.Context, req Request, n notice, skip
 		s.log.Warn(kind+": could not list subscribers", "request", req.ID, "err", err)
 		errs = append(errs, fmt.Errorf("list subscribers of request %d: %w", req.ID, err))
 	}
-	// The request id, not the title: an audiobook's "ready" pairs a user with what they
-	// will listen to, and the log is staff-readable.
+	// The request id, not the title: a "ready" pairs a user with what they will watch, and
+	// the log is staff-readable.
 	told, err := s.tellUsers(ctx, userIDs, req.MediaType, n, "request", req.ID)
 	return told, errors.Join(append(errs, err)...)
 }
@@ -650,8 +548,8 @@ func (s *Service) tellUsers(ctx context.Context, userIDs []int64, mediaType stri
 // arrived without an import event (library scans) and events dropped under load. It reads
 // only the requests still waiting (ready_at = 0) and only their media, so a long request
 // history costs it nothing; the unique inbox ref keeps a retry from telling anyone twice.
-// A season-scoped request also gets its per-season notices, and a book request one per
-// format that has arrived, by the same paths an import takes.
+// A season-scoped request also gets its per-season notices, by the same path an import
+// takes.
 func (s *Service) SweepReadyRequests(ctx context.Context) error {
 	reqs, err := s.repo.ListAwaitingReady(ctx)
 	if err != nil {
@@ -677,10 +575,6 @@ func (s *Service) readyPass(ctx context.Context, reqs []Request, plexCheck bool)
 			case rq.MediaType == "series" && len(rq.Seasons) > 0:
 				if prog, ok := lk.seasons(ctx, s, rq); ok {
 					_ = s.notifySeasonsReady(ctx, rq, prog)
-				}
-			case rq.MediaType == "book":
-				if b, ok := lk.book(rq); ok {
-					_ = s.notifyBookReady(ctx, rq, b, false)
 				}
 			case lk.ready(ctx, s, rq):
 				_ = s.notifyReady(ctx, rq)
@@ -719,33 +613,23 @@ func (s *Service) markReady(ctx context.Context, id int64) error {
 // readyLookup is the library state a batch of requests is judged ready against, read with
 // a query per media type for just those requests' media.
 type readyLookup struct {
-	movHave   map[int]bool
-	series    map[int]series.Series // by TMDB id, each with its Stats roll-up
-	prog      map[int64]map[int]series.SeasonProgress
-	bookByID  map[int64]books.Book
-	bookByKey map[string]books.Book // any key a book has had
+	movHave map[int]bool
+	series  map[int]series.Series // by TMDB id, each with its Stats roll-up
+	prog    map[int64]map[int]series.SeasonProgress
 }
 
 // lookupReady reads the library state for reqs.
 func (s *Service) lookupReady(ctx context.Context, reqs []Request) (*readyLookup, error) {
 	lk := &readyLookup{
 		movHave: map[int]bool{}, series: map[int]series.Series{}, prog: map[int64]map[int]series.SeasonProgress{},
-		bookByID: map[int64]books.Book{}, bookByKey: map[string]books.Book{},
 	}
 	var movieIDs, seriesIDs []int
-	var olKeys []string
-	var bookIDs []int64
 	for _, rq := range reqs {
 		switch rq.MediaType {
 		case "movie":
 			movieIDs = append(movieIDs, rq.TMDBID)
 		case "series":
 			seriesIDs = append(seriesIDs, rq.TMDBID)
-		case "book":
-			olKeys = append(olKeys, rq.OLKey)
-			if rq.BookID > 0 {
-				bookIDs = append(bookIDs, rq.BookID)
-			}
 		}
 	}
 	if len(movieIDs) > 0 && s.movies != nil {
@@ -766,36 +650,7 @@ func (s *Service) lookupReady(ctx context.Context, reqs []Request) (*readyLookup
 			lk.series[sr.TMDBID] = sr
 		}
 	}
-	if len(olKeys) > 0 && s.books != nil {
-		bs, err := s.books.ByKeysOrIDs(ctx, olKeys, bookIDs)
-		if err != nil {
-			return nil, err
-		}
-		for _, b := range bs {
-			lk.bookByID[b.ID] = b
-		}
-		owners, err := s.books.KeyOwners(ctx, olKeys)
-		if err != nil {
-			return nil, err
-		}
-		for k, id := range owners {
-			if b, ok := lk.bookByID[id]; ok {
-				lk.bookByKey[k] = b
-			}
-		}
-	}
 	return lk, nil
-}
-
-// book is the library book a book request stands for: by the linked row first (the
-// catalogue key may have changed since), else by the key it was made under, current or
-// former.
-func (lk *readyLookup) book(rq Request) (books.Book, bool) {
-	if b, ok := lk.bookByID[rq.BookID]; ok {
-		return b, true
-	}
-	b, ok := lk.bookByKey[rq.OLKey]
-	return b, ok
 }
 
 // seasons is the per-season progress of the show a season-scoped request is for, read
@@ -819,8 +674,7 @@ func (lk *readyLookup) seasons(ctx context.Context, s *Service, rq Request) (map
 
 // ready reports whether a request's media is complete in the library, by the one rule
 // each kind has: a movie with its file; a whole show complete over its Stats and a
-// season-scoped request over each of its own seasons (seriesComplete both ways); a book
-// with every format the request asked for.
+// season-scoped request over each of its own seasons (seriesComplete both ways).
 func (lk *readyLookup) ready(ctx context.Context, s *Service, rq Request) bool {
 	switch rq.MediaType {
 	case "movie":
@@ -836,9 +690,6 @@ func (lk *readyLookup) ready(ctx context.Context, s *Service, rq Request) bool {
 		}
 		sr, ok := lk.series[rq.TMDBID]
 		return ok && statsComplete(sr.Stats)
-	case "book":
-		b, ok := lk.book(rq)
-		return ok && bookReady(rq.Formats, b)
 	}
 	return false
 }

@@ -57,7 +57,7 @@ test.describe("admin, desktop", () => {
     await card.getByRole("button", { name: "Edit" }).click();
     const facts = card.getByRole("region", { name: "SABnzbd" });
     const cats = facts.getByRole("list", { name: "Categories" });
-    await expect(cats.getByRole("listitem")).toHaveText(["✓ arrmada (movies)", "✓ arrmada-tv (TV)", "✕ arrmada-books (books)", "✕ arrmada-music (music)"]);
+    await expect(cats.getByRole("listitem")).toHaveText(["✓ arrmada (movies)", "✓ arrmada-tv (TV)", "✕ arrmada-music (music)"]);
     await expect(facts.getByText("Arrmada sees it at", { exact: false })).toBeVisible();
     await expect(facts).toContainText("✓ Completed folder /downloads/complete · Arrmada sees it at /media/downloads/complete");
     await expect(facts).toContainText("Usenet servers: 1 server, working");
@@ -67,7 +67,7 @@ test.describe("admin, desktop", () => {
     await shot(page, "usenet-card-desktop-dark");
 
     await facts.getByRole("button", { name: "Add missing categories" }).click();
-    await expect(facts.getByRole("status")).toHaveText("Added arrmada-books, arrmada-music.");
+    await expect(facts.getByRole("status")).toHaveText("Added arrmada-music.");
     await expect(cats.getByRole("listitem").filter({ hasText: "✕" })).toHaveCount(0);
     await expect(facts.getByRole("button", { name: "Add missing categories" })).toHaveCount(0);
     expect(api.callsTo("POST", `/api/v1/downloadclients/${SAB_ID}/categories`)).toHaveLength(1);

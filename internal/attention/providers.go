@@ -26,9 +26,7 @@ var groupLinks = map[string]*health.Fix{
 	KindWrongCat: health.FixWrongCategory,
 	KindSearch:   health.FixDownloadsSearching,
 	KindHealth:   health.FixStatus,
-	KindConvert:  health.FixConvertProblems,
 	KindIssue:    health.FixIssues,
-	KindSubs:     health.FixSubtitles,
 }
 
 func linkTo(it *Item, f *health.Fix) {
@@ -437,7 +435,6 @@ func (p healthProvider) Collect(context.Context, *Frame) ([]Item, error) {
 
 // SearchStuckAfter is how many empty sweeps in a row make a movie or show "still hasn't
 // found a release": with the 30-minute-to-12-hour backoff that is a few days of looking.
-// Books use their own ladder's monthly point (books.MonthlyAfter).
 const SearchStuckAfter = 10
 
 // Counter is one media type's stuck-search count.
@@ -489,8 +486,6 @@ func mediaWord(kind string) string {
 		return "Movie"
 	case "series":
 		return "Series"
-	case "book":
-		return "Book"
 	}
 	return ""
 }

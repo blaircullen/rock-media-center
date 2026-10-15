@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/metadata"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/quality"
@@ -56,8 +55,8 @@ type approveFixture struct {
 	ctx  context.Context
 }
 
-// newApproveFixture is a requests service over a fresh store with real movies, series
-// and books services on fake catalogues, and a job recorder in place of the runner.
+// newApproveFixture is a requests service over a fresh store with real movies and series
+// services on fake catalogues, and a job recorder in place of the runner.
 func newApproveFixture(t *testing.T, show metadata.SeriesDetails) approveFixture {
 	t.Helper()
 	st, err := store.Open(t.TempDir())
@@ -73,7 +72,6 @@ func newApproveFixture(t *testing.T, show metadata.SeriesDetails) approveFixture
 		repo:    NewRepo(db),
 		movies:  movies.NewService(db, fakeMovieMeta{}, nil, t.TempDir(), "", nil, log),
 		series:  series.NewService(db, meta, t.TempDir(), log),
-		books:   books.NewService(db, nil, log),
 		quality: quality.NewService(db),
 		log:     log,
 	}

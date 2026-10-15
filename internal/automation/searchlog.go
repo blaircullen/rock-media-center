@@ -17,7 +17,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/store"
 )
 
-// Search attempts: every movie, series, book and album search leaves one row in
+// Search attempts: every movie, series and album search leaves one row in
 // search_attempts saying what it found and why nothing was taken, so "why isn't it
 // downloading?" has an answer outside the log. Recording is purely observational — it
 // counts what the search already decided and never changes what is ranked or grabbed.
@@ -74,15 +74,13 @@ const (
 // Why one release wasn't taken, besides the quality profile's own reject codes
 // (quality.Reject*). Stored in reasons_json; never rename one.
 const (
-	DropWrongTitle   = "wrong_title"   // for a different film, show, book or album
+	DropWrongTitle   = "wrong_title"   // for a different film, show or album
 	DropBlocklisted  = "blocklisted"   // blocklisted for this title
 	DropPending      = "pending"       // already grabbed and still downloading
 	DropOutOfScope   = "out_of_scope"  // the right title, but other episodes, another edition or version
 	DropNotTorrent   = "not_torrent"   // a usenet release, and no usenet download client is set up
-	DropNotWanted    = "not_wanted"    // a book format the profile doesn't want
+	DropNotWanted    = "not_wanted"    // a format the profile doesn't want (music)
 	DropWrongEdition = "wrong_edition" // a movie track wants another edition (or another track wants this one)
-	// DropWrongLanguage is a book release stating a language outside the book languages.
-	DropWrongLanguage = "wrong_language"
 	// DropNotUsenet is a torrent when the only download clients are usenet ones.
 	DropNotUsenet = "not_usenet"
 	// The two "taken" states, never counted as reasons.
@@ -331,7 +329,7 @@ func (c *Coordinator) recordRSSGrab(ctx context.Context, mediaType string, id in
 }
 
 // replaceRecorded runs a stall fail-over's replacement search as a recorded attempt. The
-// target's kind (movie, series, book, music) is the attempt's media type.
+// target's kind (movie, series, music) is the attempt's media type.
 func (c *Coordinator) replaceRecorded(ctx context.Context, t stallTarget, exclude map[string]bool) (repl string, err error) {
 	ctx, notes := newSearchNotes(WithSearchTrigger(ctx, TriggerStall))
 	defer func() {
@@ -557,14 +555,13 @@ func scanAttempt(sc interface{ Scan(...any) error }) (Attempt, error) {
 const (
 	AttemptMovie  = "movie"
 	AttemptSeries = "series"
-	AttemptBook   = "book"
 	AttemptMusic  = "music"
 )
 
 // ValidAttemptKind reports whether kind is a media type attempts are stored under.
 func ValidAttemptKind(kind string) bool {
 	switch kind {
-	case AttemptMovie, AttemptSeries, AttemptBook, AttemptMusic:
+	case AttemptMovie, AttemptSeries, AttemptMusic:
 		return true
 	}
 	return false
@@ -727,7 +724,7 @@ func (c *Coordinator) MovieSearchState(ctx context.Context, m movies.Movie) Sear
 
 // NextSearchAt is when the missing-sweep will next search a movie or series that has
 // grabbed nothing for misses sweeps in a row, given when it last searched (zero time: as
-// soon as the sweep comes round). Books keep their own ladder (books.NextSearch).
+// soon as the sweep comes round).
 func NextSearchAt(lastSearch time.Time, misses int) time.Time {
 	if lastSearch.IsZero() {
 		return time.Time{}
@@ -753,7 +750,6 @@ var reasonLabels = map[string]string{
 	DropNotTorrent:                "usenet only",
 	DropNotUsenet:                 "torrent only",
 	DropNotWanted:                 "a format you don't want",
-	DropWrongLanguage:             "not in your book languages",
 	rejectedUncoded:               "rejected by your profile",
 	quality.RejectResolution:      "not a resolution you want",
 	quality.RejectSourceFloor:     "below your minimum source",

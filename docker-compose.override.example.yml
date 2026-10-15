@@ -16,9 +16,7 @@ services:
       # host path : container path : read-only
       - /mnt/user/masterdirectory/media/movies:/movies:ro
       - /mnt/user/masterdirectory/media/tvshows:/tvshows:ro
-      - /mnt/user/masterdirectory/media/ebooks:/ebooks:ro
-      - /mnt/user/masterdirectory/media/audiobooks:/audiobooks:ro
-# Then in Settings → Library pick /movies, /tvshows, /ebooks and /audiobooks.
+# Then in Settings → Library pick /movies and /tvshows.
 
 # ── Setup B: full use — downloading WITH hardlinks (no wasted space) ────────────
 # For hardlinks, the library AND the download folder must sit under ONE container

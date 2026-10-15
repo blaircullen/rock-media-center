@@ -3,8 +3,6 @@ package automation
 import (
 	"testing"
 	"time"
-
-	"github.com/tristenlammi/arrmada/internal/books"
 )
 
 // The Wanted view's "next automatic try" follows each kind's own sweep ladder.
@@ -31,14 +29,6 @@ func TestSweepScheduleFollowsTheLadders(t *testing.T) {
 	// Never searched: due on the sweep's next run.
 	if got := SweepSchedule(AttemptMovie, "", 0); !got.Last.IsZero() || !got.Next.IsZero() {
 		t.Errorf("never searched: %+v", got)
-	}
-
-	// Books: a day, three days, weekly, then monthly — slowed past MonthlyAfter.
-	if got := SweepSchedule(AttemptBook, stamp, 1); !got.Next.Equal(last.Add(24*time.Hour)) || got.Slowed {
-		t.Errorf("book, 1 miss: %+v", got)
-	}
-	if got := SweepSchedule(AttemptBook, stamp, books.MonthlyAfter+1); !got.Next.Equal(last.Add(30*24*time.Hour)) || !got.Slowed {
-		t.Errorf("book past monthly: %+v, want a month out and slowed", got)
 	}
 
 	// Albums: the series ladder, then weekly from musicWeeklyAfter misses.

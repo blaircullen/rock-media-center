@@ -21,7 +21,7 @@ type changeRecorder struct {
 func recordChanges(t *testing.T, f *deleteFixture) *changeRecorder {
 	t.Helper()
 	r := &changeRecorder{box: outbox.New(f.svc.repo.db, f.svc.log)}
-	r.box.Register(outbox.TopicMovieChanged, "convert", func(_ context.Context, raw json.RawMessage) error {
+	r.box.Register(outbox.TopicMovieChanged, "plex.scan", func(_ context.Context, raw json.RawMessage) error {
 		var p outbox.MovieChanged
 		if err := json.Unmarshal(raw, &p); err != nil {
 			return err

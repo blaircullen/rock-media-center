@@ -85,7 +85,7 @@ func (o *SearchOutcome) noteSearchErr(err error) {
 
 // Message is the outcome as one plain sentence for a toast: "Grabbed Dune.Part.Two.2024.
 // 2160p.WEB-DL", "No releases found", "12 releases found, none for this movie". noun is
-// what was searched ("movie", "show", "book").
+// what was searched ("movie", "show", "album").
 func (o SearchOutcome) Message(noun string) string {
 	if noun == "" {
 		noun = defaultOutcomeMediaNoun

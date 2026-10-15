@@ -152,7 +152,7 @@ func (r *Repo) Update(ctx context.Context, id int64, sp StoredProfile) error {
 var (
 	// ErrTargetNotFound: the profile titles were to move to doesn't exist.
 	ErrTargetNotFound = errors.New("the profile to move titles to doesn't exist")
-	// ErrMediaMismatch: the target is for another media type — a film can't run on a book profile.
+	// ErrMediaMismatch: the target is for another media type — a film can't run on a music profile.
 	ErrMediaMismatch = errors.New("the profile to move titles to is for another media type")
 	// ErrSameProfile: the target is the profile being deleted.
 	ErrSameProfile = errors.New("can't move titles to the profile being deleted")
@@ -165,7 +165,6 @@ type Reassigned struct {
 	Movies   int `json:"movies"`
 	Versions int `json:"versions"`
 	Series   int `json:"series"`
-	Books    int `json:"books"`
 	Artists  int `json:"artists"`
 	Requests int `json:"requests"`
 	Grabs    int `json:"grabs"`
@@ -177,7 +176,7 @@ type Reassigned struct {
 // would quietly run them on the default (see Effective) while the UI said otherwise.
 //
 // Both media types are read inside the transaction, so a target of another media type
-// can never move films onto a book profile even if the profiles changed mid-request.
+// can never move films onto a music profile even if the profiles changed mid-request.
 func (r *Repo) DeleteAndReassign(ctx context.Context, id int64, to string) (Reassigned, error) {
 	var out Reassigned
 	from := "custom:" + strconv.FormatInt(id, 10)
@@ -223,7 +222,6 @@ func deleteAndReassignTx(ctx context.Context, tx *sql.Tx, id, toID int64, from, 
 		{&out.Movies, `UPDATE movies SET quality_profile = ? WHERE quality_profile = ?`},
 		{&out.Versions, `UPDATE movie_versions SET quality_profile = ? WHERE quality_profile = ?`},
 		{&out.Series, `UPDATE series SET quality_profile = ? WHERE quality_profile = ?`},
-		{&out.Books, `UPDATE books SET quality_profile = ? WHERE quality_profile = ?`},
 		{&out.Artists, `UPDATE artists SET quality_profile = ? WHERE quality_profile = ?`},
 		// Only requests still waiting on a decision: an approved one's ref is history, and
 		// its title already moved with the library rows above.

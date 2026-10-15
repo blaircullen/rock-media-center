@@ -1,27 +1,22 @@
-// Package toolrun starts the helper tools Arrmada shells out to — ffmpeg, ffprobe,
-// hdr10plus_tool, whisper-cli — the one way they should all be started.
+// Package toolrun starts the helper tools Arrmada shells out to (ffprobe today) — the one
+// way they should all be started.
 //
 // A bare exec.CommandContext gets none of what a long-running tool on a shared home server
 // needs:
 //
 //   - Its own process group, killed as a whole when the context ends. CommandContext kills
 //     only the process it started; anything that process spawned was left running.
-//   - A lower CPU and disk priority (nice 19 and a lower I/O class), so Plex and everything
-//     else interactive win the machine. Before this only the main encode was niced, and
-//     nothing set an I/O priority at all: crop detection, the SSIM check and the HDR10+ read
-//     hammered the array at full priority while someone was watching a film.
-//   - A hook when the process starts and ends, so a caller can freeze it (Pause, SIGSTOP on
-//     the whole group) and later continue it (Resume) — Convert's pause while Plex is
-//     playing and outside the encode hours.
+//   - A lower CPU and disk priority (nice 19 and a lower I/O class) when asked for, so Plex
+//     and everything else interactive win the machine.
+//   - A hook when the process starts and ends, with its process group id.
 //
 // Linux only, which is the deployment target. On other platforms (Windows and macOS dev
-// machines) the class is ignored, cancelling kills only the started process, and Pause and
-// Resume do nothing (CanPause is false).
+// machines) the class is ignored and cancelling kills only the started process.
 //
 // API, in short:
 //
 //	cmd := toolrun.Command(ctx, toolrun.Idle, "ffmpeg", args...)
-//	cmd.OnStart = func(pgid int) { ... }   // optional: register for pausing
+//	cmd.OnStart = func(pgid int) { ... }   // optional
 //	cmd.OnExit = func(pgid int) { ... }    // optional: unregister
 //	out, err := cmd.CombinedOutput()       // or Run / Output / Start+Wait, StdoutPipe…
 //
@@ -46,12 +41,10 @@ const (
 	// waiting on: ffprobe, an encoder self-test at startup, a --help probe.
 	Normal Class = iota
 	// Background is nice 19 with the lowest best-effort I/O level (7). For bulk work that
-	// must still make steady progress on a busy disk: the encode itself, the final remux,
-	// subtitle extraction and transcription.
+	// must still make steady progress on a busy disk.
 	Background
 	// Idle is nice 19 with the idle I/O class: the tool only gets the disk when nothing
-	// else wants it. For side reads that can wait: quality checks, crop detection, the
-	// HDR10+ read, the full-decode integrity check.
+	// else wants it. For side reads that can wait.
 	Idle
 )
 
@@ -78,8 +71,7 @@ type Cmd struct {
 	*exec.Cmd
 	class Class
 	// OnStart, when set, is called right after the tool has started and been lowered to its
-	// class, with its process group id (the same as its pid). Convert registers the group
-	// here so its pause loop can freeze it.
+	// class, with its process group id (the same as its pid).
 	OnStart func(pgid int)
 	// OnExit, when set, is called once Wait has returned (with the same id) — only for a
 	// tool whose OnStart ran.
@@ -157,10 +149,3 @@ func (c *Cmd) CombinedOutput() ([]byte, error) {
 	err := c.Run()
 	return b.Bytes(), err
 }
-
-// Pause freezes a tool's whole process group (SIGSTOP). It keeps its place: Resume
-// continues it exactly where it stopped. A no-op where CanPause is false.
-func Pause(pgid int) error { return pauseGroup(pgid) }
-
-// Resume continues a group frozen by Pause (SIGCONT).
-func Resume(pgid int) error { return resumeGroup(pgid) }

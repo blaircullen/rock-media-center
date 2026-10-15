@@ -19,7 +19,7 @@ import (
 //
 // Why not internal/outbox: its dispatcher runs one handler at a time across every
 // consumer, so a 20-second apprise timeout would hold up import side effects (the
-// requester's "ready", Convert's index); its schedule (30 s doubling for 20 tries) is
+// requester's "ready"); its schedule (30 s doubling for 20 tries) is
 // wrong for a phone ping; and a per-connection log needs a row per connection with its
 // own status, cascading away with the connection. The pattern is the outbox's — a
 // durable row, a nudge channel, crash recovery at start — on a table shaped for alerts.

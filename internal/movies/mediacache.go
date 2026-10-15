@@ -137,11 +137,11 @@ func mediaJSONOf(f *MovieFile) string {
 	return string(b)
 }
 
-// movedMedia is the cache entry for a track's file after it moved to newPath (a rename or
-// Convert's swap). When the file there is the same one the cache describes — same size and
-// mtime, as a rename keeps them — the entry follows it without reading the file. Otherwise
-// the content changed (Convert re-encoded it) and the new file is read once now, so the
-// upgrade sweep costs the converted file at its real size.
+// movedMedia is the cache entry for a track's file after it moved to newPath (a rename).
+// When the file there is the same one the cache describes — same size and mtime, as a
+// rename keeps them — the entry follows it without reading the file. Otherwise the content
+// changed and the new file is read once now, so the upgrade sweep costs it at its real
+// size.
 func (s *Service) movedMedia(cached *MovieFile, newPath string) *MovieFile {
 	if cached != nil && cached.MtimeUnix != 0 {
 		if fi, err := s.statFile(newPath); err == nil && cacheCurrent(cached, fi) {

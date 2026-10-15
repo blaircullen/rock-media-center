@@ -18,21 +18,7 @@ describe("searchingDetail", () => {
     expect(line).toBe("Still looking — nothing suitable yet (checked 2h ago)");
   });
 
-  it("keeps a book's next check, and says when one has slowed to monthly", () => {
-    expect(searchingDetail({ stage: "searching", misses: 3, note: "Not found yet", next_check_at: "2026-10-09T09:00:00Z", last_search_at: "2026-10-07T12:00:00Z" }, "", now))
-      .toBe("Not found yet — last checked 3d ago, next check soon");
-    expect(searchingDetail({ stage: "searching", misses: 12, search_stopped: true, next_check_at: "2026-11-01T09:00:00Z" }, "", now))
-      .toBe("Couldn't find it yet — searching again later");
-  });
-
   it("passes the server's own note through", () => {
     expect(searchingDetail({ stage: "searching", note: "Not out yet" }, "", now)).toBe("Not out yet");
-  });
-
-  it("says when a book that isn't out yet comes out, as a calendar day", () => {
-    const line = searchingDetail({ stage: "searching", note: "Not out yet", next_check_at: "2026-11-11T13:00:00Z", release_date: "2026-11-12" }, "", now);
-    expect(line).toMatch(/^Out .*12.* — we'll grab it then$/);
-    expect(line).toMatch(/Nov/);
-    expect(line).not.toMatch(/2026/); // this year: no year
   });
 });

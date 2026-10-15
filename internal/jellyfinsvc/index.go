@@ -133,7 +133,7 @@ func parentDir(p string) string {
 
 // libraries turns Jellyfin's virtual folders into plexscan's libraries: movies → "movie",
 // tvshows → "show". A mixed library (no collection type) can hold either, so it's listed
-// as both. Music, books and the rest aren't scanned or indexed.
+// as both. Music and the rest aren't scanned or indexed.
 func libraries(vfs []jellyfin.VirtualFolder) []mediaserver.Library {
 	var out []mediaserver.Library
 	for _, vf := range vfs {

@@ -1,12 +1,19 @@
 package requests
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"io"
+	"log/slog"
 	"testing"
 	"time"
 
-	"github.com/tristenlammi/arrmada/internal/metadata"
+	"github.com/tristenlammi/arrmada/internal/automation"
+	"github.com/tristenlammi/arrmada/internal/movies"
+	"github.com/tristenlammi/arrmada/internal/quality"
+	"github.com/tristenlammi/arrmada/internal/series"
+	"github.com/tristenlammi/arrmada/internal/store"
 )
 
 // seedShow puts a show in the library: per season, whether the season is monitored and
@@ -66,7 +73,7 @@ func TestTrackAndNotifierAgree(t *testing.T) {
 	}
 	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			s, _, db, ctx := bookLinkFixture(t, catalogue{byKey: map[string]metadata.BookResult{}})
+			s, db, ctx := trackFixture(t)
 			tmdb := 500 + i
 			sid := seedShow(t, db, tmdb, tc.seasons)
 			req, err := s.repo.Create(ctx, Request{MediaType: "series", TMDBID: tmdb, Title: "Show", Status: StatusApproved, RequestedBy: 7})
@@ -112,4 +119,27 @@ func TestSeriesComplete(t *testing.T) {
 			t.Errorf("seriesComplete(%d, %d) = %v, want %v", c.have, c.total, got, c.want)
 		}
 	}
+}
+
+// trackFixture is a requests service over a fresh store with real movies and series
+// services (no catalogues) and the acquisition record, for tracking and readiness.
+func trackFixture(t *testing.T) (*Service, *sql.DB, context.Context) {
+	t.Helper()
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	db := st.DB()
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	root := t.TempDir()
+	s := &Service{
+		repo:    NewRepo(db),
+		movies:  movies.NewService(db, nil, nil, root, "", nil, log),
+		series:  series.NewService(db, nil, root, log),
+		quality: quality.NewService(db),
+		coord:   automation.New(nil, nil, nil, nil, db, nil, log, ""),
+		log:     log,
+	}
+	return s, db, context.Background()
 }

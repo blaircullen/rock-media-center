@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { FileDetailsModal } from "../../components/FileDetailsModal";
 import { refreshSearches, useSearchAttempts } from "../../components/LastSearch";
 import { ReleaseSearchModal } from "../../components/ReleaseSearchModal";
-import { api, type Episode, type FitItem, type Season, type Series as SeriesT } from "../../lib/api";
+import { api, type FitItem, type Season, type Series as SeriesT } from "../../lib/api";
 import { seriesApi } from "../../lib/seriesApi";
 import { qualityApi } from "../../lib/qualityApi";
-import { convertApi } from "../../lib/convertApi";
 import { disposalLine, useRecycleMode } from "../../lib/disposal";
 import { posterThumb } from "../../lib/img";
 import { attemptLine, outcomeTone } from "../../lib/searchOutcome";
@@ -13,8 +12,6 @@ import { jobFailed, jobToast, useJob } from "../../lib/useJob";
 import { Button, ConfirmDialog, StatusChip } from "../../ui";
 import { scrollDelta } from "../../ui/Tabs";
 import { EpisodeCard, type EpisodeDialog } from "./EpisodeCard";
-import { useEpisodeSubs, useSeenOnce } from "./EpisodeSubs";
-import { LazySubtitleDrawer } from "../../components/subtitles/LazySubtitleDrawer";
 import type { Flash } from "./HeroActions";
 import { aired, latestFor, seasonCounts, seasonName, seasonScope, sxe } from "./util";
 
@@ -97,10 +94,6 @@ export function SeasonPanel({ series, season, fits, onChange, flash }: { series:
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState<Set<number>>(() => new Set());
   const [grabJob, setGrabJob] = useState<number | null>(null);
-  // Subtitle chips: read (which probes the show's files) only once the cards are seen.
-  const grid = useRef<HTMLDivElement>(null);
-  const subs = useEpisodeSubs(series.id, useSeenOnce(grid));
-  const [subsFor, setSubsFor] = useState<Episode | null>(null);
   const grabbing = useJob(grabJob, {
     onDone: (j) => { setGrabJob(null); if (jobFailed(j)) flash(jobToast(j), true); refreshSearches("series", series.id); onChange(); },
   });
@@ -191,7 +184,7 @@ export function SeasonPanel({ series, season, fits, onChange, flash }: { series:
       {c.total === 0 ? (
         <div className="mt-3 rounded-xl p-6 text-center text-base text-ink-dim" style={{ border: "1px solid var(--line)" }}>No episodes are listed for {name} yet.</div>
       ) : (
-        <div ref={grid} className="mt-3 grid gap-2.5 lg:grid-cols-2">
+        <div className="mt-3 grid gap-2.5 lg:grid-cols-2">
           {eps.slice(0, shown).map((e) => (
             <EpisodeCard
               key={e.id}
@@ -205,8 +198,6 @@ export function SeasonPanel({ series, season, fits, onChange, flash }: { series:
               selecting={selecting}
               selected={picked.has(e.id)}
               onToggleSelect={() => toggle(e.id)}
-              subs={subs.bySxE?.get(`${e.season_number}:${e.episode_number}`)}
-              onSubs={() => setSubsFor(e)}
             />
           ))}
         </div>
@@ -240,14 +231,6 @@ export function SeasonPanel({ series, season, fits, onChange, flash }: { series:
         />
       )}
       <EpisodeDialogs series={series} dialog={dialog} onClose={() => setDialog(null)} onChange={onChange} flash={flash} />
-      {subsFor && (
-        <LazySubtitleDrawer
-          media={{ kind: "episode", series_id: series.id, season: subsFor.season_number, episode: subsFor.episode_number }}
-          title={`${series.title} - ${sxe(subsFor)}`}
-          onClose={() => setSubsFor(null)}
-          onChanged={subs.refetch}
-        />
-      )}
     </section>
   );
 }
@@ -345,7 +328,6 @@ function EpisodeDialogs({ series, dialog, onClose, onChange, flash }: { series: 
         path={ep.file_path}
         title={`${series.title} — ${label}`}
         subtitle={ep.title || undefined}
-        onCleanTracks={async () => { await convertApi.convertRequest(`episode:${series.id}:${ep.season_number}:${ep.episode_number}`); }}
         onClose={done}
       />
     );

@@ -15,7 +15,7 @@ import (
 	"sync"
 )
 
-// Posters on alerts. A library alert (a movie, show or book landing) carries the title's
+// Posters on alerts. A library alert (a movie or show landing) carries the title's
 // poster: the public TMDB or Open Library image the library already stores, which Apprise
 // fetches and attaches. A Plex stream alert carries the Plex image path instead
 // ("plex:/library/metadata/…/thumb/…"); at send time Arrmada fetches it itself, with the
@@ -32,7 +32,6 @@ import (
 var attachHosts = map[string]bool{
 	"image.tmdb.org":         true,
 	"covers.openlibrary.org": true,
-	"assets.hardcover.app":   true,
 	"coverartarchive.org":    true,
 }
 
@@ -78,7 +77,7 @@ func validAttach(a string) bool {
 	return AllowedAttachURL(a)
 }
 
-// PosterFunc finds the poster URL of a library item ("movie", "series" or "book" by id),
+// PosterFunc finds the poster URL of a library item ("movie" or "series" by id),
 // "" when it has none.
 type PosterFunc func(ctx context.Context, kind string, id int64) string
 
@@ -134,8 +133,6 @@ func (s *Service) attachFor(ctx context.Context, key string, d map[string]any) s
 		kind = "movie"
 	case "episodes.imported":
 		kind = "series"
-	case "book.imported":
-		kind = "book"
 	case eventStreamStarted, eventBuffering:
 		thumb := str(d, "thumb")
 		if plexImageRe.MatchString(thumb) {

@@ -66,7 +66,7 @@ func (s *SABnzbd) categories() []sabCategory {
 	s.mu.RLock()
 	c := FixedCategories(s.movieCat)
 	s.mu.RUnlock()
-	return []sabCategory{{c.Movies, "movies"}, {c.TV, "tv"}, {c.Books, "books"}, {c.Music, "music"}}
+	return []sabCategory{{c.Movies, "movies"}, {c.TV, "tv"}, {c.Music, "music"}}
 }
 
 type sabCategory struct{ name, kind string }
@@ -1040,7 +1040,7 @@ type UsenetFacts struct {
 // UsenetCategory is one of Arrmada's categories in SABnzbd.
 type UsenetCategory struct {
 	Name    string `json:"name"`
-	For     string `json:"for"` // movies, tv, books, music
+	For     string `json:"for"` // movies, tv, music
 	Present bool   `json:"present"`
 	// Folder is set when the category has a folder of its own, with whether Arrmada sees it.
 	Folder *PathCheck `json:"folder,omitempty"`

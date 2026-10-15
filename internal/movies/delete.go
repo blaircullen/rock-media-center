@@ -68,8 +68,7 @@ func (s *Service) Delete(ctx context.Context, id int64, deleteFiles bool) error 
 	if changed != "" {
 		folder = filepath.Dir(changed)
 	}
-	// The movie, its versions and its history go together, with the row that makes
-	// Convert and Subtitles forget it.
+	// The movie, its versions and its history go together, with its movie.changed row.
 	err = s.repo.inTx(ctx, func(tx *sql.Tx, r *Repo) error {
 		if err := r.Delete(ctx, id); err != nil {
 			return err
@@ -229,7 +228,7 @@ func (s *Service) ForgetMissingFile(ctx context.Context, movieID, versionID int6
 }
 
 // clearTrack runs a track's record change (clear) in one transaction with the
-// movie.changed row that makes Convert and Subtitles drop the removed file, then announces
+// movie.changed row for the removed file, then announces
 // it on the bus. path is the file that went ("" when the track had none: nothing to tell).
 func (s *Service) clearTrack(ctx context.Context, movieID, versionID int64, path string, clear func(r *Repo) error) error {
 	err := s.repo.inTx(ctx, func(tx *sql.Tx, r *Repo) error {

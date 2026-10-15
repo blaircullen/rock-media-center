@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/tristenlammi/arrmada/internal/auth"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/jobs"
 	"github.com/tristenlammi/arrmada/internal/metadata"
 	"github.com/tristenlammi/arrmada/internal/movies"
@@ -54,11 +53,10 @@ func TestAutoApprovesByMediaTypeHandler(t *testing.T) {
 	root := t.TempDir()
 	s := newRouteServer(t, func(d *Deps) {
 		db := d.Store.DB()
-		d.Books = books.NewService(db, nil, d.Log)
 		d.Quality = quality.NewService(db)
 		mv := movies.NewService(db, movieMeta{}, nil, root, "", nil, d.Log)
 		sr := series.NewService(db, nil, root, d.Log)
-		d.Requests = requests.NewService(db, mv, sr, d.Books, nil, d.Quality, nil, "", d.Log)
+		d.Requests = requests.NewService(db, mv, sr, nil, d.Quality, nil, "", d.Log)
 		d.Requests.SetJobs(noJobs{})
 	})
 	kid, cookie := s.user(t, "kid@example.com", auth.RoleRequester)
@@ -94,11 +92,11 @@ func TestAutoApprovesByMediaTypeHandler(t *testing.T) {
 	}
 }
 
-// The users API takes and returns the per-type flags; the old bool still sets all three.
+// The users API takes and returns the per-type flags; the old bool still sets both.
 func TestUsersAPIAutoApproveTypes(t *testing.T) {
 	s := requestsServer(t)
 	_, admin := s.user(t, "admin@example.com", auth.RoleAdmin)
-	rec := s.doJSON("POST", "/api/v1/users", admin, `{"email":"a@example.com","password":"password123","auto_approve_movie":true,"auto_approve_book":true}`)
+	rec := s.doJSON("POST", "/api/v1/users", admin, `{"email":"a@example.com","password":"password123","auto_approve_movie":true}`)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("create: HTTP %d %s", rec.Code, rec.Body)
 	}
@@ -106,7 +104,7 @@ func TestUsersAPIAutoApproveTypes(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &u); err != nil {
 		t.Fatal(err)
 	}
-	if u.AutoApproval() != (auth.AutoApproval{Movie: true, Book: true}) || u.AutoApprove {
+	if u.AutoApproval() != (auth.AutoApproval{Movie: true}) || u.AutoApprove {
 		t.Fatalf("created = %+v", u)
 	}
 	path := "/api/v1/users/" + strconv.FormatInt(u.ID, 10)
@@ -114,7 +112,7 @@ func TestUsersAPIAutoApproveTypes(t *testing.T) {
 		t.Fatalf("update: HTTP %d %s", rec.Code, rec.Body)
 	}
 	got, err := s.auth.UserByID(context.Background(), u.ID)
-	if err != nil || got.AutoApproval() != (auth.AutoApproval{Movie: true, Book: true}) {
-		t.Errorf("after update: %+v (%v), want movie and book (the flag overrides the old bool)", got, err)
+	if err != nil || got.AutoApproval() != (auth.AutoApproval{Movie: true}) {
+		t.Errorf("after update: %+v (%v), want movie only (the flag overrides the old bool)", got, err)
 	}
 }

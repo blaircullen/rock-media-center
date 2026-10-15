@@ -129,8 +129,8 @@ func (s *Scheduler) OnFinish(fn func(st TaskStatus, notable bool)) {
 // Register adds a task. runAtStart runs it once immediately on Start, then every
 // interval after. Registering AFTER Start launches the task immediately — Start
 // used to snapshot the list, which silently never ran anything registered later:
-// four real jobs (convert-sweep, convert-index, subtitles-auto-grab,
-// recycle-enforce) sat dead behind that ordering hazard.
+// real jobs (the
+// recycle-enforce sweep, say) sat dead behind that ordering hazard.
 func (s *Scheduler) Register(name string, every time.Duration, runAtStart bool, fn TaskFunc, opts ...Option) {
 	t := &task{name: name, every: every, runAtStart: runAtStart, fn: fn}
 	for _, o := range opts {

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/tristenlammi/arrmada/internal/auth"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/quality"
 	"github.com/tristenlammi/arrmada/internal/requests"
@@ -21,11 +20,10 @@ func requestsServer(t *testing.T) *routeServer {
 	root := t.TempDir()
 	return newRouteServer(t, func(d *Deps) {
 		db := d.Store.DB()
-		d.Books = books.NewService(db, nil, d.Log)
 		d.Quality = quality.NewService(db)
 		mv := movies.NewService(db, nil, nil, root, "", nil, d.Log)
 		sr := series.NewService(db, nil, root, d.Log)
-		d.Requests = requests.NewService(db, mv, sr, d.Books, nil, d.Quality, nil, "", d.Log)
+		d.Requests = requests.NewService(db, mv, sr, nil, d.Quality, nil, "", d.Log)
 	})
 }
 

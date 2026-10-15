@@ -149,12 +149,6 @@ function RequestPoster({ rq, staff, queueKnown = true, onOpen }: { rq: MediaRequ
       <div className="px-0.5 pt-2">
         <div className="truncate text-sm font-semibold" style={{ color: "var(--ink)" }} title={rq.title}>{rq.title}</div>
         <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs" style={{ color: stage.detailTone ?? "var(--ink-faint)" }} title={stage.detail}>
-          {/* A book request says what was asked for: Read, Listen or Both. */}
-          {rq.media_type === "book" && rq.formats && (
-            <span className="flex-none rounded px-1.5 py-px font-mono text-2xs font-bold uppercase" style={{ background: "var(--panel-2)", border: "1px solid var(--line)", color: "var(--ink-dim)" }}>
-              {BOOK_FORMAT_BADGE[rq.formats]}
-            </span>
-          )}
           {/* A show asked for by season says which: S1–3, S5. */}
           {rq.media_type === "series" && rq.seasons && rq.seasons.length > 0 && (
             <span className="flex-none font-mono text-xs font-bold" style={{ color: "var(--ink-dim)" }}>{formatSeasons(rq.seasons)}</span>
@@ -170,8 +164,3 @@ function RequestPoster({ rq, staff, queueKnown = true, onOpen }: { rq: MediaRequ
     </div>
   );
 }
-
-// BOOK_FORMAT_BADGE is the "what was asked for" tag on a book request. The same words as
-// lib/bookFormats' FORMAT_BADGE, repeated rather than imported: a module this page and the
-// Books tab (which it loads lazily) both import gets folded into this page's chunk.
-const BOOK_FORMAT_BADGE = { ebook: "Read", audiobook: "Listen", both: "Both" } as const;

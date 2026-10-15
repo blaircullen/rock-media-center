@@ -28,7 +28,7 @@
 set -eu
 
 JF_IMAGE=${JF_IMAGE:-jellyfin/jellyfin:12.2.20261005-225228}
-FF_IMAGE=${FF_IMAGE:-arrmada:sycl}
+FF_IMAGE=${FF_IMAGE:-arrmada:dev}
 GO_IMAGE=${GO_IMAGE:-golang:1.25}
 
 # Git Bash would rewrite /media and friends into Windows paths before docker sees them.

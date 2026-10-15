@@ -22,28 +22,15 @@ type Service struct {
 	// how Impact runs the upgrade decisions against a profile as edited, before it's saved
 	// (see withSpecs). nil on the app's service.
 	specs map[int64]StoredProfile
-	// ownerLangs reads the audio languages the household keeps (Convert's), for the
-	// Unwanted pack's foreign-only item; nil reads as English.
-	ownerLangs func(ctx context.Context) []string
 	// log reports ranking v2's disagreements in shadow mode (shadow.go); nil is silent.
 	log *slog.Logger
 	// shadow buffers shadow mode's day counts. A pointer, so withSpecs' copies share it.
 	shadow *shadowStats
 }
 
-// SetOwnerLanguages tells the service where the household's audio languages come from
-// (Convert's "keep audio" languages). A release in one of them is never foreign-only.
-func (s *Service) SetOwnerLanguages(fn func(ctx context.Context) []string) { s.ownerLangs = fn }
-
-// ownerLanguages is the household's audio languages, English when none are set.
-func (s *Service) ownerLanguages(ctx context.Context) []string {
-	if s.ownerLangs != nil {
-		if l := s.ownerLangs(ctx); len(l) > 0 {
-			return l
-		}
-	}
-	return []string{"en"}
-}
+// ownerLanguages is the household's audio languages, for the Unwanted pack's foreign-only
+// item: English. (An earlier version read them from a setting.)
+func (s *Service) ownerLanguages(context.Context) []string { return []string{"en"} }
 
 // profileOf is sp's runtime profile with the household's languages attached.
 func (s *Service) profileOf(ctx context.Context, sp StoredProfile) Profile {
@@ -692,7 +679,6 @@ func (s *Service) RepairDanglingRefs(ctx context.Context) (map[string]int, error
 		{"movies", "movies", MediaMovie},
 		{"movie_versions", "movie_versions", MediaMovie},
 		{"series", "series", MediaSeries},
-		{"books", "books", MediaBook},
 		{"artists", "artists", MediaMusic},
 	}
 	for _, f := range fixed {
@@ -702,7 +688,7 @@ func (s *Service) RepairDanglingRefs(ctx context.Context) (map[string]int, error
 	}
 	// Requests and grabs carry their own media type. Grabs written before series
 	// existed have '' for a film.
-	for _, media := range []string{MediaMovie, MediaSeries, MediaBook, MediaMusic} {
+	for _, media := range []string{MediaMovie, MediaSeries, MediaMusic} {
 		if err := repair("requests", "requests", media, "media_type = ?", media); err != nil {
 			return out, err
 		}

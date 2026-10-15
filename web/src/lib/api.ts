@@ -20,7 +20,6 @@ export interface Status {
   authenticated: boolean;
   external: boolean;
   modules: Module[];
-  books_enabled: boolean;
   music_enabled: boolean;
   plex_login: boolean;
   /** Sign in with Jellyfin is on (and a Jellyfin server is connected). */
@@ -252,7 +251,6 @@ export interface ProfileMoveCounts {
   movies: number;
   versions: number;
   series: number;
-  books: number;
   artists: number;
   requests: number;
   grabs: number;
@@ -265,24 +263,22 @@ export type WantedState =
   | "waiting_download" // a download in flight covers everything it is missing
   | "held_for_review" // its download finished but is held in Review
   | "indexers_failed" // its last search reached no indexer (not a miss)
-  | "slowed" // so many empty searches it is checked rarely (books monthly, albums weekly)
+  | "slowed" // so many empty searches it is checked rarely (albums weekly)
   | "not_released"; // not out yet: Upcoming
 
-/** One title on the Wanted view: a movie, series, book or album still being looked for. */
+/** One title on the Wanted view: a movie, series or album still being looked for. */
 export interface WantedRow {
-  media_type: "movie" | "series" | "book" | "music";
+  media_type: "movie" | "series" | "music";
   id: number;
   movie_id?: number;
   series_id?: number;
-  book_id?: number;
   album_id?: number;
   artist_id?: number;
   title: string;
   year: number;
   poster_url?: string;
   quality_profile: string;
-  byline?: string; // a book's author, an album's artist
-  missing?: string[]; // a book: "Ebook", "Audiobook", "Audio version"
+  byline?: string; // an album's artist
   episode_count?: number; // series: how many aired episodes are being searched
   state: WantedState;
   waiting_on?: string; // the release a waiting row waits for
@@ -380,13 +376,13 @@ export interface ActivityDownload {
 
 /** The library title a transfer was grabbed for, from the acquisition record. */
 export interface TransferItem {
-  kind: "movie" | "series" | "book" | "music";
+  kind: "movie" | "series" | "music";
   id: number;
   title: string;
   year?: number;
   poster_url?: string;
   byline?: string;
-  /** What part of the title the torrent covers: "S03", "S03E05", "Audiobook", a version's label. */
+  /** What part of the title the torrent covers: "S03", "S03E05", a version's label. */
   scope?: string;
   /** The grab replaces a file the title already has. */
   upgrade?: boolean;
@@ -404,7 +400,7 @@ export interface DiskGuardHold {
 
 export type RemoveDownloadMode = "keep_files" | "delete_files" | "block";
 // What a removed download was for, and what "stop wanting" switched off.
-export type BlockType = "movie" | "series" | "book" | "music" | "global";
+export type BlockType = "movie" | "series" | "music" | "global";
 
 // One blocklist entry of any kind (the Blocklist page).
 export interface BlocklistRow {
@@ -423,7 +419,7 @@ export interface BlocklistRow {
 
 // The library item a Block blocklisted a release for.
 export interface BlockTarget {
-  kind: "movie" | "series" | "book" | "music";
+  kind: "movie" | "series" | "music";
   id: number;
   title: string;
 }
@@ -653,7 +649,6 @@ export interface DownloadClientStatus {
 export interface DownloadCategories {
   movies: string;
   tv: string;
-  books: string;
   music: string;
 }
 
@@ -737,7 +732,7 @@ export interface AlertPresetField { name: string; label: string; hint?: string; 
 export interface AlertPreset { kind: string; label: string; hint: string; fields: AlertPresetField[] }
 
 // The alert event catalog: what a connection can subscribe to, grouped for the page.
-export interface AlertEvent { key: string; group: string; label: string; hint: string; default_on: boolean; module?: "books" | "music" }
+export interface AlertEvent { key: string; group: string; label: string; hint: string; default_on: boolean; module?: "music" }
 export interface AlertCatalog {
   groups: { key: string; label: string }[]; events: AlertEvent[];
   /** The message every event sends unless a connection has its own ("{message}\n{link}"). */
@@ -766,74 +761,7 @@ export interface CalendarItem {
   requested_by_me?: boolean;
 }
 
-export interface LibraryPaths { movies: string; tv: string; ebooks: string; audiobooks: string; music: string; downloads: string }
-// Audiobook server (listening apps like Lissen).
-export interface AudioDevice { id: string; user_id: number; username: string; client: string; device: string; created_at: number; last_used_at: number }
-export interface AudioConnection { enabled: boolean; running: boolean; error?: string; host_port: string; public_url: string }
-export interface AudioServerAdmin extends AudioConnection {
-  users: { id: number; username: string; role: UserRole; disabled: boolean; eligible: boolean; allowed: boolean; has_password: boolean }[];
-  devices: AudioDevice[];
-  items: number;
-  items_ready: number;
-  /** While an admin traces app requests: when it stops by itself (unix ms); 0 when off. */
-  trace_until: number;
-}
-export interface AudioPlace { item_key: string; book_id: number; title: string; author?: string; cover_url?: string; position: number; duration: number; finished: boolean; updated_at: number; device?: string;
-  /** A big jump back that's being held until it proves itself (or the person confirms it). */
-  pending_position?: number | null; pending_at?: number;
-  /** A later spot an app sent that wasn't used (e.g. offline listening uploaded after another device moved the place). */
-  offer?: AudioOffer | null }
-/** A place an app sent that wasn't used, offered back: restore it with history_id, or dismiss it. */
-export interface AudioOffer { history_id: number; position: number; at: number; device?: string; reason: string }
-/** A place an app removed ("discard progress"), restorable for 90 days. device is who removed it. */
-export interface AudioRemoved { item_key: string; book_id: number; title: string; author?: string; cover_url?: string; position: number; duration: number; finished: boolean; discarded_at: number; device?: string }
-export interface MyAudio extends AudioConnection { username: string; allowed: boolean; has_password: boolean; min_password_length: number; devices: AudioDevice[]; places: AudioPlace[]; removed: AudioRemoved[] }
-/** What a timeline row is: the place moved (applied), the place just before a change (before), a place an app sent that
- *  wasn't used (rejected), a jump waiting for proof (held), an app removing the place (discarded), or a place put back (restored). */
-export type AudioHistoryKind = "applied" | "before" | "rejected" | "held" | "discarded" | "restored";
-export interface AudioHistoryEntry { id: number; position: number; at: number; device?: string; reason: string; kind: AudioHistoryKind; dismissed?: boolean }
-// Arrmada's own listening API (/api/v1/me/audio/*, the web player). Every call is about
-// the signed-in person; a 403 means audiobooks are switched off or the account isn't
-// allowed ("message" says which).
-/** A place in an audiobook as the listening API returns it. pending_position is a held jump. */
-export interface AudioProgress { item_key: string; position: number; duration: number; finished: boolean; finished_at?: number; updated_at: number; device?: string; hidden?: boolean; pending_position?: number | null }
-/** An audiobook as the web player lists it. cover is same-origin (cache-busted with ?v=); duration is 0 until its files are read. */
-export interface AudioCard { key: string; book_id: number; version_id?: number; title: string; author?: string; series?: string; series_seq?: string; cover?: string; duration: number; added_at: number; progress: AudioProgress | null }
-export interface AudioShelf { id: "continue-listening" | "continue-series" | "recently-added" | "listen-again" | string; label: string; items: AudioCard[] }
-export interface AudioChapter { id: number; start: number; end: number; title: string }
-/** One audio file in play order; start_offset is where it starts in the whole book; url streams it (Range works). */
-export interface AudioTrack { ino: string; index: number; start_offset: number; duration: number; mime: string; url: string }
-export interface AudioBookmark { item_key: string; time: number; title: string; created_at: number }
-export interface AudioItemDetail extends AudioCard {
-  description?: string; year?: number; genres: string[]; chapters: AudioChapter[]; tracks: AudioTrack[];
-  /** Who reads it: typed on the Books page, else from the audio files' tags. */
-  narrator?: string;
-  /** Other audiobooks of the same book (full cast, another narrator). */
-  versions: { key: string; title: string }[];
-  bookmarks: AudioBookmark[];
-}
-export type AudioLibrarySort = "title" | "author" | "added" | "duration";
-export type AudioLibraryFilter = "" | "in-progress" | "finished" | "not-started";
-export interface AudioLibraryPage { items: AudioCard[]; total: number; page: number; limit: number }
-/** A web-player session just opened: play from start_time. restart = a finished book starting again from 0:00. */
-export interface AudioPlayStart { session_id: string; start_time: number; duration: number; tracks: AudioTrack[]; chapters: AudioChapter[]; restart: boolean }
-/** A web-player report. Leave current_time out when the player doesn't know where it is — that never moves the place.
- *  time_listened is wall-clock seconds actually played since the last report. */
-export interface AudioSyncReport { current_time?: number; time_listened: number; duration?: number }
-/** The saved place after a sync or close. held_position is a big jump waiting for proof (null when none). */
-export interface AudioSyncResult { position: number; held_position: number | null; finished: boolean; duration: number }
-export interface AudioListening {
-  days: number;
-  since: string; // YYYY-MM-DD, first day covered
-  daily: { user_id: number; username: string; day: string; seconds: number }[];
-  totals: { user_id: number; username: string; today: number; week: number; month: number; all_time: number; last_listen: number }[];
-  sessions: { user_id: number; username: string; device: string; client: string; started_at: number; ended_at: number; seconds: number }[];
-}
-export interface AudioImportPreview {
-  users: { abs_id: string; abs_username: string; user_id: number; username?: string; progress_rows: number }[];
-  progress: number; matched: number; bookmarks: number; unmatched_books: string[] | null;
-}
-export interface AudioImportResult { imported: number; kept: number; bookmarks: number; skipped: number }
+export interface LibraryPaths { movies: string; tv: string; music: string; downloads: string }
 
 // SetupState drives the first-run wizard: whether it's needed, the keys, the folders
 // saved vs the ones the running app uses, and folders that look right on the mount.
@@ -878,12 +806,11 @@ export function importListNotice(r: { truncated?: boolean; note?: string }): str
 }
 
 // PendingRestart: folders saved in the app that the running app isn't using yet (they
-// apply at the next start), and what a restart would interrupt. Counts only, no titles.
+// apply at the next start).
 export interface PendingRestart {
   restart_needed: boolean;
   can_restart: boolean;
   changed: { library: keyof LibraryPaths; saved: string; running: string }[];
-  busy: { convert_running: number; convert_longest_sec: number; convert_progress: number; subtitles_running: number; subtitles_queued: number };
 }
 // FolderCheck is what a folder looks like before it's saved (Settings → Library, the
 // wizard). hardlink_with_downloads is null when it couldn't be tried; error is the reason
@@ -931,7 +858,7 @@ export interface SystemHealth {
 
 // The Needs-you feed (GET /api/v1/attention, staff only): what's waiting on a person.
 export type AttentionKind =
-  | "request" | "review" | "download" | "stalled" | "import" | "wrongcat" | "search" | "health" | "convert" | "issue" | "subtitles";
+  | "request" | "review" | "download" | "stalled" | "import" | "wrongcat" | "search" | "health" | "issue";
 export interface AttentionCounts {
   requests: number;
   reviews: number;
@@ -940,9 +867,7 @@ export interface AttentionCounts {
   searches: number; // titles whose searches keep coming up empty
   health: number;
   health_errors: number;
-  convert?: number; // reasons Convert is stuck waiting for disk space
   issues?: number; // reported problems still open
-  subtitles?: number; // file languages waiting on a login, a model or a whisper fix
   total: number;
 }
 export interface AttentionItem {
@@ -993,7 +918,6 @@ export interface QueueSummary {
 export interface LibraryCounts {
   movies: number; movies_missing: number;
   series: number; episodes: number; episodes_missing: number;
-  books: number; books_missing: number;
   artists: number; albums: number;
 }
 export interface ActivityEvent {
@@ -1012,27 +936,6 @@ export interface DashboardData {
   queue_note?: string;
   library: LibraryCounts;
   activity: ActivityEvent[];
-  listening?: NowListening[];
-  audio_off?: boolean;
-}
-
-// NowListening is one live audiobook session. Others' sessions say who, on what and for
-// how long — never which book; the book fields are only set on your own (mine).
-export interface NowListening {
-  user: string;
-  device: string;
-  client: string;
-  started_at: number;
-  last_at: number;
-  seconds: number;
-  playing: boolean;
-  mine: boolean;
-  book_id?: number;
-  title?: string;
-  author?: string;
-  cover_url?: string;
-  position?: number;
-  duration?: number;
 }
 
 export interface DiskGuardStatus {
@@ -1075,18 +978,6 @@ export interface FileDetails {
   source?: FileSource; source_note?: string;
 }
 
-export interface SubSeriesGroup {
-  series_id: number;
-  title: string;
-  year?: number;
-  poster_url?: string;
-  episodes: number;
-  missing: number;
-  covered: number;
-  seasons: number;
-  profile_id?: number; // the language profile the show is pinned to; absent = Default
-}
-
 export interface AppSettings {
   search_on_add: boolean;
   /** Indexers with no categories of their own are searched in the media type's usual ones. */
@@ -1100,14 +991,13 @@ export interface AppSettings {
   naming_series_episode: string;
   write_nfo: boolean;
   download_artwork: boolean;
-  books_enabled: boolean;
   music_enabled: boolean;
   plex_login_enabled: boolean;
   /** Sign in with Plex may open an admin or manager account linked to that Plex account. */
   plex_signin_staff: boolean;
   /** Legacy: true when a new Plex sign-in auto-approves every type. */
   plex_login_auto_approve: boolean;
-  /** The types a new Plex sign-in auto-approves, "movie,series,book" (any subset). */
+  /** The types a new Plex sign-in auto-approves, "movie,series" (any subset). */
   plex_login_auto_approve_types: string;
   /** Sign in with Jellyfin (username + password). */
   jellyfin_login_enabled: boolean;
@@ -1115,13 +1005,12 @@ export interface AppSettings {
   jellyfin_quickconnect_enabled: boolean;
   /** Sign in with Jellyfin may open an admin or manager account linked to that user. */
   jellyfin_signin_staff: boolean;
-  /** The types a new Jellyfin sign-in auto-approves, "movie,series,book" (any subset). */
+  /** The types a new Jellyfin sign-in auto-approves, "movie,series" (any subset). */
   jellyfin_login_auto_approve_types: string;
   /** Request limits per person per window of days (0 = unlimited). */
   request_quota_days: number;
   request_quota_movies: number;
   request_quota_seasons: number;
-  request_quota_books: number;
   /** Discovery region for TMDB lists (ISO 3166-1 alpha-2, e.g. "AU"); "" = global. */
   tmdb_region: string;
   // Recycle bin guard rails.
@@ -1134,8 +1023,6 @@ export interface AppSettings {
   downloads_stall_minutes: number;
   /** How many upgrades one upgrade sweep may grab; 0 = no limit. Default 10. */
   upgrade_max_grabs_per_sweep: number;
-  /** Languages automatic book grabs accept (canonical codes); [] = any. Default ["en"]. */
-  books_languages: string[];
   /** How releases are ranked: "v1" classic (default) or "v2" ordered keys (preview). Admin-only. */
   quality_ranking?: "v1" | "v2";
   /** When a release is on both Usenet and torrents: the better release wins (best, the default), or the preferred network between equals. */
@@ -1156,7 +1043,7 @@ export interface LogEntry {
   attrs?: string;
   /** Monotonic within one run of the server: the Live view's cursor. */
   seq?: number;
-  /** The part of the app that wrote it (convert, indexer, …); absent for core lines. */
+  /** The part of the app that wrote it (indexer, import, …); absent for core lines. */
   module?: string;
 }
 // Why a database backup was taken; part of its file name.
@@ -1320,7 +1207,7 @@ export interface SearchOutcome {
 // nothing was taken. started_at is unix ms.
 export interface SearchAttempt {
   id: number;
-  media_type: "movie" | "series" | "book" | "music";
+  media_type: "movie" | "series" | "music";
   media_id: number;
   scope: string;
   trigger: string;
@@ -1556,13 +1443,8 @@ export interface RecycleItem {
 
 export interface MediaRequest {
   id: number;
-  media_type: "movie" | "series" | "book";
+  media_type: "movie" | "series";
   tmdb_id: number;
-  ol_key?: string;
-  author?: string;
-  /** Books: read (ebook), listen (audiobook) or both. Absent on a request made before
-   *  the choice existed. */
-  formats?: "ebook" | "audiobook" | "both";
   title: string;
   year: number;
   poster_url?: string;
@@ -1582,7 +1464,7 @@ export interface MediaRequest {
   ready_at?: number;
   /** How the viewer stands to it in their own list: they asked, or they follow it. */
   relation?: "owner" | "subscriber";
-  /** Staff only: the library item it became (movie, series or book id). */
+  /** Staff only: the library item it became (movie or series id). */
   library_id?: number;
   /** Staff only, on GET /requests/{id}: who else follows it. */
   followers?: { name: string }[];
@@ -1616,7 +1498,7 @@ export interface RequestList {
   counts?: RequestCounts;
   total?: number;
   auto_approve: boolean;
-  /** The viewer's own per-type auto-approve, "movie,series,book" (any subset). */
+  /** The viewer's own per-type auto-approve, "movie,series" (any subset). */
   auto_approve_types?: string;
   client_health?: QueueHealth;
 }
@@ -1635,64 +1517,11 @@ export interface RequestTracking {
   have?: number; // series: episodes on disk
   total?: number; // series: aired episodes wanted
   note?: string;
-  /** Books not found yet: when the next search is due (RFC3339; format in the viewer's locale). */
-  next_check_at?: string;
-  /** A book not out yet: the day it is (YYYY-MM-DD, a calendar day) — "Out 12 Mar". */
-  release_date?: string;
   /** While searching: when it was last looked for (RFC3339), and how many looks in a row found nothing. */
   last_search_at?: string;
   misses?: number;
-  /** A book the searches have slowed to a monthly check. */
-  search_stopped?: boolean;
   /** Stage "adding": the media servers it's being added to ("Adding to Plex…"; both = "your library"). */
   adding_to?: MediaServerKind[];
-}
-
-// MyBook is one library book as a requester sees it: an ebook to download, an
-// audiobook that lives in Audiobookshelf, or both.
-export interface MyBook {
-  book_id: number;
-  title: string;
-  author?: string;
-  year?: number;
-  cover_url?: string;
-  added_at?: string;
-  series?: string;
-  /** The book sheet and series rows: the blurb (capped by the server), the series and the
-   *  place in it apart (0 = number unknown), and up to three subjects. */
-  description?: string;
-  series_name?: string;
-  series_position?: number;
-  subjects?: string[];
-  /** kindle: Send to Kindle's email takes this format (EPUB, PDF). */
-  ebook?: { format: string; size_bytes: number; kindle?: boolean };
-  audiobook: boolean;
-  mine: boolean; // the signed-in user requested it
-  /** Downloadable audiobooks: the standard one (version_id 0) and any extra versions.
-   *  item_key is the same audiobook in the listening API (what Listen plays). */
-  audiobooks?: { version_id: number; item_key?: string; label?: string; format: string; size_bytes: number; files: number }[];
-}
-
-// MyRequest is one of the signed-in user's book requests that hasn't produced a file.
-export interface MyRequest {
-  id?: number;
-  title: string;
-  author?: string;
-  year?: number;
-  cover_url?: string;
-  status: "pending" | "approved" | "declined";
-  requested_at: string;
-  /** What was asked for (absent on an older request), and which of it is still on its way. */
-  formats?: "ebook" | "audiobook" | "both";
-  waiting?: "ebook" | "audiobook" | "both";
-  /** Where it has got to; absent when the download client couldn't be read. */
-  stage?: RequestStage;
-  note?: string; // "Not found yet"
-  next_check_at?: string; // RFC3339
-  /** The whole of where it's got to, as the Requests page reads it (lib/requestStage). */
-  tracking?: RequestTracking;
-  decline_reason?: string;
-  release_date?: string; // the book isn't out yet: the day it is (YYYY-MM-DD)
 }
 
 export interface DiscoverCard {
@@ -1745,7 +1574,6 @@ export interface AuthUser {
   auto_approve: boolean;
   auto_approve_movie?: boolean;
   auto_approve_series?: boolean;
-  auto_approve_book?: boolean;
   /** Users list only: their own request limits. */
   quota?: UserQuota;
   created_at?: string;
@@ -1825,7 +1653,7 @@ export interface UpdateStatus {
 
 /**
  * One person on Settings → People & access (GET /people, admin). Times are unix ms, 0 =
- * never. Listening is when, never what: there is no book in here.
+ * never.
  */
 export interface Person {
   id: number;
@@ -1835,7 +1663,6 @@ export interface Person {
   created_at?: string;
   auto_approve_movie: boolean;
   auto_approve_series: boolean;
-  auto_approve_book: boolean;
   plex_linked: boolean;
   plex_username?: string;
   plex_only?: boolean;
@@ -1848,29 +1675,21 @@ export interface Person {
   /** Browsers signed in (only they see which). */
   sessions: number;
   web_last: number;
-  audio_last: number;
-  listen_last: number;
-  /** The latest of web_last, audio_last and listen_last. */
+  /** When they were last seen. */
   last_seen: number;
-  /** An enabled account that may request: read-only accounts can't connect apps. */
-  audio_eligible: boolean;
-  audio_allowed: boolean;
-  audio_password_set: boolean;
-  audio_devices: number;
 }
 
 /** One kind of request limit: limit 0 is unlimited; resets_at is when the oldest use frees up. */
 export interface QuotaUse { limit: number; used: number; resets_at?: string }
 /** GET /me/quota: the caller's request limits per window of `days`. */
-export interface MyQuota { days: number; movie: QuotaUse; season: QuotaUse; book: QuotaUse }
+export interface MyQuota { days: number; movie: QuotaUse; season: QuotaUse }
 /** A user's own limits: -1 follows the global limit, 0 is unlimited. */
-export interface UserQuota { movies: number; seasons: number; books: number }
+export interface UserQuota { movies: number; seasons: number }
 
 /** Which media types a user's requests approve themselves for. */
 export interface AutoApproveFlags {
   auto_approve_movie?: boolean;
   auto_approve_series?: boolean;
-  auto_approve_book?: boolean;
 }
 
 // A Plex account kept from signing in (it would otherwise make a new account each time).
@@ -1887,12 +1706,8 @@ export interface JellyfinBlock {
   at: string;
 }
 
-// What deleting a user takes with them — counts only, never which books (privacy rule).
+// What deleting a user takes with them — counts only.
 export interface UserImpact {
-  places: number;
-  listening_hours: number;
-  bookmarks: number;
-  devices: number;
   requests: number;
   sessions: number;
   push_subscriptions: number;
@@ -2094,167 +1909,6 @@ export interface Series {
 // One episode's in-flight download, from the light poll the series page runs while
 // something downloads (GET /series/{id}/downloads).
 export interface SeriesEpisodeDownload { season: number; episode: number; state: string; progress: number; hash?: string }
-// --- Books ---
-export type BookSource = "openlibrary" | "hardcover";
-export interface BookUpgradeStatus {
-  running: boolean; total: number; done: number; upgraded: number; flagged: number; unmatched: number;
-  started_at?: number; ended_at?: number; error?: string;
-  notes?: string[]; // why the first few books didn't match
-  left?: { id: number; title: string; author?: string; reason: string; flagged?: boolean }[]; // every book left as it was, flagged duplicates included
-}
-export interface BookSweepStatus {
-  running: boolean; total: number; done: number; grabbed: number; skipped: number;
-  started_at?: number; ended_at?: number;
-  notes?: string[]; // the first few books nothing was found for
-}
-export interface BookLookup {
-  key: string;
-  title: string;
-  author: string;
-  year: number;
-  cover_url?: string;
-}
-export interface BookFile {
-  path: string;
-  format: string;
-  size_bytes: number;
-  file_count: number;
-  /** The ebook on the book page: Send to Kindle's email takes this format (EPUB, PDF). */
-  kindle?: boolean;
-}
-export interface BookFileEntry {
-  name: string;
-  size_bytes: number;
-}
-export interface Book {
-  id: number;
-  ol_key: string;
-  title: string;
-  author: string;
-  /** The author row the author string means (lib/bookAuthorApi.ts); absent = not linked. */
-  author_id?: number;
-  year: number;
-  /** Learned from the release that matched this book; position 0 = number unknown. */
-  series_name?: string;
-  series_position?: number;
-  cover_url?: string;
-  description?: string;
-  subjects?: string[];
-  monitored: boolean;
-  quality_profile: string;
-  ebook?: BookFile;
-  audiobook?: BookFile;
-  has_file: boolean;
-  want_ebook: boolean;
-  want_audiobook: boolean;
-  added_at?: string;
-  /** Extra audiobooks beyond the standard one — a full-cast production, another narrator. */
-  audio_versions?: AudioVersion[];
-  /** Where the metadata came from, with a link to the book there. Detail endpoints only;
-   *  absent when the key is from no known catalogue. */
-  catalogue?: CatalogueRef;
-  /** Catalogue keys the book had before its current one (book_keys). Detail endpoints
-   *  only; a card carrying any of them is this book. */
-  aliases?: BookKeyAlias[];
-  /** The search ladder: when the sweep last looked (RFC3339; absent = never), how many
-   *  searches in a row found nothing, and when it looks next (absent when nothing is
-   *  wanted, it isn't monitored, or it's due now). */
-  last_search_at?: string;
-  search_misses: number;
-  next_search_at?: string;
-  /** The day the book comes out (YYYY-MM-DD) when the catalogue says; not searched before it. */
-  release_date?: string;
-  /** Who reads the standard audiobook, typed by hand; absent = the audio files' tags say. */
-  audiobook_narrator?: string;
-}
-export interface CatalogueRef {
-  name: "Hardcover" | "Open Library" | "Google Books";
-  url: string;
-}
-export interface BookKeyAlias {
-  key: string;
-  /** The catalogue that issued it, or "request" for a key learned from a request. */
-  source: "openlibrary" | "hardcover" | "google" | "request";
-  added_at?: string;
-}
-// AudioVersion is one extra audiobook of a book. A release belongs to it when it
-// mentions one of its terms; with no terms it is filled by hand only.
-export interface AudioVersion {
-  id: number;
-  book_id: number;
-  label: string;
-  terms: string[];
-  monitored: boolean;
-  file?: BookFile;
-  added_at?: string;
-  /** Who reads it, typed by hand; absent = the audio files' tags say. */
-  narrator?: string;
-}
-export interface BookImportCandidate {
-  path: string;
-  filename: string;
-  edition: "ebook" | "audiobook";
-  format: string;
-  size_bytes: number;
-}
-// Books Discover (Open Library browse/search + author catalogues)
-export interface BookDiscoverCard {
-  key: string;
-  title: string;
-  author: string;
-  year: number;
-  cover_url?: string;
-  // Catalogue signals (Hardcover only): rating out of 5, how many rated, how many shelved, top genres.
-  rating?: number;
-  ratings?: number;
-  readers?: number;
-  genres?: string[];
-  series_name?: string;
-  series_position?: number;
-  in_library: boolean;
-  has_file: boolean;
-  requested: boolean;
-  request_status?: "pending" | "approved" | "declined" | "";
-  /** Per format, for a book in the library: what's on disk and what its profile wants;
-   *  and what the request badging the card asked for. */
-  has_ebook?: boolean;
-  has_audiobook?: boolean;
-  want_ebook?: boolean;
-  want_audiobook?: boolean;
-  request_formats?: "ebook" | "audiobook" | "both" | "";
-}
-export interface BookAuthor {
-  key: string;
-  name: string;
-  work_count: number;
-  top_work?: string;
-  birth_date?: string;
-  image_url?: string; // Hardcover authors have photos
-  bio?: string;
-}
-export interface BookMeta {
-  key: string;
-  title: string;
-  author: string;
-  year: number;
-  cover_url?: string;
-  description?: string;
-  subjects?: string[];
-  pages?: number;
-  rating?: number;
-  ratings?: number;
-  readers?: number;
-  genres?: string[];
-  series_name?: string;
-  series_position?: number;
-  /** The day it comes out (YYYY-MM-DD), when the catalogue knows it. */
-  release_date?: string;
-  /** Detail only: the editions of the owner's default book profile, where the request
-   *  control starts when the viewer hasn't picked before. */
-  default_book_formats?: "ebook" | "audiobook" | "both";
-}
-export interface BookRecommendedRow { title: string; seed: string; seed_id: number; books: BookDiscoverCard[] }
-
 export interface SeriesImportCandidate {
   path: string;
   filename: string;
@@ -2324,262 +1978,6 @@ export interface QueueItem {
 }
 
 export type NetworkPreference = "best" | "usenet" | "torrent";
-
-// --- Subtitles ---
-export interface SubtitleSettings {
-  movies_auto: boolean;
-  series_auto: boolean;
-  languages: string[]; // the Default profile's languages (the kept languages)
-  keep_languages?: string[]; // every language any profile wants: what Convert's "Same as Subtitles" keeps
-  provider_ready: boolean;
-  can_download: boolean;
-  ai_ready: boolean;
-  ai_backend: string; // "sycl" | "vulkan" | "cpu" | "" until the first run
-  ai_note: string; // why the Intel oneAPI build was set aside, when it was ("" otherwise)
-  quota_remaining: number; // -1 = unknown
-  quota_reset_at: number; // unix seconds; 0 = not paused
-  pending: number;
-  min_score: number; // 0-100: what a download without a hash match must score
-  // What OpenSubtitles actually said; only "ok" means a login has worked.
-  provider_state: SubtitleProviderState;
-  provider_detail: string;
-  vip: boolean;
-  allowed_downloads: number; // per day; -1 = unknown
-  upgraded_week?: number; // weak subtitles the daily upgrade replaced in the last 7 days
-  stale?: boolean; // the Library/Overview figures were counted for other languages; a recount is under way
-}
-export type SubtitleProviderState = "not_configured" | "needs_account" | "unverified" | "ok" | "auth_failed" | "quota_spent" | "rate_limited";
-export interface SubTrack { index: number; codec: string; lang: string; text: boolean; title?: string; forced?: boolean; sdh?: boolean; default?: boolean }
-export interface SubLangStatus {
-  lang: string; have: boolean; source?: "extract" | "ocr" | "download" | "ai"; fallback?: "ai"; orphan?: boolean;
-  variant?: "forced"; // a profile's forced want; absent = the full subtitle
-  // Set when the sweep is leaving this missing language alone for now (backoff).
-  reason?: SubtitleResult;
-  next_retry_at?: number; // unix seconds; absent = waiting on retry_on, or a manual retry
-  retry_on?: string; // CSV: creds | model | langs
-  health?: SubLangHealth; // present languages: how well it lines up with the speech
-  file?: string; // present languages: the sidecar's file name
-}
-export type SubHealthState = "ok" | "uncertain" | "bad" | "unknown" | "unchecked";
-export interface SubLangHealth {
-  state: SubHealthState;
-  score?: number; // sync confidence 0-100, when checked
-  offset_ms?: number; // how late it ran when checked (+ = late)
-  shift_ms?: number; // the shift Arrmada applied
-  stretched?: boolean; // a frame-rate correction was applied too
-  checked_at?: number; // unix seconds
-  source?: string;
-  note: string; // "shifted −3.0 s · checked 2026-10-12", "not checked"
-}
-export interface SubHealth { state: SubHealthState; score?: number; notes?: string[] }
-export interface SubFileEntry {
-  kind: "movie" | "episode";
-  movie_id?: number; series_id?: number; season?: number; episode?: number;
-  title: string; year?: number; poster_url?: string; path: string; duration_sec?: number;
-  audio_langs?: string[]; embedded: SubTrack[]; external: string[];
-  languages: SubLangStatus[]; health?: SubHealth; missing: number;
-  orphans?: { name: string; lang?: string; variant?: string }[]; // movies: subtitles paired with no video
-  profile_id?: number; // the language profile the title is pinned to; absent = Default
-}
-export interface SubtitleJob {
-  id: number; kind: "movie" | "episode"; movie_id?: number; series_id?: number; season?: number; episode?: number;
-  title: string; state: "queued" | "running" | "done" | "skipped" | "failed" | "cancelled"; note?: string; at: number;
-  progress?: number; // 0-100 during an AI run
-  stage?: string;    // what a running job is doing
-  started_at?: number; // unix seconds the worker picked it up
-  redo?: boolean; // replacing the sidecars already there
-  mode?: string; // "next" | "ai" | "extract" for a one-language redo; "repair-forced"; "upgrade" for the daily upgrade
-  priority: number; // 0 import · 1 manual · 2 sweep — the worker takes the lowest first
-  run_id?: string; // this run's rows in GET /subtitles/history?run_id=
-  outcomes?: SubtitleOutcome[]; // what each rung did per language, in the order tried
-  lane?: "fast" | "gpu"; // fast: extract + download · gpu: whisper
-  langs?: string[]; // only these languages (a GPU job carries what the fast lane couldn't make)
-  audio_sec?: number; // the file's running time, once known
-  finished_at?: number; // unix seconds
-}
-// One rung's typed result for one language (internal/subtitles/ledger.go Outcome).
-export type SubtitleRung = "extract" | "opensubtitles" | "ai" | "upgrade" | "repair";
-export type SubtitleResult =
-  | "ok" | "empty" | "extract_failed" | "no_match" | "quota" | "rate_limited" | "auth_failed" | "provider_error"
-  | "below_score" | "out_of_sync" | "model_missing" | "ai_failed" | "no_audio" | "impossible" | "ocr_needed" | "cancelled";
-export interface SubtitleOutcome { lang: string; variant?: string; rung: SubtitleRung; result: SubtitleResult; detail?: string; score?: number; reasons?: string[] }
-// A row of GET /api/v1/subtitles/history (newest first; page with ?before=next_before).
-export interface SubtitleAttempt {
-  id: number; run_id: string; media_key: string; video_path: string; lang: string; variant?: string;
-  rung: SubtitleRung; outcome: SubtitleResult; detail?: string; at: number;
-}
-// SubtitleCoverage is the Overview's totals, from the last library pass (not a live walk).
-export interface SubtitleCoverage {
-  files: number; covered: number; missing: number;
-  movies: { files: number; covered: number; missing: number };
-  tv: { files: number; covered: number; missing: number };
-  scanned_at: number; // 0 until the first pass completes
-  scanning: boolean;
-  stale?: boolean; // counted for a different set of kept languages; a recount is under way
-}
-export interface WhisperModel { name: string; label: string; size_mb: number; present: boolean; downloading: boolean }
-export interface WhisperStatus {
-  binary_ready: boolean; ready: boolean; models: WhisperModel[];
-  waiting?: number; // file languages parked until a model is downloaded (model_missing)
-}
-
-// --- Convert ---
-export interface ConvertEncoder { codec: string; name: string; kind: string; label: string; hardware: boolean; available: boolean }
-export interface ConvertMediaInfo {
-  container: string; video_codec: string; width: number; height: number; resolution: string; hdr: string; dv_base?: string;
-  bitrate_kbps: number; frame_rate: number; duration_sec: number; size_bytes: number; audio_tracks: number; sub_tracks: number; ten_bit: boolean;
-}
-export interface ConvertSkipped {
-  key: string; kind: string; reason: string; permanent: boolean; updated_at: string;
-  retry_after: number; attempts: number; // unix seconds (0 = no wait); same-kind repeats in a row
-  media_kind: string; movie_id?: number; version_id?: number; series_id?: number; season: number; episode: number; title: string;
-}
-
-export interface ConvertBlocked {
-  key: string; kind: string; movie_id?: number; version_id?: number; series_id?: number; season: number; episode: number;
-  title: string; count: number; last_error: string; updated_at: string;
-}
-
-export interface ConvertMediaStats {
-  files: number; convertible: number; total_bytes: number; est_bytes: number; convertible_bytes: number; reclaimable: number;
-  skipped: number;
-  hdr10: number; hdr10_plus: number; dolby_vision: number; hlg: number;
-  h264: number; hevc: number; av1: number; other: number;
-  // Every Dolby Vision file the Dolby Vision choice applies to, convertible or not.
-  dolby_vision_files: number;
-}
-// A book's series as the library can see it: the entries you own, in reading order, and
-// the numbered holes between them.
-export interface BookSeriesEntry {
-  book_id?: number; title: string; position?: number; has_file: boolean; missing: boolean;
-  // From the catalogue's listing: a missing entry carries the key it can be added under.
-  key?: string; author?: string; year?: number; cover_url?: string;
-}
-export interface BookSeries { name: string; entries: BookSeriesEntry[]; gaps: number; source?: "catalogue" | "library"; total?: number; key?: string }
-
-export interface ConvertLibraryStats { movies: ConvertMediaStats; tv: ConvertMediaStats; total: ConvertMediaStats; as_of?: number }
-
-export interface ConvertSeriesRollup {
-  series_id: number;
-  title: string;
-  year?: number;
-  poster_url?: string;
-  files: number;
-  convertible: number;
-  reencode: number;
-  tidy_only: number;
-  total_bytes: number;
-  est_bytes: number;
-  save_bytes: number;
-}
-
-export interface ConvertNeeds { video: boolean; subs: boolean; audio: boolean; why?: string; save: number; worth: boolean; measured?: boolean }
-// version_id/version_label: an extra version track of the movie (absent = its default file);
-// title stays the film's own.
-export interface ConvertCandidate { kind: "movie" | "episode"; key: string; movie_id?: number; series_id?: number; season?: number; episode?: number; title: string; year?: number; poster_url?: string; path: string; info?: ConvertMediaInfo; candidate: boolean; worth: boolean; save_bytes: number; needs: ConvertNeeds; est_bytes: number; tracks?: string; version_id?: number; version_label?: string;
-  revert_history_id?: number /* its conversion can still be reverted (the original is in the hold) */ }
-export interface ConvertJob {
-  id: number; key: string; kind?: string; movie_id?: number; version_id?: number; series_id?: number; season?: number; episode?: number; title: string;
-  state: "preparing" | "testing" | "encoding" | "verifying" | "replacing" | "done" | "failed" | "skipped" | "cancelled";
-  progress: number; fps: number; speed_x: number; duration_sec?: number; encoder: string; codec?: string;
-  src_bytes: number; out_bytes: number; ssim?: number; note?: string; requested: boolean; paused?: string;
-  started_at: number; finished_at?: number;
-}
-export interface ConvertTrackDecision {
-  type: "audio" | "subtitle"; index: number; codec: string; lang?: string; title?: string; channels?: number;
-  forced?: boolean; image?: boolean; keep: boolean; reason?: string;
-}
-export type ConvertHistoryOutcome = "in_progress" | "done" | "failed" | "skipped" | "cancelled";
-// One row of the conversion ledger (GET /convert/history). src_info/out_info only on the single-row read.
-export interface ConvertHistoryEntry {
-  id: number; key: string; kind: "movie" | "episode"; movie_id?: number; version_id?: number; series_id?: number; season: number; episode?: number; title: string;
-  outcome: ConvertHistoryOutcome; outcome_kind?: string; note?: string; requested: boolean;
-  src_path?: string; src_release?: string; src_size: number; src_spec?: string;
-  out_path?: string; out_size: number; out_spec?: string; codec?: string; crf?: number; encoder?: string; crop?: string;
-  ssim_mean?: number; ssim_min?: number; ssim_windows?: number[]; vmaf_mean?: number; // vmaf_mean: advisory, only with a libvmaf ffmpeg
-  kept_tracks?: ConvertTrackDecision[]; dropped_tracks?: ConvertTrackDecision[]; warnings?: string[]; reclaim_deferred?: boolean;
-  started_at: number; finished_at?: number; encode_secs?: number; repeats?: number; poster_url?: string;
-  // The originals hold: where the original waits and until when, and what became of it.
-  hold_path?: string; hold_until?: number; hold_state?: ConvertHoldState; released_at?: number; reverted_at?: number;
-  src_info?: ConvertMediaInfo; out_info?: ConvertMediaInfo;
-}
-export type ConvertHoldState = "" | "held" | "released" | "reverted" | "missing";
-// What the startup self-check found for one library folder's originals hold.
-export interface ConvertHoldCheck { root: string; label: string; instant: boolean; err?: string }
-// What the originals hold keeps (GET /convert/hardware → hold). budget_bytes 0 = no limit.
-export interface ConvertHoldStats {
-  held_bytes: number; held_saving_bytes: number; held_count: number; next_release_at?: number; budget_bytes: number; hold_days: number;
-}
-export interface ConvertUpNext {
-  key: string; title: string; kind: string; video: boolean; saving: number; size: number; tracks: string; reason: string; codec: string; current: string;
-  version_id?: number; version_label?: string;
-  eta_sec?: number; nights?: number; // the time forecast: seconds, and nights of the encode hours
-}
-export interface ConvertRequest { key: string; title: string; requested_at: number }
-// GET /api/v1/convert/devices: what each Plex player did with HEVC, HEVC 10-bit and AV1 in
-// the last 90 days of recorded plays (Insights). "yes" = played as it was at least once,
-// "no" = only ever had its video transcoded, "unknown" = never played that format.
-export interface ConvertDeviceCodec { state: "yes" | "no" | "unknown"; direct: number; transcoded: number }
-export interface ConvertDevice {
-  /** The server whose app it is: the same TV plays through Plex's app and Jellyfin's. */
-  server?: InsightsServer;
-  product: string; platform: string; player: string; last_seen: number; plays: number;
-  hevc: ConvertDeviceCodec; hevc10: ConvertDeviceCodec; av1: ConvertDeviceCodec;
-}
-export interface ConvertDevices { monitoring: boolean; since: number; devices: ConvertDevice[] }
-export interface ConvertStatus {
-  state: "working" | "starting" | "paused" | "waiting" | "off" | "done"; message: string;
-  auto: boolean; window?: string; watching: boolean;
-  requests: ConvertRequest[]; up_next: ConvertUpNext[]; remaining: number;
-  /** Files that would convert but sit in Problems (skipped or failing) — not in remaining. */
-  problems?: number;
-  // The time forecast: the remaining list's encoding time (spread over the conversions that
-  // run at once) and in nights of the hours; the encoding a restart now would lose.
-  backlog_sec?: number; backlog_nights?: number; in_flight_secs?: number;
-}
-export interface ConvertSettings {
-  auto: boolean; hours_start: string; hours_end: string; allow_av1: boolean; use_gpu: boolean; pause_watching: boolean;
-  keep_audio_langs: string; keep_original_lang: boolean; drop_commentary: boolean; keep_sub_langs: string;
-  image_subs: "keep" | "when_text" | "remove"; tidy_tracks: boolean; crop: boolean;
-  hold_days: number; hold_max_gb: number;
-  // Dolby Vision files: drop the layer and keep the HDR10/HLG base, leave them alone, or
-  // (a preview, needs dovi_tool) convert and keep the layer as profile 8.1.
-  dolby_vision: "drop" | "skip" | "keep";
-  /** dovi_tool is installed, so "keep" can be chosen. */
-  dovi_tool?: boolean;
-  /** 8-bit SDR sources: "always" written 10-bit, or "match_source" (kept 8-bit). */
-  ten_bit?: "always" | "match_source";
-  /** Encode long CPU films in pieces a restart can't throw away (off by default). */
-  resumable?: boolean;
-  scratch_dir: string; vaapi_device: string; cpu_cores: number; workers: number; scan_at: string;
-  server_time: string; server_tz: string; plex_watching_known: boolean; can_pause: boolean;
-  has_gpu: boolean; gpu_does_av1: boolean; hdr10plus_tool: boolean;
-}
-export interface ConvertTrialSide { codec: string; encoder: string; bytes: number; ssim: number; est_bytes: number }
-export interface ConvertTrialResult { key: string; title: string; src_bytes: number; clips: number; seconds: number; hevc: ConvertTrialSide; av1: ConvertTrialSide; pick: string; why: string; files?: string[] }
-export interface ConvertCompareStatus { running: boolean; key?: string; title?: string; started?: number; result?: ConvertTrialResult; error?: string }
-// One file's conversion plan (GET /convert/plan?key=): built from the index by the runner's own
-// decision code, so it is what a conversion would do. to_codec "" = the picture is copied.
-export interface ConvertPlanVideo {
-  from_codec: string; from_res: string; from_hdr: string; from_bits: number;
-  to_codec?: string; to_bits?: number; to_hdr?: string; crf?: number;
-  est_bytes: number; measured?: boolean; why?: string; codec_note?: string; crop_note?: string; hdr_note?: string;
-}
-export interface ConvertPlan {
-  key: string; kind: "movie" | "episode"; title: string; poster_url?: string; size_bytes: number; needs: ConvertNeeds;
-  video: ConvertPlanVideo; audio: ConvertTrackDecision[]; subs: ConvertTrackDecision[];
-  container: { from: string; to: string }; warnings: string[]; eta_sec: number | null;
-}
-// What switching automatic conversion on would do (GET /convert/auto-preview), or converting
-// one show or season now (?series=&season=), counted from the runner's cached candidates.
-export interface ConvertAutoPreview {
-  files: number; reencode: number; bytes: number; est_bytes: number;
-  dv_files: number; cc_files: number; image_sub_tracks: number; filtered_audio_tracks: number;
-  container_changes: number; forced_tracks: number; as_of: number;
-}
-// The answer to a Convert-now request: starting now, or its place among the waiting requests
-// (1 = next) and what it waits behind; reason when nothing can start (someone is watching).
-export interface ConvertRequestResult { requested: string; starting?: boolean; position?: number; ahead?: string; reason?: string }
 
 // Insights (Plex watch monitoring).
 export interface PlexLibrary { key: string; title: string; type: string }
@@ -2970,53 +2368,6 @@ export const api = {
   importMovieFolder: (folder: string, tmdb_id: number) =>
     req<{ status: string }>("/api/v1/movies/import", { method: "POST", body: JSON.stringify({ folder, tmdb_id }) }),
   libraryPaths: () => req<LibraryPaths>("/api/v1/system/library"),
-  audioServer: () => req<AudioServerAdmin>("/api/v1/audioserver"),
-  setAudioServer: (body: { enabled?: boolean; public_url?: string; trace_hours?: number }) => req<AudioServerAdmin>("/api/v1/audioserver", { method: "PUT", body: JSON.stringify(body) }),
-  setAudioUser: (id: number, allowed: boolean) => req<AudioServerAdmin>(`/api/v1/audioserver/users/${id}`, { method: "PUT", body: JSON.stringify({ allowed }) }),
-  revokeAudioDevice: (id: string) => req<void>(`/api/v1/audioserver/devices/${encodeURIComponent(id)}`, { method: "DELETE" }),
-  audioListening: (days = 30, userId?: number) => req<AudioListening>(`/api/v1/audioserver/listening?days=${days}${userId ? `&user_id=${userId}` : ""}`),
-  audioImportUpload: async (file: File): Promise<AudioImportPreview> => {
-    const fd = new FormData();
-    fd.append("file", file);
-    // Through send, not req: the browser sets the multipart Content-Type itself.
-    const res = await send("/api/v1/audioserver/import", { method: "POST", body: fd });
-    return res.json();
-  },
-  audioImportApply: (userMap: Record<string, number>) => req<AudioImportResult>("/api/v1/audioserver/import/apply", { method: "POST", body: JSON.stringify({ user_map: userMap }) }),
-  myAudio: () => req<MyAudio>("/api/v1/me/audio"),
-  setAudioPassword: (password: string, signOutDevices: boolean) => req<MyAudio>("/api/v1/me/audio/password", { method: "PUT", body: JSON.stringify({ password, sign_out_devices: signOutDevices }) }),
-  removeAudioPassword: () => req<MyAudio>("/api/v1/me/audio/password", { method: "DELETE" }),
-  myAudioListening: (days = 30) => req<AudioListening>(`/api/v1/me/audio/listening?days=${days}`),
-  acceptAudioJump: (item: string) => req<{ position: number }>("/api/v1/me/audio/accept", { method: "POST", body: JSON.stringify({ item }) }),
-  revokeMyDevice: (id: string) => req<void>(`/api/v1/me/audio/devices/${encodeURIComponent(id)}`, { method: "DELETE" }),
-  audioHistory: (item: string) => req<{ history: AudioHistoryEntry[] }>(`/api/v1/me/audio/history?item=${encodeURIComponent(item)}`),
-  restoreAudioPlace: (item: string, historyId: number) => req<{ position: number }>("/api/v1/me/audio/restore", { method: "POST", body: JSON.stringify({ item, history_id: historyId }) }),
-  audioShelves: () => req<{ shelves: AudioShelf[] }>("/api/v1/me/audio/shelves"),
-  audioLibrary: (o: { q?: string; sort?: AudioLibrarySort; filter?: AudioLibraryFilter; page?: number; limit?: number } = {}) => {
-    const qs = new URLSearchParams();
-    for (const [k, v] of Object.entries(o)) if (v !== undefined && v !== "") qs.set(k, String(v));
-    const s = qs.toString();
-    return req<AudioLibraryPage>(`/api/v1/me/audio/library${s ? `?${s}` : ""}`);
-  },
-  audioItem: (key: string) => req<AudioItemDetail>(`/api/v1/me/audio/items/${encodeURIComponent(key)}`),
-  audioPlay: (key: string, device: { device_id?: string; device_name?: string } = {}) =>
-    req<AudioPlayStart>(`/api/v1/me/audio/items/${encodeURIComponent(key)}/play`, { method: "POST", body: JSON.stringify(device) }),
-  audioSync: (sid: string, r: AudioSyncReport) =>
-    req<AudioSyncResult>(`/api/v1/me/audio/sessions/${encodeURIComponent(sid)}/sync`, { method: "POST", body: JSON.stringify(r) }),
-  audioClose: (sid: string, r: AudioSyncReport) =>
-    req<AudioSyncResult>(`/api/v1/me/audio/sessions/${encodeURIComponent(sid)}/close`, { method: "POST", body: JSON.stringify(r) }),
-  /** Close from pagehide/visibilitychange, when a fetch may be cut off: true if the browser queued it. */
-  audioCloseBeacon: (sid: string, r: AudioSyncReport): boolean =>
-    typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function" &&
-    navigator.sendBeacon(`/api/v1/me/audio/sessions/${encodeURIComponent(sid)}/close`, new Blob([JSON.stringify(r)], { type: "application/json" })),
-  audioBookmarks: (key: string) => req<{ bookmarks: AudioBookmark[] }>(`/api/v1/me/audio/items/${encodeURIComponent(key)}/bookmarks`),
-  addAudioBookmark: (key: string, time: number, title = "") =>
-    req<AudioBookmark>(`/api/v1/me/audio/items/${encodeURIComponent(key)}/bookmarks`, { method: "POST", body: JSON.stringify({ time, title }) }),
-  deleteAudioBookmark: (key: string, time: number) =>
-    req<void>(`/api/v1/me/audio/items/${encodeURIComponent(key)}/bookmarks/${Math.floor(time)}`, { method: "DELETE" }),
-  undiscardAudio: (item: string) => req<{ position: number }>("/api/v1/me/audio/undiscard", { method: "POST", body: JSON.stringify({ item }) }),
-  dismissAudioOffer: (item: string, historyId: number) => req<void>("/api/v1/me/audio/dismiss", { method: "POST", body: JSON.stringify({ item, history_id: historyId }) }),
-  audiobookDownloadURL: (bookId: number, versionId = 0) => `/api/v1/books/${bookId}/audiobook${versionId ? `?version=${versionId}` : ""}`,
   setupState: () => req<SetupState>("/api/v1/setup"),
   completeSetup: () => req<{ status: string }>("/api/v1/setup/complete", { method: "POST" }),
   restartApp: () => req<{ status: string }>("/api/v1/system/restart", { method: "POST" }),
@@ -3040,16 +2391,6 @@ export const api = {
     req<{ status: string }>(`/api/v1/movies/${id}/grabtorrent`, { method: "POST", body: JSON.stringify({ torrent, filename, title, version_id: versionId }) }),
   grabSeriesTorrent: (id: number, torrent: string, filename: string, title: string) =>
     req<{ status: string }>(`/api/v1/series/${id}/grabtorrent`, { method: "POST", body: JSON.stringify({ torrent, filename, title }) }),
-  bookSeries: (id: number) => req<BookSeries>(`/api/v1/books/${id}/series`),
-  addMissingInSeries: (id: number, quality_profile?: string) =>
-    req<{ added: number; skipped: number }>(`/api/v1/books/${id}/series/add-missing`, { method: "POST", body: JSON.stringify({ quality_profile: quality_profile ?? "" }) }),
-  bookAuthorDetail: (key: string) => req<BookAuthor>(`/api/v1/books/discover/authors/${encodeURIComponent(key)}`),
-  bookDiscoverSimilar: (key: string) => req<{ books: BookDiscoverCard[] }>(`/api/v1/books/discover/similar?key=${encodeURIComponent(key)}`).then((r) => r.books),
-  bookAuthorImages: () => req<{ images: Record<string, string>; pending: number }>("/api/v1/books/authors/images"),
-  backfillBookSeries: () =>
-    req<{ status: string } & JobRef>("/api/v1/books/series-backfill", { method: "POST" }),
-  grabBookTorrent: (id: number, torrent: string, filename: string, title: string, versionId?: number) =>
-    req<{ status: string }>(`/api/v1/books/${id}/grabtorrent`, { method: "POST", body: JSON.stringify({ torrent, filename, title, version_id: versionId || 0 }) }),
   deleteMovie: (id: number, deleteFiles?: boolean, cancelDownloads?: boolean) => {
     const q = new URLSearchParams();
     if (deleteFiles) q.set("delete_files", "true");
@@ -3105,10 +2446,6 @@ export const api = {
   // background — the response only reports how many were queued.
   refreshAllSeries: () => req<{ queued: number } & JobRef>(`/api/v1/series/refresh`, { method: "POST" }),
   // Requests
-  /** listen: this person may play audiobooks in Arrmada (the audiobook server is on and they're allowed). */
-  myBooks: () => req<{ books: MyBook[]; requests: MyRequest[]; listen?: boolean; queue_known?: boolean }>("/api/v1/me/books"),
-  // A plain link, not a fetch: the browser saves the file with the server's filename.
-  ebookDownloadURL: (bookId: number) => `/api/v1/books/${bookId}/ebook`,
   // Without a section: every request the viewer may see, newest first. With one: a page
   // of that section (default 50), plus counts for every section.
   // ready_within_days keeps ready requests stamped in the last N days; mine=1 narrows staff
@@ -3134,8 +2471,7 @@ export const api = {
   // title resurrects it as pending. A series request may name `seasons` (empty or absent:
   // the whole show); seasons already covered by another request are followed instead,
   // and asking only for seasons already on disk answers 409.
-  // formats (books): read / listen / both; left out, the server uses the owner's default.
-  createRequest: (body: { media_type: "movie" | "series" | "book"; tmdb_id?: number; ol_key?: string; author?: string; title: string; year: number; poster_url?: string; overview?: string; quality_profile?: string; note?: string; formats?: "ebook" | "audiobook" | "both"; seasons?: number[] }) =>
+  createRequest: (body: { media_type: "movie" | "series"; tmdb_id?: number; title: string; year: number; poster_url?: string; overview?: string; quality_profile?: string; note?: string; seasons?: number[] }) =>
     req<{ request: MediaRequest; subscribed: boolean } | MediaRequest>("/api/v1/requests", { method: "POST", body: JSON.stringify(body) })
       .then((r): { request: MediaRequest; subscribed: boolean } => ("request" in r ? r : { request: r, subscribed: false })),
   // body.quality_profile: "" or absent keeps the request's own profile (or the default).
@@ -3199,90 +2535,6 @@ export const api = {
   discoverBrowse: (query: string, page: number) =>
     req<DiscoverPage>(`/api/v1/discover/browse?${query}${query ? "&" : ""}page=${page}`),
 
-  books: () => req<{ books: Book[]; metadata_available: boolean; metadata_source?: BookSource; upgradable?: number }>("/api/v1/books"),
-  startBookUpgrade: () => req<{ started: boolean; status: BookUpgradeStatus } & JobRef>("/api/v1/books/upgrade", { method: "POST" }),
-  bookUpgradeStatus: () => req<BookUpgradeStatus>("/api/v1/books/upgrade"),
-  // source: "openlibrary" asks Open Library explicitly ("show Open Library results too");
-  // the response says which catalogue the default search uses.
-  lookupBooks: (q: string, source?: "openlibrary" | "hardcover") =>
-    req<{ results: BookLookup[]; source: BookSource }>(`/api/v1/books/lookup?q=${encodeURIComponent(q)}${source ? `&source=${source}` : ""}`),
-  addBook: (body: { ol_key: string; quality_profile?: string; monitored?: boolean; search_on_add?: boolean; title?: string; author?: string; year?: number; cover_url?: string }) =>
-    req<Book>("/api/v1/books", { method: "POST", body: JSON.stringify(body) }),
-  bookDetail: (id: number) => req<Book>(`/api/v1/books/${id}`),
-  searchBook: (id: number) => req<{ status: string; started_at_ms?: number } & JobRef>(`/api/v1/books/${id}/search`, { method: "POST" }),
-  refreshBook: (id: number) => req<Book>(`/api/v1/books/${id}/refresh`, { method: "POST" }),
-  bookReleases: (id: number) => req<ReleaseList>(`/api/v1/books/${id}/releases`),
-  grabBook: (id: number, body: { token: string; version_id?: number }) =>
-    req<{ status: string }>(`/api/v1/books/${id}/grab`, { method: "POST", body: JSON.stringify(body) }),
-  bookManualImportList: (id: number) =>
-    req<ManualImportList<BookImportCandidate>>(`/api/v1/books/${id}/manualimport`),
-  bookManualImport: (id: number, path: string, versionId?: number) =>
-    req<{ status: string }>(`/api/v1/books/${id}/manualimport`, { method: "POST", body: JSON.stringify({ path, version_id: versionId || 0 }) }),
-  addAudioVersion: (id: number, body: { label: string; terms: string[]; monitored: boolean }) =>
-    req<AudioVersion>(`/api/v1/books/${id}/audio-versions`, { method: "POST", body: JSON.stringify(body) }),
-  updateAudioVersion: (id: number, vid: number, body: { label?: string; terms?: string[]; monitored?: boolean; narrator?: string }) =>
-    req<AudioVersion>(`/api/v1/books/${id}/audio-versions/${vid}`, { method: "PUT", body: JSON.stringify(body) }),
-  deleteAudioVersion: (id: number, vid: number, deleteFiles: boolean) =>
-    req<void>(`/api/v1/books/${id}/audio-versions/${vid}${deleteFiles ? "?delete_files=true" : ""}`, { method: "DELETE" }),
-  deleteAudioVersionFile: (id: number, vid: number) =>
-    req<{ status: string }>(`/api/v1/books/${id}/audio-versions/${vid}/file`, { method: "DELETE" }),
-  searchAudioVersion: (id: number, vid: number) =>
-    req<{ grabbed: boolean; message?: string; outcome?: SearchOutcome }>(`/api/v1/books/${id}/audio-versions/${vid}/search`, { method: "POST" }),
-  renameBook: (id: number) => req<{ renamed: number }>(`/api/v1/books/${id}/rename`, { method: "POST" }),
-  deleteBookFile: (id: number, edition: "ebook" | "audiobook") =>
-    req<{ status: string }>(`/api/v1/books/${id}/file?edition=${edition}`, { method: "DELETE" }),
-  scanBooks: () => req<{ status: string } & JobRef>("/api/v1/books/scan", { method: "POST" }),
-  // The manual sweep: every monitored book missing an edition its profile wants.
-  startBookSweep: () => req<{ started: boolean; status: BookSweepStatus } & JobRef>("/api/v1/books/search-missing", { method: "POST" }),
-  bookSweepStatus: () => req<BookSweepStatus>("/api/v1/books/search-missing"),
-  bookEditionFiles: (id: number, edition: "ebook" | "audiobook") =>
-    req<{ files: BookFileEntry[] }>(`/api/v1/books/${id}/edition-files?edition=${edition}`).then((r) => r.files),
-  mergeAudiobook: (id: number) =>
-    req<{ status: string } & JobRef>(`/api/v1/books/${id}/merge-audiobook`, { method: "POST" }),
-  bookCovers: (id: number) =>
-    req<{ covers: string[] }>(`/api/v1/books/${id}/covers`).then((r) => r.covers),
-  setBookCover: (id: number, url: string) =>
-    req<{ cover_url: string }>(`/api/v1/books/${id}/cover`, { method: "PUT", body: JSON.stringify({ url }) }).then((r) => r.cover_url),
-  // Books Discover
-  bookDiscoverBrowse: (kind: "trending" | "new_releases" | "top_rated" | "popular") =>
-    req<{ books: BookDiscoverCard[] }>(`/api/v1/books/discover/browse/${kind}`).then((r) => r.books),
-  bookDiscoverRecommended: () =>
-    req<{ rows: BookRecommendedRow[] }>("/api/v1/books/discover/recommended").then((r) => r.rows),
-  bookDiscoverSearch: (q: string, source?: "openlibrary" | "hardcover") =>
-    req<{ authors: BookAuthor[]; books: BookDiscoverCard[]; source: BookSource }>(`/api/v1/books/discover/search?q=${encodeURIComponent(q)}${source ? `&source=${source}` : ""}`),
-  searchBookAuthors: (q: string) =>
-    req<{ authors: BookAuthor[] }>(`/api/v1/books/discover/authors?q=${encodeURIComponent(q)}`).then((r) => r.authors),
-  addAuthor: (body: { author_key: string; name?: string; quality_profile?: string; monitored?: boolean; search_on_add?: boolean }) =>
-    req<{ added: number; skipped: number; total: number; author_id?: number }>("/api/v1/books/author", { method: "POST", body: JSON.stringify(body) }),
-  bookAuthorWorks: (key: string) =>
-    req<{ author_key: string; books: BookDiscoverCard[] }>(`/api/v1/books/discover/authors/${encodeURIComponent(key)}/works`).then((r) => r.books),
-  bookDiscoverSubject: (name: string) =>
-    req<{ subject: string; books: BookDiscoverCard[] }>(`/api/v1/books/discover/subjects/${encodeURIComponent(name)}`).then((r) => r.books),
-  bookDiscoverDetail: (key: string) =>
-    req<BookMeta>(`/api/v1/books/discover/detail?key=${encodeURIComponent(key)}`),
-  uploadBookCover: async (id: number, file: File): Promise<string> => {
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await send(`/api/v1/books/${id}/cover`, { method: "POST", body: fd });
-    return ((await res.json()) as { cover_url: string }).cover_url;
-  },
-  // Tell the Hardcover re-match to leave a book on its current entry (or to try again).
-  keepBookCatalogue: (id: number, keep: boolean) =>
-    req<{ keep: boolean }>(`/api/v1/books/${id}/keep-catalogue`, { method: "PUT", body: JSON.stringify({ keep }) }),
-  setBookMonitored: (id: number, monitored: boolean) =>
-    req<{ monitored: boolean }>(`/api/v1/books/${id}/monitor`, { method: "PUT", body: JSON.stringify({ monitored }) }),
-  setBookProfile: (id: number, quality_profile: string) =>
-    req<{ quality_profile: string }>(`/api/v1/books/${id}/profile`, { method: "PUT", body: JSON.stringify({ quality_profile }) }),
-  overrideBookMetadata: (id: number, body: { title: string; author: string; year: number; overview: string; cover_url: string; narrator?: string }) =>
-    req<{ status: string }>(`/api/v1/books/${id}/metadata`, { method: "PUT", body: JSON.stringify(body) }),
-  deleteBook: (id: number, deleteFiles?: boolean) =>
-    req<void>(`/api/v1/books/${id}${deleteFiles ? "?delete_files=true" : ""}`, { method: "DELETE" }),
-  bookHistory: (id: number) =>
-    req<{ events: MovieEvent[] }>(`/api/v1/books/${id}/history`).then((r) => r.events),
-  // Re-point a book at a different Open Library work, keeping its files and settings.
-  rematchBook: (id: number, body: { ol_key: string; title: string; author: string; year: number; cover_url: string }) =>
-    req<Book>(`/api/v1/books/${id}/rematch`, { method: "POST", body: JSON.stringify(body) }),
-
   // ---- Music ----
   artists: () => req<{ artists: Artist[] }>("/api/v1/music/artists").then((r) => r.artists ?? []),
   lookupArtists: (q: string) =>
@@ -3304,31 +2556,6 @@ export const api = {
   albumDetail: (id: number) => req<MusicAlbum>(`/api/v1/music/albums/${id}`),
   setAlbumMonitored: (id: number, monitored: boolean) =>
     req<{ monitored: boolean }>(`/api/v1/music/albums/${id}/monitor`, { method: "PUT", body: JSON.stringify({ monitored }) }),
-
-  // Subtitles
-  subtitleSettings: () => req<SubtitleSettings>("/api/v1/subtitles/settings"),
-  updateSubtitleSettings: (body: { movies_auto?: boolean; series_auto?: boolean; languages?: string[]; min_score?: number }) =>
-    req<SubtitleSettings>("/api/v1/subtitles/settings", { method: "PUT", body: JSON.stringify(body) }),
-  subtitleLibrary: () => req<{ items: SubFileEntry[]; scanning?: boolean; stale?: boolean }>("/api/v1/subtitles/library"),
-  subtitleCoverage: () => req<SubtitleCoverage>("/api/v1/subtitles/coverage"),
-  subtitleRescan: () => req<{ started: boolean }>("/api/v1/subtitles/library/rescan", { method: "POST" }),
-  // TV rolled up per show. The flat list is one probed row per episode, which at
-  // library scale is tens of thousands of rows before the page can render.
-  subtitleSeriesGroups: () =>
-    req<{ groups: SubSeriesGroup[]; scanning?: boolean; stale?: boolean }>("/api/v1/subtitles/library?media=tv&group=series"),
-  subtitleSeriesEpisodes: (seriesID: number) =>
-    req<{ items: SubFileEntry[] }>(`/api/v1/subtitles/library?media=tv&series=${seriesID}`).then((r) => r.items),
-  subtitleJobs: () => req<{ jobs: SubtitleJob[] }>("/api/v1/subtitles/jobs").then((r) => r.jobs),
-  subtitleCancelJob: (id: number) => req<{ status: string }>(`/api/v1/subtitles/jobs/${id}/cancel`, { method: "POST" }),
-  subtitleClearQueue: () => req<{ cleared: number }>("/api/v1/subtitles/jobs/clear", { method: "POST" }),
-  subtitleLogs: () => req<{ lines: { at: number; level: string; msg: string }[] }>("/api/v1/subtitles/logs").then((r) => r.lines),
-  // redo: replace the sidecars already there rather than fill in what's missing.
-  subtitleQueueMovie: (id: number, redo = false) => req<SubtitleJob>(`/api/v1/subtitles/library/movies/${id}${redo ? "?redo=1" : ""}`, { method: "POST" }),
-  subtitleQueueEpisode: (seriesID: number, season: number, episode: number, redo = false) => req<SubtitleJob>(`/api/v1/subtitles/library/episodes/${seriesID}/${season}/${episode}${redo ? "?redo=1" : ""}`, { method: "POST" }),
-  subtitleQueueSeries: (seriesID: number) => req<{ queued: number }>(`/api/v1/subtitles/library/series/${seriesID}`, { method: "POST" }),
-  subtitleSweep: (media: "movies" | "tv" = "movies") => req<{ queued: number }>(`/api/v1/subtitles/sweep${media === "tv" ? "?media=tv" : ""}`, { method: "POST" }),
-  subtitleModels: () => req<WhisperStatus>("/api/v1/subtitles/models"),
-  subtitleDownloadModel: (name: string) => req<{ status: string }>(`/api/v1/subtitles/models/${encodeURIComponent(name)}`, { method: "POST" }),
 
   scanSeries: () => req<{ status: string } & JobRef>("/api/v1/series/scan", { method: "POST" }),
   seriesUnmatched: () => req<{ unmatched: UnmatchedFolder[] }>("/api/v1/series/unmatched").then((r) => r.unmatched),
@@ -3558,8 +2785,7 @@ export interface MovieFile {
   duration_min?: number;
   probed?: boolean;
   atmos?: boolean; // Dolby Atmos in any audio track (from the file's own stream profile)
-  subtitles?: string[]; // paired with this file (named for it)
-  orphan_subtitles?: string[]; // in the folder but named for no video — Plex won't show them
+  subtitles?: string[]; // sidecar subtitle files paired with this file (named for it)
   missing: boolean;
 }
 
@@ -3585,16 +2811,6 @@ export interface RankedRelease {
   recommended: boolean;
   blocklisted?: boolean;
   resolves?: string;
-  // Books only:
-  edition?: "ebook" | "audiobook";
-  format?: string;
-  narrator?: string;
-  author?: string;
-  series?: string;
-  language?: string;
-  /** The extra audiobook version this release belongs to (0/absent = standard). */
-  version_id?: number;
-  version?: string;
   // Why an eligible row ranks where it does (video searches):
   matched?: string[];
   avoided?: string[];
@@ -3764,7 +2980,7 @@ export interface BulkAddResult {
 }
 
 // The History feed (GET /api/v1/history). Music events belong to the artist.
-export type HistoryKind = "movie" | "series" | "book" | "music";
+export type HistoryKind = "movie" | "series" | "music";
 export type HistoryCategory = "grabbed" | "imported" | "upgraded" | "failed" | "blocklisted" | "removed" | "seeded" | "deleted" | "renamed" | "review" | "other";
 export interface HistoryEvent {
   kind: HistoryKind;
@@ -3792,7 +3008,7 @@ export interface ImportRecord {
   imported_at: string;
 }
 
-export type ReviewKind = "series" | "movie" | "book" | "music";
+export type ReviewKind = "series" | "movie" | "music";
 
 /** A finished torrent nothing in Arrmada grabbed or imported, outside its categories. */
 export interface UnmanagedDownload {
@@ -3813,7 +3029,7 @@ export interface ReviewTarget {
   kind: ReviewKind;
   title: string;
   year?: number;
-  subtitle?: string; // author for books, artist for albums
+  subtitle?: string; // the artist, for albums
   poster_url?: string;
 }
 

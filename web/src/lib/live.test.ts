@@ -55,7 +55,7 @@ describe("topicMatches", () => {
     expect(topicMatches("movie.*", "movie")).toBe(false);
     expect(topicMatches("movie.*", "series.imported")).toBe(false);
     expect(topicMatches("*", "anything.at.all")).toBe(true);
-    expect(topicMatches("*.imported", "book.imported")).toBe(true);
+    expect(topicMatches("*.imported", "music.imported")).toBe(true);
     expect(topicMatches("*.imported", "import.held")).toBe(false);
     expect(topicMatches("user.*.request.updated", "user.7.request.updated")).toBe(true);
     expect(topicMatches("user.*.request.updated", "user.7.request.updated.x")).toBe(false);

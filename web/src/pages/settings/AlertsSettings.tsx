@@ -32,7 +32,7 @@ import { OutgoingEmail } from "./OutgoingEmail";
 const PUSH_NAME = "This device";
 
 export function AlertsSettings() {
-  const { user, booksEnabled, musicEnabled } = useMe();
+  const { user, musicEnabled } = useMe();
   const admin = isAdmin(user);
   const { data: conns, error } = useQuery("notifications:list", alertsApi.notifications);
   const { data: catalog, error: catalogError } = useQuery("notifications:catalog", alertsApi.alertCatalog, { staleMs: 5 * 60_000 });
@@ -47,7 +47,7 @@ export function AlertsSettings() {
   // Events of a module that's switched off are hidden (a connection keeps them ticked).
   const shown = catalog && {
     ...catalog,
-    events: catalog.events.filter((e) => (e.module !== "music" || musicEnabled) && (e.module !== "books" || booksEnabled)),
+    events: catalog.events.filter((e) => e.module !== "music" || musicEnabled),
   };
   const blank = (): NotificationConn => ({ name: "", kind: "", enabled: true, events: (catalog?.events ?? []).filter((e) => e.default_on).map((e) => e.key) });
   const failed = error ?? catalogError;
@@ -110,7 +110,7 @@ export function AlertsSettings() {
           </>
         )}
       </Section>
-      {/* The mail account Send to Kindle goes out through: a login, so admins only. */}
+      {/* The mail account Arrmada sends from: a login, so admins only. */}
       {admin && <OutgoingEmail />}
     </div>
   );

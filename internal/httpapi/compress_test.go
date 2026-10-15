@@ -62,9 +62,9 @@ func TestCompressJSON(t *testing.T) {
 		{"no Accept-Encoding", "GET", "/api/v1/movies", "", jsonOf(200, big)},
 		{"gzip refused", "GET", "/api/v1/movies", "gzip;q=0, br", jsonOf(200, big)},
 		{"a write", "POST", "/api/v1/movies", "gzip", jsonOf(200, big)},
-		{"not the API", "GET", "/opds/books", "gzip", jsonOf(200, big)},
+		{"not the API", "GET", "/media/files", "gzip", jsonOf(200, big)},
 		{"the websocket", "GET", "/api/v1/ws", "gzip", jsonOf(200, big)},
-		{"a file", "GET", "/api/v1/books/1/audiobook", "gzip", func(w http.ResponseWriter, r *http.Request) {
+		{"a file", "GET", "/api/v1/movies/1/file", "gzip", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "audio/mp4")
 			_, _ = w.Write([]byte(big))
 		}},

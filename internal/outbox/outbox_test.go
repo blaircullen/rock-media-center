@@ -72,7 +72,7 @@ func TestEnqueueWritesOneRowPerConsumer(t *testing.T) {
 	ctx := context.Background()
 	var got []string
 	var mu sync.Mutex
-	for _, name := range []string{"convert", "subtitles", "requests.ready"} {
+	for _, name := range []string{"plex.scan", "issues.resolve", "requests.ready"} {
 		o.Register(TopicMovieImported, name, func(_ context.Context, p json.RawMessage) error {
 			var m MovieImported
 			if err := json.Unmarshal(p, &m); err != nil {
@@ -91,7 +91,7 @@ func TestEnqueueWritesOneRowPerConsumer(t *testing.T) {
 		t.Fatalf("%d rows, want one per consumer (3)", n)
 	}
 	drain(t, o)
-	if len(got) != 3 || got[0] != "convert:/m/Dune.mkv" {
+	if len(got) != 3 || got[0] != "plex.scan:/m/Dune.mkv" {
 		t.Fatalf("handlers ran %v", got)
 	}
 	if n := countRows(t, db, "done_at != 0"); n != 3 {
@@ -224,7 +224,7 @@ func TestNewOutboxProcessesLeftovers(t *testing.T) {
 	}
 	defer st.Close()
 	first := New(st.DB(), quietLog())
-	first.Register(TopicMovieImported, "convert", func(context.Context, json.RawMessage) error {
+	first.Register(TopicMovieImported, "plex.scan", func(context.Context, json.RawMessage) error {
 		t.Fatal("the first process never got to run it")
 		return nil
 	})
@@ -234,7 +234,7 @@ func TestNewOutboxProcessesLeftovers(t *testing.T) {
 	// "Restart": a fresh Outbox with the handler registered again.
 	second := New(st.DB(), quietLog())
 	var ran atomic.Int64
-	second.Register(TopicMovieImported, "convert", func(_ context.Context, p json.RawMessage) error {
+	second.Register(TopicMovieImported, "plex.scan", func(_ context.Context, p json.RawMessage) error {
 		var m MovieImported
 		_ = json.Unmarshal(p, &m)
 		ran.Store(m.MovieID)

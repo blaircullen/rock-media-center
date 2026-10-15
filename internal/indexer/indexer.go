@@ -18,7 +18,6 @@ const (
 	KindNewznab      Kind = "newznab"      // standard usenet protocol
 	KindTorrentLeech Kind = "torrentleech" // native TorrentLeech integration
 	KindX1337        Kind = "1337x"        // native 1337x (public) integration
-	KindMAM          Kind = "myanonamouse" // native MyAnonaMouse integration (books)
 )
 
 // DefaultSeedHours is the seed goal given to a new indexer that specifies neither a
@@ -54,7 +53,7 @@ type Indexer struct {
 	Password string `json:"-"` // secret
 
 	Categories []int `json:"categories,omitempty"`
-	// MediaTypes scopes which searches use this indexer (movie | series | book | music).
+	// MediaTypes scopes which searches use this indexer (movie | series | music).
 	// Empty = used for everything (backward compatible).
 	MediaTypes  []string `json:"media_types,omitempty"`
 	Priority    int      `json:"priority"`     // 1 (highest) .. 50 (lowest)
@@ -89,7 +88,6 @@ const (
 const (
 	MediaMovie  = "movie"
 	MediaSeries = "series"
-	MediaBook   = "book"
 	MediaMusic  = "music"
 )
 
@@ -119,7 +117,7 @@ func (i Indexer) Transport() Transport {
 type SearchQuery struct {
 	Text       string
 	Categories []int
-	MediaType  string // movie | series | book | music — restricts to indexers that serve it
+	MediaType  string // movie | series | music — restricts to indexers that serve it
 	Limit      int
 	// Offset is the Torznab pagination cursor. Indexers commonly cap a response at their
 	// own page size regardless of Limit, so results beyond the first page are only
@@ -133,16 +131,6 @@ type SearchQuery struct {
 	Season  int
 	Episode int
 
-	// BookEdition narrows a book search to "ebook" or "audiobook". Empty means either.
-	//
-	// It exists because the two kinds of book tracker want opposite things. A general
-	// tracker has no notion of an edition, so the only way to bias toward audio is to put
-	// the word "audiobook" in the query and hope it appears in the release name. A book
-	// tracker like MyAnonaMouse categorises the edition properly — and matches ALL query
-	// words, so that same appended word matches nothing and returns an empty result set.
-	// Each searcher now applies the edition the way its own API expects.
-	BookEdition string
-
 	// IMDBID ("tt0111161"), TMDBID and TVDBID name the title being searched for. A
 	// Torznab indexer whose stored caps list the matching parameter for this kind of
 	// search is asked by id instead of by text (see idParam), which finds the film or
@@ -152,14 +140,11 @@ type SearchQuery struct {
 	TMDBID int
 	TVDBID int
 
-	// Author and BookTitle (a book), Artist and Album (an album) are the same search in
-	// parts. An indexer whose caps say its book-search (music-search) takes them is asked
-	// t=book&author=…&title=… (t=music&artist=…&album=…) instead of a bare q; any other
-	// gets Text as before. Empty means not known.
-	Author    string
-	BookTitle string
-	Artist    string
-	Album     string
+	// Artist and Album (an album) are the same search in parts. An indexer whose caps say
+	// its music-search takes them is asked t=music&artist=…&album=… instead of a bare q;
+	// any other gets Text as before. Empty means not known.
+	Artist string
+	Album  string
 
 	// defaultCats lets an indexer with stored caps and no categories of its own be asked
 	// for this media type's usual categories (defaultCategories). Service.Search sets it

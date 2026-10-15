@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/music"
@@ -21,20 +20,16 @@ type SweepSlot struct {
 	// the sweep's next run.
 	Next time.Time
 	// Slowed: it has come up empty so often that its sweep now checks it only rarely —
-	// books monthly, albums weekly. Never dropped for good, but worth saying.
+	// albums weekly. Never dropped for good, but worth saying.
 	Slowed bool
 }
 
 // SweepSchedule reads a title's stored search state (last_search_at as stored, and the
 // misses in a row) through its kind's ladder: movies and series back off 30 min → 12 h
-// (searchBackoff), books a day → monthly (books.SearchWait), albums 30 min → weekly
-// (musicSearchWait). kind is an Attempt* media type.
+// (searchBackoff), albums 30 min → weekly (musicSearchWait). kind is an Attempt* media type.
 func SweepSchedule(kind, lastAt string, misses int) SweepSlot {
 	s := SweepSlot{Last: parseTime(lastAt)}
 	switch kind {
-	case AttemptBook:
-		s.Next = books.NextSearchAt(lastAt, misses)
-		s.Slowed = misses > books.MonthlyAfter
 	case AttemptMusic:
 		s.Next = AlbumNextSearchAt(s.Last, misses)
 		s.Slowed = misses >= musicWeeklyAfter

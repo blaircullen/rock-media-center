@@ -1,5 +1,5 @@
 // Package recyclebin manages Arrmada's recycle bins — the folders deleted/replaced files are
-// moved to instead of being hard-deleted (movie & episode deletes, and Convert originals). There
+// moved to instead of being hard-deleted (movie & episode deletes). There
 // can be several: one on each library folder, so recycling is a rename on the same drive, plus
 // the old shared bin while it still holds files. It reports how much they're holding, empties
 // them on demand, and enforces the user's guard rails (a maximum size in GB across all bins
@@ -541,7 +541,7 @@ func (s *Service) lowOnDisk(dir string) bool {
 // Headroom reports how many more bytes the bins can take before Enforce starts purging the
 // oldest items to get back under the size cap. capped is false when there's no cap (free
 // is then meaningless), and enabled is false when recycling is off and deletes are final.
-// Convert asks before it retires an original: one that doesn't fit would push out other
+// A caller asks before it retires a file: one that doesn't fit would push out other
 // people's deletions and then be purged itself within the hour.
 func (s *Service) Headroom(ctx context.Context) (free int64, capped, enabled bool) {
 	bins := s.current()
@@ -561,7 +561,7 @@ func (s *Service) Headroom(ctx context.Context) (free int64, capped, enabled boo
 }
 
 // Default guard rails. The bin is on by default and absorbs every delete, quality
-// upgrade and Convert original, so shipping "unlimited" quietly grows it until the
+// upgrade, so shipping "unlimited" quietly grows it until the
 // volume fills. These are the single source of truth — the settings API renders the
 // same constants, so what the UI shows is what Enforce actually applies. Set either to
 // 0 in Settings to opt back into unlimited.

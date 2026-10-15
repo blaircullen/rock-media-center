@@ -9,9 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/library"
-	"github.com/tristenlammi/arrmada/internal/metadata"
 	"github.com/tristenlammi/arrmada/internal/series"
 	"github.com/tristenlammi/arrmada/internal/store"
 )
@@ -93,57 +91,5 @@ func TestDeleteSeriesDuplicateRefuses(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(bin, "Season 1", filepath.Base(extra))); err != nil {
 		t.Errorf("the duplicate should be in the bin: %v", err)
-	}
-}
-
-// Deleting a book's files through a bin that refuses them keeps every file and the
-// edition's record, for single files and multi-file audiobooks alike.
-func TestRemoveBookFileRefuses(t *testing.T) {
-	c, svc, ctx := bookTestCoord(t)
-	added, _ := svc.AddWorks(ctx, []metadata.BookResult{{Key: "OL1W", Title: "Dune", Author: "Frank Herbert"}}, "", true)
-	if len(added) != 1 {
-		t.Fatalf("added %d books", len(added))
-	}
-	id := added[0].ID
-	dir := filepath.Join(t.TempDir(), "Frank Herbert", "Dune")
-	epub := writeSized(t, filepath.Join(dir, "Dune.epub"), 10)
-	audioDir := filepath.Join(dir, "audio")
-	parts := []string{
-		writeSized(t, filepath.Join(audioDir, "01.mp3"), 10),
-		writeSized(t, filepath.Join(audioDir, "02.mp3"), 10),
-	}
-	if err := svc.MarkImported(ctx, id, books.KindEbook, epub, "epub", 10, 1); err != nil {
-		t.Fatal(err)
-	}
-	if err := svc.MarkImported(ctx, id, books.KindAudiobook, audioDir, "mp3", 20, 2); err != nil {
-		t.Fatal(err)
-	}
-
-	c.SetRecycleDir(brokenBinDir(t))
-	for _, kind := range []string{books.KindEbook, books.KindAudiobook} {
-		if err := c.DeleteBookEdition(ctx, id, kind); !errors.Is(err, library.ErrBinRefused) {
-			t.Errorf("%s: err = %v, want a bin refusal", kind, err)
-		}
-	}
-	for _, p := range append([]string{epub}, parts...) {
-		if _, err := os.Stat(p); err != nil {
-			t.Errorf("%s was deleted although the bin refused it", filepath.Base(p))
-		}
-	}
-	b, err := svc.Get(ctx, id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if b.Ebook == nil || b.Audiobook == nil {
-		t.Error("an edition was forgotten although its files are still there")
-	}
-
-	// The bin deliberately off still deletes.
-	c.SetRecycleDir("")
-	if err := c.DeleteBookEdition(ctx, id, books.KindEbook); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(epub); !os.IsNotExist(err) {
-		t.Error("with the bin off the ebook should be deleted")
 	}
 }

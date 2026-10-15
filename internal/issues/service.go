@@ -47,7 +47,6 @@ type Service struct {
 	bus  Publisher
 	tell Notifier
 	warn StaffAlert
-	subs SubtitleJobs
 	kick func()
 }
 
@@ -360,8 +359,8 @@ func (s *Service) changed(i Issue) {
 // news is stale, and an inbox that has been failing that long has bigger problems.
 const toldRetryFor = 7 * 24 * time.Hour
 
-// Sweep is the backstop. It settles the issues being fixed (checkFixing: a finished
-// subtitle job, a new file whose import signal was missed, a fix that brought nothing),
+// Sweep is the backstop. It settles the issues being fixed (checkFixing: a new file whose
+// import signal was missed, a fix that brought nothing),
 // then re-sends the notices for closed issues whose reporters weren't all told (an inbox
 // write failed). Each reporter hears once, whatever retries.
 func (s *Service) Sweep(ctx context.Context) error {

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/tristenlammi/arrmada/internal/automation"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/health"
 	"github.com/tristenlammi/arrmada/internal/movies"
@@ -103,7 +102,7 @@ func TestRefreshAggregatesSeededSources(t *testing.T) {
 		       ('bbb', 'Old.Release', '/dl/y', 'movie', 2, 'Old', 'whatever', 'mismatch', 'resolved')`)
 
 	clk := &clock{t: time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)}
-	reqSvc := requests.NewService(st.DB(), nil, nil, nil, nil, nil, nil, "", quiet)
+	reqSvc := requests.NewService(st.DB(), nil, nil, nil, nil, nil, "", quiet)
 	coord := automation.New(nil, nil, nil, nil, st.DB(), nil, quiet, "")
 	frame := Frame{OK: true, Whole: true,
 		Queue: []download.Item{
@@ -339,30 +338,25 @@ func TestSearchesCountStuckTitles(t *testing.T) {
 		(1, 10, 'Stuck Show', 2020, 1, 11), (2, 11, 'Waiting Show', 2020, 1, 11)`)
 	mustExec(t, st, `INSERT INTO episodes (series_id, season_number, episode_number, air_date, monitored, has_file) VALUES
 		(1, 1, 1, '2020-01-01', 1, 0), (2, 1, 1, '2999-01-01', 1, 0)`)
-	// Books: one slowed to monthly with nothing, one slowed but complete, one still early.
-	mustExec(t, st, `INSERT INTO books (ol_key, title, author, monitored, search_misses, ebook_path, audiobook_path) VALUES
-		('OL1W', 'Lost', 'A', 1, 11, '', ''), ('OL2W', 'Done', 'B', 1, 11, '/e', '/a'), ('OL3W', 'Early', 'C', 1, 4, '', '')`)
 
 	mv := movies.NewService(db, nil, nil, t.TempDir(), "", nil, quiet)
 	sr := series.NewService(db, nil, t.TempDir(), quiet)
-	bk := books.NewService(db, nil, quiet)
 	s := New(nil, nil, quiet, Searches(
 		func(ctx context.Context) (int, error) { return mv.CountSearchStuck(ctx, SearchStuckAfter) },
 		func(ctx context.Context) (int, error) { return sr.CountSearchStuck(ctx, SearchStuckAfter) },
-		bk.CountSearchGivenUp,
 	))
 	if err := s.Refresh(ctx); err != nil {
 		t.Fatal(err)
 	}
 	snap := s.Current()
-	if snap.Counts.Searches != 3 || len(snap.Items) != 1 {
-		t.Fatalf("counts %+v items %v, want 3 stuck titles in one item", snap.Counts, snap.Items)
+	if snap.Counts.Searches != 2 || len(snap.Items) != 1 {
+		t.Fatalf("counts %+v items %v, want 2 stuck titles in one item", snap.Counts, snap.Items)
 	}
 	it := snap.Items[0]
-	if it.Key != "search:stuck" || it.Count != 3 || it.Title != "3 titles still haven't found a release" || it.LinkKey != "downloadsSearching" {
+	if it.Key != "search:stuck" || it.Count != 2 || it.Title != "2 titles still haven't found a release" || it.LinkKey != "downloadsSearching" {
 		t.Errorf("search item = %+v", it)
 	}
-	if len(snap.Groups) != 1 || snap.Groups[0].Count != 3 || len(snap.Groups[0].Sample) != 0 {
+	if len(snap.Groups) != 1 || snap.Groups[0].Count != 2 || len(snap.Groups[0].Sample) != 0 {
 		t.Errorf("groups = %+v", snap.Groups)
 	}
 }

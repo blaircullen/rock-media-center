@@ -100,7 +100,7 @@ func TestSearchPartialFailureIsNotAnError(t *testing.T) {
 // Nobody serving the media type means nobody was asked — not "nothing exists".
 func TestSearchNoIndexerForMediaType(t *testing.T) {
 	s := outageService(t, []string{MediaMovie}, empty(t).URL)
-	_, err := s.Search(context.Background(), SearchQuery{Text: "Dune", MediaType: MediaBook, Limit: 10})
+	_, err := s.Search(context.Background(), SearchQuery{Text: "Dune", MediaType: MediaMusic, Limit: 10})
 	if !errors.Is(err, ErrNoIndexers) {
 		t.Fatalf("want ErrNoIndexers, got %v", err)
 	}

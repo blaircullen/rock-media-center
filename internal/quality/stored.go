@@ -12,7 +12,6 @@ import (
 const (
 	MediaMovie  = "movie"
 	MediaSeries = "series"
-	MediaBook   = "book"
 	MediaMusic  = "music"
 )
 
@@ -72,8 +71,8 @@ type Keyword struct {
 
 // KeywordScore sums the scores of the keywords whose term appears in the release
 // title (case-insensitive, token-bounded like reject terms — "web" must not match
-// inside "cobweb"). Shared by the video engine and the book picker so "graphic
-// audio +100" style preferences work everywhere.
+// inside "cobweb"). Shared by the video and music engines so "remastered +100" style
+// preferences work everywhere.
 func KeywordScore(keywords []Keyword, title string) int {
 	lc := strings.ToLower(title)
 	total := 0
@@ -118,16 +117,16 @@ func (sp StoredProfile) ToProfile() Profile {
 		Keywords:           sp.Keywords,
 		Rejected:           sp.Rejected,
 		MinSeeders:         sp.MinSeeders,
-		// Video only: a book titled "TS Eliot…" must not be taken for a telesync.
+		// Video only: an album titled "TS…" must not be taken for a telesync.
 		RejectPreRelease: (sp.MediaType == MediaMovie || sp.MediaType == MediaSeries) && !sp.AllowPreRelease,
-		// Likewise the Unwanted pack: book and music names aren't video release names.
+		// Likewise the Unwanted pack: music names aren't video release names.
 		Unwanted:   sp.Unwanted,
 		NoUnwanted: sp.MediaType != MediaMovie && sp.MediaType != MediaSeries,
 		GroupTiers: sp.groupTiers(),
 	}
 }
 
-// groupTiers is the tiers the engine ranks with: none for book and music profiles.
+// groupTiers is the tiers the engine ranks with: none for music profiles.
 func (sp StoredProfile) groupTiers() GroupTiers {
 	if sp.MediaType != MediaMovie && sp.MediaType != MediaSeries {
 		return GroupTiers{}
@@ -151,9 +150,6 @@ func (sp StoredProfile) Engine() *Engine {
 
 // Summary renders a one-line, plain-language description of the profile.
 func (sp StoredProfile) Summary() (summary string) {
-	if sp.MediaType == MediaBook {
-		return sp.bookSummary()
-	}
 	var parts []string
 	switch {
 	case len(sp.AllowedResolutions) == 0:
@@ -196,41 +192,6 @@ func (sp StoredProfile) Summary() (summary string) {
 	sort.Strings(prefs)
 	if len(prefs) > 0 {
 		parts = append(parts, "prefers "+strings.Join(prefs, ", "))
-	}
-	return strings.Join(parts, " · ")
-}
-
-// bookSummary describes a book profile by the formats it prefers (highest score
-// first) plus its keyword count — the two things a book profile actually tunes.
-func (sp StoredProfile) bookSummary() string {
-	type fs struct {
-		name  string
-		score int
-	}
-	var list []fs
-	for n, s := range sp.FormatScores {
-		if s > 0 {
-			list = append(list, fs{n, s})
-		}
-	}
-	sort.Slice(list, func(i, j int) bool {
-		if list[i].score != list[j].score {
-			return list[i].score > list[j].score
-		}
-		return list[i].name < list[j].name
-	})
-	names := make([]string, len(list))
-	for i, f := range list {
-		names[i] = f.name
-	}
-	var parts []string
-	if len(names) > 0 {
-		parts = append(parts, "prefers "+strings.Join(names, ", "))
-	} else {
-		parts = append(parts, "no formats selected")
-	}
-	if n := len(sp.Keywords); n > 0 {
-		parts = append(parts, fmt.Sprintf("%d keyword%s", n, map[bool]string{true: "s", false: ""}[n != 1]))
 	}
 	return strings.Join(parts, " · ")
 }

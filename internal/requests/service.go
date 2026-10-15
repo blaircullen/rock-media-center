@@ -12,12 +12,10 @@ import (
 	"time"
 
 	"github.com/tristenlammi/arrmada/internal/automation"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/eventbus"
 	"github.com/tristenlammi/arrmada/internal/jobs"
 	"github.com/tristenlammi/arrmada/internal/library"
 	"github.com/tristenlammi/arrmada/internal/mediaserver"
-	"github.com/tristenlammi/arrmada/internal/metadata"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/push"
 	"github.com/tristenlammi/arrmada/internal/quality"
@@ -32,7 +30,6 @@ type Service struct {
 	repo       *Repo
 	movies     movieLib
 	series     seriesLib
-	books      bookLib
 	coord      searcher
 	quality    *quality.Service
 	bus        *eventbus.Bus
@@ -46,9 +43,6 @@ type Service struct {
 	// seriesMu serialises series request creation (and season trims): working out which
 	// seasons are already covered and inserting the rest must happen as one step.
 	seriesMu sync.Mutex
-	// searchBook starts a book search (the coordinator's SearchBookNow); a field so
-	// tests can see it called without a coordinator.
-	searchBook func(ctx context.Context, bookID int64) (automation.SearchOutcome, error)
 	// attentionKick asks the Needs-you feed to refresh after a request changes (pending.go).
 	attentionKick atomic.Pointer[func()]
 	// staffAlerts tells staff a new request is waiting (staffalert.go).
@@ -88,7 +82,7 @@ type Runner interface {
 // Used only when no job runner is set.
 func (s *Service) SetRunner(r Runner) { s.runner = r }
 
-// SetJobs makes an approval's search a job (movie.search, series.search or book.search,
+// SetJobs makes an approval's search a job (movie.search or series.search,
 // trigger request:<id>): recorded, single-flight with a Search click on the same title,
 // and in the indexer-search class with every other search.
 func (s *Service) SetJobs(sub jobs.Submitter) { s.jobs = sub }
@@ -154,7 +148,7 @@ type PushSender interface {
 func (s *Service) SetPushSender(p PushSender) { s.push = p }
 
 // NewService wires the module. bus + appriseBin drive request-ready notifications (both optional).
-func NewService(db *sql.DB, mv *movies.Service, sr *series.Service, bk *books.Service, coord *automation.Coordinator, q *quality.Service, bus *eventbus.Bus, appriseBin string, log *slog.Logger) *Service {
+func NewService(db *sql.DB, mv *movies.Service, sr *series.Service, coord *automation.Coordinator, q *quality.Service, bus *eventbus.Bus, appriseBin string, log *slog.Logger) *Service {
 	s := &Service{repo: NewRepo(db), quality: q, bus: bus, appriseBin: appriseBin, log: log}
 	// Only non-nil pointers go into the interfaces: a nil *movies.Service in one would
 	// pass every "is it wired?" check and then panic.
@@ -164,12 +158,8 @@ func NewService(db *sql.DB, mv *movies.Service, sr *series.Service, bk *books.Se
 	if sr != nil {
 		s.series = sr
 	}
-	if bk != nil {
-		s.books = bk
-	}
 	if coord != nil {
 		s.coord = coord
-		s.searchBook = coord.SearchBookNow
 	}
 	return s
 }
@@ -282,7 +272,7 @@ func (s *Service) Unsubscribe(ctx context.Context, id, uid int64) error {
 	return nil
 }
 
-// InLibrary is the library item (movie, series or book id) a listed request became, 0
+// InLibrary is the library item (movie or series id) a listed request became, 0
 // when it isn't in the library. Filled by List.
 func (r Request) InLibrary() int64 { return r.libID }
 
@@ -325,24 +315,8 @@ func (s *Service) Create(ctx context.Context, in Request, opts CreateOptions) (c
 		if in.TMDBID == 0 {
 			return Request{}, false, fmt.Errorf("tmdb_id is required")
 		}
-	case "book":
-		if in.OLKey == "" {
-			return Request{}, false, fmt.Errorf("ol_key is required")
-		}
-		// A key the library knows — the book's current key or any it had before — links
-		// the request to that row from the start, and finds a request made from a card
-		// carrying another of its keys.
-		if in.BookID == 0 && s.books != nil {
-			if id, ok := s.books.BookIDForKey(ctx, in.OLKey); ok {
-				in.BookID = id
-			}
-		}
-		// Read, listen or both — and the profile that goes with the choice.
-		if err := s.normalizeBookFormats(ctx, &in); err != nil {
-			return Request{}, false, err
-		}
 	default:
-		return Request{}, false, fmt.Errorf("media_type must be movie, series or book")
+		return Request{}, false, fmt.Errorf("media_type must be movie or series")
 	}
 	if in.QualityProfile != "" && s.quality != nil && !s.quality.Known(ctx, in.QualityProfile) {
 		return Request{}, false, ErrUnknownProfile
@@ -381,7 +355,7 @@ func (s *Service) Create(ctx context.Context, in Request, opts CreateOptions) (c
 	return created, false, nil
 }
 
-// createOne stores a movie or book request: attached to the request already there for it
+// createOne stores a movie request: attached to the request already there for it
 // (followed, or a declined one re-opened, announced by attachCharged), or a new pending
 // row (inserted, for the caller to auto-approve and announce). A limited requester's ask
 // is checked against their quota first and charged once stored.
@@ -412,22 +386,15 @@ func (s *Service) createOne(ctx context.Context, in Request, opts CreateOptions,
 	return created, false, true, nil
 }
 
-// attachCharged is attachAndPublish for a movie or book, charging what counts against
-// the requester's quota: re-opening a declined request is a new ask; widening an approved
-// book request to the other format starts a download nobody approved, so it counts as a
-// book too; plain following is free.
+// attachCharged is attachAndPublish for a movie, charging what counts against the
+// requester's quota: re-opening a declined request is a new ask; plain following is free.
 func (s *Service) attachCharged(ctx context.Context, existing, in Request, opts CreateOptions, q *quotaCharge) (Request, bool, error) {
 	units := 0
-	switch {
-	case existing.Status == StatusDeclined:
+	if existing.Status == StatusDeclined {
 		if err := needsNote(in, opts, existing); err != nil {
 			return Request{}, false, err // asked for its note before its quota
 		}
 		units = 1
-	case q != nil && existing.MediaType == "book" && existing.Status == StatusApproved && in.Formats != "":
-		if had := s.requestedFormats(ctx, existing); unionFormats(had, in.Formats) != had {
-			units = 1
-		}
 	}
 	kind := quotaKind(existing.MediaType)
 	if err := s.checkQuota(ctx, q, kind, units); err != nil {
@@ -480,49 +447,10 @@ func (s *Service) attachAndPublish(ctx context.Context, existing, in Request, op
 	return req, subscribed, err
 }
 
-// lookupExisting finds a prior request for the same movie or book, if any (series go
-// through createSeries).
+// lookupExisting finds a prior request for the same movie, if any (series go through
+// createSeries).
 func (s *Service) lookupExisting(ctx context.Context, in Request) (Request, bool) {
-	if in.MediaType == "book" {
-		return s.lookupExistingBook(ctx, in)
-	}
 	return s.repo.GetByMedia(ctx, in.MediaType, in.TMDBID)
-}
-
-// lookupExistingBook finds a prior request for the same book. The unique index only
-// catches the identical key, and one book has several: the request made under this key;
-// else one for the library row this key belongs to (linked to it, or made under any of
-// its keys); else, for a book not in the library, a request for the same title and
-// author made from another catalogue's card.
-func (s *Service) lookupExistingBook(ctx context.Context, in Request) (Request, bool) {
-	if req, ok := s.repo.GetByBook(ctx, in.OLKey); ok {
-		return req, true
-	}
-	if in.BookID > 0 && s.books != nil {
-		var keys []string
-		if ks, err := s.books.KeysFor(ctx, in.BookID); err == nil {
-			for _, k := range ks {
-				keys = append(keys, k.Key)
-			}
-		}
-		if list, err := s.repo.ListForBook(ctx, in.BookID, keys); err == nil && len(list) > 0 {
-			return list[0], true
-		}
-		return Request{}, false
-	}
-	if in.Title == "" {
-		return Request{}, false
-	}
-	all, err := s.repo.bookRequests(ctx)
-	if err != nil {
-		return Request{}, false
-	}
-	for _, rq := range all {
-		if books.SameBook(rq.Title, rq.Author, in.Title, in.Author) {
-			return rq, true
-		}
-	}
-	return Request{}, false
 }
 
 // attachToExisting handles a request for media that's already requested:
@@ -554,12 +482,6 @@ func (s *Service) attachToExisting(ctx context.Context, existing, in Request) (R
 		if err := s.repo.RemoveSubscriber(ctx, existing.ID, in.RequestedBy); err != nil {
 			s.log.Warn("request: could not clean subscriber row", "id", existing.ID, "err", err)
 		}
-		// A re-opened book request asks for what its new requester chose.
-		if existing.MediaType == "book" && in.Formats != "" {
-			if err := s.repo.SetFormats(ctx, existing.ID, in.Formats, in.QualityProfile); err != nil {
-				s.log.Warn("request: could not set the formats", "id", existing.ID, "err", err)
-			}
-		}
 		s.log.Info("request re-opened", "media", existing.MediaType, "title", existing.Title, "by", in.RequestedByName)
 		req, err := s.repo.Get(ctx, existing.ID)
 		return req, false, err
@@ -571,76 +493,15 @@ func (s *Service) attachToExisting(ctx context.Context, existing, in Request) (R
 		}
 		s.log.Info("request subscribed", "media", existing.MediaType, "title", existing.Title, "by", in.RequestedByName)
 	}
-	if existing.MediaType == "book" && in.Formats != "" {
-		if req, ok := s.widenRequest(ctx, existing, in); ok {
-			existing = req
-		}
-	}
 	return existing, true, nil
-}
-
-// widenRequest folds a second book request's format choice into the existing one:
-// someone asking to listen to a book another asked to read makes the request "both".
-// An approved request widens its library book too and searches for what is missing.
-// It never narrows anything. ok reports the request changed.
-func (s *Service) widenRequest(ctx context.Context, existing, in Request) (Request, bool) {
-	had := s.requestedFormats(ctx, existing)
-	union := unionFormats(had, in.Formats)
-	if union == had {
-		return existing, false // nothing new asked for; an older request keeps its old ways
-	}
-	if err := s.repo.SetFormats(ctx, existing.ID, union, s.profileForFormats(ctx, union)); err != nil {
-		s.log.Warn("request: could not widen the formats", "id", existing.ID, "err", err)
-		return existing, false
-	}
-	if existing.Status == StatusApproved && s.books != nil {
-		bookID := existing.BookID
-		if bookID == 0 {
-			bookID = in.BookID
-		}
-		if bookID == 0 {
-			bookID, _ = s.books.BookIDForKey(ctx, existing.OLKey)
-		}
-		if bookID > 0 {
-			if existing.BookID == 0 {
-				_ = s.repo.SetBookID(ctx, existing.ID, bookID)
-			}
-			if s.widenBook(ctx, bookID, union) {
-				s.searchRequestedBook(ctx, existing.ID, bookID, existing.Title)
-			}
-		}
-	}
-	req, err := s.repo.Get(ctx, existing.ID)
-	if err != nil {
-		return existing, false
-	}
-	return req, true
-}
-
-// searchRequestedBook starts a search for a requested book that lacks an edition the
-// request asked for — unless something is already downloading for it, which a second
-// grab would only duplicate.
-func (s *Service) searchRequestedBook(ctx context.Context, requestID, bookID int64, title string) {
-	if s.searchBook == nil || s.bookInFlight(ctx, bookID) {
-		return
-	}
-	s.background("book.search", fmt.Sprintf("book:%d", bookID), fmt.Sprintf("request:%d", requestID), title, "book", 0, 5*time.Minute, func(c context.Context) (automation.SearchOutcome, error) {
-		return s.searchBook(c, bookID)
-	})
 }
 
 // autoApprove approves a new request its requester's own auto-approve just made: they
 // aren't told about their own click, staff get the auto-approved alert, and an import's
 // Silent/DeferSearch carry through.
 func (s *Service) autoApprove(ctx context.Context, created Request, opts CreateOptions) (Request, error) {
-	profile := created.QualityProfile
-	if created.MediaType == "book" {
-		// The request already carries the profile for its format choice; passing it as an
-		// approver's pick would re-derive the choice from the profile.
-		profile = ""
-	}
 	approved, err := s.Approve(ctx, created.ID, ApproveOptions{
-		Profile: profile, DecidedBy: created.RequestedBy, DecidedByName: created.RequestedByName,
+		Profile: created.QualityProfile, DecidedBy: created.RequestedBy, DecidedByName: created.RequestedByName,
 		Auto: true, Silent: opts.Silent, DeferSearch: opts.DeferSearch,
 	}) // announces it as approved
 	if err == nil && !opts.Silent {
@@ -723,7 +584,6 @@ func (s *Service) Approve(ctx context.Context, id int64, o ApproveOptions) (Requ
 	if profile != "" && s.quality != nil && !s.quality.Known(ctx, profile) {
 		return Request{}, ErrUnknownProfile
 	}
-	explicit := profile != ""
 	trimmed := false
 	if req.MediaType == "series" && len(o.Seasons) > 0 {
 		keep, dropped, err := trimSeasons(req.Seasons, o.Seasons)
@@ -812,56 +672,9 @@ func (s *Service) Approve(ctx context.Context, id int64, o ApproveOptions) (Requ
 				return s.coord.SearchSeriesNow(c, sid)
 			})
 		}
-	case "book":
-		// An approver's explicit profile is their call on the format too.
-		if explicit && s.quality != nil {
-			if f := s.formatsForProfile(ctx, profile); f != req.Formats {
-				if err := s.repo.SetFormats(ctx, id, f, ""); err != nil {
-					s.log.Warn("request: could not set the formats", "request", id, "err", err)
-				}
-				req.Formats = f
-			}
-		}
-		b, addErr := s.books.Add(ctx, req.OLKey, profile, true, metadata.BookResult{
-			Key: req.OLKey, Title: req.Title, Author: req.Author, Year: req.Year, CoverURL: req.PosterURL,
-		})
-		if addErr != nil && !errors.Is(addErr, books.ErrExists) {
-			return Request{}, addErr
-		}
-		// Remember which row the request became. On ErrExists that row may sit under
-		// another catalogue key than the request, and only this link finds it later.
-		if b.ID > 0 {
-			if err := s.repo.SetBookID(ctx, id, b.ID); err != nil {
-				s.log.Warn("request: could not link the book", "request", id, "err", err)
-			}
-		}
-		switch {
-		case b.ID > 0 && addErr == nil:
-			// A new row always wants a search (an import leaves it to the sweeps).
-			if s.searchBook != nil && !o.DeferSearch {
-				bid := b.ID
-				s.background("book.search", fmt.Sprintf("book:%d", bid), trigger, req.Title, "book", 0, 5*time.Minute, func(c context.Context) (automation.SearchOutcome, error) {
-					return s.searchBook(c, bid)
-				})
-			}
-		case b.ID > 0:
-			// Already in the library: it now wants every edition the request asked for
-			// as well as its own (an audiobook request for a book we have as an ebook),
-			// and is searched when one of those is missing.
-			if s.widenBook(ctx, b.ID, s.requestedFormatsFor(ctx, req, profile)) {
-				if !b.Monitored {
-					// A book the library holds unmonitored is never looked for again by the
-					// sweep; approving a request for it is what wants it.
-					if err := s.books.SetMonitored(ctx, b.ID, true); err != nil {
-						return Request{}, err
-					}
-					s.books.AddEvent(ctx, b.ID, "monitored", "Monitored by request from "+requesterName(req))
-				}
-				if !o.DeferSearch {
-					s.searchRequestedBook(ctx, id, b.ID, req.Title)
-				}
-			}
-		}
+	default:
+		// A request kind this version doesn't handle (an older version's book request).
+		return Request{}, fmt.Errorf("%s requests aren't supported", req.MediaType)
 	}
 
 	if trimmed {
@@ -918,100 +731,6 @@ func (s *Service) Approve(ctx context.Context, id int64, o ApproveOptions) (Requ
 		s.kickAttention() // publishUpdated kicks otherwise
 	}
 	return s.repo.Get(ctx, id)
-}
-
-// BackfillBookIDs links book requests made before requests remembered their library row.
-// A request whose catalogue key still names a row links to it; otherwise one with the
-// same title and author links only when exactly one row matches, so two copies of a
-// book never get a request pinned to the wrong one. It only fills empty links and never
-// deletes anything, so it is safe to run on every boot.
-func (s *Service) BackfillBookIDs(ctx context.Context) (linked, ambiguous int, err error) {
-	if s.books == nil {
-		return 0, 0, nil
-	}
-	s.logKeyConflicts(ctx)
-	reqs, err := s.repo.unlinkedBookRequests(ctx)
-	if err != nil || len(reqs) == 0 {
-		return 0, 0, err
-	}
-	list, err := s.books.List(ctx)
-	if err != nil {
-		return 0, 0, err
-	}
-	byKey := s.books.KeyIndex(ctx, list) // every key a book has had
-	same := books.NewIdentityIndex(list)
-	for _, rq := range reqs {
-		id := byKey[rq.OLKey].ID
-		if id == 0 {
-			switch matches := same.FindAll(rq.Title, rq.Author); len(matches) {
-			case 0:
-				continue // not in the library (yet): it still resolves by its key
-			case 1:
-				id = matches[0].ID
-			default:
-				ambiguous++
-				continue
-			}
-		}
-		if err := s.repo.SetBookID(ctx, rq.ID, id); err != nil {
-			return linked, ambiguous, err
-		}
-		// The key the request was made under is one of the book's keys from now on.
-		// One another book already holds stays with that book (ErrExists); the
-		// duplicates review sorts those out.
-		_ = s.books.AddKey(ctx, rq.OLKey, id, books.KeySourceRequest)
-		linked++
-	}
-	if linked > 0 || ambiguous > 0 {
-		s.log.Info(fmt.Sprintf("requests: backfilled %d book requests (%d ambiguous)", linked, ambiguous))
-	}
-	return linked, ambiguous, nil
-}
-
-// logKeyConflicts counts the book requests linked to one library row but made under a
-// key another row holds: two rows that may be one book, for the duplicates review. A
-// count only — no titles, no requesters.
-func (s *Service) logKeyConflicts(ctx context.Context) {
-	all, err := s.repo.bookRequests(ctx)
-	if err != nil {
-		return
-	}
-	keys, err := s.books.AllKeys(ctx)
-	if err != nil {
-		return
-	}
-	n := 0
-	for _, rq := range all {
-		if owner, ok := keys[rq.OLKey]; ok && rq.BookID > 0 && owner != rq.BookID {
-			n++
-		}
-	}
-	if n > 0 {
-		s.log.Info(fmt.Sprintf("requests: %d book requests are linked to one book but were made under another book's key", n))
-	}
-}
-
-// bookInFlight reports whether the acquisition record has a download in flight for a
-// book. An unreadable record counts as in flight: a second grab on top of one already
-// downloading is the mistake to avoid, and the sweeps search the book anyway.
-func (s *Service) bookInFlight(ctx context.Context, bookID int64) bool {
-	if s.coord == nil {
-		return false
-	}
-	byItem, err := s.coord.ActiveByItem(ctx, "book")
-	if err != nil {
-		return true
-	}
-	return len(byItem[bookID]) > 0
-}
-
-// requestedFormatsFor is what a book request being approved on profile asks for: its
-// own choice, or for a request from before the choice existed, that profile's editions.
-func (s *Service) requestedFormatsFor(ctx context.Context, req Request, profile string) string {
-	if req.Formats != "" {
-		return req.Formats
-	}
-	return s.formatsForProfile(ctx, profile)
 }
 
 // Decline rejects a request without adding anything, recording who did it and the reason
@@ -1132,24 +851,16 @@ func (s *Service) enrichAvailability(ctx context.Context, reqs []Request) {
 		released        bool
 		misses          int    // searches in a row that found nothing
 		lastSearch      string // when the sweep last looked, as stored
-		nextCheck       string // books: when the ladder looks again (RFC3339)
 	}
 	// Only these requests' media: a query per media type (per few hundred requests), not
 	// the whole library.
 	var movieIDs, seriesIDs []int
-	var olKeys []string
-	var bookIDs []int64
 	for _, rq := range reqs {
 		switch rq.MediaType {
 		case "movie":
 			movieIDs = append(movieIDs, rq.TMDBID)
 		case "series":
 			seriesIDs = append(seriesIDs, rq.TMDBID)
-		case "book":
-			olKeys = append(olKeys, rq.OLKey)
-			if rq.BookID > 0 {
-				bookIDs = append(bookIDs, rq.BookID)
-			}
 		}
 	}
 	movHave := map[int]lib{}
@@ -1190,50 +901,6 @@ func (s *Service) enrichAvailability(ctx context.Context, reqs []Request) {
 			serHave[sr.TMDBID] = l
 		}
 	}
-	// Books by the row a request is linked to, falling back to the catalogue key for a
-	// request not linked yet. The key alone loses the book once it is re-matched.
-	// Whether it is ready depends on the formats the request asked for, so keep the book.
-	bookByKey := map[string]books.Book{}
-	keyOwner := map[string]int64{}
-	bookByID := map[int64]books.Book{}
-	var bs []books.Book
-	if s.books != nil && (len(olKeys) > 0 || len(bookIDs) > 0) {
-		for _, part := range chunks(olKeys) {
-			got, err := s.books.ByKeysOrIDs(ctx, part, nil)
-			if err != nil {
-				s.log.Warn("requests: couldn't look up the requested books", "err", err)
-				break
-			}
-			bs = append(bs, got...)
-			// A request made under a key the book has since left still finds it.
-			owners, err := s.books.KeyOwners(ctx, part)
-			if err != nil {
-				s.log.Warn("requests: couldn't look up the requested books", "err", err)
-				break
-			}
-			for k, id := range owners {
-				keyOwner[k] = id
-			}
-		}
-		for _, part := range chunks(bookIDs) {
-			got, err := s.books.ByKeysOrIDs(ctx, nil, part)
-			if err != nil {
-				s.log.Warn("requests: couldn't look up the requested books", "err", err)
-				break
-			}
-			bs = append(bs, got...)
-		}
-	}
-	{
-		for _, b := range bs {
-			bookByID[b.ID] = b
-		}
-		for k, id := range keyOwner {
-			if b, ok := bookByID[id]; ok {
-				bookByKey[k] = b // any key a book has had, not only its current one
-			}
-		}
-	}
 	progBySeries := map[int64]map[int]series.SeasonProgress{}
 	for i := range reqs {
 		var l lib
@@ -1242,29 +909,10 @@ func (s *Service) enrichAvailability(ctx context.Context, reqs []Request) {
 			l = movHave[reqs[i].TMDBID]
 		case "series":
 			l = serHave[reqs[i].TMDBID]
-		case "book":
-			b, ok := bookByID[reqs[i].BookID]
-			if !ok {
-				b, ok = bookByKey[reqs[i].OLKey]
-			}
-			if ok {
-				now := time.Now()
-				l = lib{id: b.ID, have: bookReady(reqs[i].Formats, b), released: books.Released(b.ReleaseDate, now),
-					misses: b.SearchMisses, lastSearch: b.LastSearchAt}
-				// Only a monitored book has a next check: the sweep never looks at the others.
-				// An upcoming book's next check is its release day.
-				if next := books.NextSearchAtFor(b.LastSearchAt, b.SearchMisses, b.ReleaseDate, now); b.Monitored && !next.IsZero() {
-					l.nextCheck = next.UTC().Format(time.RFC3339)
-				}
-				if !l.released {
-					reqs[i].releaseDate = b.ReleaseDate
-				}
-				reqs[i].partNote = partialNote(reqs[i].Formats, b)
-			}
 		}
 		reqs[i].Available = l.have
 		reqs[i].libID, reqs[i].epHave, reqs[i].epTotal, reqs[i].released = l.id, l.epHave, l.epTotal, l.released
-		reqs[i].searchMisses, reqs[i].lastSearchAt, reqs[i].nextCheckAt = l.misses, l.lastSearch, l.nextCheck
+		reqs[i].searchMisses, reqs[i].lastSearchAt = l.misses, l.lastSearch
 		if reqs[i].MediaType == "series" && len(reqs[i].Seasons) > 0 && l.id > 0 {
 			s.enrichSeasons(ctx, &reqs[i], l.id, progBySeries)
 		}

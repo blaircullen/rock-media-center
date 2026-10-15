@@ -32,7 +32,7 @@ func ValidRemoveMode(m RemoveMode) bool {
 
 // RemoveResult says what a removed download was for, so the UI can name it.
 type RemoveResult struct {
-	Kind  string     `json:"kind,omitempty"` // movie | series | book | music; "" when untracked
+	Kind  string     `json:"kind,omitempty"` // movie | series | music; "" when untracked
 	ID    int64      `json:"id,omitempty"`
 	Title string     `json:"title,omitempty"`
 	Mode  RemoveMode `json:"mode"`
@@ -152,12 +152,6 @@ func (c *Coordinator) describeGrab(ctx context.Context, g *grab) RemoveResult {
 				res.Title = s.Title
 			}
 		}
-	case "book":
-		if c.books != nil {
-			if b, err := c.books.Get(ctx, g.MovieID); err == nil {
-				res.Title = b.Title
-			}
-		}
 	case "music":
 		if c.music != nil {
 			if a, err := c.music.GetAlbum(ctx, g.MovieID); err == nil {
@@ -182,10 +176,6 @@ func (c *Coordinator) addMediaEvent(ctx context.Context, g *grab, event, detail 
 		if c.series != nil {
 			c.series.AddEvent(ctx, g.MovieID, event, detail)
 		}
-	case "book":
-		if c.books != nil {
-			c.books.AddEvent(ctx, g.MovieID, event, detail)
-		}
 	case "music":
 		// Music history lives on the artist.
 		if c.music != nil {
@@ -206,11 +196,6 @@ func (c *Coordinator) stopWanting(ctx context.Context, g *grab, release string) 
 			return ""
 		}
 		what, err = "the movie", c.movies.SetMonitored(ctx, g.MovieID, false)
-	case "book":
-		if c.books == nil {
-			return ""
-		}
-		what, err = "the book", c.books.SetMonitored(ctx, g.MovieID, false)
 	case "music":
 		if c.music == nil {
 			return ""

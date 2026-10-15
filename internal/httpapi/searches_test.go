@@ -15,7 +15,7 @@ func TestSearchNowSaysWhenItStarted(t *testing.T) {
 	fj := newFakeJobs(false)
 	s := newRouteServer(t, func(d *Deps) { d.Jobs = fj })
 	_, mgr := s.user(t, "mgr@example.com", auth.RoleManager)
-	for _, path := range []string{"/api/v1/movies/5/search", "/api/v1/series/6/search", "/api/v1/books/7/search"} {
+	for _, path := range []string{"/api/v1/movies/5/search", "/api/v1/series/6/search"} {
 		rec := s.do("POST", path, mgr)
 		if rec.Code != http.StatusAccepted {
 			t.Fatalf("%s: HTTP %d: %s", path, rec.Code, rec.Body)

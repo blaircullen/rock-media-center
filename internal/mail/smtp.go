@@ -1,6 +1,6 @@
 // Package mail is Arrmada's one way to send email: a plain SMTP client over the owner's
 // own mail account (an app password from Gmail, Fastmail, iCloud…). Alerts go through
-// Apprise, which can't carry a per-person attachment cleanly; Send to Kindle needs exactly
+// Apprise, which can't carry a per-person attachment cleanly; a per-person email needs exactly
 // that, so this sends a message with at most one attached file.
 //
 // The settings live in the app (Settings → Alerts → Outgoing email): host, username and
@@ -56,7 +56,7 @@ type Config struct {
 	Port     int
 	Security string // starttls | tls | none
 	Username string // "" = the server takes mail without signing in
-	From     string // "Arrmada <books@example.com>" or a bare address
+	From     string // "Arrmada <arrmada@example.com>" or a bare address
 }
 
 // ErrNotConfigured is a send with no server or From address saved.
@@ -132,7 +132,7 @@ type Message struct {
 	Subject string
 	Body    string
 	// Attachment is streamed from Open while the message is written, never read into
-	// memory whole: a 50 MB ebook is base64-encoded on the way out.
+	// memory whole: a 50 MB attachment is base64-encoded on the way out.
 	Attachment *Attachment
 }
 
@@ -252,7 +252,7 @@ func ctxErr(ctx context.Context, err error) error {
 // clean keeps what went wrong and drops where: Go's network, TLS and file errors carry the
 // server's name or address ("dial tcp 10.0.0.5:587: connect: connection refused") or a
 // file's path, and Send's errors reach browsers — the settings card, and a requester's
-// inbox after a failed Send to Kindle. The mail server is a credential there, never shown
+// inbox after a failed send. The mail server is a credential there, never shown
 // in full. A reply from the server itself is kept whole: it's what the person needs.
 func clean(err error) error {
 	var reply *textproto.Error

@@ -1,5 +1,5 @@
 import type {
-  APIKeyStatus, AppSettings, Attention, AuthUser, BackupsState, MyQuota, AudioListening, FolderCheck, Health, Job, LibraryPaths, MyAudio, PendingRestart, Person, RecycleStats, SetupState, Status, SystemHealth, SystemStatus,
+  APIKeyStatus, AppSettings, Attention, AuthUser, BackupsState, MyQuota, FolderCheck, Health, Job, LibraryPaths, PendingRestart, Person, RecycleStats, SetupState, Status, SystemHealth, SystemStatus,
   RecentJob, ReviewTarget, TaskStatus, UnmanagedDownload,
 } from "../../src/lib/api";
 import type { LogLevelState, LogPage } from "../../src/lib/systemApi";
@@ -15,7 +15,7 @@ export function status(p: PersonaInfo): Status {
       { id: "movies", name: "Movies", enabled: true, status: "ok" },
       { id: "series", name: "Series", enabled: true, status: "ok" },
     ],
-    books_enabled: true, music_enabled: true, plex_login: false, jellyfin_login: false, jellyfin_quickconnect: false, metadata_ready: true,
+    music_enabled: true, plex_login: false, jellyfin_login: false, jellyfin_quickconnect: false, metadata_ready: true,
   };
 }
 
@@ -78,7 +78,7 @@ export const attention: Attention = {
   ],
 };
 
-const paths: LibraryPaths = { movies: "/media/movies", tv: "/media/tv", ebooks: "/media/ebooks", audiobooks: "/media/audiobooks", music: "/media/music", downloads: "/media/downloads" };
+const paths: LibraryPaths = { movies: "/media/movies", tv: "/media/tv", music: "/media/music", downloads: "/media/downloads" };
 
 // The Library section of the Settings hub reads the same folders.
 export const libraryPaths: LibraryPaths = paths;
@@ -91,15 +91,14 @@ export function folderCheck(path: string): FolderCheck {
   };
 }
 
-// The keys setup reads: TMDB and Hardcover saved (Run setup again shows them masked), the
+// The keys setup reads: TMDB and TheTVDB saved (Run setup again shows them masked), the
 // rest not set. freshKeys is the same list on a new install, nothing set.
 const setupKey = (id: string, label: string, hint?: string): APIKeyStatus => ({
-  id, label, purpose: "", help_url: "", steps: "", secret: id !== "opensubtitles_username", testable: id !== "opensubtitles_username" && id !== "opensubtitles_password",
+  id, label, purpose: "", help_url: "", steps: "", secret: true, testable: true,
   tests_candidate: true, configured: !!hint, source: hint ? "settings" : "", hint, env_set: false,
 });
 export const setupKeys: APIKeyStatus[] = [
-  setupKey("tmdb", "TMDB", "…9e14"), setupKey("tvdb", "TheTVDB"), setupKey("omdb", "OMDb"), setupKey("hardcover", "Hardcover", "…c0de"),
-  setupKey("opensubtitles_api", "OpenSubtitles API key"), setupKey("opensubtitles_username", "OpenSubtitles username"), setupKey("opensubtitles_password", "OpenSubtitles password"),
+  setupKey("tmdb", "TMDB", "…9e14"), setupKey("tvdb", "TheTVDB", "…c0de"), setupKey("omdb", "OMDb"),
 ];
 export const freshKeys: APIKeyStatus[] = setupKeys.map((k) => ({ ...k, configured: false, source: "", hint: undefined }));
 
@@ -133,18 +132,7 @@ export const setupChecklist: SetupChecklist = {
 
 export const pendingRestart: PendingRestart = {
   restart_needed: false, can_restart: true, changed: [],
-  busy: { convert_running: 0, convert_longest_sec: 0, convert_progress: 0, subtitles_running: 0, subtitles_queued: 0 },
 };
-
-export function myAudio(p: PersonaInfo): MyAudio {
-  return {
-    enabled: true, running: true, host_port: "13378", public_url: "",
-    username: p.user.username, allowed: true, has_password: false, min_password_length: 8, devices: [], places: [], removed: [],
-  };
-}
-
-// Your own listening, never anyone's titles: an empty month is enough here.
-export const myListening: AudioListening = { days: 30, since: "2026-09-09", daily: [], totals: [], sessions: [] };
 
 export const settings: AppSettings = {
   search_on_add: true,
@@ -157,7 +145,6 @@ export const settings: AppSettings = {
   naming_series_episode: "{Title} - S{Season:00}E{Episode:00}",
   write_nfo: false,
   download_artwork: true,
-  books_enabled: true,
   music_enabled: true,
   plex_login_enabled: false,
   plex_signin_staff: false,
@@ -170,7 +157,6 @@ export const settings: AppSettings = {
   request_quota_days: 7,
   request_quota_movies: 0,
   request_quota_seasons: 0,
-  request_quota_books: 0,
   tmdb_region: "US",
   recycle_max_gb: "50",
   recycle_retention_days: "30",
@@ -180,7 +166,6 @@ export const settings: AppSettings = {
   downloads_stall_minutes: 60,
   upgrade_max_grabs_per_sweep: 10,
   app_public_url: "",
-  books_languages: ["en"],
 };
 
 export const recycle: RecycleStats = {
@@ -251,7 +236,7 @@ export const users: { users: AuthUser[] } = {
     { id: 1, username: "owner@example.com", role: "admin", auto_approve: false, created_at: "2026-01-01 10:00:00" },
     {
       id: 5, username: "Grandad", role: "requester", plex_linked: true, created_at: "2026-02-01 10:00:00",
-      auto_approve: true, auto_approve_movie: true, auto_approve_series: true, auto_approve_book: true,
+      auto_approve: true, auto_approve_movie: true, auto_approve_series: true,
     },
   ],
 };
@@ -263,7 +248,7 @@ export const systemStatus: SystemStatus = {
   data_dir: "/data", db_bytes: 180 * 1024 ** 2,
   last_backup: { at: new Date(NOW - 3 * 3_600_000).toISOString(), kind: "nightly", file: "arrmada-nightly-20261011-030000.db" },
   disks: [
-    { name: "Movies", path: "/media/movies", measurable: true, total: 16e12, free: 4e12, used_pct: 75, shared_with: [{ name: "TV", path: "/media/tv" }, { name: "Books & audiobooks", path: "/media/books" }] },
+    { name: "Movies", path: "/media/movies", measurable: true, total: 16e12, free: 4e12, used_pct: 75, shared_with: [{ name: "TV", path: "/media/tv" }] },
     { name: "Downloads", path: "/media/downloads", measurable: true, total: 1e12, free: 0.08e12, used_pct: 92, shared_with: [] },
     { name: "Database & backups", path: "/data", measurable: true, total: 0.5e12, free: 0.4e12, used_pct: 20, shared_with: [] },
   ],
@@ -279,29 +264,27 @@ export const systemStatus: SystemStatus = {
 };
 
 // Settings → People & access: the same two, with when they were last around and their
-// audiobook access. Grandad is signed in on two browsers and listens in an app.
-const noLimit = { movies: -1, seasons: -1, books: -1 };
+// sign-in details. Grandad is signed in on two browsers.
+const noLimit = { movies: -1, seasons: -1 };
 export const people: { people: Person[] } = {
   people: [
     {
       id: 1, username: "owner@example.com", role: "admin", disabled: false, created_at: "2026-01-01 10:00:00",
-      auto_approve_movie: false, auto_approve_series: false, auto_approve_book: false, plex_linked: false, quota: noLimit,
-      sessions: 1, web_last: NOW - 60_000, audio_last: 0, listen_last: 0, last_seen: NOW - 60_000,
-      audio_eligible: true, audio_allowed: true, audio_password_set: false, audio_devices: 0,
+      auto_approve_movie: false, auto_approve_series: false, plex_linked: false, quota: noLimit,
+      sessions: 1, web_last: NOW - 60_000, last_seen: NOW - 60_000,
     },
     {
       id: 5, username: "Grandad", role: "requester", disabled: false, created_at: "2026-02-01 10:00:00",
-      auto_approve_movie: true, auto_approve_series: true, auto_approve_book: true, plex_linked: true, plex_username: "grandadplex", quota: noLimit,
-      sessions: 2, web_last: NOW - 3 * 86_400_000, audio_last: NOW - 7_200_000, listen_last: NOW - 3_600_000, last_seen: NOW - 3_600_000,
-      audio_eligible: true, audio_allowed: true, audio_password_set: true, audio_devices: 1,
+      auto_approve_movie: true, auto_approve_series: true, plex_linked: true, plex_username: "grandadplex", quota: noLimit,
+      sessions: 2, web_last: NOW - 3 * 86_400_000, last_seen: NOW - 3_600_000,
     },
   ],
 };
 
 // GET /me/quota: a requester may ask for three movies a week and has asked for one;
-// seasons and books are unlimited. Staff are never limited.
+// seasons are unlimited. Staff are never limited.
 export function quota(p: PersonaInfo): MyQuota {
   const none = { limit: 0, used: 0 };
-  if (p.user.role !== "requester") return { days: 7, movie: none, season: none, book: none };
-  return { days: 7, movie: { limit: 3, used: 1, resets_at: "2026-10-14T09:00:00Z" }, season: none, book: none };
+  if (p.user.role !== "requester") return { days: 7, movie: none, season: none };
+  return { days: 7, movie: { limit: 3, used: 1, resets_at: "2026-10-14T09:00:00Z" }, season: none };
 }

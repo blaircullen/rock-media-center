@@ -9,7 +9,6 @@ export function eventHref(kind: HistoryKind, id: number): string {
   switch (kind) {
     case "movie": return `/movies/${id}`;
     case "series": return `/series/${id}`;
-    case "book": return `/books/${id}`;
     case "music": return `/music/${id}`;
   }
 }
@@ -39,7 +38,6 @@ export function categoryChip(c: HistoryCategory): { label: string; tone: Tone } 
 export const HISTORY_KINDS: { key: HistoryKind; label: string }[] = [
   { key: "movie", label: "Movies" },
   { key: "series", label: "Series" },
-  { key: "book", label: "Books" },
   { key: "music", label: "Music" },
 ];
 

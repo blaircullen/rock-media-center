@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/tristenlammi/arrmada/internal/automation"
-	"github.com/tristenlammi/arrmada/internal/books"
 )
 
 // A transfer on the Activity queue shows the title it is for — poster, name, a link to its
@@ -18,14 +17,14 @@ import (
 
 // transferItem is the library title a transfer was grabbed for.
 type transferItem struct {
-	Kind      string `json:"kind"` // movie | series | book | music
-	ID        int64  `json:"id"`   // the movie, series, book or album id
+	Kind      string `json:"kind"` // movie | series | music
+	ID        int64  `json:"id"`   // the movie, series or album id
 	Title     string `json:"title"`
 	Year      int    `json:"year,omitempty"`
 	PosterURL string `json:"poster_url,omitempty"`
-	Byline    string `json:"byline,omitempty"` // a book's author, an album's artist
+	Byline    string `json:"byline,omitempty"` // an album's artist
 	// Scope is what part of the title the torrent covers, in words: "S03", "S03E05",
-	// "Complete series", "Audiobook", a movie version's label. "" for the whole title.
+	// "Complete series", a movie version's label. "" for the whole title.
 	Scope string `json:"scope,omitempty"`
 	// Upgrade: the grab replaces a file the title already has.
 	Upgrade bool `json:"upgrade,omitempty"`
@@ -41,7 +40,7 @@ type titleCard struct {
 	year      int
 	poster    string
 	byline    string
-	versions  map[int64]string // movie versions / audiobook versions by id → label
+	versions  map[int64]string // movie versions by id → label
 	fetchedAt time.Time
 }
 
@@ -154,19 +153,6 @@ func (a *api) loadTitleCard(ctx context.Context, kind string, id int64) titleCar
 			break
 		}
 		return titleCard{found: true, title: s.Title, year: s.Year, poster: s.PosterURL}
-	case "book":
-		if a.deps.Books == nil {
-			break
-		}
-		b, err := a.deps.Books.Get(ctx, id)
-		if err != nil {
-			break
-		}
-		card := titleCard{found: true, title: b.Title, year: b.Year, poster: b.CoverURL, byline: b.Author, versions: map[int64]string{}}
-		for _, v := range b.AudioVersions {
-			card.versions[v.ID] = v.Label
-		}
-		return card
 	case "music":
 		if a.deps.Music == nil {
 			break
@@ -246,19 +232,6 @@ func scopeLabel(acq automation.Acquisition, card titleCard) string {
 			return "Complete series"
 		}
 		return acq.Scope // S03, S03E05, S01-S04
-	case "book":
-		if acq.VersionID > 0 {
-			if l := card.versions[acq.VersionID]; l != "" {
-				return "Audiobook · " + l
-			}
-			return "Audiobook version"
-		}
-		switch acq.Scope {
-		case books.KindEbook:
-			return "Ebook"
-		case books.KindAudiobook:
-			return "Audiobook"
-		}
 	}
 	return ""
 }

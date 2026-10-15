@@ -4,8 +4,7 @@ import { ConfirmDialog } from "../ui";
 
 const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? one : many}`;
 
-// mergeLines says exactly what a merge moves, in the words the dialog lists. Audiobook
-// data is "yes": never which books.
+// mergeLines says exactly what a merge moves, in the words the dialog lists.
 export function mergeLines(p: PlexMergePreview): string[] {
   const out: string[] = [];
   if (p.requests) out.push(plural(p.requests, "request"));
@@ -13,8 +12,6 @@ export function mergeLines(p: PlexMergePreview): string[] {
   if (p.notifications) out.push(plural(p.notifications, "inbox message"));
   if (p.push_devices) out.push(plural(p.push_devices, "phone or browser", "phones and browsers") + " getting alerts");
   if (p.quota_usage) out.push(plural(p.quota_usage, "request-limit entry", "request-limit entries"));
-  if (p.audiobook_progress) out.push("audiobook progress");
-  if (p.audiobook_password) out.push("their audiobook password");
   // Older servers didn't say: their merges always moved a Plex link.
   if (p.plex_link !== false) out.push(`the Plex link${p.plex_username ? ` (${p.plex_username})` : ""}`);
   if (p.jellyfin_link) out.push(`the Jellyfin link${p.jellyfin_username ? ` (${p.jellyfin_username})` : ""}`);
@@ -49,10 +46,10 @@ export function PlexMergeDialog({ targetId, fromId, onClose, onMerged }: {
       body={preview ? (
         <>
           <p className="m-0">Moves to {preview.to}: {mergeLines(preview).join(", ")}. Then {preview.from} is deleted.</p>
-          {(preview.signed_in_devices > 0 || preview.listening_apps > 0) && (
-            <p className="m-0 mt-2">Devices signed in as {preview.from} are signed out ({plural(preview.signed_in_devices + preview.listening_apps, "device")}); they sign in again as {preview.to}.</p>
+          {preview.signed_in_devices > 0 && (
+            <p className="m-0 mt-2">Devices signed in as {preview.from} are signed out ({plural(preview.signed_in_devices, "device")}); they sign in again as {preview.to}.</p>
           )}
-          <p className="m-0 mt-2">Where both accounts have the same thing (an inbox message, a followed request, an audiobook place), {preview.to}'s is kept. A copy of the database is taken first, under Backups.</p>
+          <p className="m-0 mt-2">Where both accounts have the same thing (an inbox message or a followed request), {preview.to}'s is kept. A copy of the database is taken first, under Backups.</p>
         </>
       ) : !err ? "Checking what would move…" : null}
       tone="danger"

@@ -28,7 +28,7 @@ func TestParseCapsProwlarr(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !c.Movie.Available || !reflect.DeepEqual(c.Movie.Params, []string{"q", "imdbid", "tmdbid"}) || !c.TV.Available || c.Book.Available {
+	if !c.Movie.Available || !reflect.DeepEqual(c.Movie.Params, []string{"q", "imdbid", "tmdbid"}) || !c.TV.Available {
 		t.Fatalf("modes = %+v", c)
 	}
 	if want := []int{2000, 2040, 2045, 5000, 5040, 100013}; !reflect.DeepEqual(c.Categories, want) {
@@ -54,7 +54,7 @@ func TestParseCapsJackettMixedCase(t *testing.T) {
 	if want := []int{3000, 3030, 7000, 7020}; !reflect.DeepEqual(c.Categories, want) || c.LimitsMax != 1000 {
 		t.Fatalf("caps = %+v", c)
 	}
-	if got := c.Summary(); got != "TV (season, ep) · Audio · Books (author, title) · 4 categories" {
+	if got := c.Summary(); got != "TV (season, ep) · Audio · 4 categories" {
 		t.Fatalf("summary = %q", got)
 	}
 }
@@ -166,7 +166,7 @@ func TestTestSettingsStoresNothing(t *testing.T) {
 	t.Cleanup(srv.Close)
 	s, _, _ := healthService(t)
 	summary, err := s.TestSettings(context.Background(), Indexer{Kind: KindTorznab, Name: "new", URL: srv.URL, APIKey: "typed"})
-	if err != nil || !strings.Contains(summary, "Books (author, title)") {
+	if err != nil || !strings.Contains(summary, "TV (season, ep)") {
 		t.Fatalf("TestSettings = %q, %v", summary, err)
 	}
 	if list, _ := s.List(context.Background()); len(list) != 0 {

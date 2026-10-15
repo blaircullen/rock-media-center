@@ -23,14 +23,10 @@ services:
   arrmada-app:
     image: ghcr.io/tristenlammi/arrmada:stable
     container_name: Arrmada-app
-    # Lets x265 pin its threads; Convert works without it, just slower.
-    cap_add: [SYS_NICE]
     ports:
       - "7878:7878"        # ← the web page; change the left number if 7878 is taken (Radarr)
-      - "13379:13378"      # audiobook server for listening apps (off until switched on)
     environment:
       <<: *you
-      ARRMADA_AUDIOBOOK_HOST_PORT: "13379"
       ARRMADA_EXTERNAL_HEADER: "Cf-Connecting-Ip"
       ARRMADA_LOG_LEVEL: "info"
       ARRMADA_QBITTORRENT_URL: "http://arrmada-qbittorrent:8080"
@@ -53,8 +49,6 @@ services:
       - arrmada-media:/media
       # The optional SABnzbd's settings (below), read-only: Arrmada reads its API key here.
       - arrmada-sab-config:/bundled/sabnzbd:ro
-    # To use an Intel/AMD GPU for Convert, uncomment:
-    # devices: [/dev/dri:/dev/dri]
     depends_on:
       arrmada-media-init: { condition: service_completed_successfully }
       arrmada-qbittorrent: { condition: service_started }
@@ -222,17 +216,9 @@ services:
   #       dir = tv
   #       newzbin = ""
   #       priority = -100
-  #       [[arrmada-books]]
-  #       name = arrmada-books
-  #       order = 3
-  #       pp = 3
-  #       script = Default
-  #       dir = books
-  #       newzbin = ""
-  #       priority = -100
   #       [[arrmada-music]]
   #       name = arrmada-music
-  #       order = 4
+  #       order = 3
   #       pp = 3
   #       script = Default
   #       dir = music

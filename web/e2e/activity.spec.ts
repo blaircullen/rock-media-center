@@ -203,7 +203,7 @@ test.describe("History", () => {
     await expect(page.getByRole("region", { name: "Today" }).getByRole("listitem")).toHaveCount(3);
     await expect(page.getByRole("region", { name: "Yesterday" }).getByRole("listitem")).toHaveCount(1);
     await expect(page.getByRole("link", { name: "Low Tide" })).toHaveAttribute("href", "/music/2");
-    await expect(page.getByRole("link", { name: "The Long Quiet" })).toHaveAttribute("href", "/books/7");
+    await expect(page.getByRole("link", { name: "The Long Quiet" })).toHaveAttribute("href", "/music/7");
     // "Added to library" is bookkeeping: only under Other.
     await expect(page.getByText("Added to library")).toHaveCount(0);
     await page.getByRole("group", { name: "Event" }).getByRole("button", { name: "Other" }).click();

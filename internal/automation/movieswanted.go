@@ -10,8 +10,7 @@ import (
 
 // MovieCutoff is one movie track whose file doesn't meet its profile's target yet: a row
 // of Movies → Wanted → Cutoff unmet. The file is judged the way the upgrade sweep judges
-// it (quality.JudgeFile on currentMovieFile: Convert's probed facts when they still
-// describe the file, its release name otherwise).
+// it (quality.JudgeFile on currentMovieFile: its release name).
 type MovieCutoff struct {
 	Movie   movies.Movie
 	Track   movies.Version // ID 0 = the default track
@@ -30,7 +29,7 @@ type MovieCutoff struct {
 
 // MoviesCutoffUnmet lists every track with a file on disk that a profile with a target
 // judges as not there yet, in library order. A profile with no target set up has no
-// cutoff to miss, so its files aren't listed. Database reads only (and Convert's index).
+// cutoff to miss, so its files aren't listed. Database reads only.
 func (c *Coordinator) MoviesCutoffUnmet(ctx context.Context) ([]MovieCutoff, error) {
 	byMovie, all, err := c.movies.LibraryVersionRows(ctx)
 	if err != nil {

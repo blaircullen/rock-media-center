@@ -1,10 +1,9 @@
 // Package outbox makes the side effects of an import durable.
 //
-// When a movie, episode or book lands, other modules have work to do: Convert and
-// Subtitles reindex it, its requester is told it's ready, the audiobook catalogue drops
-// its cache. That used to ride the event bus, which drops an event when a subscriber is
-// busy and forgets everything on a restart — a dropped event meant Convert never saw a
-// same-path upgrade and the requester waited for the ten-minute backstop sweep.
+// When a movie or episode lands, other modules have work to do: its requester is told
+// it's ready. That used to ride the event bus, which drops an event when a subscriber is
+// busy and forgets everything on a restart — a dropped event meant the requester waited
+// for the ten-minute backstop sweep.
 //
 // Now the code that records the import calls Enqueue, inside its own transaction where it
 // has one, and a row per registered consumer is written to the outbox table. Run drains

@@ -104,7 +104,7 @@ func lanRequest(method, target, body string, role auth.Role) *http.Request {
 func TestManualImportListRequiresManager(t *testing.T) {
 	cfg, _ := importTestDirs(t)
 	srv := New(Deps{Config: cfg, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
-	for _, kind := range []string{"movies", "series", "books"} {
+	for _, kind := range []string{"movies", "series"} {
 		// ?path=/ makes the manager's call stop at the folder check (400), so no catalog
 		// service is needed — and proves the check runs.
 		target := "/api/v1/" + kind + "/1/manualimport?path=" + url.QueryEscape("/")
@@ -125,7 +125,7 @@ func TestManualImportListRequiresManager(t *testing.T) {
 func TestManualImportRefusesPathsOutsideTheRoots(t *testing.T) {
 	cfg, outside := importTestDirs(t)
 	srv := New(Deps{Config: cfg, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
-	for _, kind := range []string{"movies", "series", "books"} {
+	for _, kind := range []string{"movies", "series"} {
 		for _, p := range []string{outside, cfg.DataDir, "/"} {
 			// Listing: the walk never starts.
 			rec := httptest.NewRecorder()

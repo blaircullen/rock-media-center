@@ -24,7 +24,7 @@ async function override(page: Page, api: MockedApi, extra: MockRoute[]) {
   });
 }
 
-const blank = { movies: "", tv: "", ebooks: "", audiobooks: "", music: "", downloads: "" };
+const blank = { movies: "", tv: "", music: "", downloads: "" };
 // A fresh install: nothing chosen, no keys, no Plex, no indexers, no Prowlarr answering.
 const fresh = {
   ...configuredSetup, needed: true, complete: false, tmdb_configured: false, libraries_chosen: false, keys: freshKeys,
@@ -107,46 +107,42 @@ test.describe("admin", () => {
     await expect.poll(() => api.callsTo("POST", "/api/v1/setup/complete").length).toBe(1);
   });
 
-  // The optional keys are open under TMDB, Hardcover first; a typed one is checked before
-  // it's saved, and the step carries on with only the keys that were typed.
+  // The optional keys are open under TMDB; a typed one is checked before it's saved, and
+  // the step carries on with only the keys that were typed.
   test("optional keys are offered, checked before saving, and never required", async ({ page, api }) => {
     await override(page, api, [
       { method: "GET", path: "/api/v1/setup", body: fresh },
-      { method: "POST", path: "/api/v1/apikeys/hardcover/test", body: { ok: true, detail: "OK: Hardcover accepted the key (signed in as reader)." } },
-      { method: "POST", path: "/api/v1/apikeys/opensubtitles_api/test", body: { ok: false, detail: "OpenSubtitles rejected the API key (HTTP 403)" } },
-      { method: "PUT", path: "/api/v1/apikeys/hardcover", body: { keys: freshKeys } },
+      { method: "POST", path: "/api/v1/apikeys/tvdb/test", body: { ok: true, detail: "OK: TheTVDB accepted the key." } },
+      { method: "POST", path: "/api/v1/apikeys/omdb/test", body: { ok: false, detail: "OMDb: Invalid API key!" } },
+      { method: "PUT", path: "/api/v1/apikeys/tvdb", body: { keys: freshKeys } },
       { method: "PUT", path: "/api/v1/system/library", body: blank },
     ]);
     await page.goto("/");
     const optional = page.getByRole("region", { name: "Optional keys — Arrmada works without them" });
     await expect(optional).toBeVisible();
-    await expect(optional.getByText("Recommended")).toHaveCount(1);
-    await expect(optional.getByRole("link", { name: /Get a free Hardcover key/ })).toHaveAttribute("href", "https://hardcover.app/account/api");
+    await expect(optional.getByText("Optional", { exact: true })).toHaveCount(2);
+    await expect(optional.getByRole("link", { name: /Get a free TheTVDB key/ })).toHaveAttribute("href", "https://thetvdb.com/api-information");
 
-    await optional.getByLabel("Hardcover", { exact: true }).fill("hc-token");
-    await optional.getByLabel("Hardcover", { exact: true }).blur();
-    await expect(optional.getByText("✓ OK: Hardcover accepted the key (signed in as reader).")).toBeVisible();
-    expect(api.callsTo("POST", "/api/v1/apikeys/hardcover/test")[0]?.body).toEqual({ value: "hc-token" });
+    await optional.getByLabel("TheTVDB", { exact: true }).fill("tvdb-token");
+    await optional.getByLabel("TheTVDB", { exact: true }).blur();
+    await expect(optional.getByText("✓ OK: TheTVDB accepted the key.")).toBeVisible();
+    expect(api.callsTo("POST", "/api/v1/apikeys/tvdb/test")[0]?.body).toEqual({ value: "tvdb-token" });
 
-    // OpenSubtitles is one item: the key with its login, checked when focus leaves it.
-    const os = optional.getByRole("group", { name: /^OpenSubtitles/ });
-    await os.getByLabel("API key").fill("os-key");
-    await os.getByLabel("Username").fill("me");
-    await os.getByLabel("Password").fill("pw");
-    await optional.getByLabel("Hardcover", { exact: true }).focus();
-    await expect(os.getByText("✗ OpenSubtitles rejected the API key (HTTP 403)")).toBeVisible();
-    expect(api.callsTo("POST", "/api/v1/apikeys/opensubtitles_api/test")[0]?.body).toEqual({ value: "os-key", username: "me", password: "pw" });
+    await optional.getByLabel("OMDb", { exact: true }).fill("bad");
+    await optional.getByLabel("OMDb", { exact: true }).blur();
+    await expect(optional.getByText("✗ OMDb: Invalid API key!")).toBeVisible();
+    expect(api.callsTo("POST", "/api/v1/apikeys/omdb/test")[0]?.body).toEqual({ value: "bad" });
 
     // A turned-down key is only saved if the admin says so; clearing it carries on without it.
     await page.getByRole("button", { name: "Save and continue" }).click();
-    const dialog = page.getByRole("dialog", { name: "Save this OpenSubtitles key anyway?" });
+    const dialog = page.getByRole("dialog", { name: "Save this OMDb key anyway?" });
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: "Keep editing" }).click();
-    for (const f of ["API key", "Username", "Password"]) await os.getByLabel(f).fill("");
+    await optional.getByLabel("OMDb", { exact: true }).fill("");
     await page.getByRole("button", { name: "Save and continue" }).click();
     await expect(page.getByRole("heading", { name: "Where's your media?" })).toBeVisible();
-    expect(api.callsTo("PUT", "/api/v1/apikeys").map((c) => c.path)).toEqual(["/api/v1/apikeys/hardcover"]);
-    expect(api.callsTo("POST", "/api/v1/apikeys/hardcover/test")).toHaveLength(1);
+    expect(api.callsTo("PUT", "/api/v1/apikeys").map((c) => c.path)).toEqual(["/api/v1/apikeys/tvdb"]);
+    expect(api.callsTo("POST", "/api/v1/apikeys/tvdb/test")).toHaveLength(1);
   });
 
   test("Run setup again reopens the wizard and comes back to Settings → System", async ({ page }) => {
@@ -156,7 +152,7 @@ test.describe("admin", () => {
     await expect(page.getByRole("heading", { name: "Run setup again" })).toBeVisible();
     // What's saved shows masked; nothing is filled in.
     await expect(page.getByText("✓ saved (…c0de)")).toBeVisible();
-    await expect(page.getByLabel("Hardcover", { exact: true })).toHaveValue("");
+    await expect(page.getByLabel("TheTVDB", { exact: true })).toHaveValue("");
     await page.getByText("Back to Settings → System").click();
     await expect(page).toHaveURL(/\/settings\/system$/);
   });

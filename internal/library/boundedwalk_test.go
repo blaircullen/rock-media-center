@@ -73,30 +73,3 @@ func TestFindVideosCtxCancelled(t *testing.T) {
 		t.Errorf("cancelled walk: %d files, err %v", len(got), err)
 	}
 }
-
-func TestFindBookFilesCtxBounded(t *testing.T) {
-	dir := t.TempDir()
-	for i := 0; i < 4; i++ {
-		writeFile(t, filepath.Join(dir, fmt.Sprintf("Book %d", i), "book.epub"), 10)
-	}
-	writeFile(t, filepath.Join(dir, ".merge-backup", "old.epub"), 10) // hidden: skipped
-
-	all, truncated, err := FindBookFilesCtx(context.Background(), dir, 0, 0)
-	if err != nil || truncated || len(all) != 4 {
-		t.Fatalf("unbounded: %d, truncated %v, err %v", len(all), truncated, err)
-	}
-	if got, truncated, _ := FindBookFilesCtx(context.Background(), dir, 2, 0); !truncated || len(got) != 2 {
-		t.Errorf("capped at 2: %d, truncated %v", len(got), truncated)
-	}
-	if got, truncated, _ := FindBookFilesCtx(context.Background(), dir, 0, 3); !truncated || len(got) >= 4 {
-		t.Errorf("visit cap 3: %d, truncated %v", len(got), truncated)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	if got, _, err := FindBookFilesCtx(ctx, dir, 0, 0); !errors.Is(err, context.Canceled) || len(got) != 0 {
-		t.Errorf("cancelled: %d, %v", len(got), err)
-	}
-	if old := FindBookFiles(dir); len(old) != 4 {
-		t.Errorf("FindBookFiles: %d", len(old))
-	}
-}

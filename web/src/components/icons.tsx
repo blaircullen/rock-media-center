@@ -56,19 +56,6 @@ const PATHS = {
       <path d="M8 3l4 4 4-4" />
     </>
   ),
-  books: (
-    <>
-      <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" />
-      <path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19" />
-    </>
-  ),
-  audiobooks: (
-    <>
-      <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
-      <rect x="3" y="14" width="4" height="7" rx="1.5" />
-      <rect x="17" y="14" width="4" height="7" rx="1.5" />
-    </>
-  ),
   music: (
     <>
       <path d="M9 18V5l11-2v13" />
@@ -80,18 +67,6 @@ const PATHS = {
     <>
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M3 10h18M8 3v4M16 3v4" />
-    </>
-  ),
-  subtitles: (
-    <>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M7 11h10M7 15h4M13 15h4" />
-    </>
-  ),
-  convert: (
-    <>
-      <path d="M4.5 10A8 8 0 0 1 18 6.5L20 8.5M20 4v4.5h-4.5" />
-      <path d="M19.5 14A8 8 0 0 1 6 17.5L4 15.5M4 20v-4.5h4.5" />
     </>
   ),
   insights: <path d="M4 20h16M7 16v-5M12 16V6M17 16V9" />,

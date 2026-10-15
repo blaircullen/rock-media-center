@@ -9,8 +9,7 @@ import (
 // Quality is an audio quality TIER — codec and bitrate together.
 //
 // The tier, not the codec, is what a music quality profile is about: "MP3" on its own says
-// nothing, because MP3-128 and MP3-320 are two and a half times apart. Unlike books — where
-// EPUB vs MOBI is a preference with no better/worse — these are genuinely ordered, so they
+// nothing, because MP3-128 and MP3-320 are two and a half times apart. These are genuinely ordered, so they
 // form a ladder the way video resolutions do.
 //
 // The names are the ones trackers actually print, so a profile reads like the releases do.

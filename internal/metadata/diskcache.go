@@ -12,9 +12,9 @@ import (
 
 // DiskCache keeps catalogue answers in SQLite so they survive a restart, and serves a
 // stale answer while a fresh one is fetched in the background. The pages that matter
-// (Discover's rows, a book's details) are then instant on every open, including the
-// first one after a deploy, and an upstream that's slow or paced — Hardcover allows
-// one request a second — never sits between the user and the page.
+// (Discover's rows, a title's details) are then instant on every open, including the
+// first one after a deploy, and an upstream that's slow or paced never sits between the
+// user and the page.
 type DiskCache struct {
 	db *sql.DB
 

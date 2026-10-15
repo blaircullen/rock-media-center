@@ -137,8 +137,7 @@ prints the command:
 `./update.sh --rollback` starts the previous version again in a few seconds (the one you
 leave is kept as `arrmada:rolled-back`, and the next `./update.sh` goes forward again). If the
 previous version doesn't come up, the script starts the newer one again rather than leave
-Arrmada down. Keeping the old image costs one extra image of disk, several GB with the
-subtitle and GPU tooling.
+Arrmada down. Keeping the old image costs one extra image of disk.
 
 An older version won't start on a database a newer one has upgraded: it stops with a message
 saying so, because running old code on tables it doesn't know can damage them. So before it
@@ -163,7 +162,7 @@ it, then run `./update.sh --rollback`.
 On the stable channel `update.sh` downloads `ARRMADA_IMAGE`, which is
 `ghcr.io/tristenlammi/arrmada:stable` (always the newest release) unless you pin one with a
 version (`ghcr.io/tristenlammi/arrmada:0.18.0`). On main it compiles the app on your server,
-which takes a long time (the subtitle and GPU tooling are built from source).
+which takes a long time.
 `./update.sh --force-local` compiles once without changing `.env`. Either way
 `ARRMADA_APP_IMAGE` stays `arrmada:dev`: that's the local name `update.sh` gives whatever it
 built or downloaded, and the one `--rollback` swaps.

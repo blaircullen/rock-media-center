@@ -227,7 +227,7 @@ func TestSABnzbdAddReturnsKey(t *testing.T) {
 	for version, id := range map[string]string{"5.1.3": "5a2cc24f-9be3-4b43-bfc1-9f6d04ee939b", "4.5.5": "SABnzbd_nzo_vqsbikxw"} {
 		t.Run(version, func(t *testing.T) {
 			f, dc := newSABFake(t, version)
-			f.setCats("*", "arrmada", "arrmada-tv", "arrmada-books", "arrmada-music")
+			f.setCats("*", "arrmada", "arrmada-tv", "arrmada-music")
 			nzb := nntptest.NZB("pa ss&<word>", map[string]string{"film.mkv": "a@b"}, map[string]int{"film.mkv": 10})
 			key, err := newSAB().AddKeyed(context.Background(), dc, AddRequest{
 				Name: "Film.2020.1080p.WEB-DL", File: nzb, Filename: "Film.2020.nzb", Category: "arrmada-tv", Transport: TransportUsenet,
@@ -381,7 +381,7 @@ func TestSABnzbdListStatuses(t *testing.T) {
 	cases := map[string]want{
 		"Film.Downloading.2020.1080p": {"downloading", "downloading", false},
 		"Show.S01E01.Queued.1080p":    {"downloading", "queued", false},
-		"Book.Paused":                 {"paused", "paused", false},
+		"Album.Paused":                {"paused", "paused", false},
 		"Album.Propagating":           {"downloading", "queued", false},
 		"Film.Fetching":               {"downloading", "queued", false},
 		"Film.Grabbing":               {"downloading", "queued", false},
@@ -445,8 +445,8 @@ func TestSABnzbdListStatuses(t *testing.T) {
 
 	// Only Arrmada's categories are asked for.
 	for _, c := range f.allCalls() {
-		if c.mode == "queue" && c.form.Get("cat") != "arrmada,arrmada-tv,arrmada-books,arrmada-music" ||
-			c.mode == "history" && c.form.Get("category") != "arrmada,arrmada-tv,arrmada-books,arrmada-music" {
+		if c.mode == "queue" && c.form.Get("cat") != "arrmada,arrmada-tv,arrmada-music" ||
+			c.mode == "history" && c.form.Get("category") != "arrmada,arrmada-tv,arrmada-music" {
 			t.Errorf("%s read with %v", c.mode, c.form)
 		}
 	}
@@ -467,7 +467,7 @@ func TestSABnzbdMovieCategory(t *testing.T) {
 			t.Errorf("a job in the default movie category was listed: %s", it.Name)
 		}
 	}
-	if got := f.allCalls()[0].form.Get("cat"); got != "films,arrmada-tv,arrmada-books,arrmada-music" {
+	if got := f.allCalls()[0].form.Get("cat"); got != "films,arrmada-tv,arrmada-music" {
 		t.Errorf("cat = %q", got)
 	}
 }
@@ -488,7 +488,7 @@ func TestSABnzbdCommandsUseRealID(t *testing.T) {
 	ctx := context.Background()
 	f, dc := newSABFake(t, "5.1.3")
 	f.setLists("statuses_queue.json", "statuses_history.json")
-	f.setCats("*", "arrmada", "arrmada-tv", "arrmada-books", "arrmada-music")
+	f.setCats("*", "arrmada", "arrmada-tv", "arrmada-music")
 	sab := newSAB()
 	if err := sab.Pause(ctx, dc, "sab-sabnzbd_nzo_queued01"); err != nil {
 		t.Fatal(err)
@@ -496,7 +496,7 @@ func TestSABnzbdCommandsUseRealID(t *testing.T) {
 	if err := sab.Resume(ctx, dc, "sab-sabnzbd_nzo_paused01"); err != nil {
 		t.Fatal(err)
 	}
-	if err := sab.SetCategory(ctx, dc, "sab-sabnzbd_nzo_queued01", CategoryBooks); err != nil {
+	if err := sab.SetCategory(ctx, dc, "sab-sabnzbd_nzo_queued01", CategoryMusic); err != nil {
 		t.Fatal(err)
 	}
 	if err := sab.TorrentAction(ctx, dc, "sab-sabnzbd_nzo_failed01", ActionRetry); err != nil {
@@ -515,7 +515,7 @@ func TestSABnzbdCommandsUseRealID(t *testing.T) {
 	want := []string{
 		"queue pause SABnzbd_nzo_Queued01",
 		"queue resume SABnzbd_nzo_Paused01",
-		"change_cat  SABnzbd_nzo_Queued01 arrmada-books",
+		"change_cat  SABnzbd_nzo_Queued01 arrmada-music",
 		"retry  SABnzbd_nzo_Failed01",
 		"pause",
 		"resume",
@@ -787,7 +787,7 @@ func TestSABnzbdKeyNeverLeaks(t *testing.T) {
 		case "version":
 			_, _ = io.WriteString(w, `{"version":"5.1.3"}`)
 		case "get_cats":
-			_, _ = io.WriteString(w, `{"categories":["*","arrmada","arrmada-tv","arrmada-books","arrmada-music"]}`)
+			_, _ = io.WriteString(w, `{"categories":["*","arrmada","arrmada-tv","arrmada-music"]}`)
 		case "fullstatus":
 			_, _ = io.WriteString(w, `{"status":{"apikey":"`+sabTestKey+`","completedir":"/downloads/complete","servers":[{"servername":"x","servererror":"login `+sabTestKey+` refused"}]}}`)
 		case "queue":
@@ -872,9 +872,9 @@ func TestSABnzbdFacts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if facts.Version != "5.1.3" || strings.Join(facts.Missing, ",") != "arrmada-tv,arrmada-books,arrmada-music" ||
+	if facts.Version != "5.1.3" || strings.Join(facts.Missing, ",") != "arrmada-tv,arrmada-music" ||
 		!facts.CompleteFolder.Visible || facts.CompleteFolder.Local != filepath.Join(local, "complete") ||
-		facts.Language != "de" || !facts.NotEnglish || facts.ServersConfigured != 0 || len(facts.Categories) != 4 {
+		facts.Language != "de" || !facts.NotEnglish || facts.ServersConfigured != 0 || len(facts.Categories) != 3 {
 		t.Errorf("facts = %+v", facts)
 	}
 	movies := facts.Categories[0]
@@ -920,7 +920,7 @@ func TestSABnzbdAddMissingCategories(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(created, ",") != "arrmada-tv,arrmada-books" {
+	if strings.Join(created, ",") != "arrmada-tv" {
 		t.Errorf("created %v", created)
 	}
 	var sets []string
@@ -930,7 +930,7 @@ func TestSABnzbdAddMissingCategories(t *testing.T) {
 		}
 		sets = append(sets, c.form.Get("name"))
 	}
-	if strings.Join(sets, ",") != "arrmada-tv,arrmada-books" {
+	if strings.Join(sets, ",") != "arrmada-tv" {
 		t.Errorf("set_config for %v", sets)
 	}
 	f.reset()

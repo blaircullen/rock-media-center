@@ -22,7 +22,7 @@ type IndexerIssue struct {
 }
 
 // searchNotes collects which indexers failed or were skipped across every query one search
-// makes — a series search sends a broad query, one per season and one per alias; a book
+// makes — a series search sends a broad query, one per season and one per alias; a music search
 // search tries author+title, then the title alone. It rides on the context so those paths
 // don't each have to thread an errors map back up. Safe for concurrent use.
 type searchNotes struct {

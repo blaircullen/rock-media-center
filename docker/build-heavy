@@ -1,12 +1,11 @@
 #!/bin/sh
-# build-heavy MB_PER_JOB COMMAND — runs one of the image build's big compiles (the web UI,
-# the Go binary, the two whisper.cpp builds) with as many parallel jobs as this machine's
+# build-heavy MB_PER_JOB COMMAND — runs one of the image build's big compiles (the web UI
+# and the Go binary) with as many parallel jobs as this machine's
 # memory allows, in $JOBS, and says plainly when the machine ran out of memory.
 #
 # The Dockerfile runs each of these under one shared lock (a cache mount with
 # sharing=locked), so they take turns instead of compiling side by side: on a small
-# server, compilers from several stages at once is what ran it out of memory (6.5 GB at
-# the peak with four cores, before; 2 GB now).
+# server, compilers from several stages at once is what ran it out of memory.
 #
 # JOBS = the free memory / MB_PER_JOB (the measured memory per compiler process), at
 # least 1 and at most the number of cores. /proc/meminfo is the machine's own memory on a

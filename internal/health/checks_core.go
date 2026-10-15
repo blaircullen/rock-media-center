@@ -288,26 +288,6 @@ func diskFreeCheck(dir func() string, free func(string) (float64, bool)) Check {
 	}
 }
 
-// AudiobookServerCheck reports an audiobook server that's switched on but couldn't start
-// (usually its port is taken). state returns whether it's on, whether it's running and
-// the last start error.
-func AudiobookServerCheck(state func(ctx context.Context) (on, running bool, lastErr string)) Check {
-	return Check{
-		Key: "audiobooks.server", Name: "Audiobook server", Category: CategoryIntegrations,
-		Run: func(ctx context.Context) []Finding {
-			on, running, lastErr := state(ctx)
-			if !on || running {
-				return nil
-			}
-			msg := "The audiobook server is switched on but isn't running, so listening apps can't connect."
-			if lastErr != "" {
-				msg += " " + lastErr
-			}
-			return []Finding{{Key: "audiobooks.server", Level: LevelError, Message: msg, Fix: FixAudiobookServer}}
-		},
-	}
-}
-
 func plural(n int) string {
 	if n == 1 {
 		return ""

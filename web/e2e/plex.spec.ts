@@ -101,7 +101,7 @@ test.describe("admin", () => {
       { method: "GET", path: "/api/v1/me/plex/link/6", status: 409, body: { status: "error", message: "This Plex account is already linked to ownerplex.", already_linked_to: "ownerplex", user_id: 9, mergeable: true } },
       { method: "GET", path: "/api/v1/users/1/merge", body: {
         from: "ownerplex", to: "admiral", plex_link: true, plex_username: "ownerplex", jellyfin_link: false, requests: 12, following: 0, notifications: 4, push_devices: 3,
-        quota_usage: 0, audiobook_progress: true, audiobook_password: false, signed_in_devices: 1, listening_apps: 0,
+        quota_usage: 0, signed_in_devices: 1,
       } },
       { method: "POST", path: "/api/v1/users/1/merge", body: { merged: true } },
     ]);
@@ -114,7 +114,7 @@ test.describe("admin", () => {
 
     await sidebar.getByRole("button", { name: "Move link here" }).click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("12 requests, 4 inbox messages, 3 phones and browsers getting alerts, audiobook progress, the Plex link (ownerplex)", { exact: false })).toBeVisible();
+    await expect(dialog.getByText("12 requests, 4 inbox messages, 3 phones and browsers getting alerts, the Plex link (ownerplex)", { exact: false })).toBeVisible();
     await dialog.getByRole("button", { name: "Back up and merge" }).click();
     await expect.poll(() => api.callsTo("POST", "/api/v1/users/1/merge").length).toBe(1);
     expect(api.callsTo("POST", "/api/v1/users/1/merge")[0].body).toEqual({ from_user_id: 9 });

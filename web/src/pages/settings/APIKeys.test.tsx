@@ -102,20 +102,20 @@ describe("API keys on Connections", () => {
     expect(save).not.toHaveBeenCalled();
   });
 
-  it("tests the saved key straight after Save; the OpenSubtitles password tests through the API key", async () => {
-    metadata([card("opensubtitles_api", { name: "OpenSubtitles" })]);
-    const keys = [key("opensubtitles_api"), key("opensubtitles_username", { secret: false, testable: false, tests_candidate: false }), key("opensubtitles_password", { testable: false, tests_candidate: false })];
+  it("tests the saved key straight after Save", async () => {
+    metadata([card("omdb", { name: "OMDb" })]);
+    const keys = [key("omdb")];
     vi.spyOn(api, "apiKeys").mockResolvedValue(keys);
     vi.spyOn(api, "setAPIKey").mockResolvedValue(keys);
-    const test = vi.spyOn(api, "testAPIKey").mockResolvedValue({ ok: true, detail: "OK: signed in as me, 17 downloads left today." });
+    const test = vi.spyOn(api, "testAPIKey").mockResolvedValue({ ok: true, detail: "OK: 1000 requests left today." });
     page();
-    const el = (await screen.findByText("OpenSubtitles", { selector: "span" })).closest("#apikey-opensubtitles_api") as HTMLElement;
+    const el = (await screen.findByText("OMDb", { selector: "span" })).closest("#apikey-omdb") as HTMLElement;
     await act(async () => { fireEvent.click(within(el).getByRole("button", { name: "Edit" })); });
-    await within(el).findByText("OPENSUBTITLES_PASSWORD");
-    fireEvent.change(within(el).getByLabelText("OPENSUBTITLES_PASSWORD"), { target: { value: "hunter2" } });
-    await act(async () => { fireEvent.click(within(el).getAllByRole("button", { name: "Save" })[2]); });
-    expect(test).toHaveBeenCalledWith("opensubtitles_api", undefined);
-    expect(await within(el).findByText(/17 downloads left today/)).toBeTruthy();
+    await within(el).findByText("OMDB");
+    fireEvent.change(within(el).getByLabelText("OMDB"), { target: { value: "new-key" } });
+    await act(async () => { fireEvent.click(within(el).getByRole("button", { name: "Save" })); });
+    expect(test).toHaveBeenCalledWith("omdb", undefined);
+    expect(await within(el).findByText(/1000 requests left today/)).toBeTruthy();
   });
 
   it("asks before clearing a key, and does nothing on Cancel", async () => {

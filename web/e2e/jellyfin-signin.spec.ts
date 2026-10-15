@@ -166,7 +166,7 @@ test.describe("admin", () => {
       { method: "GET", path: "/api/v1/me/jellyfin/link/quickconnect/qc-1", status: 409, body: { status: "error", message: "This Jellyfin user is already linked to ownerjf.", already_linked_to: "ownerjf", user_id: 9, mergeable: true } },
       { method: "GET", path: "/api/v1/users/1/merge", body: {
         from: "ownerjf", to: "admiral", plex_link: false, jellyfin_link: true, jellyfin_username: "ownerjf", requests: 3, following: 0, notifications: 0,
-        push_devices: 0, quota_usage: 0, audiobook_progress: false, audiobook_password: false, signed_in_devices: 1, listening_apps: 0,
+        push_devices: 0, quota_usage: 0, signed_in_devices: 1,
       } },
       { method: "POST", path: "/api/v1/users/1/merge", body: { merged: true } },
     ]);

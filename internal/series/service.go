@@ -1530,20 +1530,6 @@ func (s *Service) AddEvent(ctx context.Context, id int64, event, detail string) 
 	s.repo.AddEvent(ctx, id, event, detail)
 }
 
-// SetConvertedFrom records what the file at path was before Convert shrank it, on every
-// episode it serves: its recorded release and sizeBytes (0 = unknown). Convert calls it
-// before the repoint and the codec restamp. An episode with a baseline keeps its first.
-func (s *Service) SetConvertedFrom(ctx context.Context, seriesID int64, path string, sizeBytes int64) error {
-	return s.repo.SetConvertedFromForPath(ctx, seriesID, path, sizeBytes)
-}
-
-// RepointEpisodeFile updates every episode served by oldPath to point at newPath. Returns
-// how many episode records were moved — more than one for a double-length episode file.
-func (s *Service) RepointEpisodeFile(ctx context.Context, seriesID int64, oldPath, newPath string, size int64) (int64, error) {
-	// The pre-conversion baseline stays: a repoint is the same content under a new path.
-	return s.repo.RepointEpisodeFile(ctx, seriesID, oldPath, newPath, size)
-}
-
 // EpisodeFilePath returns one episode's on-disk file path ("" if none).
 func (s *Service) EpisodeFilePath(ctx context.Context, seriesID int64, season, episode int) (string, error) {
 	return s.repo.EpisodeFilePath(ctx, seriesID, season, episode)
@@ -1803,14 +1789,12 @@ func (s *Service) SupersedeEpisodeFile(ctx context.Context, seriesID int64, seas
 	}
 	old, _ := s.repo.EpisodeFilePath(ctx, seriesID, season, episode)
 	if old != path {
-		// A new file ends the episode's upgrade hold: the hold kept the file it had. (Convert
-		// and rename go through RepointEpisodeFile / MarkEpisodeImported and keep it.)
+		// A new file ends the episode's upgrade hold: the hold kept the file it had.
 		if err := s.repo.ClearEpisodeHold(ctx, seriesID, season, episode); err != nil {
 			s.log.Warn("series: clear upgrade hold failed", "err", err)
 		}
 	}
-	// A new file: what an earlier one was before Convert shrank it says nothing about this
-	// one. Convert's own path changes (RepointEpisodeFile, MarkEpisodeImported) keep it.
+	// A new file: what an earlier one was before a conversion says nothing about this one.
 	if err := s.repo.ClearEpisodeConvertedFrom(ctx, seriesID, season, episode); err != nil {
 		s.log.Warn("series: clear pre-conversion baseline failed", "err", err)
 	}

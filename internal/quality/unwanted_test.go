@@ -1,7 +1,6 @@
 package quality
 
 import (
-	"context"
 	"strconv"
 	"strings"
 	"testing"
@@ -237,10 +236,9 @@ func TestLowQualityGroupIsNamed(t *testing.T) {
 	}
 }
 
-// Book and music profiles are never judged by video tags: "Extras" can be a book's title
-// and "TS" an author's initials.
+// Music profiles are never judged by video tags.
 func TestUnwantedIsVideoOnly(t *testing.T) {
-	for _, media := range []string{MediaBook, MediaMusic} {
+	for _, media := range []string{MediaMusic} {
 		sp := StoredProfile{MediaType: media, Name: "b", Unwanted: Unwanted{Items: map[string]string{UnwantedExtras: UnwantedReject}}}
 		normalize(&sp)
 		if !sp.Unwanted.IsDefault() {
@@ -320,17 +318,11 @@ func TestUnwantedRepoRoundTrip(t *testing.T) {
 	}
 }
 
-// The owner's languages come from the hook main wires to Convert, English without one.
-func TestOwnerLanguagesHook(t *testing.T) {
+// The owner's languages are English.
+func TestOwnerLanguagesDefaultEnglish(t *testing.T) {
 	s, _, ctx := storeService(t)
 	if got := s.ownerLanguages(ctx); len(got) != 1 || got[0] != "en" {
 		t.Fatalf("default = %v", got)
-	}
-	s.SetOwnerLanguages(func(context.Context) []string { return []string{"fr"} })
-	sp := StoredProfile{MediaType: MediaMovie, Name: "fr"}
-	d := s.DecideSpec(sp, []Candidate{NewCandidate("Film.2020.FRENCH.1080p.WEB-DL.x264-GRP", 4, 10).WithLanguage("en")})
-	if d.Winner == nil || d.Winner.Avoided {
-		t.Fatalf("a French household's French dub: %+v", d.Winner)
 	}
 }
 

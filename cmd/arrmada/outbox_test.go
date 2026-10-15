@@ -20,22 +20,13 @@ func TestImportConsumersCoverEveryTopic(t *testing.T) {
 	box := outbox.New(nil, nil)
 	importConsumers{}.register(box) // handlers only close over the services; none run here
 	want := []string{
-		"book.files_changed → audioserver.cache",
-		"book.imported → audioserver.cache",
-		"book.imported → requests.ready",
-		"movie.changed → convert",
 		"movie.changed → plex.scan",
-		"movie.changed → subtitles",
-		"movie.imported → convert",
 		"movie.imported → issues.resolve",
 		"movie.imported → plex.scan",
 		"movie.imported → requests.ready",
-		"movie.imported → subtitles",
-		"series.imported → convert",
 		"series.imported → issues.resolve",
 		"series.imported → plex.scan",
 		"series.imported → requests.ready",
-		"series.imported → subtitles",
 	}
 	if got := box.Topics(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("registered consumers:\n got %v\nwant %v", got, want)

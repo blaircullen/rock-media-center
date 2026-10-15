@@ -24,7 +24,7 @@ type sessionSource interface {
 }
 
 // tracker is one server's live state. live belongs to that server's poller goroutine;
-// playing and playingAt are read from anywhere (Convert pauses while someone watches).
+// playing and playingAt are read from anywhere (nothing pauses while someone watches any more).
 type tracker struct {
 	kind      mediaserver.Kind
 	live      map[string]*liveSession

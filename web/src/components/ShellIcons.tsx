@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 
 // The requester shell's tab icons: line icons in the same stroke style as the bell and
 // the menu button (24 viewBox, stroke 2, currentColor). Kept apart from icons.tsx, the
-// staff sidebar's set, so a requester's first load carries only these six.
+// staff sidebar's set, so a requester's first load carries only these four.
 
-export type ShellIconName = "discover" | "requests" | "calendar" | "shelf" | "listen" | "me";
+export type ShellIconName = "discover" | "requests" | "calendar" | "me";
 
 const PATHS: Record<ShellIconName, ReactNode> = {
   // A compass.
@@ -25,21 +25,6 @@ const PATHS: Record<ShellIconName, ReactNode> = {
     <>
       <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
       <path d="M3.5 10h17M8 3v4M16 3v4" />
-    </>
-  ),
-  // Books standing on a shelf.
-  shelf: (
-    <>
-      <path d="M5 4v15M9 4v15M14 5l3.5 14" />
-      <path d="M3 20.5h18" />
-    </>
-  ),
-  // Headphones.
-  listen: (
-    <>
-      <path d="M4 17v-4a8 8 0 0 1 16 0v4" />
-      <rect x="3.5" y="14" width="4" height="6.5" rx="1.5" />
-      <rect x="16.5" y="14" width="4" height="6.5" rx="1.5" />
     </>
   ),
   me: (

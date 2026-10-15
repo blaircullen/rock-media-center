@@ -2,9 +2,7 @@ import { test, expect, type MockedApi } from "./mockApi";
 import type { MockRoute } from "./fixtures/routes";
 
 // CFG-18: Settings → People & access is one list — role, auto-approve, Plex link, last
-// seen, sessions, audiobook access, Disable and Delete — where each control saves itself.
-
-const audioServer = { enabled: true, running: true, error: "", host_port: "13378", public_url: "", items: 0, items_ready: 0, trace_until: 0, users: [], devices: [] };
+// seen, sessions, Disable and Delete — where each control saves itself.
 
 test.describe("admin", () => {
   test.use({ persona: "admin" });
@@ -23,18 +21,12 @@ test.describe("admin", () => {
     await expect(me.getByRole("button", { name: "Disable" })).toHaveCount(0);
   });
 
-  test("role, audiobook access and Disable save from the row", async ({ page, api }) => {
-    await installExtra(page, api, [
-      { method: "PUT", path: "/api/v1/audioserver/users/5", respond: () => audioServer },
-    ]);
+  test("role and Disable save from the row", async ({ page, api }) => {
     await page.goto("/settings/users");
     const grandad = page.getByTestId("person").filter({ hasText: "Grandad" });
 
     await grandad.getByRole("combobox", { name: "Grandad's role" }).selectOption("readonly");
     await expect.poll(() => api.callsTo("PUT", "/api/v1/users/5").map((c) => c.body)).toEqual([{ role: "readonly" }]);
-
-    await grandad.getByRole("checkbox", { name: "Grandad may use audiobook apps" }).uncheck();
-    await expect.poll(() => api.callsTo("PUT", "/api/v1/audioserver/users/5").map((c) => c.body)).toEqual([{ allowed: false }]);
 
     await grandad.getByRole("button", { name: "Disable" }).click();
     const dialog = page.getByRole("dialog", { name: "Turn off Grandad's sign-in?" });
@@ -43,20 +35,18 @@ test.describe("admin", () => {
     expect(api.callsTo("PUT", "/api/v1/users/5")[1].body).toEqual({ disabled: true });
   });
 
-  test("Delete says what it removes, and asks for the name when it would erase listening", async ({ page, api }) => {
+  test("Delete says what it removes, and deletes only once confirmed", async ({ page, api }) => {
     await installExtra(page, api, [
-      { method: "GET", path: "/api/v1/users/5/impact", body: { places: 3, listening_hours: 12.5, bookmarks: 2, devices: 1, requests: 4, sessions: 2, push_subscriptions: 0, plex_linked: true } },
+      { method: "GET", path: "/api/v1/users/5/impact", body: { requests: 4, sessions: 2, push_subscriptions: 0, plex_linked: true } },
       { method: "DELETE", path: "/api/v1/users/5", body: {} },
     ]);
     await page.goto("/settings/users");
     await page.getByTestId("person").filter({ hasText: "Grandad" }).getByRole("button", { name: "Delete" }).click();
     const dialog = page.getByRole("dialog", { name: "Delete Grandad?" });
-    await expect(dialog.getByText(/their place in 3 audiobooks, 13 hours of listening history/)).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Delete user" })).toBeDisabled();
-    await dialog.getByRole("textbox").fill("Grandad");
+    await expect(dialog.getByText(/signs them out of 2 browsers/)).toBeVisible();
+    await expect(dialog.getByText(/Their 4 requests stay/)).toBeVisible();
     await dialog.getByRole("button", { name: "Delete user" }).click();
     await expect.poll(() => api.callsTo("DELETE", "/api/v1/users/5").length).toBe(1);
-    expect(api.callsTo("DELETE", "/api/v1/users/5")[0].path).toContain("confirm=Grandad");
   });
 });
 

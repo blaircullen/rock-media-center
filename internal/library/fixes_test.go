@@ -218,7 +218,7 @@ func TestImportFailsWhenRootMissing(t *testing.T) {
 	writeFile(t, filepath.Join(src, "Movie.2024.1080p.WEB-DL.mkv"), 1000)
 
 	im := NewImporter(base, quiet())
-	im.SetRoots(missing, "", "", "")
+	im.SetRoots(missing, "")
 	_, err := im.Import("Movie.2024.1080p.WEB-DL", filepath.Join(src, "Movie.2024.1080p.WEB-DL.mkv"))
 	if err == nil || !strings.Contains(err.Error(), "library root") {
 		t.Errorf("err = %v, want a library-root-missing error", err)
@@ -317,38 +317,6 @@ func TestEpisodeImportsPackSubs(t *testing.T) {
 			t.Errorf("expected 2_English.srt imported as .en.srt: %v", err)
 		}
 	})
-}
-
-// TestImportBookEditionPartialFailure pins fix #8: per-file errors aren't
-// swallowed — FileCount counts only successful placements, a partial success
-// returns no error, and a total wipeout returns one.
-func TestImportBookEditionPartialFailure(t *testing.T) {
-	src := t.TempDir()
-	lib := t.TempDir()
-	im := NewImporter(lib, quiet())
-
-	good1 := filepath.Join(src, "part1.mp3")
-	good2 := filepath.Join(src, "part2.mp3")
-	writeFile(t, good1, 1000)
-	writeFile(t, good2, 1000)
-	missing := filepath.Join(src, "nope.mp3") // never created
-
-	res, err := im.ImportBookEdition("Author", "Book", []FoundFile{
-		{Path: good1}, {Path: missing}, {Path: good2},
-	})
-	if err != nil {
-		t.Fatalf("partial success must not error: %v", err)
-	}
-	if res.FileCount != 2 {
-		t.Errorf("FileCount = %d, want 2 (only successful placements)", res.FileCount)
-	}
-
-	_, err = im.ImportBookEdition("Author", "Book2", []FoundFile{
-		{Path: filepath.Join(src, "gone1.mp3")}, {Path: filepath.Join(src, "gone2.mp3")},
-	})
-	if err == nil {
-		t.Error("expected an error when NOTHING could be placed")
-	}
 }
 
 // TestRecycleFileReadOnlyFolderRefuses: a file in a folder the app can't write to can't

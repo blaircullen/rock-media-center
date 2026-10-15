@@ -12,7 +12,7 @@ import (
 // The People page: one Plex user's viewing — totals, what they watch, on which devices
 // and from where, how far they get, and how often their streams stall. Staff only, like
 // the rest of Insights. It reads Plex video plays (stream_sessions) and nothing else:
-// audiobook listening lives in its own tables and never appears here.
+// what people listen to never appears here.
 
 // ErrPersonNotFound is a user id with no Plex account row and no recorded plays.
 var ErrPersonNotFound = errors.New("no such Plex user")

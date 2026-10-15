@@ -99,7 +99,6 @@ func TestProbeCacheRemembersSuccess(t *testing.T) {
 func TestLibraryFoldersRespectsModuleToggles(t *testing.T) {
 	cfg := config.Config{
 		MoviesDir: "/storage/movies", TVDir: "/storage/tv",
-		EbooksDir: "/storage/ebooks", AudiobooksDir: "/storage/audiobooks",
 		MusicDir: "/storage/music", DownloadsDir: "/storage/torrents",
 		LibraryDir: "/media/library", // the managed volume is never what's judged
 	}
@@ -122,20 +121,13 @@ func TestLibraryFoldersRespectsModuleToggles(t *testing.T) {
 		return true
 	}
 
-	if got := roles(LibraryFolders(cfg, false, false)); !eq(got, []string{"movies", "tv", "downloads"}) {
-		t.Errorf("books and music off: %v", got)
+	if got := roles(LibraryFolders(cfg, false)); !eq(got, []string{"movies", "tv", "downloads"}) {
+		t.Errorf("music off: %v", got)
 	}
-	if got := roles(LibraryFolders(cfg, true, true)); !eq(got, []string{"movies", "tv", "ebooks", "audiobooks", "music", "downloads"}) {
-		t.Errorf("everything on: %v", got)
+	if got := roles(LibraryFolders(cfg, true)); !eq(got, []string{"movies", "tv", "music", "downloads"}) {
+		t.Errorf("music on: %v", got)
 	}
-	cfg.AudiobooksDir = "/storage/ebooks/"
-	got := LibraryFolders(cfg, true, false)
-	if r := roles(got); !eq(r, []string{"movies", "tv", "books", "downloads"}) {
-		t.Errorf("shared books folder not merged: %v", r)
-	}
-	if got[2].Label != "Books & audiobooks" {
-		t.Errorf("merged label = %q", got[2].Label)
-	}
+	got := LibraryFolders(cfg, true)
 	for _, f := range got {
 		if f.Path == cfg.LibraryDir {
 			t.Errorf("the managed library dir was listed: %+v", f)

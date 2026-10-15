@@ -20,12 +20,7 @@ export const STAFF_PAGES: string[] = [
   "/requests",
   "/calendar",
   "/music",
-  "/books",
-  "/subtitles",
-  "/subtitles?tab=library",
-  "/convert",
   "/insights",
-  "/audiobooks",
   "/me",
   "/quality",
   "/quality/movie/hd-1080p",
@@ -34,25 +29,19 @@ export const STAFF_PAGES: string[] = [
   "/settings/media",
   "/settings/connections",
   "/settings/downloads",
-  "/settings/subtitles",
-  "/settings/convert",
   "/settings/alerts",
   "/settings/media-servers",
-  "/settings/audiobook-server",
   "/settings/users",
   "/settings/import",
   "/settings/system",
   "/settings/status",
 ];
-export const REQUESTER_PAGES: string[] = ["/discover", "/discover?tab=books", "/requests", "/calendar", "/shelf", "/audiobooks", "/me"];
+export const REQUESTER_PAGES: string[] = ["/discover", "/requests", "/calendar", "/me"];
 
 // Pages that read an endpoint the shared fixtures leave to the specs that test them
 // (method and path → body).
 export const PAGE_EXTRA: Record<string, Record<string, unknown>> = {
   "/settings/downloads": { "GET /api/v1/downloads/disk-guard": { path: "/media/downloads", measurable: true, used_pct: 40, holding: 0, shared_with: [] } },
-  "/settings/audiobook-server": {
-    "GET /api/v1/audioserver": { enabled: true, running: true, error: "", host_port: "13378", public_url: "", items: 12, items_ready: 12, trace_until: 0, users: [], devices: [] },
-  },
   // Settings → Media servers with Jellyfin connected and recording (contrast.spec's extra
   // shot): its status line, Watch links address and library updates lines.
   "/settings/media-servers#jellyfin-server": {

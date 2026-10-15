@@ -270,13 +270,13 @@ func TestStoredErrorsAreRedacted(t *testing.T) {
 
 func TestRedact(t *testing.T) {
 	cases := map[string]string{
-		"https://x.test/api?t=caps&apikey=SECRET":     "https://x.test/api?…",
-		"login form apikey=SECRET&x=1":                "login form apikey=…&x=1",
-		"api_key=SECRET passkey=SECRET token=SECRET":  "api_key=… passkey=… token=…",
-		"mam_id=SECRET; password=SECRET":              "mam_id=…; password=…",
-		"torrentleech: login failed — check password": "torrentleech: login failed — check password",
+		"https://x.test/api?t=caps&apikey=SECRET":                                                        "https://x.test/api?…",
+		"login form apikey=SECRET&x=1":                                                                   "login form apikey=…&x=1",
+		"api_key=SECRET passkey=SECRET token=SECRET":                                                     "api_key=… passkey=… token=…",
+		"mam_id=SECRET; password=SECRET":                                                                 "mam_id=…; password=…",
+		"torrentleech: login failed — check password":                                                    "torrentleech: login failed — check password",
 		`FlareSolverr at http://user:SECRET@fs:8191 isn't answering (Post "http://user:***@fs:8191/v1")`: `FlareSolverr at http://fs:8191 isn't answering (Post "http://fs:8191/v1")`,
-		"mail me at someone@example.com": "mail me at someone@example.com",
+		"mail me at someone@example.com":                                                                 "mail me at someone@example.com",
 	}
 	for in, want := range cases {
 		if got := Redact(in); got != want {

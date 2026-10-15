@@ -36,7 +36,7 @@ import (
 // Summer" keys as "500 Days of Summer", not "Days of Summer", and "(Un)Well" as "Unwell".
 //
 // This is the one title key for every download, queue and library match (movies,
-// series, the Downloads feed, books' folder fallback). The cases above are pinned in
+// series, the Downloads feed). The cases above are pinned in
 // titlekey_test.go; separate copies of this rule drifting apart is how 'Love & Death'
 // stopped showing its download when the torrent was named 'Love.and.Death'.
 func TitleKey(s string) string {
@@ -59,7 +59,7 @@ func TitleKey(s string) string {
 }
 
 // FoldTitle is the fold every title matcher starts from — TitleKey and TitleWords here,
-// and the books matcher's word keys — so they agree on what counts as the same spelling:
+// and the music matcher's word keys — so they agree on what counts as the same spelling:
 //
 //   - accents fold to ASCII ("Pokémon" → "pokemon", "García Márquez" → "garcia marquez");
 //   - everything is lower-case;

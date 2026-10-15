@@ -1,6 +1,6 @@
 # Everything Arrmada does
 
-Arrmada does the jobs of Radarr, Sonarr, Readarr, Bazarr, Overseerr, Tautulli and Tdarr in one
+Arrmada does the jobs of Radarr, Sonarr, Overseerr and Tautulli in one
 place, with one database and one web UI. It ships with qBittorrent and FlareSolverr already
 wired up.
 
@@ -8,28 +8,23 @@ wired up.
 
 - **Movies** — search, grab, import, rename and upgrade. Keep several versions of a movie (say 4K and 1080p).
 - **TV** — episodes and season packs, anime numbering (TheXEM and TheTVDB), and airing shows kept up to date.
-- **Books** — ebooks and audiobooks with Hardcover or Open Library metadata, series tracking, several audiobook versions per book (standard and full cast), and multi-file audiobooks merged into one M4B.
-- **Audiobook server** — listening apps built for Audiobookshelf (Lissen) connect to Arrmada directly. Places sync reliably across devices and restarts, a glitch can't reset anyone to the start, and earlier places can be put back. Everyone gets their own audiobook password, per-device sign-out and a page showing where they're up to and how much they've listened. The admin sees how much and when people listen, never what. Imports everyone's places from Audiobookshelf. E-reader apps can browse the books over OPDS.
 - **Music** (preview, off by default) — artists, albums and whole-discography grabs. Switch it on in Settings → System → Modules.
 - **Quality profiles** — describe the file you want (resolution, codecs, HDR, audio, a bitrate window) once, and it drives what's grabbed, how releases rank, which files in your library fit, and when upgrades stop.
-- **Indexers** — any Torznab indexer, one-click sync from Prowlarr, and built-in MyAnonaMouse, TorrentLeech and 1337x. FlareSolverr handles Cloudflare-protected trackers.
+- **Indexers** — any Torznab indexer, one-click sync from Prowlarr, and built-in TorrentLeech and 1337x. FlareSolverr handles Cloudflare-protected trackers.
 - **Downloads** — the bundled qBittorrent sets itself up. Imports hardlink instead of copying, seeding rules clean up, stalled downloads fail over, and mismatched downloads wait in a review queue.
 - **Usenet** (optional) — SABnzbd beside qBittorrent: `install.sh --with-sabnzbd` runs one that Arrmada sets up and connects to by itself, or connect your own. Newznab indexers (added in Arrmada or synced from Prowlarr) are searched with the torrent ones; the better release wins wherever it is, or prefer one network. A release SABnzbd can't finish is blocklisted and replaced; a full disk or a provider problem is reported instead. You bring your own Usenet provider and indexers ([Usenet](configuration.md#usenet-sabnzbd)).
 - **Safety nets** — a blocklist, a recycle bin, nightly database backups and a full history for every item.
 
 ## Requests and people
 
-- **Discover and requests** — browse and request movies, TV and books, Overseerr-style. Auto-approve per user, and import your existing Overseerr requests.
-- **Users** — admin, manager, requester and read-only roles, with optional Plex or Jellyfin sign-in. Requesters get Discover, Requests, Calendar, Books and Audiobooks; from outside your network, everything but Calendar.
-- **Books shelf** — requesters can download any ebook in the library, or send it to their Kindle.
+- **Discover and requests** — browse and request movies and TV, Overseerr-style. Auto-approve per user, and import your existing Overseerr requests.
+- **Users** — admin, manager, requester and read-only roles, with optional Plex or Jellyfin sign-in. Requesters get Discover, Requests and Calendar; from outside your network, everything but Calendar.
 - **Calendar** — what's coming up.
 - **Notifications** — Apprise alerts for admins; an in-app inbox and web push for requesters.
 - **Problem reports** — anyone can report a problem with a title, and many have a one-click fix.
 
-## Media tools
+## Insights
 
-- **Subtitles** — pulls embedded subtitles out, fetches them from OpenSubtitles, or writes them with local Whisper AI (GPU-accelerated on Intel).
-- **Convert** — switch it on and it works through your library during the hours you choose, re-encoding only wasteful video to HEVC (or AV1, when a quick test shows it's clearly smaller and your devices play it). Every result is checked against the original and must look the same and save at least 20%, or the original stays. Atmos and every audio track are copied untouched, HDR10 and HDR10+ are kept, and Dolby Vision keeps its HDR10 base. Pauses while someone is watching on Plex or Jellyfin, can use the GPU, and trims audio and subtitle tracks to your languages. Originals are kept for 14 days so a conversion can be undone.
 - **Insights** — Plex and Jellyfin watch history and stats, plus Plex buffering diagnostics, Tautulli-style.
 
 ## Media servers
@@ -37,7 +32,7 @@ wired up.
 Connect Plex, Jellyfin or both (Settings → Connections); how Arrmada uses each is Settings → Media servers.
 
 - **Watch buttons** — a request counts as ready once either server has the title, and the requester's notice and the title's page get a Watch button for each server that has it, their own server's first.
-- **Library updates** — after every import, upgrade, rename, delete or conversion, the server is asked to rescan just that folder, with path mappings when its folders have other names.
+- **Library updates** — after every import, upgrade, rename or delete, the server is asked to rescan just that folder, with path mappings when its folders have other names.
 - **Sign-in** — family can sign in with Plex, or with their Jellyfin username and password (or Jellyfin's Quick Connect code); each server has its own switch and auto-approve choices.
 - **Insights** — plays recorded from each server, with a server badge on every stream. Jellyfin keeps no watch history Arrmada can read, so its history starts when its watch monitoring is switched on, and it doesn't report buffering.
 - **Several versions of a movie** — Jellyfin shows them as one title only when every file name starts with the movie folder's name, as Arrmada's default naming does. With a naming scheme that doesn't, Jellyfin lists each version as its own movie; Plex groups them either way.

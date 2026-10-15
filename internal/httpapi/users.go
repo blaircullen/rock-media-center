@@ -98,7 +98,7 @@ func (a *api) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 			a.writeError(w, http.StatusInternalServerError, "could not set auto-approve")
 			return
 		}
-		u.AutoApprove, u.AutoApproveMovie, u.AutoApproveSeries, u.AutoApproveBook = aa.All(), aa.Movie, aa.Series, aa.Book
+		u.AutoApprove, u.AutoApproveMovie, u.AutoApproveSeries = aa.All(), aa.Movie, aa.Series
 	}
 	a.writeJSON(w, http.StatusCreated, u)
 }
@@ -247,12 +247,11 @@ func (a *api) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	a.writeJSON(w, http.StatusOK, map[string]any{
 		"id": id, "role": role, "disabled": disabled, "auto_approve": autoApprove.All(),
-		"auto_approve_movie": autoApprove.Movie, "auto_approve_series": autoApprove.Series, "auto_approve_book": autoApprove.Book,
+		"auto_approve_movie": autoApprove.Movie, "auto_approve_series": autoApprove.Series,
 	})
 }
 
 // handleUserImpact reports, as counts only, what deleting a user would take with them.
-// It never names a book: admins see how much someone listened, never what.
 func (a *api) handleUserImpact(w http.ResponseWriter, r *http.Request) {
 	id, ok := a.pathID(w, r)
 	if !ok {
@@ -321,31 +320,12 @@ func (a *api) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	// Deleting someone erases their audiobook places and listening history with them. The
-	// dialog asks for the username in that case; the API asks too, so a script or a stray
-	// request can't skip it.
-	imp, err := a.deps.Auth.DeletionImpact(r.Context(), id)
-	if err != nil {
-		a.writeError(w, http.StatusInternalServerError, "could not check what deleting this user would remove")
-		return
-	}
-	if imp.HasListeningData() && r.URL.Query().Get("confirm") != target.Username {
-		a.writeError(w, http.StatusBadRequest, "this user has audiobook places and listening history — type their username to confirm the delete")
-		return
-	}
 	// A copy of the database first, so a mistaken delete can be undone from a backup.
 	if a.deps.Snapshot == nil {
 		a.writeError(w, http.StatusInternalServerError, "couldn't take a safety copy first — nothing was deleted")
 		return
 	}
-	// Accounts with nothing to lose get a kind of their own. Only the newest few copies of
-	// each kind are kept, so clearing out a few empty test or guest accounts must not prune
-	// the one copy that still holds a family member's audiobook places.
-	kind := "pre-delete-user"
-	if !imp.HasListeningData() && imp.Bookmarks == 0 {
-		kind = "pre-delete-empty-user"
-	}
-	path, err := a.deps.Snapshot(r.Context(), kind)
+	path, err := a.deps.Snapshot(r.Context(), "pre-delete-user")
 	if err != nil {
 		a.deps.Log.Error("users: safety copy before delete failed", "user_id", id, "err", err)
 		a.writeError(w, http.StatusInternalServerError, "couldn't take a safety copy first — nothing was deleted ("+err.Error()+")")

@@ -63,9 +63,9 @@ func TestGroupTierOrderAndLowQuality(t *testing.T) {
 	if len(d.Rejected) != 0 {
 		t.Errorf("rejected = %+v", d.Rejected)
 	}
-	// Book and music profiles have no tiers.
-	if (StoredProfile{MediaType: MediaBook}).ToProfile().GroupTiers.Tier1 != nil {
-		t.Error("a book profile got group tiers")
+	// Music profiles have no tiers.
+	if (StoredProfile{MediaType: MediaMusic}).ToProfile().GroupTiers.Tier1 != nil {
+		t.Error("a music profile got group tiers")
 	}
 }
 

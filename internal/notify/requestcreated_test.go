@@ -34,7 +34,7 @@ func TestPushUsersFor(t *testing.T) {
 	for _, c := range []Connection{
 		{Name: "phone", Kind: KindWebPush, Config: PushConfigFor(5), Events: []string{"request.created"}, Enabled: true},
 		{Name: "off", Kind: KindWebPush, Config: PushConfigFor(6), Events: []string{"request.created"}, Enabled: false},
-		{Name: "other event", Kind: KindWebPush, Config: PushConfigFor(7), Events: []string{"book.imported"}, Enabled: true},
+		{Name: "other event", Kind: KindWebPush, Config: PushConfigFor(7), Events: []string{"episodes.imported"}, Enabled: true},
 		{Name: "apprise", URL: "ntfy://a", Events: []string{"request.created"}, Enabled: true},
 	} {
 		if _, err := s.Create(ctx, c); err != nil {

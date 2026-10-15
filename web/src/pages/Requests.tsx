@@ -8,7 +8,6 @@ import { posterThumb } from "../lib/img";
 import { useRequestsFeed } from "../lib/useRequestsFeed";
 import { pickTab } from "../lib/useTabParam";
 import { formatSeasons, mediaLabel, requestAge, requestStage } from "../lib/requestStage";
-import { BookFormatBadge } from "../components/BookFormats";
 import { firstWatch } from "../components/brand/servers";
 import { DECLINE_REASON_MAX, ReRequestFlag, decisionLine } from "../components/DeclineReason";
 import { refreshAttention } from "../lib/useAttention";
@@ -25,7 +24,7 @@ import { Page } from "../ui/Page";
 // address so a reload, Back or a link lands on the same thing:
 //
 //   ?tab=needs|active|ready|declined   the section (needs = waiting for approval)
-//   ?type=movie|series|book            a media filter
+//   ?type=movie|series                 a media filter
 //   ?q=                                a title search
 //   ?id=<request id>                   the RequestSheet open on one request
 //   ?tab=issues                        reported problems (IssuesPanel: ?show=, ?issue=)
@@ -50,11 +49,10 @@ const TYPES = [
   { key: "", label: "All" },
   { key: "movie", label: "Movies" },
   { key: "series", label: "TV" },
-  { key: "book", label: "Books" },
 ] as const;
 
 export function Requests({ chrome = true }: { chrome?: boolean }) {
-  const { user, booksEnabled } = useMe();
+  const { user } = useMe();
   const staff = isStaff(user);
   const toast = useToast();
   const confirm = useConfirm();
@@ -194,7 +192,6 @@ export function Requests({ chrome = true }: { chrome?: boolean }) {
     needs: counts?.needs_approval, active: counts?.in_progress, ready: counts?.ready, declined: counts?.declined,
     issues: issueCounts?.open,
   };
-  const types = booksEnabled ? TYPES : TYPES.filter((t) => t.key !== "book");
   const open = openID ? (items ?? []).find((rq) => rq.id === openID) : undefined;
 
   return (
@@ -214,7 +211,7 @@ export function Requests({ chrome = true }: { chrome?: boolean }) {
 
         {!issuesTab && <div className="mb-4 flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-lg p-0.5" style={{ background: "var(--panel-2)", border: "1px solid var(--line)" }} role="group" aria-label="Media type">
-            {types.map((t) => (
+            {TYPES.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setParam("type", t.key)}
@@ -344,8 +341,6 @@ function RequestRow({ rq, staff, own, queueKnown, selectable, selected, onSelect
               <span className="rounded px-1.5 py-0.5 font-mono text-2xs uppercase" style={{ background: "var(--panel-2)", color: "var(--ink-faint)" }}>{mediaLabel(rq.media_type)}</span>
               <span className="min-w-0 truncate text-md font-semibold" style={{ color: "var(--ink)" }}>{rq.title}</span>
               <span className="font-mono text-xs text-ink-faint">{rq.year || ""}</span>
-              {rq.author && <span className="min-w-0 truncate text-xs text-ink-dim">{rq.author}</span>}
-              {rq.media_type === "book" && <BookFormatBadge formats={rq.formats} />}
               {rq.media_type === "series" && rq.seasons && rq.seasons.length > 0 && (
                 <span className="font-mono text-xs text-ink-dim">{formatSeasons(rq.seasons)}</span>
               )}
@@ -383,7 +378,7 @@ function RequestRow({ rq, staff, own, queueKnown, selectable, selected, onSelect
 // that has a limit; nothing when there are none.
 function QuotaSummary() {
   const q = useQuota();
-  const lines = (["movie", "season", "book"] as const).map((k) => quotaLine(q, k)).filter(Boolean);
+  const lines = (["movie", "season"] as const).map((k) => quotaLine(q, k)).filter(Boolean);
   if (lines.length === 0) return null;
   return <p className="m-0 mb-3 text-sm text-ink-dim" data-testid="quota-summary">{lines.join(" · ")}</p>;
 }

@@ -9,8 +9,6 @@ interface MeState {
   signedOut: boolean;
   external: boolean; // request came from outside the LAN and isn't staff → the limited shell
   // Module toggles (from /status) so nav + Discover can hide disabled modules live.
-  booksEnabled: boolean;
-  setBooksEnabled: (v: boolean) => void;
   musicEnabled: boolean;
   setMusicEnabled: (v: boolean) => void;
   // The boot calls got no answer from Arrmada (network down, server restarting, a
@@ -24,7 +22,7 @@ interface MeState {
   setMetadataReady: (v: boolean) => void;
 }
 
-const MeContext = createContext<MeState>({ user: null, loading: true, signedOut: false, external: false, booksEnabled: true, setBooksEnabled: () => {}, musicEnabled: false, setMusicEnabled: () => {}, unreachable: false, retry: async () => false, metadataReady: true, setMetadataReady: () => {} });
+const MeContext = createContext<MeState>({ user: null, loading: true, signedOut: false, external: false, musicEnabled: false, setMusicEnabled: () => {}, unreachable: false, retry: async () => false, metadataReady: true, setMetadataReady: () => {} });
 
 // MeProvider fetches the current user and module toggles once at boot so the whole app can
 // branch on role (staff get the full console; requesters get the requester shell) and
@@ -33,7 +31,6 @@ export function MeProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [external, setExternal] = useState(false);
-  const [booksEnabled, setBooksEnabled] = useState(true);
   // Music is a preview and off by default, so don't flash its nav entry before /status lands.
   const [musicEnabled, setMusicEnabled] = useState(false);
   // Assume ready until /status says otherwise, so a server that predates the field (or a
@@ -50,7 +47,6 @@ export function MeProvider({ children }: { children: ReactNode }) {
     setUser(me.status === "fulfilled" ? me.value : null);
     if (status.status === "fulfilled") {
       setExternal(status.value.external);
-      setBooksEnabled(status.value.books_enabled);
       setMusicEnabled(status.value.music_enabled);
       setMetadataReady(status.value.metadata_ready ?? true);
     }
@@ -74,7 +70,7 @@ export function MeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void boot();
   }, [boot]);
-  return <MeContext.Provider value={{ user, loading, signedOut, external, booksEnabled, setBooksEnabled, musicEnabled, setMusicEnabled, unreachable, retry: boot, metadataReady, setMetadataReady }}>{children}</MeContext.Provider>;
+  return <MeContext.Provider value={{ user, loading, signedOut, external, musicEnabled, setMusicEnabled, unreachable, retry: boot, metadataReady, setMetadataReady }}>{children}</MeContext.Provider>;
 }
 
 // bootUnreachable decides between "show Login" and "Can't reach Arrmada". A 401 or
@@ -91,7 +87,7 @@ export function useMe(): MeState {
 }
 
 // isStaff reports whether the role can administer (manager or admin). Non-staff users
-// get the requester shell (Discover, Calendar, Books, Audiobooks), never the console.
+// get the requester shell (Discover, Requests, Calendar), never the console.
 export function isStaff(user: AuthUser | null): boolean {
   return !!user && (user.role === "admin" || user.role === "manager");
 }

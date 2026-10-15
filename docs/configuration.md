@@ -14,7 +14,6 @@ at the end and saves them in `.env`.
 | Arrmada           | 7878    | `ARRMADA_PORT`            |
 | qBittorrent WebUI | 8080    | `ARRMADA_QBIT_WEBUI_PORT` |
 | BitTorrent        | random  | `ARRMADA_QBIT_PORT` — forward this on your router (TCP and UDP) |
-| Audiobook server  | 13379   | `ARRMADA_AUDIOBOOK_PORT` — for listening apps; off until switched on in Audiobooks |
 | Prowlarr          | 9696    | `ARRMADA_PROWLARR_PORT` (only with `--with-prowlarr`) |
 | SABnzbd           | 8085    | `ARRMADA_SABNZBD_PORT` (only with `--with-sabnzbd`) — its own web page, where your Usenet provider goes |
 
@@ -28,16 +27,16 @@ at the end and saves them in `.env`.
 | `ARRMADA_DATA_HOST` | Where the database, its backups and settings live on the host |
 | `ARRMADA_STORAGE_HOST` | Your media folder (for reference; the mount itself is in `docker-compose.override.yml`) |
 | `ARRMADA_PUID`, `ARRMADA_PGID` | The user and group Arrmada and qBittorrent run as. On Unraid, 99 and 100 |
-| `TZ` | Timezone. Schedules — the Convert window especially — run on this clock ([list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) |
+| `TZ` | Timezone. Schedules — the nightly sweeps and the daily stats — run on this clock ([list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) |
 | `COMPOSE_PROFILES` | The optional companions to run, a comma list: `prowlarr` (Prowlarr), `sabnzbd` (SABnzbd, for Usenet), e.g. `prowlarr,sabnzbd`. `update.sh` never changes it |
 | `ARRMADA_RECYCLE_DIR` | Override for the recycle bin (see below) |
 | `ARRMADA_SKIP_MIGRATION_SNAPSHOT` | `1` to upgrade the database without the safety copy (a full disk) |
 | `ARRMADA_ALLOW_NEWER_SCHEMA` | `1` to start an older version on a newer database — last resort |
 | `ARRMADA_EXTERNAL_HEADER` | The header a tunnel or proxy stamps on outside requests (default `Cf-Connecting-Ip`); such requests are limited to the requester pages |
-| `ARRMADA_LIBRARY_DIR`, `ARRMADA_DOWNLOADS_DIR`, `ARRMADA_MOVIES_DIR`, `ARRMADA_TV_DIR`, `ARRMADA_EBOOKS_DIR`, `ARRMADA_AUDIOBOOKS_DIR`, `ARRMADA_MUSIC_DIR` | Starting values for the library folders. The folders picked in the app win; most people never set these |
+| `ARRMADA_LIBRARY_DIR`, `ARRMADA_DOWNLOADS_DIR`, `ARRMADA_MOVIES_DIR`, `ARRMADA_TV_DIR`, `ARRMADA_MUSIC_DIR` | Starting values for the library folders. The folders picked in the app win; most people never set these |
 | `ARRMADA_PLEX_URL`, `ARRMADA_PLEX_TOKEN` | An older way to point Insights at Plex — connect Plex in Settings → Connections instead |
 
-API keys (TMDB, Hardcover, OMDb, OpenSubtitles…) and passwords are entered in the app, in
+API keys (TMDB, OMDb…) and passwords are entered in the app, in
 Settings → Connections — never in `.env`. Older installs may still have
 `ARRMADA_TMDB_API_KEY` and friends there; they keep working as a fallback.
 
@@ -70,19 +69,6 @@ the share path: `chown 99:100` and `chmod 775` on the library parent folders.
 
 For read-only trials or unusual layouts, see
 [docker-compose.override.example.yml](../docker-compose.override.example.yml).
-
-## GPU
-
-If your server has `/dev/dri` (Intel or AMD graphics), the installer passes it through, and
-Convert and Whisper subtitles use it. Intel Arc and other Gen12+ chips are used through VAAPI
-(HEVC, H.264 and AV1 encoding); `docker exec Arrmada-app vainfo` shows what the container sees.
-
-## Convert's scratch folder
-
-Convert encodes into a scratch folder before swapping the result in. The installer puts it at
-`transcode/` next to the database; a fast SSD or NVMe pool is better than the array
-(`--transcode /mnt/cache/transcode`, with the share set to the pool only so the mover skips
-it). Settings → Convert can also point it somewhere else and shows the free space.
 
 ## Recycle bin
 

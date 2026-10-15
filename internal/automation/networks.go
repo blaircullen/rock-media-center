@@ -242,7 +242,7 @@ func (p netPolicy) rejectReason(rel indexer.Release) string {
 	return torrentReject
 }
 
-// beats is the book and music pickers' comparison: whether a (scored sa) ranks above b
+// beats is the music picker's comparison: whether a (scored sa) ranks above b
 // (scored sb), where a score is the profile's points × 1,000,000 plus the release's
 // seeders. Between two releases on one network that's the score as it always was. Across
 // networks seeders don't compare — a usenet release has none to count — so it's the

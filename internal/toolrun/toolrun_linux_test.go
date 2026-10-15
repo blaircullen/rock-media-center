@@ -130,9 +130,8 @@ func TestCancelKillsTheWholeGroup(t *testing.T) {
 	}
 }
 
-// A paused tool is frozen (state T) and continues on Resume; cancelling a frozen tool
-// still kills it.
-func TestPauseResumeAndCancelWhilePaused(t *testing.T) {
+// OnStart and OnExit see the tool's group id, and cancelling a running tool kills it.
+func TestHooksAndCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	var started, exited int
@@ -146,20 +145,6 @@ func TestPauseResumeAndCancelWhilePaused(t *testing.T) {
 	if started != pid {
 		t.Fatalf("OnStart got %d, want %d", started, pid)
 	}
-	if err := Pause(pid); err != nil {
-		t.Fatal(err)
-	}
-	if st := waitState(t, pid, func(s string) bool { return s == "T" }); st != "T" {
-		t.Fatalf("state %q after Pause, want T", st)
-	}
-	if err := Resume(pid); err != nil {
-		t.Fatal(err)
-	}
-	if st := waitState(t, pid, func(s string) bool { return s != "T" }); st == "T" {
-		t.Fatal("still stopped after Resume")
-	}
-	_ = Pause(pid)
-	waitState(t, pid, func(s string) bool { return s == "T" })
 	cancel()
 	done := make(chan error, 1)
 	go func() { done <- cmd.Wait() }()
@@ -167,10 +152,10 @@ func TestPauseResumeAndCancelWhilePaused(t *testing.T) {
 	case err := <-done:
 		var ee interface{ ExitCode() int }
 		if err == nil || (!errors.As(err, &ee) && !errors.Is(err, context.Canceled)) {
-			t.Fatalf("cancelled while paused: %v", err)
+			t.Fatalf("cancelled: %v", err)
 		}
 	case <-time.After(10 * time.Second):
-		t.Fatal("a paused tool survived its cancel")
+		t.Fatal("a tool survived its cancel")
 	}
 	if exited != pid {
 		t.Fatalf("OnExit got %d, want %d", exited, pid)

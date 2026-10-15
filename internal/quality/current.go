@@ -10,13 +10,10 @@ import (
 
 // One set of facts for the file on disk.
 //
-// The upgrader used to judge a file by its release name and the Library fit bars by what
-// Convert's analysis found in the file itself, so the same file could "fit" on one page
-// and be searched for an upgrade every six hours by the other — a tagless release name
-// never meets an HDR or Atmos target, however HDR and Atmos the file really is. Every
-// decision about a file already in the library now goes through CurrentFile: when the
-// caller has probed facts for it they win, and without them the release name is read
-// exactly as before.
+// Every decision about a file already in the library goes through CurrentFile: when the
+// caller has probed facts for it they win, and without them the release name is read.
+// (The probed facts came from an analysis that is gone; no caller
+// sets them today, so files are judged by their release names.)
 
 // CurrentFile is the file a title already holds, as the upgrade, ceiling and downgrade
 // decisions see it.
@@ -27,11 +24,11 @@ type CurrentFile struct {
 	Release    string
 	SizeGB     float64
 	RuntimeMin int // content length, to turn the size into a bitrate; 0 = unknown
-	// Facts are what Convert's analysis read from the file itself, nil when no current
-	// analysis exists. When set they override the name's resolution, codec, HDR and audio.
+	// Facts are what a probe read from the file itself, nil when there is none. When set
+	// they override the name's resolution, codec, HDR and audio.
 	Facts *FileFacts
-	// OrigRelease and OrigSizeGB are what a converted file was before Convert first shrank
-	// it ("" / 0 when never converted, or unknown). Whether the file is done (TargetMet) is
+	// OrigRelease and OrigSizeGB are what a converted file was before an earlier version's
+	// Convert module first shrank it ("" / 0 when never converted, or unknown). Whether the file is done (TargetMet) is
 	// judged on the file as it is, but an upgrade must also beat the original — its score,
 	// its resolution and its bitrate — and is never the original release itself. Without
 	// that, a remux the file was converted from (or another group's) looked like a large
@@ -326,8 +323,8 @@ func ReleaseWithFacts(r parser.Release, f FileFacts) parser.Release {
 
 // FileVerdict is the one answer to "is this file done?" under a profile.
 type FileVerdict struct {
-	// Facts are what the file was judged on, and Probed says whether they came from
-	// Convert's analysis (true) or the release name (false).
+	// Facts are what the file was judged on, and Probed says whether they came from a
+	// probe of the file (true) or the release name (false).
 	Facts  FileFacts
 	Probed bool
 	// Current is the file scored as a release under the profile, runtime included so the

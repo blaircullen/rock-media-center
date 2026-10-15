@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tristenlammi/arrmada/internal/convert"
 	"github.com/tristenlammi/arrmada/internal/pathguard"
 )
 
@@ -28,9 +27,6 @@ type fileDetails struct {
 	// MissingReason explains a file the library still believes in but that isn't on
 	// disk — a far more useful answer than an empty panel.
 	MissingReason string `json:"missing_reason,omitempty"`
-
-	Media     *convert.MediaInfo `json:"media,omitempty"`
-	MediaNote string             `json:"media_note,omitempty"`
 
 	Source *fileSource `json:"source,omitempty"`
 	// SourceNote says why provenance is absent or partial, so "no release shown" can be
@@ -62,8 +58,8 @@ type fileSource struct {
 	Ratio    float64 `json:"ratio,omitempty"`
 }
 
-// handleFileInfo describes one library file: what's on disk, what's inside it, and which
-// release it came from.
+// handleFileInfo describes one library file: what's on disk and which release it came
+// from.
 func (a *api) handleFileInfo(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimSpace(r.URL.Query().Get("path"))
 	if path == "" {
@@ -87,16 +83,6 @@ func (a *api) handleFileInfo(w http.ResponseWriter, r *http.Request) {
 		out.MissingReason = "the file isn't on disk — it was moved or deleted outside Arrmada"
 	} else {
 		out.MissingReason = err.Error()
-	}
-
-	if out.Exists && a.deps.Convert != nil {
-		if mi, err := a.deps.Convert.MediaInfoFor(ctx, path); err == nil {
-			out.Media = mi
-		} else {
-			out.MediaNote = "couldn't read the media details: " + err.Error()
-		}
-	} else if out.Exists {
-		out.MediaNote = "the Convert module isn't running, so media details aren't available"
 	}
 
 	out.Source, out.SourceNote = a.fileSourceFor(ctx, path)

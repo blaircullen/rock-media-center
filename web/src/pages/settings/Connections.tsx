@@ -5,7 +5,7 @@ import { ConnectionCard, type CardFix, type CardTest } from "../../components/co
 import { ConnectionSection } from "../../components/connections/ConnectionSection";
 import { IndexerEditor, indexerBody } from "../../components/connections/IndexerEditor";
 import { MediaServerCard } from "../../components/connections/MediaServerCard";
-import { DiscoveryRegion, KeyEditor, keyRowsFor, useAPIKeys } from "../../components/connections/KeyEditor";
+import { DiscoveryRegion, KeyEditor, useAPIKeys } from "../../components/connections/KeyEditor";
 import { ProwlarrPanel } from "../../components/connections/ProwlarrPanel";
 import { type DownloadClient, type Indexer } from "../../lib/api";
 import { downloadClientApi } from "../../lib/downloadClientApi";
@@ -45,13 +45,13 @@ const isServer = (it: ConnectionItem) => it.kind === "plex" || it.kind === "jell
 const SUBTITLES: Record<ConnectionSectionId, string> = {
   search: "Where releases are found: Prowlarr, FlareSolverr for Cloudflare-protected trackers, and every indexer. Every module searches through these.",
   downloads: "Where grabbed releases are sent to download. qBittorrent for torrents, SABnzbd for Usenet.",
-  metadata: "The API keys titles, ratings, books and subtitles come from. A key saved here works at once, no restart, and replaces one set at install; it's never shown back, only whether it's set.",
-  other: "Where alerts go, and the server listening apps connect to. Each is set up on its own page.",
+  metadata: "The API keys titles and ratings come from. A key saved here works at once, no restart, and replaces one set at install; it's never shown back, only whether it's set.",
+  other: "Where alerts go. They're set up on their own page.",
 };
 
 // The old "other" section lost its media server to the section above; the server may
 // still send the old title.
-const TITLES: Partial<Record<ConnectionSectionId, string>> = { other: "Alerts and apps" };
+const TITLES: Partial<Record<ConnectionSectionId, string>> = { other: "Alerts" };
 
 // Each section's anchor. They differ from the API's section ids where those would clash
 // with another card's anchor ("downloads" is a section, "metadata" a card under Naming);
@@ -75,7 +75,7 @@ const SLOW_POLL_MS = 60_000;
 // Indexers and Download clients pages redirect here); admins edit the metadata keys and the
 // FlareSolverr URL inside their cards. The media servers (Plex and Jellyfin) sit side by
 // side at the top and are connected inside their cards (how Arrmada uses them is Settings
-// → Media servers); alerts and the audiobook server link to their own pages.
+// → Media servers); alerts link to their own page.
 export function ConnectionsSettings() {
   const { user } = useMe();
   const admin = isAdmin(user);
@@ -251,7 +251,7 @@ export function ConnectionsSettings() {
       case "prowlarr":
         return <ProwlarrPanel onSynced={() => void refreshAll()} />;
       case "apikey":
-        return admin ? <KeyEditor ids={keyRowsFor(it.ref)} ctl={keys} /> : undefined;
+        return admin ? <KeyEditor ids={[it.ref]} ctl={keys} /> : undefined;
       case "flaresolverr":
         return admin ? <KeyEditor ids={["flaresolverr"]} ctl={keys} /> : undefined;
       case "plex":
@@ -418,8 +418,7 @@ export function ConnectionsSettings() {
   );
 }
 
-// linkFor is where a card that isn't edited here goes: alerts and the audiobook server
-// have their own pages. A manager's key cards have none — keys are the admin's.
+// linkFor is where a card that isn't edited here goes: alerts have their own page. A manager's key cards have none — keys are the admin's.
 function linkFor(it: ConnectionItem): CardFix | undefined {
   return it.fix_path ? { to: it.fix_path } : undefined;
 }

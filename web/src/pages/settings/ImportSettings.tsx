@@ -4,18 +4,16 @@ import { Section, input, inputStyle } from "../../components/settings/ui";
 import { Field } from "../../ui/Field";
 
 import { importApi } from "../../lib/importApi";
-import { AudiobookshelfImport } from "./AudiobookshelfImport";
 import { TautulliImport } from "./TautulliImport";
 
 // Settings → Import & migrate (admin only): every one-time migration from the apps Arrmada
-// replaces, in one place — request history from Overseerr, watch history from Tautulli and
-// listening places from Audiobookshelf. Each is safe to run again.
+// replaces, in one place — request history from Overseerr and watch history from Tautulli.
+// Each is safe to run again.
 export function ImportSettings() {
   return (
     <div className="flex flex-col gap-6">
       <OverseerrImport />
       <TautulliImport />
-      <AudiobookshelfImport />
     </div>
   );
 }

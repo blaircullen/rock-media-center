@@ -68,26 +68,6 @@ var Catalog = []Key{
 		Steps: "Request a free key; it arrives by email and needs one click to activate.",
 	},
 	{
-		ID: "hardcover", Label: "Hardcover", Purpose: "Book metadata. Optional — Books use Open Library without it; with it, Hardcover's curated catalogue (one entry per book, no duplicate editions) takes over and Open Library stays a click away.",
-		HelpURL: "https://hardcover.app/account/api", EnvVar: "ARRMADA_HARDCOVER_API_KEY", Secret: true, Testable: true, TestsCandidate: true,
-		Steps: "Free account, then Settings → Hardcover API → New API Key. Paste the token as given (with or without the leading \"Bearer\"). Tokens expire on the date you pick when creating them — regenerate if books stop resolving.",
-	},
-	{
-		ID: "opensubtitles_api", Label: "OpenSubtitles API key", Purpose: "Subtitle search. Optional.",
-		HelpURL: "https://www.opensubtitles.com/en/consumers", EnvVar: "ARRMADA_OPENSUBTITLES_API_KEY", Secret: true, Testable: true, TestsCandidate: true,
-		Steps: "Register a consumer under your account to get an API key. Downloading also needs the username and password below.",
-	},
-	{
-		ID: "opensubtitles_username", Label: "OpenSubtitles username", Purpose: "Needed to download subtitles, not just search.",
-		HelpURL: "https://www.opensubtitles.com", EnvVar: "ARRMADA_OPENSUBTITLES_USERNAME", Secret: false,
-		Steps: "Your opensubtitles.com account username.",
-	},
-	{
-		ID: "opensubtitles_password", Label: "OpenSubtitles password", Purpose: "Needed to download subtitles, not just search.",
-		HelpURL: "https://www.opensubtitles.com", EnvVar: "ARRMADA_OPENSUBTITLES_PASSWORD", Secret: true,
-		Steps: "Your opensubtitles.com account password.",
-	},
-	{
 		// A URL rather than a key, but it shares the saved-first, env-fallback handling.
 		ID: "flaresolverr", Label: "FlareSolverr URL", Purpose: "Gets TorrentLeech, 1337x and TheXEM past Cloudflare. Bundled by default.",
 		HelpURL: "https://github.com/FlareSolverr/FlareSolverr", EnvVar: "ARRMADA_FLARESOLVERR_URL", Secret: false, Testable: true,
@@ -96,9 +76,9 @@ var Catalog = []Key{
 	// Outgoing email (Settings → Alerts → Outgoing email). The server, the login and the
 	// password are entered on that card only: no install-time env var, and none of the
 	// three is ever sent back to the browser in full.
-	{ID: SMTPHost, Label: "Mail server", Purpose: "Outgoing email (Send to Kindle).", Secret: true, Hidden: true},
-	{ID: SMTPUsername, Label: "Mail username", Purpose: "Outgoing email (Send to Kindle).", Secret: true, Hidden: true},
-	{ID: SMTPPassword, Label: "Mail password", Purpose: "Outgoing email (Send to Kindle).", Secret: true, Hidden: true},
+	{ID: SMTPHost, Label: "Mail server", Purpose: "Outgoing email.", Secret: true, Hidden: true},
+	{ID: SMTPUsername, Label: "Mail username", Purpose: "Outgoing email.", Secret: true, Hidden: true},
+	{ID: SMTPPassword, Label: "Mail password", Purpose: "Outgoing email.", Secret: true, Hidden: true},
 	// The Jellyfin server's API key, entered on its card in Settings → Connections next to
 	// the server address (internal/jellyfinsvc). An install can set it from the
 	// environment, like the Plex token; it's never sent back to the browser.

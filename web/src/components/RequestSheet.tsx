@@ -6,7 +6,6 @@ import { isStaff, useMe } from "../lib/me";
 import { posterThumb } from "../lib/img";
 import { formatSeasons, libraryPath, mediaLabel, requestAge, requestStage } from "../lib/requestStage";
 import { Button, Sheet, StatusChip, useConfirm, useToast } from "../ui";
-import { BookFormatBadge } from "./BookFormats";
 import { SeasonTrim } from "./SeasonTrim";
 import { DeclineReasonField, ReRequestFlag, decisionLine } from "./DeclineReason";
 import { refreshAttention } from "../lib/useAttention";
@@ -140,13 +139,11 @@ export function RequestSheet({ requestId, initial, startDeclining = false, close
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded px-1.5 py-0.5 font-mono text-2xs uppercase" style={{ background: "var(--panel-2)", color: "var(--ink-faint)" }}>{mediaLabel(rq.media_type)}</span>
-            {/* What was asked for: Read / Listen / Both for a book. */}
-            {rq.media_type === "book" && <BookFormatBadge formats={rq.formats} />}
             {following && <StatusChip tone="faint">Following</StatusChip>}
           </div>
           <h2 className="m-0 mt-1.5 text-xl font-bold leading-tight">{rq.title}</h2>
           <div className="mt-0.5 font-mono text-xs text-ink-faint">
-            {[rq.author, rq.year || "", rq.media_type === "series" ? formatSeasons(rq.seasons) || "All seasons" : ""].filter(Boolean).join(" · ")}
+            {[rq.year || "", rq.media_type === "series" ? formatSeasons(rq.seasons) || "All seasons" : ""].filter(Boolean).join(" · ")}
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <StatusChip tone={stage.tone}>{stage.badge}</StatusChip>

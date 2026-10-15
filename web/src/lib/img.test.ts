@@ -12,13 +12,8 @@ describe("posterThumb", () => {
     expect(posterThumb("https://image.tmdb.org/t/p/original/abc.jpg")).toBe("https://image.tmdb.org/t/p/w342/abc.jpg");
   });
 
-  it("swaps Open Library large covers for medium ones", () => {
-    expect(posterThumb("https://covers.openlibrary.org/b/id/123-L.jpg")).toBe("https://covers.openlibrary.org/b/id/123-M.jpg");
-    expect(posterThumb("https://covers.openlibrary.org/b/id/123-L.PNG")).toBe("https://covers.openlibrary.org/b/id/123-M.PNG");
-  });
-
   it("leaves other URLs alone", () => {
-    expect(posterThumb("/api/v1/books/7/cover")).toBe("/api/v1/books/7/cover");
-    expect(posterThumb("https://covers.openlibrary.org/b/id/123-S.jpg")).toBe("https://covers.openlibrary.org/b/id/123-S.jpg");
+    expect(posterThumb("/api/v1/music/albums/7/cover")).toBe("/api/v1/music/albums/7/cover");
+    expect(posterThumb("https://example.com/cover-L.jpg")).toBe("https://example.com/cover-L.jpg");
   });
 });

@@ -13,7 +13,7 @@ import (
 
 // Recent jobs, under the Tasks table on System → Status: the work people and events
 // started (a Search click, an approval's search, a scan, a Run now), in words, each linked
-// to its movie, show, book or album, with who started it, how it went and how long it took.
+// to its movie, show or album, with who started it, how it went and how long it took.
 // /api/v1/jobs serves the raw rows buttons follow; this is the same rows made readable.
 
 // recentJob is one row of the Recent jobs list.
@@ -54,15 +54,6 @@ var jobKindLabels = map[string]string{
 	"series.refresh-all":        "Refresh every show",
 	"series.import-folder":      "Import a show's folder",
 	"series.numbering-apply":    "Apply new episode numbering",
-	"book.search":               "Search for a book",
-	"book.search-version":       "Search for a book edition",
-	"book.merge-audiobook":      "Merge audiobook editions",
-	"books.scan":                "Scan the books folder",
-	"books.backfill-series":     "Fill in book series",
-	"books.add-author-search":   "Search an author's books",
-	"books.refresh-new":         "Look for new books in a series",
-	"books.search-missing":      "Search for missing books",
-	"books.upgrade":             "Look for better book releases",
 	"album.search":              "Search for an album",
 	"music.scan":                "Scan the music folder",
 	"download.block":            "Block a download and search again",
@@ -71,14 +62,10 @@ var jobKindLabels = map[string]string{
 	"indexer.caps":              "Read Prowlarr's indexer capabilities",
 	"health.check":              "Run health checks",
 	"library.apply-folders":     "Apply new library folders",
-	"convert.reindex":           "Re-read the Convert library",
-	"subtitles.sync-check":      "Check subtitle timing",
 	"requests.import-overseerr": "Import from Overseerr",
 	"insights.import-tautulli":  "Import from Tautulli",
 	"insights.remove-import":    "Remove a Tautulli import",
 	"insights.remove-overlaps":  "Remove overlapping plays",
-	"audioserver.warm":          "Prepare the audiobook server",
-	"kindle.send":               "Send to Kindle",
 	scheduler.JobKind:           "Run now",
 }
 
@@ -150,9 +137,8 @@ type jobNamer struct {
 func newJobNamer(a *api) *jobNamer { return &jobNamer{a: a, cache: map[string][2]string{}} }
 
 // target names a job's target and links it. A kind's own target ("all", a task name) is
-// read with the kind; "movie:12", "series:3:s1e2", "book:5:v2", "album:9" open their
-// pages. A target that names nothing readable (a Kindle send's reference, a torrent hash)
-// is shown as no target rather than as raw text.
+// read with the kind; "movie:12", "series:3:s1e2", "album:9" open their pages. A
+// target that names nothing readable (a torrent hash) is shown as no target rather than as raw text.
 func (n *jobNamer) target(ctx context.Context, kind, target string) (string, string) {
 	if kind == scheduler.JobKind {
 		label := target
@@ -207,14 +193,6 @@ func (n *jobNamer) lookup(ctx context.Context, target string) (string, string) {
 			}
 		}
 		return "Show #" + parts[1], path
-	case "book":
-		path := "/books/" + parts[1]
-		if d.Books != nil {
-			if b, err := d.Books.Get(ctx, id); err == nil {
-				return b.Title, path
-			}
-		}
-		return "Book #" + parts[1], path
 	case "album":
 		path := "/music/album/" + parts[1]
 		if d.Music != nil {

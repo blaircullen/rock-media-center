@@ -14,8 +14,7 @@ import { progressBadge } from "./insights/HistoryView";
 // has a page per server), how much they watch, what, on which devices and from where, how
 // far they get, and how often their streams stall (Plex only: Jellyfin reports no
 // buffering). It is the owner's view of their own server, for staff only (the API refuses
-// anyone else), and it shows recorded video plays only — audiobook listening never appears
-// here.
+// anyone else), and it shows recorded video plays only.
 
 const WINDOWS = ["0", "30", "90", "365"] as const;
 type Win = (typeof WINDOWS)[number];

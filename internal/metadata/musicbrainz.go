@@ -13,8 +13,7 @@ import (
 	"time"
 )
 
-// MusicBrainz is the music metadata provider. Like Open Library for books it needs no API
-// key and is open data, which keeps the Music module off a single proprietary dependency.
+// MusicBrainz is the music metadata provider. It needs no API key and is open data, which keeps the Music module off a single proprietary dependency.
 //
 // Two hard requirements the service enforces and will block you for ignoring:
 //   - every request must carry a descriptive User-Agent with contact info;

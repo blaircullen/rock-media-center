@@ -34,7 +34,7 @@ func fakeBundledSAB(t *testing.T, servers *atomic.Int32) *httptest.Server {
 		case "version":
 			_, _ = io.WriteString(w, `{"version":"5.1.3"}`)
 		case "get_cats":
-			_, _ = io.WriteString(w, `{"categories":["*","arrmada","arrmada-tv","arrmada-books","arrmada-music"]}`)
+			_, _ = io.WriteString(w, `{"categories":["*","arrmada","arrmada-tv","arrmada-music"]}`)
 		case "fullstatus":
 			var sv []string
 			for i := int32(0); i < servers.Load(); i++ {

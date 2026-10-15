@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tristenlammi/arrmada/internal/audioserver"
 	"github.com/tristenlammi/arrmada/internal/connstatus"
 	"github.com/tristenlammi/arrmada/internal/diskspace"
 	"github.com/tristenlammi/arrmada/internal/download"
@@ -199,16 +198,6 @@ func (a *api) registerHealthChecks(reg *health.Registry) {
 	// The Downloads folder is read live: one picked since boot is the one filling up.
 	reg.Register(health.DiskFreeCheck(func() string { return a.roots().Downloads(a.runCtx()) }))
 
-	if a.deps.AudioManager != nil && a.deps.Settings != nil {
-		reg.Register(health.AudiobookServerCheck(func(ctx context.Context) (bool, bool, string) {
-			if !a.deps.Settings.GetBool(ctx, audioserver.KeyEnabled, false) {
-				return false, false, ""
-			}
-			running, lastErr := a.deps.AudioManager.Running()
-			return true, running, lastErr
-		}))
-	}
-
 	if a.deps.Backups != nil {
 		reg.Register(health.BackupsCheck(func(ctx context.Context) health.BackupState {
 			return health.BackupState{Enabled: a.deps.Backups.Enabled(ctx), Uptime: time.Since(a.start), Newest: a.deps.Backups.LastNightly()}
@@ -307,8 +296,8 @@ func tmdbValidate(ctx context.Context, v tmdbValidator) error {
 func (a *api) libraryState(ctx context.Context) health.LibraryState {
 	picked := a.pickedConfig(ctx)
 	return health.LibraryState{
-		Folders: health.LibraryFolders(picked, a.booksEnabled(ctx), a.musicEnabled(ctx)),
-		All:     health.LibraryFolders(picked, true, true),
+		Folders: health.LibraryFolders(picked, a.musicEnabled(ctx)),
+		All:     health.LibraryFolders(picked, true),
 		DataDir: a.deps.Config.DataDir,
 	}
 }

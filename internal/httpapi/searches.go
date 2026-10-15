@@ -8,7 +8,7 @@ import (
 )
 
 // handleListSearches lists one title's stored search attempts, newest first:
-// GET /api/v1/searches?kind=movie|series|book|music&id=12&since=<unix ms>&limit=20. It
+// GET /api/v1/searches?kind=movie|series|music&id=12&since=<unix ms>&limit=20. It
 // answers "why isn't it downloading?" — what each search found and why nothing was taken —
 // and is what the Search button polls (since = when it was clicked) when no websocket is
 // there to say search.finished.
@@ -16,7 +16,7 @@ func (a *api) handleListSearches(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	kind := q.Get("kind")
 	if !automation.ValidAttemptKind(kind) {
-		a.writeError(w, http.StatusBadRequest, "kind must be movie, series, book or music")
+		a.writeError(w, http.StatusBadRequest, "kind must be movie, series or music")
 		return
 	}
 	id, err := strconv.ParseInt(q.Get("id"), 10, 64)

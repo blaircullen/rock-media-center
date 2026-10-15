@@ -263,7 +263,7 @@ export function Logs() {
             items={[
               { label: "This view (.txt)", title: "The lines shown here, with full timestamps", onSelect: download },
               { label: "Full log history (.zip)", title: "Every line on disk, including the rotated files. For you: it names your library's titles.", onSelect: () => saveURL("/api/v1/logs/download") },
-              { label: "Support bundle (.zip)", title: "Logs, status, health and safe settings with credentials, people and book names taken out — made to be shared", onSelect: () => saveURL("/api/v1/system/support-bundle") },
+              { label: "Support bundle (.zip)", title: "Logs, status, health and safe settings with credentials, people and names taken out — made to be shared", onSelect: () => saveURL("/api/v1/system/support-bundle") },
             ]}
           />
           <DebugSwitch onEnabled={() => setLevel("debug")} />

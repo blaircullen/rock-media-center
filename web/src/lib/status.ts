@@ -2,7 +2,7 @@ import type { Tone } from "../ui";
 
 // The library status words — one meaning each, on every library and detail page:
 //
-//   Downloaded    a file is on disk (a movie, a book, a movie version)              good
+//   Downloaded    a file is on disk (a movie, a movie version)                      good
 //   Complete      every monitored episode or track is downloaded (series, albums)  good
 //   Partial       some downloaded, more wanted                                     avoid
 //   Wanted        monitored and no file yet: Arrmada is searching for it           avoid

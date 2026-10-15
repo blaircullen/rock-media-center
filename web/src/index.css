@@ -140,21 +140,16 @@ body,
    sheets, toasts or page content:
    --tabbar-h   the requester's phone tab bar (UserLayout puts .has-tabbar on <html>;
                 the bar only shows below 640px),
-   --player-h   the audiobook mini-player (.has-player, components/audiobooks/MiniPlayer),
    --bottom-chrome  everything pinned to the bottom, plus the iPhone home indicator.
    Pages pad by it (.pb-chrome) and toasts and sheets sit above it. */
 html {
   --tabbar-h: 0px;
-  --player-h: 0px;
-  --bottom-chrome: calc(var(--tabbar-h) + var(--player-h) + env(safe-area-inset-bottom, 0px));
+  --bottom-chrome: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
 }
 @media (max-width: 639px) {
   html.has-tabbar {
     --tabbar-h: 56px;
   }
-}
-html.has-player {
-  --player-h: 64px;
 }
 
 /* Safe areas: the installed iPhone app draws edge to edge (viewport-fit=cover), so the

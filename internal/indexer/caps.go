@@ -22,7 +22,6 @@ type Caps struct {
 	Movie         SearchMode `json:"movie"`
 	Music         SearchMode `json:"music"`
 	Audio         SearchMode `json:"audio"`
-	Book          SearchMode `json:"book"`
 	Categories    []int      `json:"categories,omitempty"`
 	LimitsMax     int        `json:"limits_max,omitempty"`
 	LimitsDefault int        `json:"limits_default,omitempty"`
@@ -121,7 +120,7 @@ func parseCaps(data []byte) (Caps, error) {
 		switch name := strings.ToLower(se.Name.Local); name {
 		case "limits":
 			c.LimitsMax, c.LimitsDefault = atoi(attr(se.Attr, "max")), atoi(attr(se.Attr, "default"))
-		case "search", "tv-search", "movie-search", "music-search", "audio-search", "book-search":
+		case "search", "tv-search", "movie-search", "music-search", "audio-search":
 			m := SearchMode{Available: strings.EqualFold(strings.TrimSpace(attr(se.Attr, "available")), "yes")}
 			for _, p := range strings.Split(attr(se.Attr, "supportedParams"), ",") {
 				if p = strings.ToLower(strings.TrimSpace(p)); p != "" {
@@ -139,8 +138,6 @@ func parseCaps(data []byte) (Caps, error) {
 				c.Music = m
 			case "audio-search":
 				c.Audio = m
-			case "book-search":
-				c.Book = m
 			}
 		case "category", "subcat":
 			if id, err := strconv.Atoi(strings.TrimSpace(attr(se.Attr, "id"))); err == nil && id > 0 && !seen[id] {
@@ -161,7 +158,7 @@ func (c Caps) Summary() string {
 	for _, m := range []struct {
 		label string
 		mode  SearchMode
-	}{{"Movies", c.Movie}, {"TV", c.TV}, {"Music", c.Music}, {"Audio", c.Audio}, {"Books", c.Book}} {
+	}{{"Movies", c.Movie}, {"TV", c.TV}, {"Music", c.Music}, {"Audio", c.Audio}} {
 		if !m.mode.Available {
 			continue
 		}

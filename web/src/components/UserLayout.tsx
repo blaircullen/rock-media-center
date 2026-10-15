@@ -6,7 +6,6 @@ import { PageSkeleton } from "./PageSkeleton";
 import { NotificationBell } from "./NotificationBell";
 import { BottomTabs } from "./BottomTabs";
 import { PushPromptHost } from "./PushPromptHost";
-import { PlayerHost } from "../lib/playerStub";
 import { useMe } from "../lib/me";
 import { signOut } from "../lib/session";
 import { useDocumentTitle } from "../lib/title";
@@ -19,7 +18,7 @@ import { nextTheme, THEME_LABEL, useTheme } from "../lib/theme";
 // screens get a slim branded top bar with the places inline; a phone gets the mark, the
 // section's name and the bell on top, and the places as tabs along the bottom.
 export function UserLayout() {
-  const { user, external, booksEnabled } = useMe();
+  const { user, external } = useMe();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [theme, setTheme] = useTheme();
@@ -28,9 +27,8 @@ export function UserLayout() {
   const mainRef = useRef<HTMLElement>(null);
   useScrollMemory(mainRef);
   // Outside sessions get no Calendar (the /calendar route isn't mounted or allowlisted
-  // for them), so no link that silently bounces. The shelf is the exception: its two
-  // endpoints are allowlisted, so a requester can pick up an ebook from anywhere.
-  const nav = requesterNav({ external, booksEnabled });
+  // for them), so no link that silently bounces.
+  const nav = requesterNav({ external });
   const section = sectionFor(nav, pathname);
 
   // The tab bar's height only counts while this shell is up (index.css, --tabbar-h).
@@ -69,7 +67,6 @@ export function UserLayout() {
             items={[
               { label: "Me & notifications", onSelect: () => navigate("/me") },
               { label: "Password & devices", onSelect: () => navigate("/me#account") },
-              { label: "Audiobook apps & password", onSelect: () => navigate("/audiobooks?tab=apps") },
               // Cycles System → Light → Dark in place; the menu stays open to show the result.
               { label: `Theme: ${THEME_LABEL[theme]}`, title: `Switch to ${THEME_LABEL[nextTheme(theme)]}`, keepOpen: true, onSelect: () => setTheme(nextTheme(theme)) },
               { label: "Sign out", tone: "danger", onSelect: signOut },
@@ -90,8 +87,6 @@ export function UserLayout() {
         </ErrorBoundary>
       </main>
       <BottomTabs items={nav.filter((n) => n.tab)} />
-      {/* The audiobook mini-player, above the tab bar; it outlives every page. */}
-      <PlayerHost />
       {/* "Get notified when it's ready?" once, right after a first request. */}
       <PushPromptHost />
     </div>

@@ -77,8 +77,8 @@ type SeriesExtra struct {
 	// (parser.IsLatin). The romaji name arrives as an automatic alias from TMDB's
 	// alternative titles.
 	OriginalTitle string `json:"original_title,omitempty"`
-	// OriginalLanguage is TMDB's original_language ("ja", "en"…), so Convert can keep a
-	// show's original-language audio when it trims audio tracks to your languages.
+	// OriginalLanguage is TMDB's original_language ("ja", "en"…), so searches and the
+	// runtime check know the show's own language.
 	OriginalLanguage string `json:"original_language,omitempty"`
 	// OriginCountry is TMDB's origin_country ("US", "GB"…). A release that tags a country
 	// ("The.Office.US") only matches a show from that country. Empty for shows not
@@ -155,9 +155,10 @@ type Episode struct {
 	// UpgradeHold keeps the episode's file out of profile-driven upgrades ("keep existing
 	// files" when its profile changed). Cleared by a new import, a profile change or Resume.
 	UpgradeHold bool `json:"upgrade_hold,omitempty"`
-	// ConvertedFromRelease and ConvertedFromSize are what the file was before Convert first
-	// shrank it (size in bytes, 0 = unknown). Upgrades must beat that, not the converted
-	// file. Empty for a file never converted; cleared when a new file is imported.
+	// ConvertedFromRelease and ConvertedFromSize are what the file was before the Convert
+	// module of earlier versions first shrank it (size in bytes, 0 = unknown). Upgrades
+	// must beat that, not the converted file. Nothing records new ones; existing ones are
+	// still honoured and cleared when a new file is imported.
 	ConvertedFromRelease string `json:"converted_from_release,omitempty"`
 	ConvertedFromSize    int64  `json:"converted_from_size,omitempty"`
 	// Download reflects an in-flight download for this episode (attached by the HTTP

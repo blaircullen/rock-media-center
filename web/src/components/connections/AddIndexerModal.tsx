@@ -69,7 +69,7 @@ function PresetForm({ preset, onBack, onAdded, onSaving }: {
   const has = (f: IndexerPreset["fields"][number]) => preset.fields.includes(f);
   const [name, setName] = useState(preset.defaultName);
   const [url, setUrl] = useState("");
-  const [secret, setSecret] = useState(""); // API key or mam_id session
+  const [secret, setSecret] = useState(""); // API key
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [scope, setScope] = useState<string[]>(preset.mediaTypes.length ? preset.mediaTypes : ALL_MEDIA);
@@ -87,7 +87,7 @@ function PresetForm({ preset, onBack, onAdded, onSaving }: {
     name: name.trim() || preset.defaultName,
     kind: preset.kind,
     url: has("url") ? url.trim() : undefined,
-    api_key: has("api_key") || has("mam_session") ? secret.trim() : undefined,
+    api_key: has("api_key") ? secret.trim() : undefined,
     username: has("username") ? username.trim() : undefined,
     password: has("password") ? password : undefined,
     // Every area lit is stored as [] ("all areas"), as the card's pills do.
@@ -110,8 +110,7 @@ function PresetForm({ preset, onBack, onAdded, onSaving }: {
   const missing =
     (has("url") && !preset.urlOptional && !url.trim()) ||
     (has("username") && !username.trim()) ||
-    (has("password") && !password) ||
-    (has("mam_session") && !secret.trim());
+    (has("password") && !password);
 
   const runTest = async () => {
     const b = body();
@@ -164,11 +163,6 @@ function PresetForm({ preset, onBack, onAdded, onSaving }: {
         {has("password") && (
           <Labeled label="Password">
             <input type="password" className={field} style={fieldStyle} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
-          </Labeled>
-        )}
-        {has("mam_session") && (
-          <Labeled label="mam_id session" span2>
-            <input className={field} style={fieldStyle} value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="paste the mam_id session string from MyAnonaMouse" autoComplete="off" required />
           </Labeled>
         )}
         {has("url") && (

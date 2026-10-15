@@ -152,8 +152,8 @@ func TestProwlarrSyncImportsTorrentIndexers(t *testing.T) {
 	if want := []string{MediaMovie, MediaSeries}; !reflect.DeepEqual(tl.MediaTypes, want) {
 		t.Fatalf("TorrentLeech media = %v, want %v", tl.MediaTypes, want)
 	}
-	if want := []string{MediaBook}; !reflect.DeepEqual(rows[2].MediaTypes, want) {
-		t.Fatalf("an audiobook + ebook tracker is a book indexer, got %v", rows[2].MediaTypes)
+	if want := []string{booksOnly}; !reflect.DeepEqual(rows[2].MediaTypes, want) {
+		t.Fatalf("a books-only tracker is scoped to nothing we search, got %v", rows[2].MediaTypes)
 	}
 	if rows[4].MediaTypes != nil || rows[4].Priority != 25 {
 		t.Fatalf("every area = unscoped, and an out-of-range priority = 25: %+v", rows[4])
@@ -170,7 +170,7 @@ func TestProwlarrResyncKeepsOwnerSettings(t *testing.T) {
 	rows := byProwlarrID(t, s)
 
 	tl := rows[1]
-	tl.MediaTypes = []string{MediaBook}
+	tl.MediaTypes = []string{booksOnly}
 	tl.Priority, tl.MinSeeders = 3, 7
 	tl.SeedRatio, tl.SeedHours = 2.5, 48
 	if err := s.Update(ctx, tl); err != nil {
@@ -188,7 +188,7 @@ func TestProwlarrResyncKeepsOwnerSettings(t *testing.T) {
 	}
 	after := byProwlarrID(t, s)
 	got := after[1]
-	if !reflect.DeepEqual(got.MediaTypes, []string{MediaBook}) || got.Priority != 3 || got.MinSeeders != 7 || got.SeedRatio != 2.5 || got.SeedHours != 48 {
+	if !reflect.DeepEqual(got.MediaTypes, []string{booksOnly}) || got.Priority != 3 || got.MinSeeders != 7 || got.SeedRatio != 2.5 || got.SeedHours != 48 {
 		t.Fatalf("owner's settings were overwritten: %+v", got)
 	}
 	if after[4].Enabled || after[4].DisabledBy != DisabledByUser {
@@ -341,7 +341,7 @@ func TestProwlarrBackfillLinksOldRows(t *testing.T) {
 	}
 
 	res := f.sync(t, s)
-	if res.Added != 1 { // only MyAnonamouse is new
+	if res.Added != 1 { // only one is new
 		t.Fatalf("result = %+v", res)
 	}
 	got, _ := s.Get(ctx, old.ID)

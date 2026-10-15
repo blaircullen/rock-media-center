@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 import { test, expect, type MockedApi } from "./mockApi";
 import type { MockRoute } from "./fixtures/routes";
-import { ebookOnlyBook, requestableBook } from "./fixtures/books";
+import { cards, requestableCard } from "./fixtures/discover";
 
 // The Me page as the home of everything about you (APP-13/14/15, CFG-12, SEC-15): one
 // "Get notified" switch with a plain answer when push can't be on, per-event choices,
@@ -195,7 +195,7 @@ test.describe("notify me when, as staff", () => {
 
 // APP-14: after a request, "Get notified when it's ready?" — once per device, and only
 // when the answer can be yes here.
-async function requestBook(page: Page, api: MockedApi, title: string, button: string) {
+async function requestTitle(page: Page, api: MockedApi, title: string, button: string) {
   const poster = page.getByRole("button", { name: `View details for ${title}` }).first();
   await poster.scrollIntoViewIfNeeded();
   await poster.tap();
@@ -204,8 +204,8 @@ async function requestBook(page: Page, api: MockedApi, title: string, button: st
 }
 const prompt = (page: Page) => page.getByRole("dialog", { name: "Get notified when it’s ready?" });
 
-async function openBooks(page: Page, api: MockedApi) {
-  await page.goto("/discover?tab=books");
+async function openDiscover(page: Page, api: MockedApi) {
+  await page.goto("/discover");
   await expect(page.getByRole("main")).toBeVisible();
   await api.quiet();
 }
@@ -216,9 +216,9 @@ test.describe("the push prompt after a request", () => {
   test("shows once after the first request, and Turn on registers this device", async ({ page, api }) => {
     await fakePush(page);
     await override(page, api, pushRoutes);
-    await openBooks(page, api);
+    await openDiscover(page, api);
     await expect(prompt(page)).toHaveCount(0); // never on page load
-    await requestBook(page, api, requestableBook.title, "＋ Request");
+    await requestTitle(page, api, requestableCard.title, "＋ Request");
     expect(api.callsTo("POST", "/api/v1/requests")).toHaveLength(1);
     await expect(prompt(page)).toBeVisible();
     await prompt(page).getByRole("button", { name: "Turn on" }).tap();
@@ -229,22 +229,22 @@ test.describe("the push prompt after a request", () => {
   test("Not now stops it coming back on this device", async ({ page, api }) => {
     await fakePush(page);
     await override(page, api, pushRoutes);
-    await openBooks(page, api);
-    await requestBook(page, api, requestableBook.title, "＋ Request");
+    await openDiscover(page, api);
+    await requestTitle(page, api, requestableCard.title, "＋ Request");
     await prompt(page).getByRole("button", { name: "Not now" }).tap();
     await expect(prompt(page)).toHaveCount(0);
 
     // A later request, even after a reload, asks nothing.
-    await openBooks(page, api);
-    await requestBook(page, api, ebookOnlyBook.title, "＋ Request audiobook");
+    await openDiscover(page, api);
+    await requestTitle(page, api, cards[9].title, "＋ Request");
     expect(api.callsTo("POST", "/api/v1/requests")).toHaveLength(2);
     await expect(prompt(page)).toHaveCount(0);
     expect(api.callsTo("POST", "/api/v1/me/push/subscribe")).toHaveLength(0);
   });
 
   test("no prompt when push is unavailable on the server", async ({ page, api }) => {
-    await openBooks(page, api);
-    await requestBook(page, api, requestableBook.title, "＋ Request");
+    await openDiscover(page, api);
+    await requestTitle(page, api, requestableCard.title, "＋ Request");
     expect(api.callsTo("POST", "/api/v1/requests")).toHaveLength(1);
     await expect(prompt(page)).toHaveCount(0);
   });
@@ -252,8 +252,8 @@ test.describe("the push prompt after a request", () => {
   test("no prompt when push is already on", async ({ page, api }) => {
     await fakePush(page, { permission: "granted", subscribed: true });
     await override(page, api, pushRoutes);
-    await openBooks(page, api);
-    await requestBook(page, api, requestableBook.title, "＋ Request");
+    await openDiscover(page, api);
+    await requestTitle(page, api, requestableCard.title, "＋ Request");
     expect(api.callsTo("POST", "/api/v1/requests")).toHaveLength(1);
     await expect(prompt(page)).toHaveCount(0);
   });
@@ -261,8 +261,8 @@ test.describe("the push prompt after a request", () => {
   test("no prompt when notifications are blocked", async ({ page, api }) => {
     await fakePush(page, { permission: "denied" });
     await override(page, api, pushRoutes);
-    await openBooks(page, api);
-    await requestBook(page, api, requestableBook.title, "＋ Request");
+    await openDiscover(page, api);
+    await requestTitle(page, api, requestableCard.title, "＋ Request");
     await expect(prompt(page)).toHaveCount(0);
   });
 });
@@ -276,8 +276,8 @@ test.describe("the push prompt on an iPhone outside the Home Screen app", () => 
   test("explains Add to Home Screen instead, and Got it counts as an answer", async ({ page, api }) => {
     await fakePush(page);
     await override(page, api, pushRoutes);
-    await openBooks(page, api);
-    await requestBook(page, api, requestableBook.title, "＋ Request");
+    await openDiscover(page, api);
+    await requestTitle(page, api, requestableCard.title, "＋ Request");
     await expect(prompt(page).getByText("Add to Home Screen")).toBeVisible();
     await prompt(page).getByRole("button", { name: "Got it" }).tap();
     await expect(prompt(page)).toHaveCount(0);

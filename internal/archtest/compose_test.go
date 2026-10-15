@@ -197,7 +197,7 @@ func TestComposeExampleSABnzbdInit(t *testing.T) {
 			strings.Join(main, "\n"), strings.Join(ex, "\n"))
 	}
 	joined := strings.Join(main, "\n")
-	for _, want := range []string{"api_key = $$key", "language = en", "host_whitelist = arrmada-sabnzbd,", "pp = 3", "[[arrmada-tv]]", "[[arrmada-books]]", "[[arrmada-music]]", "[[arrmada]]"} {
+	for _, want := range []string{"api_key = $$key", "language = en", "host_whitelist = arrmada-sabnzbd,", "pp = 3", "[[arrmada-tv]]", "[[arrmada-music]]", "[[arrmada]]"} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("the SABnzbd init script has no %q", want)
 		}
@@ -262,10 +262,10 @@ func TestComposeExampleMatchesCompose(t *testing.T) {
 	// library folders (picked in the setup), last-resort switches, and the update channel
 	// (update.sh's; the example runs the stable release, which the app knows by itself).
 	notInExample := map[string]bool{
-		"ARRMADA_TMDB_API_KEY": true, "ARRMADA_OMDB_API_KEY": true, "ARRMADA_HARDCOVER_API_KEY": true,
+		"ARRMADA_TMDB_API_KEY": true, "ARRMADA_OMDB_API_KEY": true,
 		"ARRMADA_PLEX_URL": true, "ARRMADA_PLEX_TOKEN": true,
 		"ARRMADA_LIBRARY_DIR": true, "ARRMADA_DOWNLOADS_DIR": true, "ARRMADA_MOVIES_DIR": true,
-		"ARRMADA_TV_DIR": true, "ARRMADA_EBOOKS_DIR": true, "ARRMADA_AUDIOBOOKS_DIR": true, "ARRMADA_MUSIC_DIR": true,
+		"ARRMADA_TV_DIR": true, "ARRMADA_MUSIC_DIR": true,
 		"ARRMADA_SKIP_MIGRATION_SNAPSHOT": true, "ARRMADA_ALLOW_NEWER_SCHEMA": true,
 		"ARRMADA_CHANNEL": true,
 	}

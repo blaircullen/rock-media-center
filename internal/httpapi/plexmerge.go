@@ -10,8 +10,7 @@ import (
 )
 
 // Merging a duplicate Plex or Jellyfin requester into the account it belongs with (admin
-// only). The preview says what would move, as counts — audiobook data only as yes/no,
-// never which books — and the merge copies the database first. Served at
+// only). The preview says what would move, as counts — what was watched never named — and the merge copies the database first. Served at
 // /users/{id}/merge and, under its old name, /users/{id}/plex/merge.
 
 // mergeAnswer turns a merge refusal into its HTTP answer; false when err was something else.

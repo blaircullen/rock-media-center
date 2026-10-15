@@ -11,7 +11,7 @@ import (
 	"github.com/tristenlammi/arrmada/internal/store"
 )
 
-// The TV library scan never offers a show from the recycle bin or Convert's originals hold:
+// The TV library scan never offers a show from the recycle bin or an originals hold:
 // every folder it looks at is searched for, and nothing in .arrmada-recycle or
 // .arrmada-hold may be.
 func TestSeriesScanSkipsRecycleDir(t *testing.T) {
@@ -24,7 +24,7 @@ func TestSeriesScanSkipsRecycleDir(t *testing.T) {
 	for _, p := range []string{
 		filepath.Join(root, "Kept Show (2020)", "Season 01", "Kept Show - S01E01.mkv"),
 		filepath.Join(root, ".arrmada-recycle", "Gone Show (2019)", "Gone Show - S01E01.mkv"),
-		// Convert's originals hold: an original kept for undo is not a show.
+		// An originals hold: an original kept for undo is not a show.
 		filepath.Join(root, ".arrmada-hold", "12", "Held Show - S01E01.mkv"),
 	} {
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {

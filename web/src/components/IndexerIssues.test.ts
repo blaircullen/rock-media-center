@@ -28,7 +28,7 @@ describe("emptyReleasesMessage", () => {
 
   it("says how many indexers had nothing", () => {
     expect(emptyReleasesMessage({ indexer_issues: [tl], searched: 4 })).toBe("No releases found on 3 indexers.");
-    expect(emptyReleasesMessage({ searched: 1 }, "ebook releases")).toBe("No ebook releases found on 1 indexer.");
+    expect(emptyReleasesMessage({ searched: 1 }, "album releases")).toBe("No album releases found on 1 indexer.");
     expect(emptyReleasesMessage(null)).toBe("No releases found on your indexers.");
   });
 });

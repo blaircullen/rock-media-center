@@ -28,13 +28,13 @@ var ErrDownloadGone = errors.New("the download is no longer on disk — it was r
 var ErrNothingToImport = errors.New("nothing in this download could be imported")
 
 // ErrWrongTargetKind means the item picked to import into is a different kind of thing
-// from the download (a movie id sent for a book review). Ids are only unique per table,
-// so without this check a movie's id filed the audiobook under whichever book happened
+// from the download (a movie id sent for a music review). Ids are only unique per table,
+// so without this check a movie's id filed the album under whichever one happened
 // to share that number.
 var ErrWrongTargetKind = errors.New("that isn't the right kind of library item for this download")
 
 // ErrNeedsTarget means the review isn't tied to any library item and no target was
-// given, so there is nowhere to import it. Unmatched book and music reviews carry id 0,
+// given, so there is nowhere to import it. Unmatched music reviews carry id 0,
 // and "Import anyway" on one used to look up item 0 and answer 500.
 var ErrNeedsTarget = errors.New("this download isn't tied to a library item — choose one")
 
@@ -47,10 +47,10 @@ var ErrModuleOff = errors.New("that module is turned off")
 var ErrReviewNotFound = errors.New("review not found")
 
 // reviewKindLabel is what the user calls each kind of library item, for messages.
-var reviewKindLabel = map[string]string{"series": "show", "movie": "movie", "book": "book", "music": "album"}
+var reviewKindLabel = map[string]string{"series": "show", "movie": "movie", "music": "album"}
 
 // reviewModuleLabel names the module a review kind belongs to, for "turn on X" messages.
-var reviewModuleLabel = map[string]string{"series": "Series", "movie": "Movies", "book": "Books", "music": "Music"}
+var reviewModuleLabel = map[string]string{"series": "Series", "movie": "Movies", "music": "Music"}
 
 // ReviewTarget is one library item a held download could be imported into, shaped for
 // the reassign picker: one list type for every media kind.
@@ -59,7 +59,7 @@ type ReviewTarget struct {
 	Kind      string `json:"kind"`
 	Title     string `json:"title"`
 	Year      int    `json:"year,omitempty"`
-	Subtitle  string `json:"subtitle,omitempty"` // author for books, artist for albums
+	Subtitle  string `json:"subtitle,omitempty"` // artist for albums
 	PosterURL string `json:"poster_url,omitempty"`
 }
 
@@ -98,7 +98,7 @@ type Review struct {
 	Hash          string `json:"hash"`
 	Name          string `json:"name"`
 	ContentPath   string `json:"content_path"`
-	MediaType     string `json:"media_type"` // series | movie | book | music
+	MediaType     string `json:"media_type"` // series | movie | music
 	ExpectedID    int64  `json:"expected_id"`
 	ExpectedTitle string `json:"expected_title"`
 	ParsedTitle   string `json:"parsed_title"`
@@ -517,12 +517,6 @@ func (c *Coordinator) RejectReview(ctx context.Context, id int64) error {
 			_ = c.addBlock(ctx, r.ExpectedID, b.title, b.indexer, "", "rejected in review")
 		case r.MediaType == "music":
 			c.addBlockMusic(ctx, r.ExpectedID, b.title, b.indexer, "rejected in review")
-		case r.MediaType == "book":
-			// Book reviews now carry the book they were grabbed for, so they reach this switch
-			// with a real ExpectedID. Without a case of their own they would match nothing and
-			// rejecting would blocklist nothing at all, leaving the release free to be re-grabbed
-			// for the same book on the next sweep.
-			c.addBlockBook(ctx, r.ExpectedID, b.title, b.indexer, "rejected in review")
 		}
 	}
 	c.reviewEvent(ctx, r.MediaType, r.ExpectedID, "rejected", "Rejected in review — removed and blocklisted: "+r.Name)
@@ -550,8 +544,8 @@ func (c *Coordinator) DismissReview(ctx context.Context, id int64) error {
 
 // ReviewTargets lists the library items a review's download could be imported into:
 // always items of the review's own kind, filtered by q (title, or author/artist).
-// The picker used to load the movie list for anything that wasn't a show, so a book or
-// album review offered movies — and the chosen movie's id was then used as a book id.
+// The picker used to load the movie list for anything that wasn't a show, so an
+// album review offered movies — and the chosen movie's id was then used as an album id.
 //
 // truncated reports that more items matched than limit allows, so the picker can say
 // "type to narrow" — otherwise a big library's empty filter shows the first 200 titles
@@ -564,7 +558,7 @@ func (c *Coordinator) ReviewTargets(ctx context.Context, reviewID int64, q strin
 	return c.ImportTargets(ctx, r.MediaType, q, limit)
 }
 
-// ImportTargets lists the library items of one kind (series | movie | book | music) a
+// ImportTargets lists the library items of one kind (series | movie | music) a
 // download could be imported into, filtered by q — the picker behind a review's "Choose
 // different…" and Needs you's "Import into…" for a torrent Arrmada didn't grab.
 func (c *Coordinator) ImportTargets(ctx context.Context, kind, q string, limit int) (targets []ReviewTarget, truncated bool, err error) {
@@ -613,19 +607,6 @@ func (c *Coordinator) ImportTargets(ctx context.Context, kind, q string, limit i
 				out = append(out, ReviewTarget{ID: s.ID, Kind: "series", Title: s.Title, Year: s.Year, PosterURL: s.PosterURL})
 			}
 		}
-	case "book":
-		if c.books == nil {
-			return nil, false, moduleOffError{reviewModuleLabel[r.MediaType]}
-		}
-		list, err := c.books.List(ctx)
-		if err != nil {
-			return nil, false, err
-		}
-		for _, b := range list {
-			if matches(b.Title, b.Author) {
-				out = append(out, ReviewTarget{ID: b.ID, Kind: "book", Title: b.Title, Year: b.Year, Subtitle: b.Author, PosterURL: b.CoverURL})
-			}
-		}
 	case "music":
 		if c.music == nil {
 			return nil, false, moduleOffError{reviewModuleLabel[r.MediaType]}
@@ -655,9 +636,9 @@ func (c *Coordinator) ImportTargets(ctx context.Context, kind, q string, limit i
 // targetID > 0 the content is imported into that item (reassign); otherwise into
 // the item it was originally grabbed for (import anyway).
 //
-// targetKind names what targetID is (series | movie | book | music). It must match the
-// review's own kind: ids are per table, so a movie id applied to a book review files the
-// download under an unrelated book. Empty means "same kind as the review", which keeps
+// targetKind names what targetID is (series | movie | music). It must match the
+// review's own kind: ids are per table, so a movie id applied to a music review files the
+// download under an unrelated album. Empty means "same kind as the review", which keeps
 // a page loaded before this check existed working.
 func (c *Coordinator) ImportReview(ctx context.Context, id, targetID int64, targetKind string) error {
 	r, err := c.pendingReview(ctx, id)
@@ -732,7 +713,7 @@ func (c *Coordinator) importContentInto(ctx context.Context, r Review, dest int6
 			return moduleOffError{reviewModuleLabel[r.MediaType]}
 		}
 		// ManualImport goes through MarkImported, which queues the same durable side
-		// effects as an automatic import (Convert, Subtitles, the requester's "ready") and
+		// effects as an automatic import (the requester's "ready") and
 		// announces movie.downloaded.
 		// A download grabbed for one of this movie's extra tracks goes into that track;
 		// anything else is routed by its name, as a manual import is.
@@ -749,7 +730,7 @@ func (c *Coordinator) importContentInto(ctx context.Context, r Review, dest int6
 			}
 		}
 	case "music":
-		// Books shipped with reviews their own ImportReview couldn't handle, so every
+		// An earlier module shipped with reviews its own ImportReview couldn't handle, so every
 		// "Import anyway" failed with "unknown media type". Music gets its case up front.
 		if c.music == nil {
 			return moduleOffError{reviewModuleLabel[r.MediaType]}
@@ -768,25 +749,6 @@ func (c *Coordinator) importContentInto(ctx context.Context, r Review, dest int6
 				return fmt.Errorf("no audio files found in the download for %q", al.Title)
 			}
 			return fmt.Errorf("no track could be placed into %q", al.Title)
-		}
-	case "book":
-		// The books sweep creates reviews with MediaType "book", but this switch only knew
-		// series and movie — so every book review's "Import anyway" hit the default branch
-		// and failed with "unknown media type". The escalation path books built led to a
-		// queue whose primary action could not work.
-		if c.books == nil {
-			return moduleOffError{reviewModuleLabel[r.MediaType]}
-		}
-		b, err := c.books.Get(ctx, dest)
-		if err != nil {
-			return err
-		}
-		imported, hadFiles := c.importBookContent(ctx, b, r.ContentPath, r.Hash, r.Name)
-		if !imported {
-			if !hadFiles {
-				return fmt.Errorf("no ebook or audiobook files found in the download for %q", b.Title)
-			}
-			return fmt.Errorf("no edition could be imported into %q", b.Title)
 		}
 	default:
 		return fmt.Errorf("unknown media type %q", r.MediaType)
@@ -1165,7 +1127,7 @@ func episodesOf(ei *library.EpisodeImport) []int {
 
 // recordImportedHash notes a finished download as imported in the shared imports
 // table, so the downloads view drops it once it's in the library (it keeps
-// seeding in the client). Series/book imports run outside the movie import flow,
+// seeding in the client). Series imports run outside the movie import flow,
 // which is the only one that records automatically.
 func (c *Coordinator) recordImportedHash(ctx context.Context, hash, title string, size int64) {
 	if hash == "" {
@@ -1284,8 +1246,7 @@ func (c *Coordinator) wantsEpisodeFile(ctx context.Context, s series.Series, sea
 			curParsed.Codec = src.Codec
 		}
 	}
-	// What Convert's analysis found in the file beats both names: a converted file is
-	// AV1 or HEVC whatever it was released as, and its real resolution is known.
+	// What an analysis of the file found beats both names, when one is recorded.
 	curFile := c.episodeFileOf(ctx, cur)
 	if curFile.Facts != nil {
 		probed := quality.ReleaseWithFacts(curParsed, *curFile.Facts)
@@ -1303,7 +1264,7 @@ func (c *Coordinator) wantsEpisodeFile(ctx context.Context, s series.Series, sea
 	// UpgradeCandidate — the profile resolved identically, so a release it chose can't be
 	// turned away on arrival. That mismatch cost a full download and then left the torrent
 	// seeding in the client, which froze the show's sweeps for as long as it sat there.
-	// A converted file is measured as what it was before Convert shrank it, or the release
+	// A file an earlier version converted is measured as what it was before, or the release
 	// it came from (or another group's of the same size) passes as a big bitrate upgrade.
 	curEncode := quality.Encode{SizeGB: float64(cur.SizeBytes) / bytesPerGB, Codec: curParsed.Codec}
 	if orig, ok := curFile.OriginalEncode(); ok {

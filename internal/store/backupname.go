@@ -16,9 +16,9 @@ const (
 	BackupManual        BackupKind = "manual"
 	BackupPreRestore    BackupKind = "pre-restore"
 	BackupPreDeleteUser BackupKind = "pre-delete-user"
-	// BackupPreDeleteEmptyUser is the copy before deleting an account with nothing to lose,
-	// kept apart so clearing out guest accounts can't prune the copy holding someone's
-	// audiobook places.
+	// BackupPreDeleteEmptyUser is the copy earlier versions took before deleting an account
+	// with nothing to lose. Nothing takes new ones; the kind stays so those files are still
+	// listed, restorable and pruned.
 	BackupPreDeleteEmptyUser BackupKind = "pre-delete-empty-user"
 	// BackupPreMergeUser is the copy before merging a duplicate Plex account into another.
 	BackupPreMergeUser BackupKind = "pre-merge-user"

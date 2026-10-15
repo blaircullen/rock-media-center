@@ -180,8 +180,8 @@ type unwantedHit struct {
 	item, reject, avoid string
 }
 
-// unwantedHits lists the items release c has, in check order. Book and music profiles
-// (NoUnwanted) are never judged: "TS Eliot" isn't a telesync and "Extras" is a fine title.
+// unwantedHits lists the items release c has, in check order. Music profiles (NoUnwanted)
+// are never judged: "TS…" isn't a telesync and "Extras" is a fine title.
 func (p Profile) unwantedHits(c Candidate) []unwantedHit {
 	if p.NoUnwanted {
 		return nil

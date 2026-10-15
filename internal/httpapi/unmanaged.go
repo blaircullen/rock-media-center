@@ -70,7 +70,7 @@ func (a *api) readUnmanaged(ctx context.Context) (unmanagedState, error) {
 	}
 	ignored := a.ignoredHashes(ctx, snap)
 	cats := download.FixedCategories(a.deps.Config.DownloadCategory)
-	own := map[string]bool{cats.Movies: true, cats.TV: true, cats.Books: true, cats.Music: true}
+	own := map[string]bool{cats.Movies: true, cats.TV: true, cats.Music: true}
 	misfiled := map[string]bool{}
 	for _, it := range a.deps.Automation.WrongCategoryDownloads() {
 		misfiled[strings.ToLower(it.Hash)] = true
@@ -150,8 +150,6 @@ func (a *api) writeIgnored(ctx context.Context, list []string) error {
 // guessKind is what an unmanaged torrent probably is, for the picker's first kind.
 func guessKind(it download.Item, p parser.Release) string {
 	switch it.Category {
-	case download.CategoryBooks:
-		return "book"
 	case download.CategoryMusic:
 		return "music"
 	}
@@ -162,7 +160,7 @@ func guessKind(it download.Item, p parser.Release) string {
 }
 
 // importKinds are the library kinds a download can be imported into.
-var importKinds = map[string]bool{"movie": true, "series": true, "book": true, "music": true}
+var importKinds = map[string]bool{"movie": true, "series": true, "music": true}
 
 // handleUnmanaged lists the unmanaged completed torrents, not ignored ones.
 //
@@ -243,7 +241,7 @@ func (a *api) handleUnmanagedTargets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !importKinds[r.URL.Query().Get("kind")] {
-		a.writeError(w, http.StatusBadRequest, "kind must be movie, series, book or music")
+		a.writeError(w, http.StatusBadRequest, "kind must be movie, series or music")
 		return
 	}
 	list, truncated, err := a.deps.Automation.ImportTargets(r.Context(), r.URL.Query().Get("kind"), r.URL.Query().Get("q"), 0)
@@ -268,7 +266,7 @@ func (a *api) handleImportUnmanaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !importKinds[req.Kind] || req.TargetID <= 0 {
-		a.writeError(w, http.StatusBadRequest, "pick a movie, show, book or album to import it into")
+		a.writeError(w, http.StatusBadRequest, "pick a movie, show or album to import it into")
 		return
 	}
 	it, ok := a.unmanagedItem(w, r)

@@ -32,9 +32,10 @@ type Movie struct {
 	// UpgradeHold keeps the default file out of profile-driven upgrades ("keep existing
 	// files" when its profile changed). Cleared by a new import, a profile change or Resume.
 	UpgradeHold bool `json:"upgrade_hold,omitempty"`
-	// ConvertedFromRelease and ConvertedFromSize are what the default file was before
-	// Convert first shrank it (size in bytes, 0 = unknown). Upgrades must beat that, not
-	// the smaller converted file. Empty for a file never converted; cleared on import.
+	// ConvertedFromRelease and ConvertedFromSize are what the default file was before the
+	// earlier versions' Convert first shrank it (size in bytes, 0 = unknown).
+	// Upgrades must beat that, not the smaller converted file. Nothing records new ones;
+	// existing ones are still honoured and cleared on import.
 	ConvertedFromRelease string `json:"converted_from_release,omitempty"`
 	ConvertedFromSize    int64  `json:"converted_from_size,omitempty"`
 	// FileMissingSince is when the missing-file check (or the detail page) found the default
@@ -248,7 +249,7 @@ type MovieFile struct {
 	SizeBytes int64  `json:"size_bytes"`
 	// MtimeUnix is the file's modification time when the entry was read (0 = an entry cached
 	// before it was recorded). With the size it says whether the entry still describes the
-	// file on disk, the same contract as Convert's probe cache.
+	// file on disk.
 	MtimeUnix   int64    `json:"mtime,omitempty"`
 	Quality     string   `json:"quality,omitempty"` // "2160p BluRay"
 	Codec       string   `json:"codec,omitempty"`

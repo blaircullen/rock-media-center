@@ -4,9 +4,7 @@ import (
 	"context"
 
 	"github.com/tristenlammi/arrmada/internal/automation"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/jobs"
-	"github.com/tristenlammi/arrmada/internal/metadata"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/series"
 )
@@ -47,27 +45,6 @@ type seriesLib interface {
 	SearchStatesFor(ctx context.Context, ids []int64) (map[int64]series.SearchStamp, error)
 }
 
-// bookLib is the Books module, narrowed.
-type bookLib interface {
-	Add(ctx context.Context, olKey, qualityProfile string, monitored bool, fallback metadata.BookResult) (books.Book, error)
-	Get(ctx context.Context, id int64) (books.Book, error)
-	List(ctx context.Context) ([]books.Book, error)
-	// ByKeysOrIDs is the library books under these catalogue keys (current or former) or
-	// with these ids.
-	ByKeysOrIDs(ctx context.Context, olKeys []string, ids []int64) ([]books.Book, error)
-	// Catalogue keys, current and former (book_keys).
-	BookIDForKey(ctx context.Context, key string) (int64, bool)
-	KeysFor(ctx context.Context, bookID int64) ([]books.BookKey, error)
-	KeyOwners(ctx context.Context, keys []string) (map[string]int64, error)
-	KeyIndex(ctx context.Context, list []books.Book) map[string]books.Book
-	AllKeys(ctx context.Context) (map[string]int64, error)
-	AddKey(ctx context.Context, key string, bookID int64, source string) error
-	// For approving a book the library already has: widen it, want it, say who asked.
-	SetQualityProfile(ctx context.Context, id int64, profile string) error
-	SetMonitored(ctx context.Context, id int64, monitored bool) error
-	AddEvent(ctx context.Context, id int64, event, detail string)
-}
-
 // searcher is the acquisition pipeline, narrowed: the searches an approval starts and the
 // movie search queue they go through.
 type searcher interface {
@@ -84,6 +61,5 @@ type searcher interface {
 var (
 	_ movieLib  = (*movies.Service)(nil)
 	_ seriesLib = (*series.Service)(nil)
-	_ bookLib   = (*books.Service)(nil)
 	_ searcher  = (*automation.Coordinator)(nil)
 )

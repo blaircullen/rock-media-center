@@ -44,7 +44,7 @@ func TestSupersedeRecyclesOld(t *testing.T) {
 	if p, _ := svc.repo.EpisodeFilePath(ctx, 1, 1, 1); p != newF {
 		t.Errorf("db path = %q, want the new file", p)
 	}
-	// Same path (in-place convert) must not delete the file.
+	// Same path (in-place re-encode) must not delete the file.
 	os.WriteFile(newF, []byte("new"), 0o644)
 	if err := svc.SupersedeEpisodeFile(ctx, 1, 1, 1, newF, 3, "Show.S01E01.1080p.BluRay.x264-GRP"); err != nil {
 		t.Fatal(err)

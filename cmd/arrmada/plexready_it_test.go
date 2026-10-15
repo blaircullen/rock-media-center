@@ -105,7 +105,7 @@ func TestIT_ReadyWhenJellyfinHasIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	mv := movies.NewService(db, nil, nil, t.TempDir(), "", nil, log)
-	rq := requests.NewService(db, mv, nil, nil, nil, nil, nil, "", log)
+	rq := requests.NewService(db, mv, nil, nil, nil, nil, "", log)
 	rq.SetPlexLocator(loc)
 
 	// Wait for the index's first build, then: complete on disk, not in Jellyfin — it waits.

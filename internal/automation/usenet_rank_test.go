@@ -248,7 +248,7 @@ func TestBestByTitleOneCopyPerNetwork(t *testing.T) {
 	}
 }
 
-// Book and album picks: seeders only between two torrents; across networks the profile's
+// Album picks: seeders only between two torrents; across networks the profile's
 // points, then a live release over a dead torrent, then the preference and the tie-breaks.
 func TestBeatsAcrossNetworks(t *testing.T) {
 	tor := func(seeders int) indexer.Release {

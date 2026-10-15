@@ -34,7 +34,6 @@ func (c *Coordinator) RSSSyncSeries(ctx context.Context) {
 		c.log.Warn("rss: fetch feeds failed", "err", err)
 		return
 	}
-	res.Releases = withoutBookUploads(res.Releases) // the feed is shared with the book sweep
 	if len(res.Releases) == 0 {
 		return
 	}
@@ -204,7 +203,7 @@ func (c *Coordinator) upgradeSeries(ctx context.Context, seriesID int64, b *upgr
 		season, episode int
 		// cur is the file as the decisions judge it: the release it was imported from
 		// (NOT the renamed library file), its size, the episode length for the bitrate
-		// threshold, and Convert's probed facts when they still describe it.
+		// threshold.
 		cur quality.CurrentFile
 	}
 	var haveEps []have

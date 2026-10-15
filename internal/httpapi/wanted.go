@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/tristenlammi/arrmada/internal/automation"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/jobs"
 	"github.com/tristenlammi/arrmada/internal/movies"
@@ -17,8 +16,8 @@ import (
 	"github.com/tristenlammi/arrmada/internal/series"
 )
 
-// The Wanted view: every monitored title Arrmada is still looking for — movies, series,
-// books and albums — with when it last searched, how that went, how many searches in a
+// The Wanted view: every monitored title Arrmada is still looking for — movies, series
+// and albums — with when it last searched, how that went, how many searches in a
 // row came up empty, and roughly when the sweep tries next. It answers "why isn't it
 // downloading?" on the Downloads page's Searching and Upcoming tabs, and the row and its
 // builder are shared by any page that lists wanted titles (the Movies Wanted view reuses
@@ -40,7 +39,7 @@ const (
 	// wantedIndexersFailed: its last search couldn't reach any indexer — not a miss.
 	wantedIndexersFailed = "indexers_failed"
 	// wantedSlowed: so many empty searches that its sweep now checks it only rarely
-	// (books monthly, albums weekly).
+	// (albums weekly).
 	wantedSlowed = "slowed"
 	// wantedNotReleased: not out yet, so nothing searches for it (Upcoming rows).
 	wantedNotReleased = "not_released"
@@ -50,12 +49,11 @@ const (
 // Searching/Upcoming rows always had (movie_id/series_id, title, year, poster_url,
 // quality_profile, episode_count, available_at, next_label) and adds the search state.
 type wantedRow struct {
-	MediaType string `json:"media_type"` // movie | series | book | music
-	ID        int64  `json:"id"`         // the movie, series, book or album id
+	MediaType string `json:"media_type"` // movie | series | music
+	ID        int64  `json:"id"`         // the movie, series or album id
 	// The per-kind id the page links by; only the one for MediaType is set.
 	MovieID  int64 `json:"movie_id,omitempty"`
 	SeriesID int64 `json:"series_id,omitempty"`
-	BookID   int64 `json:"book_id,omitempty"`
 	AlbumID  int64 `json:"album_id,omitempty"`
 	ArtistID int64 `json:"artist_id,omitempty"` // an album's artist, whose page lists it
 
@@ -63,8 +61,8 @@ type wantedRow struct {
 	Year           int    `json:"year"`
 	PosterURL      string `json:"poster_url,omitempty"`
 	QualityProfile string `json:"quality_profile"`
-	Byline         string `json:"byline,omitempty"` // a book's author, an album's artist
-	// Missing names what a book still lacks: "Ebook", "Audiobook", "Audio version".
+	Byline         string `json:"byline,omitempty"` // an album's artist
+	// Missing names what a movie still lacks: its monitored tracks with no file.
 	Missing      []string `json:"missing,omitempty"`
 	EpisodeCount int      `json:"episode_count,omitempty"` // series: aired, monitored, missing episodes
 
@@ -148,16 +146,6 @@ func (b *wantedBuild) schedule(row *wantedRow, lastAt string, misses int) {
 	}
 }
 
-// reschedule replaces the row's next search with next (zero or past = due now), for a
-// kind whose sweep has a rule beyond the plain ladder (a book's release window).
-func (b *wantedBuild) reschedule(row *wantedRow, next time.Time) {
-	row.Due = false
-	if !next.After(b.now) {
-		next, row.Due = b.now, true
-	}
-	row.NextSearchAt = next.UTC().Format(time.RFC3339)
-}
-
 // settle applies what overrides "searching", once the row's last search is known: a
 // client that can't be read, or indexers that all failed last time. A row that isn't
 // going to be searched automatically loses its next-search time.
@@ -174,8 +162,8 @@ func (b *wantedBuild) settle(row *wantedRow) {
 	}
 }
 
-// buildWanted builds the Wanted view for the given kinds (nil: all four). Books are left
-// out while the Books module is off, and albums unless Music is on. Database reads and
+// buildWanted builds the Wanted view for the given kinds (nil: all three). Albums are left
+// out unless Music is on. Database reads and
 // one shared queue read; no indexer is asked anything.
 func (a *api) buildWanted(ctx context.Context, kinds wantedKinds) wantedLists {
 	snap, known, _ := a.queueSnapshot(ctx)
@@ -204,9 +192,6 @@ func (a *api) buildWanted(ctx context.Context, kinds wantedKinds) wantedLists {
 	}
 	if kinds.has(automation.AttemptSeries) && a.deps.Series != nil {
 		add(b.series())
-	}
-	if kinds.has(automation.AttemptBook) && a.deps.Books != nil && a.booksEnabled(ctx) {
-		add(b.books())
 	}
 	if kinds.has(automation.AttemptMusic) && a.deps.Music != nil && a.musicEnabled(ctx) {
 		add(b.albums())
@@ -386,82 +371,6 @@ func (b *wantedBuild) seriesInFlight(row *wantedRow, sa series.SeriesAcquisition
 	}
 }
 
-// books: monitored books missing an edition (or monitored audio version) their profile
-// wants. One whose release day hasn't come is Upcoming: the sweep won't search it yet.
-func (b *wantedBuild) books() (rows, upcoming []wantedRow) {
-	list, err := b.a.deps.Books.List(b.ctx)
-	if err != nil {
-		return nil, nil
-	}
-	active := b.active(automation.AttemptBook)
-	wants := map[string][2]bool{}
-	for _, bk := range list {
-		if !bk.Monitored {
-			continue
-		}
-		w, ok := wants[bk.QualityProfile]
-		if !ok {
-			w = b.a.bookWants(b.ctx, bk.QualityProfile)
-			wants[bk.QualityProfile] = w
-		}
-		bk.WantEbook, bk.WantAudiobook = w[0], w[1]
-		if !bk.LacksWanted() {
-			continue
-		}
-		downloading, held := heldOnly(active[bk.ID])
-		if downloading {
-			continue
-		}
-		row := wantedRow{MediaType: automation.AttemptBook, ID: bk.ID, BookID: bk.ID, Title: bk.Title, Year: bk.Year,
-			PosterURL: bk.CoverURL, QualityProfile: b.profile(bk.QualityProfile), Byline: bk.Author,
-			Missing: bookMissing(bk), State: wantedSearching}
-		if !books.Released(bk.ReleaseDate, b.now) {
-			row.State, row.AvailableAt = wantedNotReleased, bk.ReleaseDate
-			upcoming = append(upcoming, row)
-			continue
-		}
-		b.schedule(&row, bk.LastSearchAt, bk.SearchMisses)
-		if bk.ReleaseDate != "" {
-			// Just out: due now, then at most a day apart for two weeks — the sweep's rule.
-			b.reschedule(&row, books.NextSearchAtFor(bk.LastSearchAt, bk.SearchMisses, bk.ReleaseDate, b.now))
-		}
-		if held {
-			row.State, row.ReviewID = wantedHeld, b.reviews[fmt.Sprintf("book:%d", bk.ID)]
-		}
-		rows = append(rows, row)
-	}
-	b.attach(automation.AttemptBook, rows)
-	return rows, upcoming
-}
-
-// bookMissing names what a book still lacks, in the words its page uses.
-func bookMissing(bk books.Book) []string {
-	var out []string
-	if bk.WantEbook && bk.Ebook == nil {
-		out = append(out, "Ebook")
-	}
-	if bk.WantAudiobook && bk.Audiobook == nil {
-		out = append(out, "Audiobook")
-	}
-	for _, v := range bk.AudioVersions {
-		if v.Monitored && v.File == nil && len(v.Terms) > 0 {
-			out = append(out, "Audio version")
-			break
-		}
-	}
-	return out
-}
-
-// bookWants is which editions a profile wants, as the book pages read it (an unreadable
-// profile wants the ebook).
-func (a *api) bookWants(ctx context.Context, ref string) [2]bool {
-	if sp, err := a.deps.Quality.GetStored(ctx, ref); err == nil {
-		e, au := books.WantedEditions(sp.FormatScores)
-		return [2]bool{e, au}
-	}
-	return [2]bool{true, false}
-}
-
 // albums: monitored, incomplete albums of monitored artists. One not released yet is
 // Upcoming, by the music sweep's own date rule.
 func (b *wantedBuild) albums() (searching, upcoming []wantedRow) {
@@ -510,14 +419,14 @@ func (b *wantedBuild) albums() (searching, upcoming []wantedRow) {
 }
 
 // handleWanted is GET /api/v1/wanted: the Wanted view for the Downloads page's Searching
-// and Upcoming tabs. ?kind=movie (or series, book, music; repeatable) narrows it.
+// and Upcoming tabs. ?kind=movie (or series, music; repeatable) narrows it.
 func (a *api) handleWanted(w http.ResponseWriter, r *http.Request) {
 	var kinds wantedKinds
 	if ks := r.URL.Query()["kind"]; len(ks) > 0 {
 		kinds = wantedKinds{}
 		for _, k := range ks {
 			if !automation.ValidAttemptKind(k) {
-				a.writeError(w, http.StatusBadRequest, "kind must be movie, series, book or music")
+				a.writeError(w, http.StatusBadRequest, "kind must be movie, series or music")
 				return
 			}
 			kinds[k] = true
@@ -554,14 +463,6 @@ func (a *api) wantedSearchJob(ctx context.Context, kind string, id int64) (jobs.
 			return jobs.Spec{}, nil, notFoundOr(err, series.ErrNotFound)
 		}
 		return a.seriesManualSearchJob(id), func() { a.deps.Series.ResetSearchMisses(ctx, id) }, nil
-	case automation.AttemptBook:
-		if a.deps.Books == nil || !a.booksEnabled(ctx) {
-			return jobs.Spec{}, nil, errWantedGone
-		}
-		if _, err := a.deps.Books.Get(ctx, id); err != nil {
-			return jobs.Spec{}, nil, notFoundOr(err, books.ErrNotFound)
-		}
-		return a.bookSearchJob(id), func() { a.deps.Books.ResetSearchMisses(ctx, id) }, nil
 	case automation.AttemptMusic:
 		if a.deps.Music == nil || !a.musicEnabled(ctx) {
 			return jobs.Spec{}, nil, errWantedGone
@@ -578,7 +479,7 @@ func (a *api) wantedSearchJob(ctx context.Context, kind string, id int64) (jobs.
 	return jobs.Spec{}, nil, errBadKind
 }
 
-var errBadKind = errors.New("kind must be movie, series, book or music")
+var errBadKind = errors.New("kind must be movie, series or music")
 
 // notFoundOr reads a getter's error: the package's not-found error is errWantedGone,
 // anything else is passed on.

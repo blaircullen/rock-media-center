@@ -434,7 +434,7 @@ func (a *api) handleInsightsPerson(w http.ResponseWriter, r *http.Request) {
 
 // handleInsightsLibrary returns the Insights Library tab (?window=days, ?metric=duration),
 // each title linked to its Arrmada page when Arrmada has it. It only links: nothing here
-// queues a conversion.
+// changes a file.
 func (a *api) handleInsightsLibrary(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()

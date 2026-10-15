@@ -68,5 +68,5 @@ and can be switched off on the same card.
 
 **Something else?**
 [Open an issue](https://github.com/tristenlammi/Arrmada/issues). The **Logs** page can download
-a support bundle (logs, status and settings with credentials, people and book names taken
+a support bundle (logs, status and settings with credentials and people's names taken
 out) to attach.

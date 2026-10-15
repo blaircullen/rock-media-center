@@ -3,9 +3,9 @@ import { LINKS } from "../../lib/links";
 import { Button, EmptyState } from "../../ui";
 
 export interface LibraryEmptyProps {
-  /** "movies", "series", "books", "artists". */
+  /** "movies", "series", "artists". */
   noun: string;
-  /** Which library folder(s) the scan reads: "movies folder", "ebook and audiobook folders". */
+  /** Which library folder(s) the scan reads: "movies folder", "music folder". */
   folder: string;
   /** The page's own add button label ("Add movie"), named in the text. */
   addLabel: string;

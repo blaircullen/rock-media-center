@@ -11,8 +11,6 @@ const (
 	// CategoryTV keeps TV downloads apart so the multi-file series importer takes them,
 	// not the single-file movie importer.
 	CategoryTV = "arrmada-tv"
-	// CategoryBooks routes ebook and audiobook downloads through the book importer.
-	CategoryBooks = "arrmada-books"
 	// CategoryMusic routes album downloads through the music importer.
 	CategoryMusic = "arrmada-music"
 )
@@ -21,7 +19,6 @@ const (
 type Categories struct {
 	Movies string `json:"movies"`
 	TV     string `json:"tv"`
-	Books  string `json:"books"`
 	Music  string `json:"music"`
 }
 
@@ -31,5 +28,5 @@ func FixedCategories(movie string) Categories {
 	if movie == "" {
 		movie = DefaultMovieCategory
 	}
-	return Categories{Movies: movie, TV: CategoryTV, Books: CategoryBooks, Music: CategoryMusic}
+	return Categories{Movies: movie, TV: CategoryTV, Music: CategoryMusic}
 }

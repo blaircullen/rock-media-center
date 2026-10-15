@@ -10,14 +10,12 @@ export interface NavItem {
   /** Shown to admins only (the server refuses everyone else anyway). */
   adminOnly?: boolean;
   /** Belongs to a module an admin can switch off; hidden while it's off. */
-  module?: "books" | "music";
+  module?: "music";
   /**
    * A live count beside the label, from the Needs-you feed (lib/useAttention.ts badgeFor):
    * requests waiting, held imports plus downloads that need a look, health problems.
    */
   badge?: "requests" | "activity" | "review" | "issues";
-  /** A status dot beside the label: the audiobook server's running state. */
-  status?: "audiobook-server";
 }
 
 export interface NavGroup {
@@ -30,8 +28,8 @@ export interface NavGroup {
 
 
 // The sidebar, grouped by how the app works: the day-to-day (Dashboard, Discover,
-// Requests, Activity), what you have (Library), things that work on files (Tools), watch
-// monitoring on Plex and Jellyfin (Watching), and setup (System).
+// Requests, Activity), what you have (Library), watch monitoring on Plex and Jellyfin
+// (Watching), and setup (System).
 // Routes don't follow this grouping; only the sidebar and the page breadcrumbs do.
 export const NAV: NavGroup[] = [
   {
@@ -52,17 +50,8 @@ export const NAV: NavGroup[] = [
     items: [
       { to: "/movies", label: "Movies", icon: "movies" },
       { to: "/series", label: "Series", icon: "series" },
-      { to: "/books", label: "Books", icon: "books", module: "books" },
-      { to: "/audiobooks", label: "Audiobooks", icon: "audiobooks", status: "audiobook-server" },
       { to: "/music", label: "Music", icon: "music", module: "music", tag: "Preview" },
       { to: "/calendar", label: "Calendar", icon: "calendar" },
-    ],
-  },
-  {
-    group: "Tools",
-    items: [
-      { to: "/subtitles", label: "Subtitles", icon: "subtitles" },
-      { to: "/convert", label: "Convert", icon: "convert" },
     ],
   },
   {
@@ -84,14 +73,13 @@ export const NAV: NavGroup[] = [
 
 export interface NavViewer {
   admin: boolean;
-  booksEnabled: boolean;
   musicEnabled: boolean;
 }
 
 // visibleNav drops what this viewer shouldn't see: pages of modules an admin switched
 // off, and admin-only pages (Logs) for managers. Groups left empty disappear.
 export function visibleNav(viewer: NavViewer, nav: NavGroup[] = NAV): NavGroup[] {
-  const on = (m: NavItem["module"]) => !m || (m === "books" ? viewer.booksEnabled : viewer.musicEnabled);
+  const on = (m: NavItem["module"]) => !m || viewer.musicEnabled;
   return nav
     .map((g) => ({ ...g, items: g.items.filter((i) => on(i.module) && (viewer.admin || !i.adminOnly)) }))
     .filter((g) => g.items.length > 0);

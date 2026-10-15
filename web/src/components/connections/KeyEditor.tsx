@@ -17,21 +17,8 @@ const KEY_CLEAR_EFFECT: Record<string, string> = {
   tmdb: "Discover, Movies and TV stop finding anything.",
   tvdb: "Anime episode numbering goes back to TMDB's.",
   omdb: "IMDb, Rotten Tomatoes and Metacritic scores stop showing.",
-  hardcover: "New book lookups go back to Open Library. Books already matched keep what they have.",
-  opensubtitles_api: "Subtitle search stops.",
-  opensubtitles_username: "Subtitle downloads stop.",
-  opensubtitles_password: "Subtitle downloads stop.",
   flaresolverr: "TorrentLeech and 1337x can't get past Cloudflare.",
 };
-
-// The OpenSubtitles username and password are checked through the API key's Test, which
-// signs in with them; every other key tests itself.
-export const testTarget = (id: string) => (id === "opensubtitles_username" || id === "opensubtitles_password" ? "opensubtitles_api" : id);
-
-// The rows each card edits: OpenSubtitles' card holds its login too.
-export function keyRowsFor(ref: string): string[] {
-  return ref === "opensubtitles_api" ? ["opensubtitles_api", "opensubtitles_username", "opensubtitles_password"] : [ref];
-}
 
 export interface KeyTest {
   ok: boolean;
@@ -99,7 +86,7 @@ export function useAPIKeys(enabled: boolean, onChanged: () => void): KeyControl 
       setDrafts((d) => drop(d, id));
       onChanged();
       // Test straight after saving, so a key that saved but doesn't work says so now.
-      const target = next.find((k) => k.id === testTarget(id));
+      const target = next.find((k) => k.id === id);
       if (target?.testable && target.configured) await test(target.id);
     } catch (e) {
       setError((e as Error).message);
@@ -143,7 +130,7 @@ export function useAPIKeys(enabled: boolean, onChanged: () => void): KeyControl 
   };
 }
 
-// KeyEditor is the rows a card edits (keyRowsFor), opened inside the card.
+// KeyEditor is the rows a card edits (one key each), opened inside the card.
 export function KeyEditor({ ids, ctl }: { ids: string[]; ctl: KeyControl }) {
   if (ctl.keys === null) {
     return ctl.error

@@ -123,11 +123,8 @@ describe("RequestSheet", () => {
     expect(has("Withdraw")).toBe(false);
   });
 
-  it("says what was asked for: a book's format, a show's seasons", async () => {
+  it("says what was asked for: a show's seasons", async () => {
     me.user = user(1, "admin");
-    open(rq({ media_type: "book", title: "Dune", author: "Frank Herbert", formats: "audiobook" }));
-    expect(await screen.findByText("Listen")).toBeTruthy();
-    cleanup();
     open(rq({ media_type: "series", title: "Silo", seasons: [1, 2, 3, 5] }));
     expect(await screen.findByText(/S1–3, S5/)).toBeTruthy();
     cleanup();

@@ -33,7 +33,7 @@ func sweepOutcome(err error, searched bool, grabbed int) (resetMisses, recordMis
 const outageStopAfter = 2
 
 // noIndexerSaid remembers which sweeps have already said they have no indexer to ask, so
-// a fresh install (or Books turned on with only TV/movie indexers) says it once per run
+// a fresh install (or Music turned on with only TV/movie indexers) says it once per run
 // rather than every five minutes forever.
 var noIndexerSaid sync.Map
 

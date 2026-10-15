@@ -11,7 +11,7 @@ import (
 // indexer kinds. The acquisition pipeline parses and scores it downstream.
 type Release struct {
 	Title       string    `json:"title"`
-	Description string    `json:"description,omitempty"` // indexer blurb; some carry author/narrator (e.g. MyAnonaMouse)
+	Description string    `json:"description,omitempty"` // indexer blurb
 	DownloadURL string    `json:"download_url"`          // .torrent / .nzb / magnet
 	InfoURL     string    `json:"info_url,omitempty"`    // the release's details page on the tracker
 	InfoHash    string    `json:"info_hash,omitempty"`   // torrent
@@ -22,16 +22,6 @@ type Release struct {
 	Categories  []int     `json:"categories,omitempty"`
 	Indexer     string    `json:"indexer"`   // which indexer returned it
 	Transport   Transport `json:"transport"` // torrent | usenet
-
-	// Structured book metadata, when the indexer exposes it as real fields (e.g.
-	// MyAnonaMouse's API) rather than only in the title. These let the book
-	// pipeline show narrator/author/series/format reliably instead of scraping
-	// them back out of the release name.
-	Author   string `json:"author,omitempty"`
-	Narrator string `json:"narrator,omitempty"`
-	Series   string `json:"series,omitempty"`
-	Language string `json:"language,omitempty"`
-	Format   string `json:"format,omitempty"` // ebook/audiobook file type: EPUB, M4B, MP3…
 
 	// The ids the indexer tagged the release with, when it says (Torznab's imdb/imdbid,
 	// tmdbid and tvdbid attrs; TorrentLeech's imdbID). IMDBID is normalised to "tt" plus

@@ -28,7 +28,7 @@ describe("shellFor", () => {
 describe("buildRoutes", () => {
   it("gives outside sessions no calendar", () => {
     const p = paths(buildRoutes({ role: "requester", external: true }));
-    expect(p).toEqual(expect.arrayContaining(["/discover", "/shelf", "/books", "/audiobooks", "/me", "*"]));
+    expect(p).toEqual(expect.arrayContaining(["/discover", "/requests", "/me", "*"]));
     expect(p).not.toContain("/calendar");
   });
 
@@ -41,17 +41,6 @@ describe("buildRoutes", () => {
       const browse = d?.children?.find((c) => c.path === "browse");
       expect(browse?.children?.map((c) => c.path), `${role} ${external} browse`).toEqual(["movie/:tmdbId", "series/:tmdbId", "person/:personId", "collection/:collectionId"]);
     }
-  });
-
-  // The shelf's old address keeps working for requesters; staff /books is the library.
-  it("sends a requester's /books to /shelf and leaves staff /books alone", () => {
-    for (const external of [false, true]) {
-      const r = routes(buildRoutes({ role: "requester", external })).find((x) => x.path === "/books");
-      expect((r?.element as { props?: { to?: string } })?.props?.to).toBe("/shelf");
-    }
-    const staff = routes(buildRoutes({ role: "admin", external: false })).find((x) => x.path === "/books");
-    expect((staff?.element as { type?: unknown })?.type).not.toBe(Navigate);
-    expect(paths(buildRoutes({ role: "admin", external: false }))).toContain("/me");
   });
 
   it("keeps the console out of the requester shell", () => {
@@ -74,7 +63,7 @@ describe("buildRoutes", () => {
   it("keeps today's staff addresses and redirects", () => {
     const p = paths(buildRoutes({ role: "admin", external: false }));
     for (const want of ["/", "/activity/:tab", "/downloads", "/activity", "/history", "/review", "/blocklist", "/movies/:id", "/series/:id", "/music/album/:id",
-      "/books/author/:name", "/notifications", "/library", "/settings/*", "*"]) {
+      "/me", "/notifications", "/library", "/settings/*", "*"]) {
       expect(p).toContain(want);
     }
   });
@@ -101,15 +90,21 @@ describe("buildRoutes", () => {
 
 describe("ModuleGate", () => {
   it("reads the module's switch", () => {
-    expect(moduleOn("books", { booksEnabled: false, musicEnabled: true })).toBe(false);
-    expect(moduleOn("music", { booksEnabled: false, musicEnabled: true })).toBe(true);
+    expect(moduleOn("music", { musicEnabled: true })).toBe(true);
+    expect(moduleOn("music", { musicEnabled: false })).toBe(false);
   });
 
-  // With no MeProvider, Books defaults on and Music off.
-  it("shows the page while the module is on and redirects when it's off", () => {
-    const render = (module: "books" | "music") =>
-      renderToStaticMarkup(<MemoryRouter><ModuleGate module={module} home="/">page</ModuleGate></MemoryRouter>);
-    expect(render("books")).toBe("page");
-    expect(render("music")).toBe("");
+  // With no MeProvider, Music defaults off.
+  it("redirects while the module is off", () => {
+    const render = () =>
+      renderToStaticMarkup(<MemoryRouter><ModuleGate module="music" home="/">page</ModuleGate></MemoryRouter>);
+    expect(render()).toBe("");
+  });
+
+  it("has no routes for the removed books, audiobooks, subtitles and convert pages", () => {
+    for (const [role, external] of [["admin", false], ["requester", false], ["requester", true]] as const) {
+      const p = paths(buildRoutes({ role, external }));
+      for (const gone of ["/books", "/shelf", "/audiobooks", "/subtitles", "/convert"]) expect(p, `${role} ${gone}`).not.toContain(gone);
+    }
   });
 });

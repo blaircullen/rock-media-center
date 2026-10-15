@@ -80,8 +80,7 @@ func (g guard) ext() guard {
 func (a *api) public(h http.HandlerFunc) guard { return guard{scope: scopePublic, h: h} }
 
 // signedIn opens a route to every signed-in account, read-only included. Only the
-// requester-facing surface (Discover, Calendar, My Books, the user's own account and
-// audiobooks) belongs here.
+// requester-facing surface (Discover, Calendar, the user's own account) belongs here.
 func (a *api) signedIn(h http.HandlerFunc) guard { return guard{scope: scopeUser, h: h} }
 
 // requireRole admits accounts at or above min.

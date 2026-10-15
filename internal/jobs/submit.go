@@ -8,7 +8,7 @@ import (
 )
 
 // Submitter starts jobs: the Runner, or a fake in tests. Modules that start work
-// (request approval, the books re-match) take one instead of the Runner itself.
+// (request approval) take one instead of the Runner itself.
 type Submitter interface {
 	Submit(ctx context.Context, spec Spec) (id int64, existing bool, err error)
 }

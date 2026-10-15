@@ -24,7 +24,6 @@ import (
 
 	"github.com/tristenlammi/arrmada/internal/apikeys"
 	"github.com/tristenlammi/arrmada/internal/applog"
-	"github.com/tristenlammi/arrmada/internal/audioserver"
 	"github.com/tristenlammi/arrmada/internal/buildinfo"
 )
 
@@ -36,11 +35,8 @@ import (
 //   - secrets: every credential the install holds (API keys, the Plex token, SMTP and
 //     download-client passwords, indexer keys, Apprise links) is looked up and blanked
 //     wherever it appears, on top of the key-name and URL redaction the log already had;
-//   - people: usernames, Plex names and email addresses (Kindle addresses among them)
-//     are replaced, and user-ish attrs lose their values, so no line names who did what;
-//   - books: every book title, author, series and bookmark name in the library is
-//     replaced, and audiobook paths and ids become {id} — admins see how much and when
-//     people listen, never what, and a public file must not either.
+//   - people: usernames, Plex and Jellyfin names and email addresses are replaced, and
+//     user-ish attrs lose their values, so no line names who did what.
 //
 // The names to hide are read from the database when the bundle is made; if that read
 // fails, no bundle is made.
@@ -121,9 +117,8 @@ app reported them, and the settings that are plainly safe to share (settings.jso
 the names of the ones left out).
 
 What isn't: the database, API keys, passwords, tokens and other credentials, email
-addresses, the names of the people who use this server, and the titles, authors and
-series of the books in its library. Those are replaced with «redacted», «user», «email»
-or «name», and audiobook ids in paths with {id}.
+addresses and the names of the people who use this server. Those are replaced with
+«redacted», «user» or «email».
 `
 
 // bundleLogs writes the log history — the files on disk oldest first, or the memory window
@@ -197,7 +192,7 @@ func scrubLogFile(zw *zip.Writer, src, name string, sc *bundleScrubber) (int, er
 }
 
 // bundleScrubber is everything a bundle hides: the install's own secret values, and the
-// names of its people and books.
+// names of its people.
 type bundleScrubber struct {
 	secrets *strings.Replacer
 	names   *applog.TermScrubber
@@ -242,7 +237,7 @@ func (a *api) bundleScrubber(ctx context.Context) (*bundleScrubber, error) {
 		}
 	}
 	cfg := a.deps.Config
-	for _, v := range []string{cfg.PlexToken, cfg.TMDBAPIKey, cfg.OMDBAPIKey, cfg.OpenSubtitlesAPIKey, cfg.OpenSubtitlesUsername, cfg.OpenSubtitlesPassword} {
+	for _, v := range []string{cfg.PlexToken, cfg.TMDBAPIKey, cfg.OMDBAPIKey} {
 		addSecret(v)
 	}
 
@@ -257,25 +252,12 @@ func (a *api) bundleScrubber(ctx context.Context) (*bundleScrubber, error) {
 		// Calendar feed links: only their hashes are stored (the token itself never is, and
 		// a "token=" in any line is blanked by shape), but the hash is withheld too.
 		{`SELECT token_hash FROM calendar_feeds`, func(v []string) { addSecret(v[0]) }},
-		{`SELECT username, plex_username, apprise_url, kindle_email, jellyfin_username FROM users`, func(v []string) {
+		{`SELECT username, plex_username, apprise_url, jellyfin_username FROM users`, func(v []string) {
 			names.Add(v[0], "«user»")
 			names.Add(v[1], "«user»")
 			addSecret(v[2])
-			addSecret(v[3])
-			names.Add(v[4], "«user»")
+			names.Add(v[3], "«user»")
 		}},
-		{`SELECT title, author, series_name FROM books`, func(v []string) {
-			names.Add(v[0], "«name»")
-			// "Title: Subtitle" is often logged as just "Title".
-			if i := strings.IndexAny(v[0], ":–—"); i > 0 {
-				names.Add(v[0][:i], "«name»")
-			}
-			names.Add(v[1], "«name»")
-			names.Add(v[2], "«name»")
-		}},
-		{`SELECT name FROM authors`, func(v []string) { names.Add(v[0], "«name»") }},
-		{`SELECT title FROM listen_bookmarks`, func(v []string) { names.Add(v[0], "«name»") }},
-		{`SELECT title FROM audio_file_meta`, func(v []string) { names.Add(v[0], "«name»") }},
 	}
 	for _, q := range queries {
 		if err := scanStrings(ctx, db, q.sql, q.add); err != nil {
@@ -327,39 +309,31 @@ func scanStrings(ctx context.Context, db *sql.DB, query string, add func([]strin
 	return rows.Err()
 }
 
-// apiPath is a request path inside log text: the main API, the audiobook server's app
-// routes, its public sessions, and OPDS.
-var apiPath = regexp.MustCompile(`/(?:api|public|opds|s|hls)/[^\s"'?&,;)]*`)
+// apiPath is a request path inside log text: the main API.
+var apiPath = regexp.MustCompile(`/api/[^\s"'?&,;)]*`)
 
-// audioItemID is an audiobook item or media key, whatever attr it sits in.
-var audioItemID = regexp.MustCompile(`^m?b\d+(v\d+)?$`)
-
-// Attr names whose values say who someone is, which book a line is about, or which book or
-// listening session it is by id. Matched on the last dotted segment, lower-cased.
+// Attr names whose values say who someone is, or which session it is by id. Matched on the
+// last dotted segment, lower-cased.
 var (
 	bundleUserAttrs = map[string]bool{
 		"user": true, "username": true, "user_id": true, "userid": true, "uid": true, "by": true,
 		"requester": true, "requested_by": true, "owner": true, "account": true, "email": true,
-		"kindle": true, "kindle_email": true, "plex_user": true, "plex_username": true, "who": true,
+		"plex_user": true, "plex_username": true, "who": true,
 		"jellyfin_user": true, "jellyfin_username": true,
 		"person": true, "decided_by": true, "decider": true, "follower": true,
 	}
-	bundleNameAttrs = map[string]bool{
-		"book": true, "author": true, "narrator": true, "bookmark": true, "chapter": true,
-	}
 	bundleItemAttrs = map[string]bool{
-		"book_id": true, "bookid": true, "item": true, "item_id": true, "itemid": true,
-		"library_item": true, "library_item_id": true, "session": true, "session_id": true,
+		"session": true, "session_id": true,
 	}
 )
 
-// literal blanks only the install's own secret values and its people and book names.
+// literal blanks only the install's own secret values and its people's names.
 func (s *bundleScrubber) literal(t string) string {
 	return s.names.Scrub(s.secrets.Replace(t))
 }
 
 // text scrubs free text: the install's secrets by value, then secrets by shape, then
-// audiobook ids in paths, then names.
+// ids in API paths, then names.
 func (s *bundleScrubber) text(t string) string {
 	t = s.secrets.Replace(t)
 	t = applog.RedactText(t)
@@ -369,10 +343,6 @@ func (s *bundleScrubber) text(t string) string {
 
 // entry scrubs one log entry.
 func (s *bundleScrubber) entry(e applog.Entry) (applog.Entry, bool) {
-	e, keep := audioserver.ScrubLegacyEntry(e)
-	if !keep {
-		return e, false
-	}
 	e.Seq = 0
 	e.Attrs = applog.RewriteAttrs(e.Attrs, func(key, val string) string {
 		leaf := strings.ToLower(key)
@@ -382,11 +352,7 @@ func (s *bundleScrubber) entry(e applog.Entry) (applog.Entry, bool) {
 		switch {
 		case bundleUserAttrs[leaf]:
 			return "«user»"
-		case bundleNameAttrs[leaf]:
-			return "«name»"
 		case bundleItemAttrs[leaf]:
-			return "{id}"
-		case audioItemID.MatchString(strings.TrimSpace(val)):
 			return "{id}"
 		}
 		return val
@@ -413,6 +379,7 @@ type settingsSplit struct {
 // in the logs. privateSettingWords are only kept out — their values are blanked from the
 // logs too, unless the value is a plain word that would wreck ordinary text ("always").
 var (
+	// "kindle" stays for settings rows an older version left behind on an upgraded install.
 	credentialSettingWords = []string{
 		"apikey", "api_key", "token", "password", "passwd", "secret", "apprise", "cookie",
 		"credential", "smtp", "webhook", "url", "kindle", "insights_plex_", "jellyfin_",

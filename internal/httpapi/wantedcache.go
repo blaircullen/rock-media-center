@@ -26,8 +26,8 @@ type wantedCache struct {
 	lists  *wantedLists
 	ver    int64
 	at     time.Time
-	mods   [2]bool // Books and Music on when it was built: switching one on lists its titles at once
-	builds int     // how many times it was rebuilt (tests)
+	music  bool // Music on when it was built: switching it on lists its titles at once
+	builds int  // how many times it was rebuilt (tests)
 	// versionFn replaces Coordinator.WantedVersion in tests.
 	versionFn func() int64
 }
@@ -45,13 +45,13 @@ func (a *api) wantedVersion() int64 {
 // cachedWanted is buildWanted over every kind, from the cache while it holds.
 func (a *api) cachedWanted(ctx context.Context) wantedLists {
 	ver := a.wantedVersion()
-	mods := [2]bool{a.deps.Books != nil && a.booksEnabled(ctx), a.deps.Music != nil && a.musicEnabled(ctx)}
+	music := a.deps.Music != nil && a.musicEnabled(ctx)
 	now := time.Now()
 	c := &a.wanted
 	c.mu.Lock()
-	cur, at, curVer, curMods := c.lists, c.at, c.ver, c.mods
+	cur, at, curVer, curMusic := c.lists, c.at, c.ver, c.music
 	c.mu.Unlock()
-	if cur != nil && curMods == mods {
+	if cur != nil && curMusic == music {
 		age := now.Sub(at)
 		if age < wantedCacheTTL && (curVer == ver || age < wantedRebuildEvery) {
 			return *cur
@@ -63,7 +63,7 @@ func (a *api) cachedWanted(ctx context.Context) wantedLists {
 	// An answer built while the client couldn't be read says "unknown" everywhere; it
 	// isn't kept, so the client coming back shows at once.
 	if lists.QueueKnown {
-		c.lists, c.at, c.ver, c.mods = &lists, now, ver, mods
+		c.lists, c.at, c.ver, c.music = &lists, now, ver, music
 	} else {
 		c.lists = nil
 	}

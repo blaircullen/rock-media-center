@@ -24,8 +24,8 @@ import (
 //     to a connection isn't queued for it again (see Dispatch). Alerts that must not be
 //     lost or doubled — needs-you, health — go this way.
 //
-// Never declare an event about what someone listens to (the audiobook privacy rule):
-// admins see how much and when, never what.
+// Never declare an event about what someone listens to or watches in particular: admins
+// see how much and when, never what.
 
 // Message is one alert as it's sent: a title, a body and an in-app link ("/activity/needs-you",
 // "/movies/12") a push notification opens.
@@ -40,30 +40,29 @@ type Message struct {
 
 // EventDef is one entry in the catalog.
 type EventDef struct {
-	Key   string `json:"key"`   // stable id stored in subscriptions ("book.imported")
+	Key   string `json:"key"`   // stable id stored in subscriptions ("movie.imported")
 	Topic string `json:"-"`     // the bus topic that produces it, "" if emitted directly
 	Group string `json:"group"` // one of the Group* keys
 	Label string `json:"label"` // the checkbox text
 	Hint  string `json:"hint"`  // one line under it
 	// DefaultOn: ticked on a new connection.
 	DefaultOn bool `json:"default_on"`
-	// Module hides the event while that module ("books", "music") is switched off.
+	// Module hides the event while that module ("music") is switched off.
 	Module string `json:"module,omitempty"`
 	// Format writes the message from the event's payload. ok=false means "nothing to
 	// say" (no title, a library scan adopting files) and nothing is sent.
 	Format func(data map[string]any) (m Message, ok bool) `json:"-"`
 }
 
-// The groups the Alerts page sorts events under, in page order. needs_you and convert
-// are declared for the events later work adds (attention and health alerts, Convert);
-// an empty group isn't shown.
+// The groups the Alerts page sorts events under, in page order. needs_you is declared
+// for the events later work adds (attention and health alerts); an empty group isn't
+// shown.
 const (
 	GroupNeedsYou  = "needs_you"
 	GroupRequests  = "requests"
 	GroupDownloads = "downloads"
 	GroupLibrary   = "library"
 	GroupPlex      = "plex"
-	GroupConvert   = "convert"
 )
 
 // Group is a catalog heading.
@@ -80,7 +79,6 @@ var groups = []Group{
 	// Streams on Plex or Jellyfin. The key stays "plex": stored choices and the page's
 	// anchors use it.
 	{GroupPlex, "Watching"},
-	{GroupConvert, "Convert"},
 }
 
 // Groups returns the catalog headings in page order.
@@ -157,24 +155,6 @@ var builtinEvents = []EventDef{
 				body = fmt.Sprintf("📥 %s (%d episode%s)", title, n, plural(int(n)))
 			}
 			return Message{Title: "Imported", Body: body, Link: link("/series/", num(d, "id"))}, true
-		},
-	},
-	{
-		Key: "book.imported", Topic: "book.imported", Group: GroupLibrary, DefaultOn: true, Module: "books",
-		Label: "Book imported", Hint: "An ebook or audiobook landed in the library.",
-		Format: func(d map[string]any) (Message, bool) {
-			title := str(d, "title")
-			if title == "" {
-				return Message{}, false
-			}
-			kind := "ebook"
-			if str(d, "edition") == "audiobook" {
-				kind = "audiobook"
-			}
-			if v := str(d, "version"); v != "" {
-				kind += " · " + v
-			}
-			return Message{Title: "Imported", Body: fmt.Sprintf("📚 %s (%s)", title, kind), Link: link("/books/", num(d, "id"))}, true
 		},
 	},
 	{

@@ -1,7 +1,7 @@
 // Package attention answers "what needs me?" in one place: pending requests, imports held
 // in Review, downloads that errored or stalled, imports that keep failing, downloads in the
-// wrong category, searches that keep coming up empty, health problems and Convert stuck
-// waiting for disk space.
+// wrong category, searches that keep coming up empty, health problems and reported
+// problems.
 //
 // It is pull-based on purpose. Badges and alerts built on bus events alone would be
 // unreliable, because the bus drops events when a subscriber falls behind; instead a
@@ -27,17 +27,15 @@ import (
 // Item kinds. An item's Key is "<kind>:<id>" — stable for as long as the problem lasts, so
 // a later alerting step can tell a new problem from one it already announced.
 const (
-	KindRequest  = "request"   // a request waiting for approval
-	KindReview   = "review"    // a finished download held in Review
-	KindDownload = "download"  // a download the client reports as errored
-	KindStalled  = "stalled"   // a download with nobody sending it data for an hour or more
-	KindImport   = "import"    // a finished download whose import keeps failing
-	KindWrongCat = "wrongcat"  // a finished TV download in a category Arrmada doesn't import
-	KindSearch   = "search"    // titles whose searches keep coming up empty (one aggregate)
-	KindHealth   = "health"    // a health check finding
-	KindConvert  = "convert"   // conversions stuck waiting for disk space (one per reason)
-	KindIssue    = "issue"     // a problem a requester reported that is still open
-	KindSubs     = "subtitles" // subtitles parked on something only a person can fix (one per reason)
+	KindRequest  = "request"  // a request waiting for approval
+	KindReview   = "review"   // a finished download held in Review
+	KindDownload = "download" // a download the client reports as errored
+	KindStalled  = "stalled"  // a download with nobody sending it data for an hour or more
+	KindImport   = "import"   // a finished download whose import keeps failing
+	KindWrongCat = "wrongcat" // a finished TV download in a category Arrmada doesn't import
+	KindSearch   = "search"   // titles whose searches keep coming up empty (one aggregate)
+	KindHealth   = "health"   // a health check finding
+	KindIssue    = "issue"    // a problem a requester reported that is still open
 )
 
 // Levels, the same words the health registry uses.
@@ -49,8 +47,7 @@ const (
 // Item is one thing that needs someone.
 type Item struct {
 	// Key is "<kind>:<id>": request:12, review:4, download:<hash>, stalled:<hash>,
-	// import:<hash>, wrongcat:<hash>, search:stuck, health:<finding key>,
-	// convert:stalled:<reason>.
+	// import:<hash>, wrongcat:<hash>, search:stuck, health:<finding key>, issue:<id>.
 	Key    string `json:"key"`
 	Kind   string `json:"kind"`
 	Level  string `json:"level"`
@@ -86,9 +83,7 @@ type Counts struct {
 	Searches     int `json:"searches"`  // titles whose searches keep coming up empty
 	Health       int `json:"health"`    // health findings, any level
 	HealthErrors int `json:"health_errors"`
-	Convert      int `json:"convert"`   // reasons conversions are stuck
-	Issues       int `json:"issues"`    // reported problems still open or being fixed
-	Subtitles    int `json:"subtitles"` // file languages waiting on a login, a model or a whisper fix
+	Issues       int `json:"issues"` // reported problems still open or being fixed
 	Total        int `json:"total"`
 }
 
@@ -405,7 +400,7 @@ func (s *Service) build(items []Item, now time.Time) (snap *Snapshot, all []Item
 // kindOrder is the order kinds are listed in: what blocks something first.
 var kindOrder = map[string]int{
 	KindHealth: 0, KindRequest: 1, KindReview: 2, KindImport: 3, KindDownload: 4,
-	KindWrongCat: 5, KindStalled: 6, KindConvert: 7, KindSearch: 8, KindIssue: 9, KindSubs: 10,
+	KindWrongCat: 5, KindStalled: 6, KindSearch: 7, KindIssue: 8,
 }
 
 // sortItems: errors first, then by kind, then oldest first.
@@ -443,12 +438,8 @@ func countItems(items []Item) Counts {
 			c.Imports += n
 		case KindSearch:
 			c.Searches += n
-		case KindConvert:
-			c.Convert += n
 		case KindIssue:
 			c.Issues += n
-		case KindSubs:
-			c.Subtitles += n
 		case KindHealth:
 			c.Health += n
 			if it.Level == LevelError {
@@ -456,7 +447,7 @@ func countItems(items []Item) Counts {
 			}
 		}
 	}
-	c.Total = c.Requests + c.Reviews + c.Downloads + c.Imports + c.Searches + c.Health + c.Convert + c.Issues + c.Subtitles
+	c.Total = c.Requests + c.Reviews + c.Downloads + c.Imports + c.Searches + c.Health + c.Issues
 	return c
 }
 
@@ -523,12 +514,8 @@ func groupTitle(kind string, n int) string {
 		return num + pick(" title still hasn't found a release", " titles still haven't found a release")
 	case KindHealth:
 		return num + pick(" health problem", " health problems")
-	case KindConvert:
-		return "Convert is stuck waiting for disk space"
 	case KindIssue:
 		return num + pick(" reported problem is open", " reported problems are open")
-	case KindSubs:
-		return num + pick(" subtitle is waiting on you", " subtitles are waiting on you")
 	}
 	return num + " items"
 }

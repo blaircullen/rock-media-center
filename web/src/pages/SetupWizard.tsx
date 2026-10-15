@@ -6,7 +6,6 @@ import { restartAndWait } from "../lib/restart";
 import { FleetMark } from "../components/FleetMark";
 import { ChecklistRows, useSetupChecklist } from "../components/GettingStarted";
 import { ProwlarrPanel } from "../components/connections/ProwlarrPanel";
-import { useMe } from "../lib/me";
 import { setupApi } from "../lib/setupApi";
 import { Button, StatusChip, useConfirm, useToast } from "../ui";
 import { ServerTile } from "../components/brand/ServerBadge";
@@ -14,7 +13,7 @@ import { PlexConnect } from "./settings/PlexConnection";
 import { JellyfinConnect } from "./settings/JellyfinConnection";
 
 // SetupWizard is the first thing an admin sees on a fresh install: the TMDB key and the
-// optional ones (Hardcover recommended), each checked before it's saved, then each library
+// optional ones, each checked before it's saved, then each library
 // folder (pre-filled from what's on the mount), then the media server — Plex, Jellyfin,
 // both or later: each one's connection editor from Settings → Connections, plus its own
 // family sign-in switches — then indexers (a Prowlarr sync, or one tracker tested before
@@ -52,11 +51,11 @@ const AddIndexerModal = lazy(() => import("../components/connections/AddIndexerM
 // A server's family sign-in choices on the Media server step: off unless the owner turns
 // them on here.
 interface Family { enabled: boolean; types: AutoTypes }
-type AutoTypes = { movie: boolean; series: boolean; book: boolean };
-const TYPE_NAMES: [keyof AutoTypes, string][] = [["movie", "Movies"], ["series", "Series"], ["book", "Books"]];
+type AutoTypes = { movie: boolean; series: boolean };
+const TYPE_NAMES: [keyof AutoTypes, string][] = [["movie", "Movies"], ["series", "Series"]];
 const typesFrom = (csv: string): AutoTypes => {
   const on = csv.split(",").map((t) => t.trim());
-  return { movie: on.includes("movie"), series: on.includes("series"), book: on.includes("book") };
+  return { movie: on.includes("movie"), series: on.includes("series") };
 };
 const typesCSV = (t: AutoTypes) => TYPE_NAMES.filter(([k]) => t[k]).map(([k]) => k).join(",");
 
@@ -64,19 +63,12 @@ const FOLDERS: { key: keyof LibraryPaths; label: string; hint: string; optional?
   { key: "movies", label: "Movies", hint: "Where movie folders live" },
   { key: "tv", label: "TV shows", hint: "Where show folders live" },
   { key: "downloads", label: "Downloads", hint: "Where qBittorrent saves downloads" },
-  { key: "ebooks", label: "Ebooks", hint: "Optional — only if you use Books", optional: true },
-  { key: "audiobooks", label: "Audiobooks", hint: "Optional — can be the same as Ebooks", optional: true },
   { key: "music", label: "Music", hint: "Optional — only if you use Music", optional: true },
 ];
 
-// The optional keys, Hardcover first: what each adds, what happens without it, and where
-// to get one. OpenSubtitles is one item with its login (the key alone only searches).
+// The optional keys: what each adds, what happens without it, and where to get one.
 interface OptionalKey { id: string; name: string; what: string; url: string; recommended?: boolean }
 const OPTIONAL_KEYS: OptionalKey[] = [
-  {
-    id: "hardcover", name: "Hardcover", recommended: true, url: "https://hardcover.app/account/api",
-    what: "A better book catalogue, one entry per book. Without it, Books use Open Library.",
-  },
   {
     id: "tvdb", name: "TheTVDB", url: "https://thetvdb.com/api-information",
     what: "Anime episode numbering. Without it, anime uses TMDB's numbering.",
@@ -86,15 +78,6 @@ const OPTIONAL_KEYS: OptionalKey[] = [
     what: "IMDb, Rotten Tomatoes and Metacritic scores. Without it, those scores don't show.",
   },
 ];
-const OPENSUBTITLES = {
-  id: "opensubtitles", name: "OpenSubtitles", url: "https://www.opensubtitles.com/en/consumers",
-  what: "Downloads subtitles your files lack. The key alone only searches; downloading also needs your login. Without it, subtitles come from your files, or local AI if you turn it on.",
-};
-const OS_FIELDS = [
-  { id: "opensubtitles_api", label: "API key", placeholder: "Paste the key" },
-  { id: "opensubtitles_username", label: "Username", placeholder: "Your username" },
-  { id: "opensubtitles_password", label: "Password", placeholder: "Your password" },
-] as const;
 
 // The answer to a pre-save key check, for the value it was asked about. unasked: the check
 // itself couldn't be made (Arrmada unreachable, no test for that key here), which says
@@ -166,7 +149,6 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
   // Which server(s) the Media server step sets up: what's connected already, Plex when
   // plex.tv has just sent a sign-in back, else nothing until the admin picks.
   const [choice, setChoice] = useState<ServerChoice | null>(() => (hasPlexPin() ? "plex" : null));
-  const { booksEnabled } = useMe();
 
   const load = () => api.setupState().then((s) => {
     setState(s);
@@ -220,24 +202,12 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
   const { checks, check } = useKeyChecks();
   const typed = (id: string) => (keys[id] ?? "").trim();
   const checkKey = (id: string, value: string) => check(id, value.trim(), () => api.testAPIKey(id, value.trim()));
-  // OpenSubtitles is checked as one: the key with the login typed beside it (the saved
-  // parts fill in the rest). Only worth asking once there's a key, typed or saved.
-  const osValue = () => {
-    const [k, u, p] = OS_FIELDS.map((f) => typed(f.id));
-    const keyKnown = !!k || !!state?.keys.find((s) => s.id === "opensubtitles_api")?.configured;
-    return (k || u || p) && keyKnown ? [k, u, p].join("\u0000") : "";
-  };
-  const checkOS = () => {
-    const [k, u, p] = OS_FIELDS.map((f) => typed(f.id));
-    return check(OPENSUBTITLES.id, osValue(), () => setupApi.testOpenSubtitles(k, u, p));
-  };
 
   const saveKeys = () => run(async () => {
-    const asked = await Promise.all([
-      ...["tmdb", ...OPTIONAL_KEYS.map((k) => k.id)].map(async (id) => ({ id, r: await checkKey(id, typed(id)) })),
-      checkOS().then((r) => ({ id: OPENSUBTITLES.id, r })),
-    ]);
-    const name = (id: string) => (id === "tmdb" ? "TMDB" : id === OPENSUBTITLES.id ? OPENSUBTITLES.name : OPTIONAL_KEYS.find((k) => k.id === id)?.name ?? id);
+    const asked = await Promise.all(
+      ["tmdb", ...OPTIONAL_KEYS.map((k) => k.id)].map(async (id) => ({ id, r: await checkKey(id, typed(id)) })),
+    );
+    const name = (id: string) => (id === "tmdb" ? "TMDB" : OPTIONAL_KEYS.find((k) => k.id === id)?.name ?? id);
     // A key its provider turned down is only saved if the admin says so. One that couldn't
     // be checked at all is saved as typed, and the toast says it wasn't checked.
     const failed = asked.filter((a) => a.r && !a.r.ok && !a.r.unasked);
@@ -367,7 +337,7 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
 
           <section aria-labelledby="setup-optional-keys" className="mt-5 border-t pt-4" style={{ borderColor: "var(--line)" }}>
             <h2 id="setup-optional-keys" className="m-0 text-md font-bold">Optional keys — Arrmada works without them</h2>
-            <p className="mb-3 mt-0.5 text-sm text-ink-dim">Add them now or later in Settings → Connections; Hardcover is the one worth adding.</p>
+            <p className="mb-3 mt-0.5 text-sm text-ink-dim">Add them now or later in Settings → Connections.</p>
             <div className="flex flex-col gap-3">
               {OPTIONAL_KEYS.map((k) => (
                 <div key={k.id}>
@@ -384,47 +354,6 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
                   <CheckLine provider={k.name} check={checks[k.id]} value={typed(k.id)} />
                 </div>
               ))}
-
-              <fieldset
-                className="m-0 min-w-0 border-0 p-0"
-                aria-describedby="setup-key-opensubtitles-note"
-                // Checked as one when focus leaves the group, so the login typed after the
-                // key is part of the check.
-                onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) void checkOS(); }}
-              >
-                <legend className="mb-1 flex w-full flex-wrap items-center gap-2 p-0">
-                  <span className="text-base font-semibold">{OPENSUBTITLES.name}</span>
-                  <StatusChip tone="faint" size="xs">Optional</StatusChip>
-                </legend>
-                <p id="setup-key-opensubtitles-note" className="m-0 mb-2 text-xs text-ink-dim">
-                  {OPENSUBTITLES.what} <GetKey url={OPENSUBTITLES.url} name={OPENSUBTITLES.name} />
-                </p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  {OS_FIELDS.map((f) => {
-                    const s = keyStatus(f.id);
-                    return (
-                      <div key={f.id} className="min-w-0">
-                        <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-2">
-                          <label htmlFor={`setup-key-${f.id}`} className="text-sm font-semibold text-ink-dim">{f.label}</label>
-                          {s?.configured && <Saved status={s} />}
-                        </div>
-                        <input
-                          id={`setup-key-${f.id}`}
-                          type={s?.secret === false ? "text" : "password"}
-                          value={keys[f.id] ?? ""}
-                          onChange={(e) => setKeys({ ...keys, [f.id]: e.target.value })}
-                          placeholder={s?.configured ? "Leave blank to keep it" : f.placeholder}
-                          // new-password: browsers never fill the admin's own Arrmada login in here.
-                          autoComplete={f.id === "opensubtitles_password" ? "new-password" : "off"}
-                          className="block w-full rounded-lg px-3 py-2 font-mono text-sm"
-                          style={{ background: "var(--panel-2)", border: "1px solid var(--line)", color: "var(--ink)" }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-                <CheckLine provider={OPENSUBTITLES.name} check={checks[OPENSUBTITLES.id]} value={osValue()} />
-              </fieldset>
             </div>
           </section>
           <Nav
@@ -558,7 +487,6 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
                 hint="People with access to your Plex server get a requester account the first time they sign in — no accounts to hand out."
                 family={family}
                 onChange={setFamily}
-                books={booksEnabled}
               />
             </section>
           )}
@@ -579,7 +507,6 @@ export function SetupWizard({ onDone, rerun = false }: { onDone: (to?: string) =
                 hint="People with a user on your Jellyfin server get a requester account the first time they sign in with their Jellyfin username and password."
                 family={jfFamily}
                 onChange={setJFFamily}
-                books={booksEnabled}
               />
             </section>
           )}
@@ -787,8 +714,8 @@ function CheckLine({ provider, check, value }: { provider: string; check?: KeyCh
 
 // FamilyFields is one server's "Let family sign in with <server>" checkbox, with which
 // request types a new sign-in may download unasked once it's ticked.
-function FamilyFields({ id, server, hint, family, onChange, books }: {
-  id: string; server: string; hint: string; family: Family; onChange: (f: Family) => void; books: boolean;
+function FamilyFields({ id, server, hint, family, onChange }: {
+  id: string; server: string; hint: string; family: Family; onChange: (f: Family) => void;
 }) {
   return (
     <fieldset className="m-0 mt-3 flex flex-col gap-2.5 rounded-xl p-3.5" style={{ background: "var(--panel-2)", border: "1px solid var(--line)" }}>
@@ -804,7 +731,7 @@ function FamilyFields({ id, server, hint, family, onChange, books }: {
         <div role="group" aria-label={`Auto-approve their requests (${server})`} className="ml-6 flex flex-col gap-1.5">
           <span className="text-base font-semibold">Auto-approve their requests</span>
           <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-ink-dim">
-            {TYPE_NAMES.filter(([k]) => k !== "book" || books).map(([k, name]) => (
+            {TYPE_NAMES.map(([k, name]) => (
               <label key={k} className="flex min-h-[28px] items-center gap-1.5">
                 <input type="checkbox" checked={family.types[k]} onChange={(e) => onChange({ ...family, types: { ...family.types, [k]: e.target.checked } })} />
                 {name}

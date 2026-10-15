@@ -3,7 +3,7 @@
 // import all draw the same line.
 //
 // The first rule is the standing one: media never lives in Arrmada's data folder (the
-// database, logs and backups). An import or a Convert write into it would mix media with
+// database, logs and backups). An import into it would mix media with
 // app state, and the hourly housekeeping and the backups would then treat media as
 // theirs.
 package libroots

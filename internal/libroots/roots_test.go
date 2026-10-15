@@ -31,8 +31,8 @@ func (f *fakeSettings) set(key, v string) {
 }
 
 var envCfg = config.Config{
-	MoviesDir: "/env/movies", TVDir: "/env/tv", EbooksDir: "/env/ebooks",
-	AudiobooksDir: "/env/audiobooks", MusicDir: "/env/music", DownloadsDir: "/env/downloads",
+	MoviesDir: "/env/movies", TVDir: "/env/tv",
+	MusicDir: "/env/music", DownloadsDir: "/env/downloads",
 }
 
 // A saved folder wins; a blank or whitespace-only save means "the install default".
@@ -62,11 +62,11 @@ func TestRootsFallbackOnEmptySaved(t *testing.T) {
 		t.Errorf("Config = %+v", c)
 	}
 	all := r.All(ctx)
-	if len(all) != 6 || all[5].Name != "downloads" || all[0] != (Root{"movies", "/storage/movies"}) {
+	if len(all) != 4 || all[3].Name != "downloads" || all[0] != (Root{"movies", "/storage/movies"}) {
 		t.Errorf("All = %+v", all)
 	}
-	if libs := r.Libraries(ctx); len(libs) != 5 {
-		t.Errorf("Libraries = %+v, want five without downloads", libs)
+	if libs := r.Libraries(ctx); len(libs) != 3 {
+		t.Errorf("Libraries = %+v, want three without downloads", libs)
 	}
 }
 

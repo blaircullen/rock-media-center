@@ -25,7 +25,7 @@ describe("LibraryEmpty", () => {
   });
 
   it("shows the scan as running", () => {
-    render(<MemoryRouter><LibraryEmpty noun="books" folder="ebook and audiobook folders" addLabel="Add book" onScan={() => {}} scanning /></MemoryRouter>);
+    render(<MemoryRouter><LibraryEmpty noun="artists" folder="music folder" addLabel="Add artist" onScan={() => {}} scanning /></MemoryRouter>);
     expect((screen.getByRole("button", { name: "Scanning…" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

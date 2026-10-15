@@ -1,6 +1,6 @@
 # Arrmada roadmap
 
-_Built on 2026-10-09 from the full audit of 2026-10-08 (232 verified code findings + 10 UI walkthrough notes). 473 tasks in 20 epics, sequenced into 18 phases. Every finding is traced to a task in [the traceability table](docs/roadmap/traceability.md). Each epic has its own file in [docs/roadmap/](docs/roadmap/)._
+_Built on 2026-10-09 from the full audit of 2026-10-08 (232 verified code findings + 10 UI walkthrough notes). 360 tasks in 16 epics, sequenced into 15 phases. Every finding is traced to a task in [the traceability table](docs/roadmap/traceability.md). Each epic has its own file in [docs/roadmap/](docs/roadmap/)._
 
 **How to read this.** Phases are the order to ship in. Each phase lists its tasks; the full detail of a task (problem, approach, files, acceptance criteria, tests, dependencies) lives in its epic file under docs/roadmap/ — click the id. Tick the checkbox there when a task ships.
 
@@ -12,7 +12,9 @@ _Built on 2026-10-09 from the full audit of 2026-10-08 (232 verified code findin
 | **P3** | Nice to have |
 | **S / M / L / XL** | under a day / 2–4 days / 1–2 weeks / more (one owner + an AI coding agent) |
 
-**Totals:** P0 41 · P1 190 · P2 194 · P3 48 — roughly 1035 working days of effort in total (a rough sum of the effort sizes, not a schedule).
+**Totals:** P0 30 · P1 142 · P2 152 · P3 36 (the effort sizes are in the task tables; they are not a schedule).
+
+**Scope change.** The Books, Audiobooks, Subtitles and Convert modules were removed from this fork, so their four epics (BOOK, AUD, SUB, CONV) and Phases 11, 12 and 13 are gone from this file, along with their epic files. Task ids that still appear in the other epics are historical cross-references; they no longer link anywhere.
 
 ## Contents
 
@@ -25,22 +27,22 @@ _Built on 2026-10-09 from the full audit of 2026-10-08 (232 verified code findin
 
 ## Vision
 
-When the roadmap is done, Arrmada is one app that replaces the *arr stack, Overseerr, Tautulli, Bazarr and Audiobookshelf for the owner and their family, and it can be left to run unattended. Nothing irreversible happens by default. Every migration is snapshotted first. Every delete or replace goes to a recycle bin on the same drive, or through a confirmed dialog that defaults to keeping data. Any update can be rolled back from update.sh or the CLI.
+When the roadmap is done, Arrmada is one app that replaces the *arr stack, Overseerr and Tautulli for the owner and their family, and it can be left to run unattended. Nothing irreversible happens by default. Every migration is snapshotted first. Every delete or replace goes to a recycle bin on the same drive, or through a confirmed dialog that defaults to keeping data. Any update can be rolled back from update.sh or the CLI.
 
 The owner works from three places:
 - a Dashboard 'Needs you' card, backed by sidebar badges and phone alerts
 - one Activity hub that explains every download, every search outcome and every stuck import
 - one Settings hub where every integration shows live status and every setting saves itself
 
-Family members get a phone-native app. They can request exactly the seasons they want and follow progress. They are told 'ready' only once Plex has the title, with a Watch on Plex link. They can report a bad file, listen to audiobooks in the browser with lock-screen controls, and read on their e-readers.
+Family members get a phone-native app. They can request exactly the seasons they want and follow progress. They are told 'ready' only once Plex has the title, with a Watch on Plex link. They can report a bad file.
 
-Every module (Series, Movies, Books, Convert, Subtitles, Audiobooks, and Music if it is kept) records what it did and why, and can be undone. Every module also keeps the standing rules: audiobook privacy (how much and when, never what), the always-on adult filter, keys entered only in the UI, no media under /data, and the current dark, warm, terracotta look.
+Every module (Series, Movies, and Music if it is kept) records what it did and why, and can be undone. Every module also keeps the standing rules: the always-on adult filter, keys entered only in the UI, no media under /data, and the current dark, warm, terracotta look.
 
 ## Principles
 
-- Safety before features. Snapshot before every migration. Every destructive path either goes to a recycle bin on the same drive or asks first and defaults to keeping data. When recycling fails, refuse; never fall back to a hard delete. Test destructive features (recycle, merge, Convert hold/revert, per-root bins) only on synthetic fixtures or a test share. Never test against the owner's real library, and never test-convert real files.
+- Safety before features. Snapshot before every migration. Every destructive path either goes to a recycle bin on the same drive or asks first and defaults to keeping data. When recycling fails, refuse; never fall back to a hard delete. Test destructive features (recycle, merge, per-root bins) only on synthetic fixtures or a test share. Never test against the owner's real library.
 - The server decides who reaches what. Every new route goes into SEC-02's golden route table with an explicit role, and the route-walk test covers it. Ops routes are RoleManager and system/secret routes are RoleAdmin from day one. Every new websocket topic is staff-only unless it is user.<id>.*. No API response may carry an indexer key, tracker token or webhook URL.
-- Standing rules are acceptance criteria on every task, not a separate epic. Audiobook privacy: no new log line, trace, table or support bundle pairs a user with a book. The adult filter applies on every new Discover and OPDS surface. Credentials are entered only in the app UI. Nothing may sit under /data. The existing visual style is kept unless the task is the design-system work.
+- Standing rules are acceptance criteria on every task, not a separate epic. The adult filter applies on every new Discover surface. Credentials are entered only in the app UI. Nothing may sit under /data. The existing visual style is kept unless the task is the design-system work.
 - Build each shared primitive once, in the earliest phase that needs it. When two tasks overlap, the later one becomes 'adopt and verify':
 - BE-01 is SAFE-14.
 - FE-02 is SEC-14's 401 path.
@@ -48,7 +50,7 @@ Every module (Series, Movies, Books, Convert, Subtitles, Audiobooks, and Music i
 - ACQ-22's queue snapshot feeds BE-13 and FE-26, using one topic name.
 - ACQ-15 owns search_attempts and RejectCode; MOV-04, SER-19 and MUS-09 read them.
 - ACQ-18's Wanted row shape is reused by MOV-08 and MUS-18.
-- ACQ-21's fold helper is shared by BOOK-06 and MUS-04.
+- ACQ-21's fold helper is shared by MUS-04.
 - OBS-10 builds the Alerts page that PLEX-18 routes to and SEC-08 locks down.
 - INT-15/16 build Connections, and CFG-15 folds the metadata keys into it.
 - PLEX-06 and APP-04 are one sign-in fix.
@@ -71,17 +73,11 @@ Every module (Series, Movies, Books, Convert, Subtitles, Audiobooks, and Music i
 - [ ] ARRMADA_BASE_URL. Either remove it in Phase 2 (CFG-08), or make reverse-proxy sub-paths work end to end (FE-29 in Phase 16). Recommendation: remove it. The router migration and push URLs are simpler without a basename.
 - [ ] Stall fail-over defaults (ACQ-06): confirm on by default, a 6-hour no-progress threshold and at most 3 replacements per check, or pick other numbers.
 - [ ] Recycle-bin placement (SAFE-17). Confirm a hidden .arrmada-recycle folder on each library root, and say whether the libraries are Unraid user shares (/mnt/user) or disk shares. This changes whether 'always a rename' is achievable.
-- [ ] Convert originals hold (CONV-08/09): the retention window (days) and the space budget that pauses conversions.
-- [ ] Convert encode choices:
-- the default Dolby Vision policy (leave DV files alone, or convert and drop DV, until CONV-29 can keep profile 8.1)
-- whether 10-bit output for 8-bit sources is allowed
-- whether resumable encoding becomes the default once it is verified
 - [ ] Request policy:
 - new Plex sign-ins auto-approve movies only (REQ-09)
 - whether per-user quotas are switched on, and their limits (REQ-14)
 - whether requesters can report problems (REQ-22)
 - [ ] Plex sign-in for the owner and staff (PLEX-15). Either allow Plex sign-in that resolves to a linked local admin or manager account, or require local passwords for staff. Also whether to merge existing duplicate Plex requester accounts.
-- [ ] Audiobook client ids (AUD-14). If iOS verification shows a client needs UUID-shaped ids, may devices that sign in afterwards get UUID ids? Lissen devices keep theirs.
 - [ ] TorrentLeech RSS key (INT-20). Either store TorrentLeech's RSS key (a secret) server-side to enable RSS, or skip TorrentLeech RSS and rely on scheduled searches.
 - [ ] Quality behaviour:
 - turn the Unwanted pack on by default for every profile (QUAL-20)
@@ -91,7 +87,7 @@ Every module (Series, Movies, Books, Convert, Subtitles, Audiobooks, and Music i
 - [ ] Security trade-offs needing explicit sign-off:
 - relax COOP to same-origin-allow-popups so Plex sign-in works in the installed PWA (APP-04)
 - expose a token-authenticated iCal feed off the LAN (APP-18)
-- [ ] Outgoing email (BOOK-23/24). Whether to add SMTP for Send to Kindle, which other alerts may then reuse, and which provider. Credentials are entered in the app.
+- [ ] Outgoing email. Whether to use SMTP for email to requesters, and which provider. Credentials are entered in the app.
 - [ ] Where Alerts lives: as its own top-level page (OBS-10/PLEX-18), or as a section of the Settings hub once CFG-13 exists. Decide before Phase 6 so it isn't moved twice.
 
 ## Phases at a glance
@@ -109,9 +105,6 @@ Every module (Series, Movies, Books, Convert, Subtitles, Audiobooks, and Music i
 | [Phase 8 — Family payoff: listen in Arrmada and a deeper Discover](#phase-8--family-payoff-listen-in-arrmada-and-a-deeper-discover) | Arrmada's own listening API and web player, a verified iPhone audiobook app, Discover browse/person/collection pages, and the phone calendar | 21 | 0 | 7 | 61 | 4–5 weeks (5 S, 14 M, 2 L ≈ 21–26 working days) |
 | [Phase 9 — One place for everything: Activity, Settings and Connections hubs, live UI](#phase-9--one-place-for-everything-activity-settings-and-connections-hubs-live-ui) | The Activity hub, the Settings hub sections, the Connections hub, and websocket-driven pages | 27 | 0 | 3 | 65 | 4.5–6 weeks (8 S, 20 M ≈ 23–29 working days) |
 | [Phase 10 — Series and Movies rebuilt](#phase-10--series-and-movies-rebuilt) | Plex-like series page, movie versions and editions, safe rename and organize, the mass editor, better import and matching | 26 | 0 | 7 | 74 | 4.5–6 weeks (5 S, 21 M ≈ 23–29 working days) |
-| [Phase 11 — Convert rebuilt](#phase-11--convert-rebuilt) | A durable ledger, an originals hold with Revert, plan-first confirmation, a stricter quality gate, events, forecasts, device awareness and resumable encodes | 19 | 0 | 9 | 51 | 4–5 weeks (9 S, 11 M, 2 L ≈ 20–24 working days) |
-| [Phase 12 — Subtitles rebuilt](#phase-12--subtitles-rebuilt) | Provenance and attempt ledgers, honest provider status, scored and sync-checked downloads, a persistent two-lane queue, per-file control, language profiles, and fixing problems that family members report | 29 | 0 | 16 | 63 | 4.5–5.5 weeks (12 S, 17 M ≈ 22–27 working days) |
-| [Phase 13 — Books and the audiobook library rebuilt](#phase-13--books-and-the-audiobook-library-rebuilt) | Lossless merges, editions and languages, release dates, authors, OPDS and Send to Kindle, admin screens that fit, and audiobook library polish | 21 | 0 | 3 | 49 | 3.5–4 weeks (7 S, 14 M ≈ 17–21 working days) |
 | [Phase 14 — Smarter grabbing: Quality v2 and power tools](#phase-14--smarter-grabbing-quality-v2-and-power-tools) | Explainable profiles, the Unwanted pack, ordered-key ranking v2 behind shadow mode, the custom-format engine, more series coverage, and indexer and path power tools | 18 | 0 | 0 | 48 | 3–4 weeks of work (3 S, 15 M ≈ 16–20 working days), plus at least 2 weeks of ranking v2 in shadow mode before QUAL-23 |
 | [Phase 15 — Music: Lidarr-lite (only if MUS-03 chose Rebuild)](#phase-15--music-lidarr-lite-only-if-mus-03-chose-rebuild) | Correct matching and importing, honest outcomes, graduation from Preview, staying current, owner tools, and artwork | 21 | 0 | 7 | 49 | 3.5–4 weeks (9 S, 11 M, 1 L ≈ 17–21 working days) plus a 7-day soak; zero if MUS-03 chose Park or Cut |
 | [Phase 16 — First run, releases, logs and a consistent UI](#phase-16--first-run-releases-logs-and-a-consistent-ui) | A guided first run, published images and 'update available', support-grade logs, and frontend consolidation | 19 | 0 | 0 | 39 | 3–4 weeks (9 S, 10 M, 1 L ≈ 16–20 working days) |
@@ -323,9 +316,6 @@ flowchart LR
 | [SAFE-05](docs/roadmap/SAFE.md#safe-05) | Whole-series delete goes to the recycle bin with its subtitles, refuses on bin failure, and doesn't delete files by default | SAFE | P0 | M |
 | [SAFE-06](docs/roadmap/SAFE.md#safe-06) | Audiobook merge never hard-deletes sources: temp output, duration check, sources to the bin or a 14-day backup, tags kept | SAFE | P0 | M |
 | [SAFE-08](docs/roadmap/SAFE.md#safe-08) | The size cap never purges what was just deleted; bin rows show when they go for good | SAFE | P1 | S |
-| [CONV-02](docs/roadmap/CONV.md#conv-02) | Interim guard: never convert a file whose original the recycle-bin cap would purge | CONV | P0 | S |
-| [CONV-01](docs/roadmap/CONV.md#conv-01) | Back off after transient failures and check scratch/library space before any heavy work | CONV | P0 | M |
-| [BOOK-01](docs/roadmap/BOOK.md#book-01) | Turn off every automatic book merge (boot, the merge-all endpoint, the Hardcover upgrade fold) | BOOK | P0 | S |
 | [QUAL-01](docs/roadmap/QUAL.md#qual-01) | One profile resolver: every acquisition path resolves a missing profile to the default, and the fallback never grabs cams | QUAL | P0 | S |
 | [QUAL-03](docs/roadmap/QUAL.md#qual-03) | AV1/HEVC conversions read back as their real codec: restamp the codec token in place, repair existing rows, and never re-grab the release a file was converted from | QUAL | P0 | S |
 | [SER-04](docs/roadmap/SER.md#ser-04) | Renames can never overwrite a file, and Rename shows its preview before moving anything | SER | P0 | M |
@@ -384,31 +374,16 @@ Phase 0 started the soak that the Music decision needs.
 | [SAFE-10](docs/roadmap/SAFE.md#safe-10) | Deleting a movie cancels its downloads, and a download for a deleted movie is held for review, never imported by name | SAFE | P1 | M |
 | [BE-02](docs/roadmap/BE.md#be-02) | Panic safety net: internal/safego, a run group for every background loop, panic-safe scheduler, and HTTP goroutines tied to runCtx | BE | P1 | M |
 | [BE-03](docs/roadmap/BE.md#be-03) | Movie imports attach synchronously with a durable attach_state; file deletions forget their import synchronously | BE | P1 | M |
-| [SUB-02](docs/roadmap/SUB.md#sub-02) | Import and manual jobs jump ahead of the sweep (in-memory queue priority) | SUB | P0 | S |
-| [SUB-01](docs/roadmap/SUB.md#sub-01) | Per-language source ladder: fall through extract → OpenSubtitles → AI | SUB | P0 | M |
-| [SUB-03](docs/roadmap/SUB.md#sub-03) | Forced and SDH are variants: detect them, extract the full track, count coverage correctly | SUB | P0 | M |
-| [SUB-04](docs/roadmap/SUB.md#sub-04) | Sidecars travel with their video on movie/episode upgrade and delete | SUB | P0 | S |
-| [SUB-05](docs/roadmap/SUB.md#sub-05) | Movie coverage pairs sidecars by base name; unpaired ones are orphans, not coverage | SUB | P0 | M |
-| [CONV-04](docs/roadmap/CONV.md#conv-04) | Never drop forced subtitles; don't treat forced-only sidecars as full coverage | CONV | P1 | S |
 | [SER-02](docs/roadmap/SER.md#ser-02) | One scope-aware grab planner behind Grab missing, episode Grab and Replace (GrabForScope) | SER | P0 | M |
 | [SER-03](docs/roadmap/SER.md#ser-03) | Specials (season 0) become a real scope: explicit whole-show sentinel, S00Exx-only matching, no season-level Grab | SER | P0 | S |
 | [QUAL-02](docs/roadmap/QUAL.md#qual-02) | Deleting a quality profile reassigns its titles in one transaction; dangling refs are repaired at boot; the delete UI picks the target | QUAL | P0 | M |
-| [BOOK-02](docs/roadmap/BOOK.md#book-02) | Full-title book identity: IdentityOf / SameBook / IdentityIndex replace the truncating titleKey everywhere | BOOK | P0 | M |
-| [BOOK-03](docs/roadmap/BOOK.md#book-03) | Link book requests to the library by book_id, and backfill existing requests | BOOK | P0 | M |
-| [BOOK-04](docs/roadmap/BOOK.md#book-04) | Never give up on a wanted book: a slow search ladder with a per-sweep cap | BOOK | P0 | S |
 | [ACQ-04](docs/roadmap/ACQ.md#acq-04) | Keep qBittorrent's raw state, swarm counts and last activity; add Item.Phase() | ACQ | P0 | S |
 | [ACQ-05](docs/roadmap/ACQ.md#acq-05) | Stall fail-over replaces before it removes: never delete the only copy, cap per tick, say what happened | ACQ | P0 | M |
 | [ACQ-06](docs/roadmap/ACQ.md#acq-06) | Stall fail-over on by default: 6h global default, profile override, existing grabs covered, queue- and guard-aware clock | ACQ | P0 | M |
 | [MOV-01](docs/roadmap/MOV.md#mov-01) | Periodic movie jobs read only the database: DB-only track rows and SQL search targets | MOV | P0 | M |
-| [AUD-01](docs/roadmap/AUD.md#aud-01) | A session close or sync with no position never moves anyone's place | AUD | P1 | S |
-| [AUD-02](docs/roadmap/AUD.md#aud-02) | Replaying a finished audiobook starts from the beginning (Listen Again works) | AUD | P1 | S |
-| [AUD-03](docs/roadmap/AUD.md#aud-03) | Progress PATCHes from apps go through the sync guards instead of always winning | AUD | P1 | M |
 | [MUS-03](docs/roadmap/MUS.md#mus-03) | Decide: rebuild Music as a Lidarr-lite, park it, or cut it | MUS | P1 | S |
 | [SAFE-11](docs/roadmap/SAFE.md#safe-11) | Nightly and manual database backups with retention, and a health warning when they stop | SAFE | P1 | S |
 | [FE-08](docs/roadmap/FE.md#fe-08) | Frontend lint and unit tests: eslint 9 (react-hooks, jsx-a11y) and vitest, running in CI | FE | P1 | S |
-| [CONV-06](docs/roadmap/CONV.md#conv-06) | Persist a convert_history ledger of every conversion outcome | CONV | P1 | M |
-| [CONV-17](docs/roadmap/CONV.md#conv-17) | Stricter SSIM gate: independent windows, per-window floor, fail closed | CONV | P1 | S |
-| [CONV-16](docs/roadmap/CONV.md#conv-16) | Black-bar crop: off by default, dense sampling, never crop films that change shape | CONV | P2 | S |
 
 ### Phase 2 — Safe to operate
 
@@ -503,8 +478,6 @@ Most of this phase is S tasks with no prerequisites, so it moves fast.
 | [COPY-05](docs/roadmap/COPY.md#copy-05) | Subtitles page and job notes describe what actually ships | COPY | P1 | S |
 | [COPY-06](docs/roadmap/COPY.md#copy-06) | Movie detail and delete dialogs say what really happens: upgrade watching and the recycle bin | COPY | P1 | S |
 | [COPY-07](docs/roadmap/COPY.md#copy-07) | Copy guard: a Go test that fails CI when retired phrases come back | COPY | P2 | S |
-| [CONV-03](docs/roadmap/CONV.md#conv-03) | Collapse repeated activity-log lines and colour the scratch indicator against the next file's need | CONV | P1 | S |
-| [CONV-05](docs/roadmap/CONV.md#conv-05) | Truthful Convert copy and an archived plan doc | CONV | P1 | S |
 | [MUS-25](docs/roadmap/MUS.md#mus-25) | If the decision is Cut: retire the Music module cleanly, keeping every byte of data | MUS | P2 | S |
 
 ### Phase 3 — Shared building blocks
@@ -647,7 +620,6 @@ Most of this phase is S tasks with no prerequisites, so it moves fast.
 | [QUAL-07](docs/roadmap/QUAL.md#qual-07) | Prefer healthy torrents: near-equal releases tie on magnitude and seeders decide; dead torrents rank last | QUAL | P2 | S |
 | [QUAL-08](docs/roadmap/QUAL.md#qual-08) | Parser gaps: infer SD, make lossless correct (LPCM in, DTS-HD HRA out), and check pre-release tokens only after the title | QUAL | P2 | S |
 | [QUAL-09](docs/roadmap/QUAL.md#qual-09) | One set of facts: judge the file on disk from Convert's probed MediaInfo for target, upgrade, ceiling and downgrade decisions | QUAL | P1 | M |
-| [CONV-20](docs/roadmap/CONV.md#conv-20) | Record a pre-conversion baseline so quality upgrades never undo a conversion | CONV | P1 | M |
 | [QUAL-10](docs/roadmap/QUAL.md#qual-10) | Per-sweep upgrade budget: one sweep grabs at most N upgrades and logs the rest | QUAL | P1 | S |
 | [QUAL-11](docs/roadmap/QUAL.md#qual-11) | Per-profile upgrade trigger ('Replace for') and honest 'Off' copy | QUAL | P1 | M |
 | [QUAL-12](docs/roadmap/QUAL.md#qual-12) | Dry-run a profile edit before saving: 'Saving will make N files (~X TB) eligible for replacement' | QUAL | P1 | M |
@@ -657,10 +629,6 @@ Most of this phase is S tasks with no prerequisites, so it moves fast.
 | [SER-08](docs/roadmap/SER.md#ser-08) | The series monitor toggle becomes a gate that keeps season choices; new seasons follow 'monitor new seasons' | SER | P1 | S |
 | [SER-09](docs/roadmap/SER.md#ser-09) | Monitor presets at add time and on the series page, with season flags derived from their episodes | SER | P1 | M |
 | [SER-10](docs/roadmap/SER.md#ser-10) | Progress, Missing and Partial count only monitored episodes; GET /series/{id} returns stats | SER | P1 | S |
-| [BOOK-05](docs/roadmap/BOOK.md#book-05) | Book RSS uses the word-boundary matcher the search path uses, and only grabs wanted editions | BOOK | P1 | S |
-| [BOOK-06](docs/roadmap/BOOK.md#book-06) | One shared title normaliser: fold accents, apostrophes and '&' before matching | BOOK | P1 | S |
-| [BOOK-07](docs/roadmap/BOOK.md#book-07) | MyAnonaMouse recent-uploads poll, so books have real RSS | BOOK | P1 | S |
-| [BOOK-08](docs/roadmap/BOOK.md#book-08) | Show the real search state: API fields, request tracking, BookDetail and My shelf copy | BOOK | P1 | M |
 
 ### Phase 5 — Why isn't it downloading?
 
@@ -819,9 +787,6 @@ Most of this phase is S tasks with no prerequisites, so it moves fast.
 | [REQ-12](docs/roadmap/REQ.md#req-12) | Season-scoped series requests: store seasons, monitor only those, allow 'more seasons', notify per season | REQ | P1 | L |
 | [REQ-13](docs/roadmap/REQ.md#req-13) | Season picker in the title sheet, 'Request more seasons', series quick-request opens the sheet, and season trimming on approve | REQ | P1 | M |
 | [REQ-14](docs/roadmap/REQ.md#req-14) | Per-user request quotas: movies, seasons and books per N days, refunded on withdraw or decline | REQ | P2 | M |
-| [BOOK-09](docs/roadmap/BOOK.md#book-09) | book_keys alias table: every catalogue key a book has ever had | BOOK | P1 | M |
-| [BOOK-13](docs/roadmap/BOOK.md#book-13) | Read / Listen / Both on book requests: stored formats, widening existing books, per-format readiness and 'ready' wording | BOOK | P1 | M |
-| [BOOK-14](docs/roadmap/BOOK.md#book-14) | Discover and request UI for formats: Read / Listen / Both control, per-format badges, 'Request audiobook', format badges in request lists | BOOK | P1 | M |
 
 ### Phase 7 — Plex loop, accounts and the requester phone app
 
@@ -934,21 +899,10 @@ Most of this phase is S tasks with no prerequisites, so it moves fast.
 
 | Task | Title | Epic | Priority | Effort |
 |---|---|---|---|---|
-| [AUD-04](docs/roadmap/AUD.md#aud-04) | Place timeline, backend: record rejected, held and discarded places, make discard soft and restorable | AUD | P1 | M |
-| [AUD-05](docs/roadmap/AUD.md#aud-05) | Place timeline, UI: reasons in words, 'later spot' offers and Recently removed on the You page | AUD | P1 | S |
-| [AUD-06](docs/roadmap/AUD.md#aud-06) | Big forward jumps into the end of a book need proof before they finish it | AUD | P2 | M |
-| [AUD-07](docs/roadmap/AUD.md#aud-07) | Arrmada listening API, read side: shelves, catalogue, item detail and covers for the web player | AUD | P1 | M |
-| [AUD-08](docs/roadmap/AUD.md#aud-08) | Arrmada listening API, play side: sessions, sync and close, Range streaming, bookmarks (same guards as the apps) | AUD | P1 | M |
 | [APP-09](docs/roadmap/APP.md#app-09) | Built-in audiobook player core: PlayerProvider, mini-player, sync, lock-screen controls, resume | APP | P1 | L |
 | [APP-10](docs/roadmap/APP.md#app-10) | 'Listen' tab: shelves, all-audiobooks grid and a book sheet as the default /audiobooks view | APP | P1 | L |
 | [APP-11](docs/roadmap/APP.md#app-11) | Full player sheet: chapters, speed, sleep timer, bookmarks and the held-jump note | APP | P1 | M |
-| [AUD-09](docs/roadmap/AUD.md#aud-09) | Compatibility harness: record real Audiobookshelf replies and diff Arrmada's against them in CI | AUD | P2 | M |
-| [AUD-10](docs/roadmap/AUD.md#aud-10) | Close the reply gaps the compatibility diff shows | AUD | P2 | S |
-| [AUD-11](docs/roadmap/AUD.md#aud-11) | Admin 'Trace app requests for 24 hours' switch that turns itself off | AUD | P2 | S |
-| [AUD-12](docs/roadmap/AUD.md#aud-12) | Verify open-source iOS clients (ShelfPlayer, official Audiobookshelf app) and fix what they need | AUD | P2 | M |
 | [APP-12](docs/roadmap/APP.md#app-12) | 'Apps & devices' tab: guided setup checklist that ticks green when a device signs in, and an honest app list | APP | P2 | M |
-| [AUD-13](docs/roadmap/AUD.md#aud-13) | Accept UUID-shaped ids on every incoming route (id codec, no output change) | AUD | P3 | S |
-| [AUD-14](docs/roadmap/AUD.md#aud-14) | Per-device id style: UUID ids for apps that sign in after the switch (owner sign-off) | AUD | P3 | M |
 | [REQ-18](docs/roadmap/REQ.md#req-18) | Requester payoff rows: 'Recently added' and 'Ready for you' on Discover | REQ | P2 | M |
 | [REQ-19](docs/roadmap/REQ.md#req-19) | Browse grid with filters, 'See all' on list rows, and paginated search | REQ | P2 | M |
 | [REQ-20](docs/roadmap/REQ.md#req-20) | Person pages, clickable cast and crew, and people in search | REQ | P2 | M |
@@ -1110,214 +1064,6 @@ The library pages move onto the kit and fit a phone.
 | [MOV-22](docs/roadmap/MOV.md#mov-22) | Library grid: sort options, quality badges, monitored dot, better search and consistent filters | MOV | P2 | M |
 | [MOV-23](docs/roadmap/MOV.md#mov-23) | Add-movie flow: in-library flags, availability choice, no hidden global toggle, and a one-call collection add | MOV | P2 | M |
 | [FE-31](docs/roadmap/FE.md#fe-31) | One config-driven LibraryGrid for Movies and Series | FE | P3 | L |
-
-### Phase 11 — Convert rebuilt
-
-> **Status: shipped 2026-10-12** — 18 of 19 tasks merged to main (full race suite, lint, frontend tests, typecheck, build within the size budget and Playwright e2e green; checked in a local instance: Overview, History, the Undo settings with the per-library hold self-check, Your devices, and the resumable toggle off by default). Built as 5 lanes plus a second wave for CONV-27. Fixed in merge: a movie version's plan could show another version's plan. Owner decisions: black-bar crop stays off by default (confirmed); CONV-27 approved. CONV-27 (resumable pieces, off by default; CPU encodes of constant-frame-rate films only) passed its restart-mid-encode real-encode test on synthetic SDR, HDR10, HDR10+ and AV1 films: same frame count, even timing, original A/V offset, SSIM gate and full-decode check passed. Open: CONV-28 (resumable on by default) waits for a week of green CI and the owner's own check on a non-library 4K sample. Found in passing, not fixed: the one-go HDR10+ encode duplicates the first frame of a film whose video starts after its audio (task offered). Owner to check: the 500 GB hold budget fits the array; the Your devices 10-bit column against real Plex plays. Requester first-load bundle is exactly at budget (346.0 KB / 97.0 KB brotli).
-
-
-**Theme:** A durable ledger, an originals hold with Revert, plan-first confirmation, a stricter quality gate, events, forecasts, device awareness and resumable encodes  
-**Goal:** Every conversion is planned and confirmed before it runs, checked by a gate that earns 'looks the same', recorded in a durable ledger, and reversible from an originals hold that never purges anything. The hold sits on the same filesystem, reusing SAFE-17's per-root helper, and pauses conversions instead of deleting. Hand requests never wait behind a frozen auto job.  
-**Why now:** Phases 0–1 stopped Convert's damage (backoff, cap guard, forced subtitles), and Phase 4 recorded baselines so upgrades can't undo conversions. The rebuild needs four things that now exist: per-root recycle bins (Phase 3), the kit for its dialogs (Phase 3), Insights monitoring and session parsing (Phase 7), and movie versions (Phase 10). Its settings already live in the hub (Phase 9).  
-**Estimate:** 4–5 weeks (9 S, 11 M, 2 L ≈ 20–24 working days)
-
-**Exit criteria**
-
-- Ledger and hold:
-- A convert_history row is written for every outcome.
-- Originals sit in a hold on the same filesystem, outside the recycle bin, with retention.
-- The hold budget pauses conversions instead of deleting, with Release now and a freed-versus-held display.
-- One-click Revert restores the original.
-- A History tab replaces the in-memory Recent card.
-- Swaps are journalled before staging, crash recovery is tested, and no orphan .arrpart files remain.
-- Plan first:
-- Each file shows its plan (tracks kept or removed, warnings) and its poster.
-- Convert now and Switch on confirm with real library-wide counts.
-- A hand request starts within seconds even while an auto job is frozen.
-- Dolby Vision is an explicit, counted choice.
-- Black-bar crop is off by default and never crops films that change shape.
-- Quality gate:
-- The SSIM gate uses independent windows with a per-window floor and fails closed.
-- A full-decode integrity check runs before every swap, plus VMAF when the ffmpeg build has it.
-- Side steps run niced, with idle I/O and pausable.
-- All of this is verified on synthetic test files only.
-- Events and forecasts:
-- convert.done, failed, blocked and stalled events drive immediate problem alerts and one daily summary.
-- Up next shows a per-file ETA, and the backlog is forecast in nights.
-- Libraries and devices:
-- Non-default movie versions are indexed and converted.
-- A 'Your devices' panel built from Insights warns before AV1 or 10-bit output would cause transcodes.
-- 10-bit output for 8-bit SDR sources is a stated choice.
-- Resumable encoding: the pieced encode runs behind a setting, is verified to lose at most one piece across a restart (test files only), and then becomes the default.
-
-| Task | Title | Epic | Priority | Effort |
-|---|---|---|---|---|
-| [CONV-07](docs/roadmap/CONV.md#conv-07) | Swap journal hardening: journal before staging, safer recovery, orphan .arrpart sweep, guarded same-stem retire | CONV | P1 | S |
-| [CONV-08](docs/roadmap/CONV.md#conv-08) | Originals hold: keep converted originals on the same filesystem with retention, outside the recycle bin | CONV | P1 | L |
-| [CONV-09](docs/roadmap/CONV.md#conv-09) | Hold budget that pauses conversions, Release now, and freed vs held space | CONV | P1 | M |
-| [CONV-10](docs/roadmap/CONV.md#conv-10) | One-click Revert of a conversion from the hold | CONV | P1 | M |
-| [CONV-11](docs/roadmap/CONV.md#conv-11) | History tab backed by the ledger, replacing the in-memory Recent card | CONV | P1 | M |
-| [CONV-12](docs/roadmap/CONV.md#conv-12) | Conversion plan view: per-file plan API, expandable plan card, posters | CONV | P1 | M |
-| [CONV-13](docs/roadmap/CONV.md#conv-13) | Confirm before converting: Convert-now dialog and a Switch-on summary with library-wide counts | CONV | P1 | S |
-| [CONV-14](docs/roadmap/CONV.md#conv-14) | Requested files never wait behind a frozen auto job (request lane, broadcast wake) | CONV | P1 | S |
-| [CONV-18](docs/roadmap/CONV.md#conv-18) | One tool runner for every ffmpeg/tool call: nice, idle I/O, process group, pause | CONV | P2 | M |
-| [CONV-19](docs/roadmap/CONV.md#conv-19) | Full-decode integrity check before the swap, plus VMAF when the ffmpeg build has it | CONV | P1 | M |
-| [CONV-15](docs/roadmap/CONV.md#conv-15) | Dolby Vision as an explicit, counted choice: leave alone or convert and drop the DV layer | CONV | P2 | M |
-| [CONV-21](docs/roadmap/CONV.md#conv-21) | Publish Convert lifecycle events on the eventbus | CONV | P2 | S |
-| [OBS-18](docs/roadmap/OBS.md#obs-18) | Convert alerts: immediate problems (gave up, stuck) and one daily summary | OBS | P2 | S |
-| [CONV-22](docs/roadmap/CONV.md#conv-22) | Time forecast: per-file ETA in Up next, backlog in nights, and in-flight hours | CONV | P2 | M |
-| [CONV-24](docs/roadmap/CONV.md#conv-24) | Index and convert non-default movie versions | CONV | P2 | M |
-| [CONV-25](docs/roadmap/CONV.md#conv-25) | 'Your devices' panel from Insights: who direct-plays HEVC, HEVC 10-bit and AV1 | CONV | P2 | M |
-| [CONV-26](docs/roadmap/CONV.md#conv-26) | Make 10-bit output for 8-bit SDR sources a stated choice | CONV | P2 | S |
-| [CONV-27](docs/roadmap/CONV.md#conv-27) | Revive the parked resumable pieced encode behind a setting (off by default) | CONV | P2 | L |
-| [CONV-28](docs/roadmap/CONV.md#conv-28) | Turn resumable encoding on by default once verified | CONV | P2 | S |
-
-### Phase 12 — Subtitles rebuilt
-
-> **Status: shipped 2026-10-13** — all 29 tasks merged to main (full race suite, lint, frontend tests, typecheck, build within the size budget and Playwright e2e green; checked in a local instance: Overview, Library, the per-file drawer with its language profile, and the Library chips). Built as 5 lanes, then 3 in a second wave and a drawer lane. The requester first load was freed to 95.3/97 KB brotli by moving staff-only API groups into lazy modules. Fixed in passing: the Library promised AI for languages no source could make. Sync-check thresholds (keep ≥70, refuse <50) were calibrated on synthetic speech-like media: matching subtitles scored ≥59, unrelated ≤29; under wall-to-wall loud music correct subtitles land in 'uncertain' (kept, not shifted). Owner to check: that Plex shows regional sidecars such as .pt-br.srt; whisper's language-detection line against a real model; coverage may drop after updating because unknown-tag sidecars no longer count as English.
-
-
-**Theme:** Provenance and attempt ledgers, honest provider status, scored and sync-checked downloads, a persistent two-lane queue, per-file control, language profiles, and fixing problems that family members report  
-**Goal:** Subtitles becomes a Bazarr replacement the owner can trust:
-- every attempt is recorded and nothing is retried forever
-- downloads are scored and sync-checked
-- the queue survives updates and never blocks on the GPU
-- every file can be inspected and fixed in a drawer
-- language profiles cover forced/SDH variants
-
-Family members can report a bad file, and the owner fixes it in one click.  
-**Why now:** Phase 1 fixed the subtitle P0s (AI fallthrough, forced tracks, coverage). The rebuild now needs:
-- the Plex scan hook (Phase 7)
-- the kit drawer and sheet (Phase 3)
-- the language table that Convert's 'Same as Subtitles' expects, built after the Convert rebuild so decide.go is edited once
-- the attempt ledger and job-completion callback that REQ-23's one-click fixes depend on  
-**Estimate:** 4.5–5.5 weeks (12 S, 17 M ≈ 22–27 working days)
-
-**Exit criteria**
-
-- Correctness:
-- Whisper translate passes the source language.
-- Sidecars mis-extracted from forced tracks are repaired.
-- One internal/langs table serves Subtitles, the importer and Convert, so unknown sidecars are no longer credited to English.
-- Release forced/SDH qualifiers survive import.
-- Orphaned subtitles can be adopted or replaced, singly and in bulk.
-- Ledger and status:
-- Each sidecar has a recorded source, and each attempt a typed outcome.
-- Jobs end as failed with a reason.
-- No-match and impossible files back off instead of being searched every 6 h.
-- The OpenSubtitles pill reflects a real login, and a 429 backs off for seconds.
-- The Overview lists what needs attention with one-click fixes.
-- Coverage recounts when the kept languages change.
-- Legacy endpoints and the flat TV walk are removed, and Subtitles reads are staff-only.
-- Scoring and sync:
-- Candidates are scored on release, source, edition and fps, and weak non-hash picks are refused.
-- Non-hash downloads are sync-checked and auto-shifted, and Health shows real scores.
-- Per-language Redo never returns the same file.
-- Untagged audio is detected before AI, and model_missing is recorded instead of failing.
-- Queue: queued work and history survive an ./update.sh, and the Queue tab has filters and per-row retry. Extractions and downloads run in a fast lane while whisper uses the GPU lane, with a backlog ETA.
-- Per-title control:
-- The movie Library has search and posters.
-- A per-file drawer lists, previews, nudges, deletes, extracts and generates subtitles.
-- Interactive OpenSubtitles search lets the owner pick a release.
-- Movie and Series pages show subtitle status.
-- Plex refreshes the folder after every sidecar change.
-- Languages: a searchable language picker with regional variants. Convert offers 'Same as Subtitles'. Language profiles support per-title overrides.
-- Reported problems: a requester reports a problem from the title sheet, and it appears under Requests → Issues. One click either blocklists and re-searches (after a confirm) or starts a subtitle job. The issue resolves itself when the new file lands, and the reporters are told.
-
-| Task | Title | Epic | Priority | Effort |
-|---|---|---|---|---|
-| [SUB-06](docs/roadmap/SUB.md#sub-06) | Whisper translate mode passes the audio's source language (-l src\|auto) | SUB | P1 | S |
-| [SUB-07](docs/roadmap/SUB.md#sub-07) | One-shot repair of sidecars that were extracted from a forced track | SUB | P1 | S |
-| [SUB-08](docs/roadmap/SUB.md#sub-08) | One shared language table (internal/langs) for Subtitles, the importer and Convert | SUB | P1 | M |
-| [SUB-09](docs/roadmap/SUB.md#sub-09) | Keep .forced/.sdh/.hi qualifiers when importing release subtitles | SUB | P1 | S |
-| [SUB-10](docs/roadmap/SUB.md#sub-10) | Adopt or replace orphaned movie subtitles (single and bulk) | SUB | P1 | S |
-| [SUB-11](docs/roadmap/SUB.md#sub-11) | Provenance and attempt ledger: subtitle_files, subtitle_attempts, blocklist, honest job outcomes | SUB | P1 | M |
-| [SUB-12](docs/roadmap/SUB.md#sub-12) | Back off per file and language instead of re-searching every 6 hours | SUB | P1 | S |
-| [SUB-13](docs/roadmap/SUB.md#sub-13) | Truthful OpenSubtitles status: credential test, token refresh, short 429 backoff, inline credentials | SUB | P1 | M |
-| [SUB-14](docs/roadmap/SUB.md#sub-14) | Needs-attention board with one-click fixes and retry on the Overview | SUB | P1 | M |
-| [SUB-15](docs/roadmap/SUB.md#sub-15) | Recount coverage as soon as the kept languages change | SUB | P2 | S |
-| [SUB-16](docs/roadmap/SUB.md#sub-16) | Remove legacy subtitle endpoints and the flat TV walk; make Subtitles reads staff-only | SUB | P2 | S |
-| [SUB-17](docs/roadmap/SUB.md#sub-17) | Score OpenSubtitles candidates by release match and refuse weak non-hash picks | SUB | P1 | M |
-| [SUB-18](docs/roadmap/SUB.md#sub-18) | Subtitle-to-speech sync checker (offset and frame-rate drift) in pure Go | SUB | P1 | M |
-| [SUB-19](docs/roadmap/SUB.md#sub-19) | Sync-check non-hash downloads automatically and show a real Health score | SUB | P1 | M |
-| [SUB-20](docs/roadmap/SUB.md#sub-20) | Per-language Redo that never hands back the same bad subtitle | SUB | P1 | M |
-| [SUB-21](docs/roadmap/SUB.md#sub-21) | Detect untagged audio language before AI; record model_missing instead of failing | SUB | P1 | M |
-| [SUB-23](docs/roadmap/SUB.md#sub-23) | Persist the subtitle queue and job history across restarts | SUB | P1 | M |
-| [SUB-24](docs/roadmap/SUB.md#sub-24) | Queue tab history: filters, per-row retry, title links, per-language outcomes | SUB | P1 | S |
-| [SUB-25](docs/roadmap/SUB.md#sub-25) | Split the queue into a fast lane and a GPU lane, with an AI backlog ETA | SUB | P2 | M |
-| [SUB-26](docs/roadmap/SUB.md#sub-26) | Movie Library: text search, poster thumbnails and paged rendering | SUB | P2 | S |
-| [SUB-27](docs/roadmap/SUB.md#sub-27) | Per-file subtitle drawer: list, preview, nudge timing, delete, extract, generate | SUB | P2 | M |
-| [SUB-28](docs/roadmap/SUB.md#sub-28) | Interactive OpenSubtitles search and manual pick in the drawer | SUB | P2 | M |
-| [SUB-29](docs/roadmap/SUB.md#sub-29) | Subtitle status and 'Find subtitles' on Movie and Series detail pages | SUB | P2 | M |
-| [SUB-30](docs/roadmap/SUB.md#sub-30) | Tell Plex when a subtitle is written, shifted, removed or adopted | SUB | P2 | S |
-| [SUB-31](docs/roadmap/SUB.md#sub-31) | Searchable language picker with regional variants (GET /api/v1/languages) | SUB | P2 | S |
-| [SUB-32](docs/roadmap/SUB.md#sub-32) | Convert can keep the same subtitle languages as Subtitles ('Same as Subtitles') | SUB | P2 | S |
-| [SUB-33](docs/roadmap/SUB.md#sub-33) | Language profiles: forced/full variants, SDH preference, 'only when audio differs', per-title overrides | SUB | P2 | M |
-| [REQ-22](docs/roadmap/REQ.md#req-22) | 'Report a problem' for requesters, routed into an Issues tab on /requests | REQ | P2 | M |
-| [REQ-23](docs/roadmap/REQ.md#req-23) | One-click fixes for reported problems, with auto-resolve when a new file lands | REQ | P2 | M |
-
-### Phase 13 — Books and the audiobook library rebuilt
-
-> **Status: shipped 2026-10-13** — all 21 tasks merged to main (full race suite, lint, frontend tests, typecheck, build within the size budget at 95.6/97 KB brotli, and Playwright e2e green; checked in a local instance: Books header and Tools menu, the author page's 'Which author is this?' picker, existing books linked to their author, OPDS asking for the e-reader password). Built as 5 lanes plus 3 in a second wave. Real ffmpeg checked the merged-.m4b tags on generated audio only. Owner to check: a real Kindle delivery once outgoing email is set up; an e-reader app (KOReader/Moon+) against /opds; Lissen unchanged; the official ABS app's Read opening the EPUB; a new cover reaching Lissen after a refresh; Hardcover's release-date field live. Gap noted: Send to Kindle lives on My shelf, which only requesters have, so staff accounts have no send button yet.
-
-
-**Theme:** Lossless merges, editions and languages, release dates, authors, OPDS and Send to Kindle, admin screens that fit, and audiobook library polish  
-**Goal:** Each book is one library row with stable aliases. Merges are reviewed and lose nothing; the merge re-keys listening ids, coordinated with AUD-03. Followed authors bring in new books automatically. Ebooks reach e-readers through OPDS and reach Kindles by email. The audiobook library stops walking disks and shows fresh covers and narrators.  
-**Why now:** Book identity and requests were fixed in Phases 1, 4 and 6. Lossless merge needs book_keys (Phase 6) and the listening-guard work (Phases 1 and 8). OPDS needs SEC-05's adult filter. My shelf needs the player core (Phase 8). Doing all book and audiobook-library rework in one window avoids repeated edits to internal/books and the audioserver handlers.  
-**Estimate:** 3.5–4 weeks (7 S, 14 M ≈ 17–21 working days)
-
-**Exit criteria**
-
-- Merges:
-- A manager reviews possible duplicates side by side and merges or dismisses them.
-- Service.Merge moves editions, versions, listening places, bookmarks, requests, aliases and history in one transaction and deletes no file.
-- Lissen keeps its place across a merge through id redirects.
-- Earlier automatic merges are listed.
-- Grabs and metadata:
-- Hand-picked releases import into the book they were picked for.
-- Wrong-language releases are rejected in automatic grabs.
-- Bulk-added books get descriptions, genres and series within a day, inside the API budget.
-- Upcoming books show 'Out <date>' and are searched daily from release day.
-- Authors:
-- Authors are entities with pages by id and a 'Which author is this?' picker.
-- Spelling variants are one author.
-- Followed authors' new books are added on a schedule, with an admin alert.
-- E-readers and Kindle:
-- KOReader, Moon+ and Thorium can browse and download through OPDS 1.2 with the audiobook password, the adult filter applied, and route-pattern-only logs.
-- SMTP is configured in Settings, with a Test button.
-- 'Send to Kindle' delivers, and the result appears in the inbox.
-- Admin screens: the Books header and detail toolbar fit a phone, card actions work on touch, the library sorts, and the Books/Music pages use the kit.
-- My shelf: it has a detail sheet, series grouping, 'New this week' and real request stages, and it does no polling while hidden.
-- Audiobook library:
-- Warm-up, listings and stats read the DB (no 30-minute tree walk).
-- Cover and title edits reach apps.
-- Narrators show in apps and can be edited.
-- The official app can open the EPUB of a book that also has an audiobook.
-- Merged .m4b files carry title, author, series and cover tags.
-
-| Task | Title | Epic | Priority | Effort |
-|---|---|---|---|---|
-| [BOOK-10](docs/roadmap/BOOK.md#book-10) | listening: re-key item ids inside a transaction, with redirects for late reports from listening apps | BOOK | P1 | M |
-| [BOOK-11](docs/roadmap/BOOK.md#book-11) | Lossless Service.Merge: one transaction that moves editions, versions, listening places, requests, aliases and history, and never deletes a file | BOOK | P1 | M |
-| [BOOK-12](docs/roadmap/BOOK.md#book-12) | Possible duplicates review: preview, merge or dismiss, plus the list of earlier automatic merges | BOOK | P1 | M |
-| [BOOK-15](docs/roadmap/BOOK.md#book-15) | Hand-picked book grabs import into the book they were grabbed for | BOOK | P2 | S |
-| [BOOK-16](docs/roadmap/BOOK.md#book-16) | Preferred book languages: reject wrong-language releases in automatic grabs | BOOK | P2 | S |
-| [BOOK-17](docs/roadmap/BOOK.md#book-17) | Budget-aware scheduled book metadata refresh, and retire 'Find series' when Hardcover is the source | BOOK | P2 | S |
-| [BOOK-18](docs/roadmap/BOOK.md#book-18) | Store release dates, search on release day, and say 'Out <date>' | BOOK | P2 | M |
-| [BOOK-19](docs/roadmap/BOOK.md#book-19) | Authors as entities (backend): authors table, books.author_id, catalogue author keys, /api/v1/book-authors | BOOK | P2 | M |
-| [BOOK-20](docs/roadmap/BOOK.md#book-20) | Author pages by id: stored catalogue author, a 'Which author is this?' picker, library grouping by author_id | BOOK | P2 | M |
-| [BOOK-21](docs/roadmap/BOOK.md#book-21) | Monitored authors: detect and add new releases on a schedule | BOOK | P2 | M |
-| [BOOK-22](docs/roadmap/BOOK.md#book-22) | OPDS 1.2 catalogue for e-reader apps, authenticated with the per-user audiobook password | BOOK | P2 | M |
-| [BOOK-23](docs/roadmap/BOOK.md#book-23) | Outgoing email (SMTP) configured in Settings, with a mail package and a test button | BOOK | P2 | S |
-| [BOOK-24](docs/roadmap/BOOK.md#book-24) | Send to Kindle: per-user Kindle address, a send button, and the result in the inbox | BOOK | P2 | M |
-| [BOOK-25](docs/roadmap/BOOK.md#book-25) | Admin Books screens: primary actions up front, a 'Library tools' menu, a grouped detail toolbar, touch-reachable card actions, sorting | BOOK | P2 | M |
-| [FE-12](docs/roadmap/FE.md#fe-12) | Move Books, Music and their modals onto the kit | FE | P2 | M |
-| [APP-19](docs/roadmap/APP.md#app-19) | My shelf as a real shelf: detail sheet, series grouping, 'New this week', real request stages, no hidden polling | APP | P2 | M |
-| [AUD-15](docs/roadmap/AUD.md#aud-15) | Warm-up, listings and library stats read probe state from the DB instead of walking every audiobook folder | AUD | P3 | M |
-| [AUD-16](docs/roadmap/AUD.md#aud-16) | Apps pick up cover and metadata edits: real updatedAt and cache-busted covers | AUD | P3 | S |
-| [AUD-17](docs/roadmap/AUD.md#aud-17) | Narrators: read them from file tags, show them to apps and in Arrmada, and let them be edited | AUD | P3 | M |
-| [AUD-18](docs/roadmap/AUD.md#aud-18) | Expose the ebook on the Audiobookshelf-compatible server for items that have one | AUD | P3 | S |
-| [BOOK-26](docs/roadmap/BOOK.md#book-26) | Merged .m4b keeps proper tags (title, author, series) and the source cover | BOOK | P3 | S |
 
 ### Phase 14 — Smarter grabbing: Quality v2 and power tools
 
@@ -1537,11 +1283,6 @@ Items can be pulled earlier whenever a phase finishes early.
 | [OBS-17](docs/roadmap/OBS.md#obs-17) | Stream alert filters (users, remote only, transcode only), autoplay suppression and a buffering cooldown | OBS | P2 | S |
 | [OBS-19](docs/roadmap/OBS.md#obs-19) | Alert templates with an attached poster and a deep link back to the app | OBS | P3 | M |
 | [OBS-20](docs/roadmap/OBS.md#obs-20) | Recent jobs list on the Tasks page (after BE's job runner) | OBS | P3 | S |
-| [CONV-23](docs/roadmap/CONV.md#conv-23) | Convert polish: scan time setting, one-call group retry, honest 'done' state | CONV | P3 | S |
-| [CONV-29](docs/roadmap/CONV.md#conv-29) | Keep Dolby Vision through conversion as profile 8.1 using dovi_tool | CONV | P3 | L |
-| [SUB-22](docs/roadmap/SUB.md#sub-22) | Upgrade loop: replace AI and weak downloads when a hash-matched subtitle appears | SUB | P3 | M |
-| [SUB-34](docs/roadmap/SUB.md#sub-34) | Profile editor and per-title subtitle profile selector | SUB | P3 | M |
-| [SUB-35](docs/roadmap/SUB.md#sub-35) | Lay out Chinese and Japanese AI subtitles by characters, not spaces | SUB | P3 | S |
 
 ## Epics
 
@@ -1559,11 +1300,7 @@ Items can be pulled earlier whenever a phase finishes early.
 | [FE](docs/roadmap/FE.md) | Frontend foundation & design system | 32 | 0 | Phase 1, Phase 10, Phase 13, Phase 16, Phase 2, Phase 3, Phase 9 |
 | [SER](docs/roadmap/SER.md) | Series | 22 | 5 | Phase 0, Phase 1, Phase 10, Phase 14, Phase 4, Phase 5 |
 | [MOV](docs/roadmap/MOV.md) | Movies | 24 | 1 | Phase 1, Phase 10, Phase 3, Phase 5 |
-| [BOOK](docs/roadmap/BOOK.md) | Books | 26 | 4 | Phase 0, Phase 1, Phase 13, Phase 4, Phase 6 |
 | [QUAL](docs/roadmap/QUAL.md) | Quality profiles & ranking | 27 | 3 | Phase 0, Phase 1, Phase 14, Phase 4, Phase 5 |
-| [CONV](docs/roadmap/CONV.md) | Convert | 29 | 2 | Phase 0, Phase 1, Phase 11, Phase 17, Phase 2, Phase 4 |
-| [SUB](docs/roadmap/SUB.md) | Subtitles | 35 | 5 | Phase 1, Phase 12, Phase 17 |
-| [AUD](docs/roadmap/AUD.md) | Audiobook server & listening | 18 | 0 | Phase 1, Phase 13, Phase 8 |
 | [MUS](docs/roadmap/MUS.md) | Music | 25 | 2 | Phase 0, Phase 1, Phase 15, Phase 2 |
 | [BE](docs/roadmap/BE.md) | Backend architecture & quality | 13 | 0 | Phase 0, Phase 1, Phase 2, Phase 3, Phase 5 |
 | [COPY](docs/roadmap/COPY.md) | Truthful copy & polish sweep | 15 | 0 | Phase 16, Phase 2, Phase 3, Phase 5 |
@@ -1648,9 +1385,9 @@ _A skeptical review of the sequencing. Moves it proposed have already been appli
 - Moved [SER-05](docs/roadmap/SER.md#ser-05) → Phase 0: This is active harm, not a backlog item. Finding series-4 (high, confirmed): every scheduled 6-hour refresh falls back silently from TVDB to TVmaze to TMDB. One episode's difference in an earlier season shifts every later absolute number, and SeriesRename then physically moves and renames hundreds of files onto the wrong episodes. The next good refresh moves them back. SER-04 (Phase 0) only stops overwrites, not these mis-moves. The only dependency is SER-04, which is already in Phase 0. Minimum version: scheduled, import-time and fallback refreshes never call SeriesRename, and a numbering change is only logged until SER-07 adds proposals.
 - Moved [SAFE-11](docs/roadmap/SAFE.md#safe-11) → Phase 1: No database backups exist at all (system-2, backend-5 and product-6, all high). SAFE-01 only snapshots before pending migrations. Phase 1 rewrites data in ways that may run as boot code rather than migrations: QUAL-02's boot repair, the BOOK-03 backfill and SER-05's pinning. SAFE-11 is small (S) and its only hard dependency is SAFE-01 (Phase 0). The OBS-04 health hook is optional, so until Phase 3 it can be a log line plus a Dashboard line.
 - Moved [FE-08](docs/roadmap/FE.md#fe-08) → Phase 1: CI has no frontend lint or unit tests: .github/workflows/ci.yml only runs npm ci and npm run build. Phases 0–2 ship the shared destructive dialog (SAFE-02), the confirm flows in SAFE-03..06 and SAFE-09, the tap fixes in APP-01/02, FE-01..04, and SEC-14's sign-out handling, all with no frontend tests. FE-08 is small (S) with no dependencies. Landing it before FE-01..04 means react-hooks and jsx-a11y (at warn level) check all new code.
-- Moved [CONV-06](docs/roadmap/CONV.md#conv-06) → Phase 1: CONV-17 needs this ledger (see the next move). Convert runs unattended every night on the real library. CONV-02 only stops the size cap from purging originals, but the recycle bin's 30-day retention (DefaultRetentionDays in internal/recyclebin/service.go) still makes every bad swap permanent. The real fix, CONV-08 (originals hold), is ten phases away in Phase 11. CONV-06 has no dependencies.
-- Moved [CONV-17](docs/roadmap/CONV.md#conv-17) → Phase 1: Finding convert-8: the quality gate is a mean SSIM of 0.97 over four 15-second windows that preflight already tuned the CRF to pass, and failed windows are silently dropped. A bad stretch can replace the original, and after 30 days in the bin that is permanent. This is small (S) and needs only CONV-06, which moves with it. The alternative is for the owner to pause auto-convert until Phase 11.
-- Moved [CONV-16](docs/roadmap/CONV.md#conv-16) → Phase 1: Finding convert-14: black-bar crop is on by default for about 2% savings and permanently cuts picture from open-matte shots. With 30-day bin retention, and CONV-08 not until Phase 11, the damage is irreversible. The fix is one default flip: small (S), no dependencies.
+- Moved CONV-06 → Phase 1: CONV-17 needs this ledger (see the next move). Convert runs unattended every night on the real library. CONV-02 only stops the size cap from purging originals, but the recycle bin's 30-day retention (DefaultRetentionDays in internal/recyclebin/service.go) still makes every bad swap permanent. The real fix, CONV-08 (originals hold), is ten phases away in Phase 11. CONV-06 has no dependencies.
+- Moved CONV-17 → Phase 1: Finding convert-8: the quality gate is a mean SSIM of 0.97 over four 15-second windows that preflight already tuned the CRF to pass, and failed windows are silently dropped. A bad stretch can replace the original, and after 30 days in the bin that is permanent. This is small (S) and needs only CONV-06, which moves with it. The alternative is for the owner to pause auto-convert until Phase 11.
+- Moved CONV-16 → Phase 1: Finding convert-14: black-bar crop is on by default for about 2% savings and permanently cuts picture from open-matte shots. With 30-day bin retention, and CONV-08 not until Phase 11, the damage is irreversible. The fix is one default flip: small (S), no dependencies.
 - Moved [FE-23](docs/roadmap/FE.md#fe-23) → Phase 3: URL-addressable tabs are currently built three times: COPY-01 (Phase 2), PLEX-18 (Insights, Phase 7) and FE-23 (Phase 9). Meanwhile the Settings hub (CFG-13, Phase 3), Activity (ACQ-26), Convert History (CONV-11) and the Subtitles Queue (SUB-24) all build tabbed pages. Its dependencies (FE-01 in Phase 2, FE-08) are satisfied by Phase 3. COPY-01 should build the hook that FE-23 then generalises.
 - Moved [MOV-15](docs/roadmap/MOV.md#mov-15) → Phase 3: PLEX-05 (Phase 7) explicitly builds direct hooks into imports, upgrades, renames, deletes and Convert swaps, because movie events carry no paths. It plans to replace them later. BE-06's durable outbox already lands in Phase 3. Placing MOV-15 (S, all dependencies optional) right after BE-06 lets PLEX-05, REQ-15 and the Convert and Subtitles rebuilds use one source of path-carrying file events instead of three rounds of hooks.
 - Moved [BE-13](docs/roadmap/BE.md#be-13) → Phase 5: BE-13 ('Shared download-queue snapshot; publish queue.progress') is the same snapshot as ACQ-22 ('One shared download-queue snapshot with client health'), which is in Phase 5. Its dependencies (BE-02 in Phase 1, SEC-03 in Phase 0) are met. Implement it alongside ACQ-22 as the events half, rather than building a second snapshot four phases later.
@@ -1662,13 +1399,13 @@ _A skeptical review of the sequencing. Moves it proposed have already been appli
 - P0 PLACEMENT: All P0 security items ([SEC-01](docs/roadmap/SEC.md#sec-01)..04) are in Phase 0. The remaining P0s in Phase 1 are acceptable except [SER-05](docs/roadmap/SER.md#ser-05) (moved). [ACQ-05](docs/roadmap/ACQ.md#acq-05) correctly comes before [ACQ-06](docs/roadmap/ACQ.md#acq-06), since fail-over is off by default today (ops-3). Risk outside the plan, system-3 (high): on a documented install, the recycle bin is <LibraryDir>/.recycle inside the Docker volume (docker.img, 20 GB by default). Deletes, upgrade replacements and Convert originals are cross-device-copied into it and can take down every container. The fixes ([SAFE-16](docs/roadmap/SAFE.md#safe-16)/17, [CFG-20](docs/roadmap/CFG.md#cfg-20)) are in Phase 3. Before Phase 0 ships, confirm on the server that ARRMADA_RECYCLE_DIR points at the array (an earlier session advised /storage/.recycle). If it doesn't, move [SAFE-16](docs/roadmap/SAFE.md#safe-16) and [SAFE-17](docs/roadmap/SAFE.md#safe-17) to Phase 1; their dependencies allow it, since [CFG-19](docs/roadmap/CFG.md#cfg-19) is optional.
 - DUPLICATES TO MERGE: [BE-01](docs/roadmap/BE.md#be-01) ≡ [SAFE-14](docs/roadmap/SAFE.md#safe-14) (both in Phase 0: foreign keys off plus foreign_key_check for table rebuilds); keep [BE-01](docs/roadmap/BE.md#be-01) and drop [SAFE-14](docs/roadmap/SAFE.md#safe-14). [OBS-03](docs/roadmap/OBS.md#obs-03) ≈ [BE-08](docs/roadmap/BE.md#be-08) (both in Phase 3: run history, Run now, tasks API; [BE-02](docs/roadmap/BE.md#be-02) already makes the scheduler panic-safe in Phase 1); keep [BE-08](docs/roadmap/BE.md#be-08) and repoint [OBS-04](docs/roadmap/OBS.md#obs-04)/05/06 at it. [CFG-15](docs/roadmap/CFG.md#cfg-15) ≈ [INT-16](docs/roadmap/INT.md#int-16), and [INT-14](docs/roadmap/INT.md#int-14) ≈ [OBS-15](docs/roadmap/OBS.md#obs-15) (all in Phase 9). [APP-04](docs/roadmap/APP.md#app-04) ≈ [PLEX-06](docs/roadmap/PLEX.md#plex-06) (Phase 7: the same iPhone popup fix). [COPY-13](docs/roadmap/COPY.md#copy-13) ≡ [FE-17](docs/roadmap/FE.md#fe-17) (Phase 3). [COPY-08](docs/roadmap/COPY.md#copy-08) (Phase 3) ≈ [PLEX-19](docs/roadmap/PLEX.md#plex-19) (Phase 7): replacing 'Coming soon' on Insights. [OBS-10](docs/roadmap/OBS.md#obs-10) (Phase 6) already moves Alerts out of Insights, so drop that clause from [PLEX-18](docs/roadmap/PLEX.md#plex-18); [OBS-10](docs/roadmap/OBS.md#obs-10)'s validate-admin-URLs-on-save ≈ [SEC-08](docs/roadmap/SEC.md#sec-08). [OBS-01](docs/roadmap/OBS.md#obs-01) (Phase 2) ≈ the health and disk-guard half of [CFG-20](docs/roadmap/CFG.md#cfg-20). [SEC-06](docs/roadmap/SEC.md#sec-06) ≈ [CFG-04](docs/roadmap/CFG.md#cfg-04)'s /data check: write one validator in [SEC-06](docs/roadmap/SEC.md#sec-06) and reuse it in [CFG-04](docs/roadmap/CFG.md#cfg-04) and [CFG-19](docs/roadmap/CFG.md#cfg-19). [CFG-10](docs/roadmap/CFG.md#cfg-10)'s 'Read-only at creation' ≈ [COPY-09](docs/roadmap/COPY.md#copy-09). [MOV-08](docs/roadmap/MOV.md#mov-08) ≈ [ACQ-18](docs/roadmap/ACQ.md#acq-18) (both Wanted views in Phase 5): build [ACQ-18](docs/roadmap/ACQ.md#acq-18) across all media and make [MOV-08](docs/roadmap/MOV.md#mov-08) its movie filter plus the Cutoff-unmet tab. [MOV-04](docs/roadmap/MOV.md#mov-04) ≈ [ACQ-15](docs/roadmap/ACQ.md#acq-15) (both record movie search outcomes, Phase 5): [ACQ-15](docs/roadmap/ACQ.md#acq-15) owns the table and reject codes, and [MOV-04](docs/roadmap/MOV.md#mov-04) is UI only. [MOV-07](docs/roadmap/MOV.md#mov-07), [BE-09](docs/roadmap/BE.md#be-09)'s per-item claims and [REQ-01](docs/roadmap/REQ.md#req-01)'s bounded queue should be one search queue (a [BE-07](docs/roadmap/BE.md#be-07) job class), not three. [APP-05](docs/roadmap/APP.md#app-05), [APP-13](docs/roadmap/APP.md#app-13), [CFG-12](docs/roadmap/CFG.md#cfg-12) and [SEC-15](docs/roadmap/SEC.md#sec-15) together are one /me page; build it in that order.
 - CONTRADICTIONS INSIDE THE PLAN: [CFG-08](docs/roadmap/CFG.md#cfg-08) (Phase 2) removes ARRMADA_BASE_URL, but [FE-29](docs/roadmap/FE.md#fe-29) (Phase 16) is 'make it work end to end, or remove it', [APP-08](docs/roadmap/APP.md#app-08) is 'BaseURL-aware', and [COPY-10](docs/roadmap/COPY.md#copy-10) writes BASE_URL notes. Decide in [CFG-08](docs/roadmap/CFG.md#cfg-08) and drop [FE-29](docs/roadmap/FE.md#fe-29) and those clauses. [COPY-03](docs/roadmap/COPY.md#copy-03) (Phase 2) renames 'Activity' to 'Downloads', then [ACQ-26](docs/roadmap/ACQ.md#acq-26) (Phase 9) builds /activity as the hub. Pick the final name now so the nav doesn't flip twice. The status vocabulary is defined four times: the requests/progress.go stages (already shipped in commit 069e11c), [ACQ-09](docs/roadmap/ACQ.md#acq-09) (Phase 4), [COPY-12](docs/roadmap/COPY.md#copy-12) (Phase 5) and [ACQ-28](docs/roadmap/ACQ.md#acq-28) (Phase 9). Write it once in [ACQ-09](docs/roadmap/ACQ.md#acq-09) and have the others use it. [FE-16](docs/roadmap/FE.md#fe-16) (Phase 3) regroups the sidebar before the Activity, Connections and Settings hubs exist (Phases 3 and 9). Design the groups for the final hubs, or the nav changes twice. [CFG-03](docs/roadmap/CFG.md#cfg-03)'s restart banner (Phase 2) is mostly obsolete one phase later when [CFG-19](docs/roadmap/CFG.md#cfg-19) applies folder changes live; keep it to what still needs a restart.
-- AUDIOBOOK PRIVACY (standing rule): [SEC-04](docs/roadmap/SEC.md#sec-04) must cover every place that can log an item, not just the per-request line in C:\Projects\Arrmada\internal\audioserver\server.go:582-599. Also: the held-jump Debug line that logs username plus item (internal/audioserver/handlers_play.go:113-114), the audioserver panic handler logging r.URL.Path (server.go:218), and httpapi.logRequests and recoverPanics, which log the raw r.URL.Path (internal/httpapi/middleware.go:33 and :71). Today no main-API listening route carries an item id. [AUD-07](docs/roadmap/AUD.md#aud-07)/[AUD-08](docs/roadmap/AUD.md#aud-08) (Phase 8) add such routes, but [CFG-30](docs/roadmap/CFG.md#cfg-30)'s route-pattern logging is in Phase 16, so switch httpapi to r.Pattern inside [SEC-04](docs/roadmap/SEC.md#sec-04) now. The one-time scrub must also cover the persisted log files that re-seed the 50k ring at boot. [AUD-11](docs/roadmap/AUD.md#aud-11)'s 24-hour trace, and the audit's own advice to trace full requests, breaks the rule unless it keeps the redaction: route patterns and response shapes only, never item ids, titles or search text. [AUD-09](docs/roadmap/AUD.md#aud-09) recordings must come from a synthetic Audiobookshelf library with tokens stripped, never the family's real library or progress. Counts and times only, never titles, for: [CFG-31](docs/roadmap/CFG.md#cfg-31)'s support bundle, [CFG-18](docs/roadmap/CFG.md#cfg-18)'s audiobook access column, [OBS-11](docs/roadmap/OBS.md#obs-11)'s alert catalog, [BE-07](docs/roadmap/BE.md#be-07)'s jobs table, and [BOOK-22](docs/roadmap/BOOK.md#book-22)'s OPDS logs. [SEC-02](docs/roadmap/SEC.md#sec-02)'s golden route table needs a 'self-only' scope for the place and timeline routes ([AUD-04](docs/roadmap/AUD.md#aud-04)/05) that even an admin cannot read for another user.
-- ADULT FILTER (standing rule): new Discover surfaces must enforce it server-side. [APP-07](docs/roadmap/APP.md#app-07) makes /discover/movie/:id directly addressable, and today only list endpoints are filtered (internal/metadata/discover.go), not detail. [REQ-20](docs/roadmap/REQ.md#req-20) person pages: TMDB combined credits include adult titles. Also [REQ-19](docs/roadmap/REQ.md#req-19)'s browse grid, [REQ-21](docs/roadmap/REQ.md#req-21)'s collections and [REQ-18](docs/roadmap/REQ.md#req-18)'s rows. [BOOK-22](docs/roadmap/BOOK.md#book-22) OPDS must apply [SEC-05](docs/roadmap/SEC.md#sec-05)'s tag filter. Add a test that a filtered id returns 404 from detail endpoints.
-- OTHER STANDING RULES: [FE-01](docs/roadmap/FE.md#fe-01) (tokens and contrast), [FE-30](docs/roadmap/FE.md#fe-30) (type scale with an 11px floor) and [FE-18](docs/roadmap/FE.md#fe-18) are the design-system work and need the owner's explicit sign-off. Every other UI task ([ACQ-29](docs/roadmap/ACQ.md#acq-29)'s poster cards, [APP-05](docs/roadmap/APP.md#app-05)'s shell, the [SER-14](docs/roadmap/SER.md#ser-14) and [MOV-18](docs/roadmap/MOV.md#mov-18) redesigns) uses existing tokens only. Convert: [CONV-24](docs/roadmap/CONV.md#conv-24) starts converting 4K remux versions of real files, so it ships off by default or appears in [CONV-13](docs/roadmap/CONV.md#conv-13)'s switch-on summary. 'Verified' in [CONV-27](docs/roadmap/CONV.md#conv-27)/28 means the lavfi fixtures in internal/convert/integration_test.go, never the owner's files. Credentials: no conflicts found, but [AUD-09](docs/roadmap/AUD.md#aud-09) fixtures and any Hardcover or OpenSubtitles test fixtures must contain no real keys, and [CFG-28](docs/roadmap/CFG.md#cfg-28) uses the Actions GITHUB_TOKEN. Media paths: [SAFE-11](docs/roadmap/SAFE.md#safe-11) backups may live under /data (that is the DB dir), but [CONV-08](docs/roadmap/CONV.md#conv-08)'s originals hold and [SAFE-17](docs/roadmap/SAFE.md#safe-17)'s bins must stay on library roots.
-- SIZE AND COHERENCE: Phase 2 (43 tasks) is really three phases. 2a, Recover: [SAFE-12](docs/roadmap/SAFE.md#safe-12)/13/15/18, [CFG-05](docs/roadmap/CFG.md#cfg-05)/06/07/11/27, [BE-04](docs/roadmap/BE.md#be-04)/05/11/12; ship it first. 2b, Access: [SEC-05](docs/roadmap/SEC.md#sec-05)/06/09..12/14, [CFG-02](docs/roadmap/CFG.md#cfg-02)/03/04/09/10, [FE-01](docs/roadmap/FE.md#fe-01)..04. 2c, Honest copy: [COPY-01](docs/roadmap/COPY.md#copy-01)..07, [CONV-03](docs/roadmap/CONV.md#conv-03)/05, [OBS-01](docs/roadmap/OBS.md#obs-01)/02, [MUS-25](docs/roadmap/MUS.md#mus-25). Phase 0 (29 tasks after the [SER-05](docs/roadmap/SER.md#ser-05) move) should deploy in two batches. Batch 0a: [BE-01](docs/roadmap/BE.md#be-01), [SAFE-01](docs/roadmap/SAFE.md#safe-01) plus the schema guard, [CFG-01](docs/roadmap/CFG.md#cfg-01), [SEC-01](docs/roadmap/SEC.md#sec-01)..04, [SAFE-02](docs/roadmap/SAFE.md#safe-02)..06, [SAFE-08](docs/roadmap/SAFE.md#safe-08), [CONV-02](docs/roadmap/CONV.md#conv-02), [BOOK-01](docs/roadmap/BOOK.md#book-01), [SER-01](docs/roadmap/SER.md#ser-01), [SER-04](docs/roadmap/SER.md#ser-04), [SER-05](docs/roadmap/SER.md#ser-05). Batch 0b: [QUAL-01](docs/roadmap/QUAL.md#qual-01)/03, [MUS-01](docs/roadmap/MUS.md#mus-01)/02, [ACQ-01](docs/roadmap/ACQ.md#acq-01)..03, [CONV-01](docs/roadmap/CONV.md#conv-01), [APP-01](docs/roadmap/APP.md#app-01)/02. Phase 1 grows to 30 with the moves above. [REQ-22](docs/roadmap/REQ.md#req-22) has no Subtitles dependency and belongs with Phase 6's request work; only [REQ-23](docs/roadmap/REQ.md#req-23) needs the Subtitles job callback. [SUB-08](docs/roadmap/SUB.md#sub-08) (the shared internal/langs table) lands after the Phase 11 Convert rebuild that needs it, so do it at the start of Phase 11. [FE-32](docs/roadmap/FE.md#fe-32) (splitting Discover.tsx) should come before [APP-07](docs/roadmap/APP.md#app-07), [BOOK-14](docs/roadmap/BOOK.md#book-14) and [REQ-18](docs/roadmap/REQ.md#req-18)..21, which keep growing that file; its [FE-14](docs/roadmap/FE.md#fe-14) dependency isn't real. [FE-14](docs/roadmap/FE.md#fe-14) shrinks to 'ban the old patterns' once the rebuild phases build on the kit. With 473 tasks, plan to re-plan after Phase 3.
-- MISSING MIGRATIONS AND BACKFILLS: write data repairs as numbered migrations so [SAFE-01](docs/roadmap/SAFE.md#safe-01)'s snapshot covers them, or have them call store.Snapshot explicitly. [QUAL-02](docs/roadmap/QUAL.md#qual-02): boot repair of dangling profiles. [QUAL-03](docs/roadmap/QUAL.md#qual-03): codec restamp. [BOOK-03](docs/roadmap/BOOK.md#book-03): book_id backfill; leave ambiguous matches unlinked and list them, never guess. [ACQ-09](docs/roadmap/ACQ.md#acq-09): rewrite existing grab statuses. [SER-05](docs/roadmap/SER.md#ser-05): no numbering source is stored today, so backfill 'unknown' and make the first refresh after deploy log-only. [SER-01](docs/roadmap/SER.md#ser-01): in-flight grabs have no recorded scope, so default to the import gate on, not the legacy manual force. [REQ-12](docs/roadmap/REQ.md#req-12): existing series requests mean all seasons. [REQ-09](docs/roadmap/REQ.md#req-09): split the single auto-approve flag per media type. [BOOK-19](docs/roadmap/BOOK.md#book-19): authors. [SUB-11](docs/roadmap/SUB.md#sub-11): existing sidecars get provenance 'unknown'. [CONV-06](docs/roadmap/CONV.md#conv-06): seed from the existing swap journal. [CONV-20](docs/roadmap/CONV.md#conv-20): already-converted files have no baseline, so derive it from [QUAL-03](docs/roadmap/QUAL.md#qual-03)'s stamp. [BE-01](docs/roadmap/BE.md#be-01)'s lint test should also reject duplicate numeric prefixes, because the runner orders migrations by filename string.
-- ROLLOUT SAFETY AND TEST INFRASTRUCTURE: [ACQ-06](docs/roadmap/ACQ.md#acq-06) should run report-only for about a week, logging what it would replace, before it acts on existing grabs. [QUAL-20](docs/roadmap/QUAL.md#qual-20) (the Unwanted pack on by default) and [QUAL-23](docs/roadmap/QUAL.md#qual-23) (switching to the v2 ranking) should be preceded by [QUAL-12](docs/roadmap/QUAL.md#qual-12)'s dry run and [QUAL-10](docs/roadmap/QUAL.md#qual-10)'s per-sweep budget, with a stated shadow-mode soak between [QUAL-22](docs/roadmap/QUAL.md#qual-22) and [QUAL-23](docs/roadmap/QUAL.md#qual-23). [SEC-02](docs/roadmap/SEC.md#sec-02) should log each 403 with route and role, and its route walk should cover every api.ts call made by requester pages, so a missed family route fails in CI rather than for the family. Every destructive bulk operation should call store.Snapshot first, as [SAFE-03](docs/roadmap/SAFE.md#safe-03) does: [BOOK-11](docs/roadmap/BOOK.md#book-11) merge, [PLEX-02](docs/roadmap/PLEX.md#plex-02) repair, [PLEX-15](docs/roadmap/PLEX.md#plex-15) user merge, [PLEX-16](docs/roadmap/PLEX.md#plex-16) undo, [SER-07](docs/roadmap/SER.md#ser-07) apply, [MOV-17](docs/roadmap/MOV.md#mov-17) organize, [QUAL-02](docs/roadmap/QUAL.md#qual-02) reassign. [BE-12](docs/roadmap/BE.md#be-12)'s delete-behaviour tests belong in [SAFE-05](docs/roadmap/SAFE.md#safe-05)'s and [SAFE-07](docs/roadmap/SAFE.md#safe-07)'s definition of done, not one or two phases later. [AUD-09](docs/roadmap/AUD.md#aud-09) (the compatibility harness) should land before Phase 8, ideally in Phase 2. Commits c42b693, 9ba6174 and 73dc9ba show ongoing Audiobookshelf-compatibility churn, and Phases 0–1 ([SEC-02](docs/roadmap/SEC.md#sec-02)/04, [AUD-01](docs/roadmap/AUD.md#aud-01)..03) change those handlers with no reply-shape diff.
-- LOOSE ENDS: [ACQ-20](docs/roadmap/ACQ.md#acq-20)'s copy refers to a search.stuck notification that no task produces; add it to [OBS-11](docs/roadmap/OBS.md#obs-11)'s catalog or drop the reference. [MUS-03](docs/roadmap/MUS.md#mus-03) is an owner decision: schedule it for the end of Phase 1 with soak data from [MUS-01](docs/roadmap/MUS.md#mus-01)/02, and mark the music parts of [ACQ-01](docs/roadmap/ACQ.md#acq-01)/16/17/18, [COPY-04](docs/roadmap/COPY.md#copy-04), [FE-12](docs/roadmap/FE.md#fe-12), [FE-19](docs/roadmap/FE.md#fe-19) and [MUS-24](docs/roadmap/MUS.md#mus-24) as conditional on its outcome. If the owner won't pull [CONV-06](docs/roadmap/CONV.md#conv-06)/16/17 forward, the alternative is to pause auto-convert until [CONV-08](docs/roadmap/CONV.md#conv-08) (Phase 11). Raising bin retention once [CFG-01](docs/roadmap/CFG.md#cfg-01) fixes Save is not a safe substitute while the bin may still live on docker.img.
+- AUDIOBOOK PRIVACY (standing rule): [SEC-04](docs/roadmap/SEC.md#sec-04) must cover every place that can log an item, not just the per-request line in C:\Projects\Arrmada\internal\audioserver\server.go:582-599. Also: the held-jump Debug line that logs username plus item (internal/audioserver/handlers_play.go:113-114), the audioserver panic handler logging r.URL.Path (server.go:218), and httpapi.logRequests and recoverPanics, which log the raw r.URL.Path (internal/httpapi/middleware.go:33 and :71). Today no main-API listening route carries an item id. AUD-07/AUD-08 (Phase 8) add such routes, but [CFG-30](docs/roadmap/CFG.md#cfg-30)'s route-pattern logging is in Phase 16, so switch httpapi to r.Pattern inside [SEC-04](docs/roadmap/SEC.md#sec-04) now. The one-time scrub must also cover the persisted log files that re-seed the 50k ring at boot. AUD-11's 24-hour trace, and the audit's own advice to trace full requests, breaks the rule unless it keeps the redaction: route patterns and response shapes only, never item ids, titles or search text. AUD-09 recordings must come from a synthetic Audiobookshelf library with tokens stripped, never the family's real library or progress. Counts and times only, never titles, for: [CFG-31](docs/roadmap/CFG.md#cfg-31)'s support bundle, [CFG-18](docs/roadmap/CFG.md#cfg-18)'s audiobook access column, [OBS-11](docs/roadmap/OBS.md#obs-11)'s alert catalog, [BE-07](docs/roadmap/BE.md#be-07)'s jobs table, and BOOK-22's OPDS logs. [SEC-02](docs/roadmap/SEC.md#sec-02)'s golden route table needs a 'self-only' scope for the place and timeline routes (AUD-04/05) that even an admin cannot read for another user.
+- ADULT FILTER (standing rule): new Discover surfaces must enforce it server-side. [APP-07](docs/roadmap/APP.md#app-07) makes /discover/movie/:id directly addressable, and today only list endpoints are filtered (internal/metadata/discover.go), not detail. [REQ-20](docs/roadmap/REQ.md#req-20) person pages: TMDB combined credits include adult titles. Also [REQ-19](docs/roadmap/REQ.md#req-19)'s browse grid, [REQ-21](docs/roadmap/REQ.md#req-21)'s collections and [REQ-18](docs/roadmap/REQ.md#req-18)'s rows. BOOK-22 OPDS must apply [SEC-05](docs/roadmap/SEC.md#sec-05)'s tag filter. Add a test that a filtered id returns 404 from detail endpoints.
+- OTHER STANDING RULES: [FE-01](docs/roadmap/FE.md#fe-01) (tokens and contrast), [FE-30](docs/roadmap/FE.md#fe-30) (type scale with an 11px floor) and [FE-18](docs/roadmap/FE.md#fe-18) are the design-system work and need the owner's explicit sign-off. Every other UI task ([ACQ-29](docs/roadmap/ACQ.md#acq-29)'s poster cards, [APP-05](docs/roadmap/APP.md#app-05)'s shell, the [SER-14](docs/roadmap/SER.md#ser-14) and [MOV-18](docs/roadmap/MOV.md#mov-18) redesigns) uses existing tokens only. Convert: CONV-24 starts converting 4K remux versions of real files, so it ships off by default or appears in CONV-13's switch-on summary. 'Verified' in CONV-27/28 means the lavfi fixtures in internal/convert/integration_test.go, never the owner's files. Credentials: no conflicts found, but AUD-09 fixtures and any Hardcover or OpenSubtitles test fixtures must contain no real keys, and [CFG-28](docs/roadmap/CFG.md#cfg-28) uses the Actions GITHUB_TOKEN. Media paths: [SAFE-11](docs/roadmap/SAFE.md#safe-11) backups may live under /data (that is the DB dir), but CONV-08's originals hold and [SAFE-17](docs/roadmap/SAFE.md#safe-17)'s bins must stay on library roots.
+- SIZE AND COHERENCE: Phase 2 (43 tasks) is really three phases. 2a, Recover: [SAFE-12](docs/roadmap/SAFE.md#safe-12)/13/15/18, [CFG-05](docs/roadmap/CFG.md#cfg-05)/06/07/11/27, [BE-04](docs/roadmap/BE.md#be-04)/05/11/12; ship it first. 2b, Access: [SEC-05](docs/roadmap/SEC.md#sec-05)/06/09..12/14, [CFG-02](docs/roadmap/CFG.md#cfg-02)/03/04/09/10, [FE-01](docs/roadmap/FE.md#fe-01)..04. 2c, Honest copy: [COPY-01](docs/roadmap/COPY.md#copy-01)..07, CONV-03/05, [OBS-01](docs/roadmap/OBS.md#obs-01)/02, [MUS-25](docs/roadmap/MUS.md#mus-25). Phase 0 (29 tasks after the [SER-05](docs/roadmap/SER.md#ser-05) move) should deploy in two batches. Batch 0a: [BE-01](docs/roadmap/BE.md#be-01), [SAFE-01](docs/roadmap/SAFE.md#safe-01) plus the schema guard, [CFG-01](docs/roadmap/CFG.md#cfg-01), [SEC-01](docs/roadmap/SEC.md#sec-01)..04, [SAFE-02](docs/roadmap/SAFE.md#safe-02)..06, [SAFE-08](docs/roadmap/SAFE.md#safe-08), CONV-02, BOOK-01, [SER-01](docs/roadmap/SER.md#ser-01), [SER-04](docs/roadmap/SER.md#ser-04), [SER-05](docs/roadmap/SER.md#ser-05). Batch 0b: [QUAL-01](docs/roadmap/QUAL.md#qual-01)/03, [MUS-01](docs/roadmap/MUS.md#mus-01)/02, [ACQ-01](docs/roadmap/ACQ.md#acq-01)..03, CONV-01, [APP-01](docs/roadmap/APP.md#app-01)/02. Phase 1 grows to 30 with the moves above. [REQ-22](docs/roadmap/REQ.md#req-22) has no Subtitles dependency and belongs with Phase 6's request work; only [REQ-23](docs/roadmap/REQ.md#req-23) needs the Subtitles job callback. SUB-08 (the shared internal/langs table) lands after the Phase 11 Convert rebuild that needs it, so do it at the start of Phase 11. [FE-32](docs/roadmap/FE.md#fe-32) (splitting Discover.tsx) should come before [APP-07](docs/roadmap/APP.md#app-07), BOOK-14 and [REQ-18](docs/roadmap/REQ.md#req-18)..21, which keep growing that file; its [FE-14](docs/roadmap/FE.md#fe-14) dependency isn't real. [FE-14](docs/roadmap/FE.md#fe-14) shrinks to 'ban the old patterns' once the rebuild phases build on the kit. With 473 tasks, plan to re-plan after Phase 3.
+- MISSING MIGRATIONS AND BACKFILLS: write data repairs as numbered migrations so [SAFE-01](docs/roadmap/SAFE.md#safe-01)'s snapshot covers them, or have them call store.Snapshot explicitly. [QUAL-02](docs/roadmap/QUAL.md#qual-02): boot repair of dangling profiles. [QUAL-03](docs/roadmap/QUAL.md#qual-03): codec restamp. BOOK-03: book_id backfill; leave ambiguous matches unlinked and list them, never guess. [ACQ-09](docs/roadmap/ACQ.md#acq-09): rewrite existing grab statuses. [SER-05](docs/roadmap/SER.md#ser-05): no numbering source is stored today, so backfill 'unknown' and make the first refresh after deploy log-only. [SER-01](docs/roadmap/SER.md#ser-01): in-flight grabs have no recorded scope, so default to the import gate on, not the legacy manual force. [REQ-12](docs/roadmap/REQ.md#req-12): existing series requests mean all seasons. [REQ-09](docs/roadmap/REQ.md#req-09): split the single auto-approve flag per media type. BOOK-19: authors. SUB-11: existing sidecars get provenance 'unknown'. CONV-06: seed from the existing swap journal. CONV-20: already-converted files have no baseline, so derive it from [QUAL-03](docs/roadmap/QUAL.md#qual-03)'s stamp. [BE-01](docs/roadmap/BE.md#be-01)'s lint test should also reject duplicate numeric prefixes, because the runner orders migrations by filename string.
+- ROLLOUT SAFETY AND TEST INFRASTRUCTURE: [ACQ-06](docs/roadmap/ACQ.md#acq-06) should run report-only for about a week, logging what it would replace, before it acts on existing grabs. [QUAL-20](docs/roadmap/QUAL.md#qual-20) (the Unwanted pack on by default) and [QUAL-23](docs/roadmap/QUAL.md#qual-23) (switching to the v2 ranking) should be preceded by [QUAL-12](docs/roadmap/QUAL.md#qual-12)'s dry run and [QUAL-10](docs/roadmap/QUAL.md#qual-10)'s per-sweep budget, with a stated shadow-mode soak between [QUAL-22](docs/roadmap/QUAL.md#qual-22) and [QUAL-23](docs/roadmap/QUAL.md#qual-23). [SEC-02](docs/roadmap/SEC.md#sec-02) should log each 403 with route and role, and its route walk should cover every api.ts call made by requester pages, so a missed family route fails in CI rather than for the family. Every destructive bulk operation should call store.Snapshot first, as [SAFE-03](docs/roadmap/SAFE.md#safe-03) does: BOOK-11 merge, [PLEX-02](docs/roadmap/PLEX.md#plex-02) repair, [PLEX-15](docs/roadmap/PLEX.md#plex-15) user merge, [PLEX-16](docs/roadmap/PLEX.md#plex-16) undo, [SER-07](docs/roadmap/SER.md#ser-07) apply, [MOV-17](docs/roadmap/MOV.md#mov-17) organize, [QUAL-02](docs/roadmap/QUAL.md#qual-02) reassign. [BE-12](docs/roadmap/BE.md#be-12)'s delete-behaviour tests belong in [SAFE-05](docs/roadmap/SAFE.md#safe-05)'s and [SAFE-07](docs/roadmap/SAFE.md#safe-07)'s definition of done, not one or two phases later. AUD-09 (the compatibility harness) should land before Phase 8, ideally in Phase 2. Commits c42b693, 9ba6174 and 73dc9ba show ongoing Audiobookshelf-compatibility churn, and Phases 0–1 ([SEC-02](docs/roadmap/SEC.md#sec-02)/04, AUD-01..03) change those handlers with no reply-shape diff.
+- LOOSE ENDS: [ACQ-20](docs/roadmap/ACQ.md#acq-20)'s copy refers to a search.stuck notification that no task produces; add it to [OBS-11](docs/roadmap/OBS.md#obs-11)'s catalog or drop the reference. [MUS-03](docs/roadmap/MUS.md#mus-03) is an owner decision: schedule it for the end of Phase 1 with soak data from [MUS-01](docs/roadmap/MUS.md#mus-01)/02, and mark the music parts of [ACQ-01](docs/roadmap/ACQ.md#acq-01)/16/17/18, [COPY-04](docs/roadmap/COPY.md#copy-04), [FE-12](docs/roadmap/FE.md#fe-12), [FE-19](docs/roadmap/FE.md#fe-19) and [MUS-24](docs/roadmap/MUS.md#mus-24) as conditional on its outcome. If the owner won't pull CONV-06/16/17 forward, the alternative is to pause auto-convert until CONV-08 (Phase 11). Raising bin retention once [CFG-01](docs/roadmap/CFG.md#cfg-01) fixes Save is not a safe substitute while the bin may still live on docker.img.
 
 ## Findings not actioned
 
@@ -1682,11 +1419,9 @@ _A skeptical review of the sequencing. Moves it proposed have already been appli
 
 ## Standing rules
 
-- Audiobook privacy: admins see how much and when people listen, never what. `listen_log` has no book column on purpose.
 - The adult-content filter is always on, on purpose.
 - API keys and credentials are entered in the app UI — never hardcoded, committed, or asked for in chat.
 - Media is never mounted at `/data` (the database directory).
-- Never test-convert the owner's real library files.
 - UI work keeps the existing visual style unless the task is the design-system work itself.
 - Run the race tests in Docker before pushing; commits carry the Co-Authored-By trailer.
 

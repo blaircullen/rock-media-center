@@ -10,8 +10,7 @@ describe("indexer presets", () => {
     }
   });
 
-  it("scope books-only and public trackers as the spec says", () => {
-    expect(presetById("myanonamouse")?.mediaTypes).toEqual(["book"]);
+  it("scope public trackers as the spec says", () => {
     expect(presetById("1337x")?.mediaTypes).toEqual(["movie", "series"]);
     expect(presetById("torrentleech")?.fields).toEqual(["username", "password"]);
     expect(new Set(INDEXER_PRESETS.map((p) => p.id)).size).toBe(INDEXER_PRESETS.length);

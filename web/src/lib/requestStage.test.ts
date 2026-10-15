@@ -15,13 +15,13 @@ describe("formatSeasons", () => {
 describe("requestStage", () => {
   const at = "2026-10-01 09:00:00";
   const rq = (over: Partial<MediaRequest>): MediaRequest => ({
-    id: 1, media_type: "book", tmdb_id: 0, title: "Dune", year: 1965, status: "approved",
+    id: 1, media_type: "movie", tmdb_id: 438631, title: "Dune", year: 2021, status: "approved",
     requested_by: 7, available: false, created_at: at, updated_at: at, ...over,
   });
 
-  it("words a half-here book by the server's note, a series by its episodes", () => {
-    expect(requestStage(rq({ tracking: { stage: "partial", note: "Ebook ready · audiobook on the way" } })).detail)
-      .toBe("Ebook ready · audiobook on the way");
+  it("words a partly-ready request by the server's note, a series by its episodes", () => {
+    expect(requestStage(rq({ tracking: { stage: "partial", note: "2 of 3 versions ready" } })).detail)
+      .toBe("2 of 3 versions ready");
     expect(requestStage(rq({ media_type: "series", tracking: { stage: "partial", have: 3, total: 10 } })).detail)
       .toBe("3 of 10 episodes ready");
   });

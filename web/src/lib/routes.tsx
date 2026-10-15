@@ -17,8 +17,7 @@ const staffShellLoading = <div className="grid h-full place-items-center text-md
 const SetupAgain = lazyPage(() => import("../pages/SetupWizard"), "SetupAgain");
 
 // Every page is its own chunk (FE-06): a requester downloads Discover and their few
-// pages, never Quality, Convert, Settings or the rest of the console.
-const MyBooks = lazyPage(() => import("../pages/MyBooks"), "MyBooks");
+// pages, never Quality, Settings or the rest of the console.
 const Dashboard = lazyPage(() => import("../pages/Dashboard"), "Dashboard");
 const Quality = lazyPage(() => import("../pages/Quality"), "Quality");
 const QualityEditorRoute = lazyPage(() => import("../pages/Quality"), "QualityEditorRoute");
@@ -31,17 +30,10 @@ const Series = lazyPage(() => import("../pages/Series"), "Series");
 const SeriesDetail = lazyPage(() => import("../pages/SeriesDetail"), "SeriesDetail");
 const Discover = lazyPage(() => import("../pages/Discover"), "Discover");
 const Requests = lazyPage(() => import("../pages/Requests"), "Requests");
-const Books = lazyPage(() => import("../pages/Books"), "Books");
 const Music = lazyPage(() => import("../pages/Music"), "Music");
 const ArtistDetail = lazyPage(() => import("../pages/ArtistDetail"), "ArtistDetail");
 const AlbumDetail = lazyPage(() => import("../pages/AlbumDetail"), "AlbumDetail");
-const BookDetail = lazyPage(() => import("../pages/BookDetail"), "BookDetail");
-const AuthorDetail = lazyPage(() => import("../pages/AuthorDetail"), "AuthorDetail");
-const AuthorByName = lazyPage(() => import("../pages/AuthorDetail"), "AuthorByName");
-const Subtitles = lazyPage(() => import("../pages/Subtitles"), "Subtitles");
-const Convert = lazyPage(() => import("../pages/Convert"), "Convert");
 const Insights = lazyPage(() => import("../pages/Insights"), "Insights");
-const Audiobooks = lazyPage(() => import("../pages/Audiobooks"), "Audiobooks");
 const Calendar = lazyPage(() => import("../pages/Calendar"), "Calendar");
 const Logs = lazyPage(() => import("../pages/Logs"), "Logs");
 const Me = lazyPage(() => import("../pages/Me"), "Me");
@@ -119,11 +111,6 @@ function requesterRoutes(shell: "external" | "requester"): RouteObject[] {
     page("/requests", "Requests", <Requests chrome={false} />),
     // Outside sessions get no Calendar: the API isn't allowlisted for them.
     ...(shell === "requester" ? [page("/calendar", "Calendar", <Calendar chrome={false} />)] : []),
-    // "My shelf": the books they can download. /books was its old address, kept so
-    // installed shortcuts and bookmarks still land; Discover's Books tab is the catalogue.
-    page("/shelf", "My shelf", <ModuleGate module="books" home={home}><MyBooks /></ModuleGate>),
-    redirect("/books", "/shelf"),
-    page("/audiobooks", "Audiobooks", <Audiobooks chrome={false} />),
     page("/me", "Me", <Me />),
     redirect("*", home),
   ];
@@ -131,7 +118,6 @@ function requesterRoutes(shell: "external" | "requester"): RouteObject[] {
 
 function staffRoutes(admin: boolean): RouteObject[] {
   const home = "/";
-  const books = (el: ReactNode) => <ModuleGate module="books" home={home}>{el}</ModuleGate>;
   const music = (el: ReactNode) => <ModuleGate module="music" home={home}>{el}</ModuleGate>;
   return [
     { index: true, element: <Dashboard />, handle: { title: "Dashboard" } satisfies RouteHandle, errorElement: <RouteError /> },
@@ -152,22 +138,9 @@ function staffRoutes(admin: boolean): RouteObject[] {
     page("/music", "Music", music(<Music />)),
     page("/music/album/:id", "Album", music(<AlbumDetail />)),
     page("/music/:id", "Artist", music(<ArtistDetail />)),
-    page("/books", "Books", books(<Books />)),
-    page("/books/authors/:id", "Author", books(<AuthorDetail />)),
-    // Links from before authors had ids: resolved to the id page, or a choice when the
-    // name could be more than one author.
-    page("/books/author/:name", "Author", books(<AuthorByName />)),
-    page("/books/:id", "Book", books(<BookDetail />)),
-    // My shelf is a requester page. A Send to Kindle result ("kindle:<send>", which names
-    // neither the book nor the person) links there, so staff who send from a book page
-    // land on Books instead.
-    redirect("/shelf", "/books"),
-    page("/subtitles", "Subtitles", <Subtitles />),
-    page("/convert", "Convert", <Convert />),
     // A splat (which also matches plain /insights), so a person's page lives at
     // /insights/people/:id inside the Insights chunk.
     page("/insights/*", "Insights", <Insights />),
-    page("/audiobooks", "Audiobooks", <Audiobooks />),
     page("/me", "Me", <Me chrome />),
     // The old Indexers and Download clients pages are cards on Settings → Connections now.
     redirect("/indexers", LINKS.indexers),

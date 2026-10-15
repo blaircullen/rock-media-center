@@ -14,7 +14,6 @@ import { Menu, type MenuItem } from "../../ui";
 export function transferHref(item: Pick<TransferItem, "kind" | "id">): string {
   switch (item.kind) {
     case "series": return `/series/${item.id}`;
-    case "book": return `/books/${item.id}`;
     case "music": return `/music/album/${item.id}`;
     default: return `/movies/${item.id}`;
   }
@@ -49,7 +48,7 @@ export function useWide(): boolean {
   return wide;
 }
 
-const KIND_LETTER: Record<string, string> = { movie: "M", series: "TV", book: "B", music: "♪" };
+const KIND_LETTER: Record<string, string> = { movie: "M", series: "TV", music: "♪" };
 
 /** A 40×60 poster: the title's cover when there is one, else a quiet tile with its kind. */
 export function TransferPoster({ it }: { it: ActivityDownload }) {

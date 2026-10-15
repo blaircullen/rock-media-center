@@ -323,31 +323,6 @@ func TestReadyFindsLegacyAgentTitles(t *testing.T) {
 	}
 }
 
-// Books are never in Plex: their 'ready' goes out at once with Plex set up.
-func TestBooksNotGated(t *testing.T) {
-	s, loc, _, _, _ := plexMovieFixture(t)
-	ctx := context.Background()
-	if !loc.Configured(ctx) {
-		t.Fatal("fixture: Plex not set up")
-	}
-	book, err := s.repo.Create(ctx, Request{MediaType: "book", OLKey: "OL1W", Title: "Dune Messiah", Status: StatusApproved, RequestedBy: 8})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := s.notifyReady(ctx, book); err != nil {
-		t.Fatal(err)
-	}
-	if got := plexInbox(t, s, 8); !reflect.DeepEqual(got, []string{"“Dune Messiah” is ready to read."}) {
-		t.Fatalf("inbox = %v", got)
-	}
-	if r, _ := s.repo.Get(ctx, book.ID); r.onDiskAt != 0 || r.ReadyAt == 0 {
-		t.Errorf("book on_disk_at %d ready_at %d", r.onDiskAt, r.ReadyAt)
-	}
-	if addingToPlex(book, true) {
-		t.Error("a book reads Adding to Plex")
-	}
-}
-
 // The card: complete and not told reads 'adding' only while 'ready' waits for Plex.
 func TestTrackAddingStage(t *testing.T) {
 	approved := Request{Status: StatusApproved, MediaType: "movie"}
@@ -362,7 +337,7 @@ func TestTrackAddingStage(t *testing.T) {
 		{"no plex", approved, false, false},
 		{"told", Request{Status: StatusApproved, MediaType: "series", ReadyAt: 9, onDiskAt: 5}, true, false},
 		{"declined but on disk", Request{Status: StatusDeclined, MediaType: "movie"}, true, false},
-		{"book", Request{Status: StatusApproved, MediaType: "book"}, true, false},
+		{"podcast", Request{Status: StatusApproved, MediaType: "podcast"}, true, false},
 	} {
 		if got := addingToPlex(tc.rq, tc.gated); got != tc.want {
 			t.Errorf("%s: adding = %v, want %v", tc.name, got, tc.want)

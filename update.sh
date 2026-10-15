@@ -101,11 +101,6 @@ json_str() {
   sed -n "s/.*\"$1\":\"\([^\"]*\)\".*/\1/p"
 }
 
-# json_num KEY reads a whole-number field from one line of JSON on stdin.
-json_num() {
-  sed -n "s/.*\"$1\":\([0-9][0-9]*\).*/\1/p"
-}
-
 # Where an install downloaded without git (install.sh writes .arrmada-source then) gets
 # its newer files. Overridable for forks and the installer's own tests.
 REPO="tristenlammi/Arrmada"
@@ -356,17 +351,6 @@ case "$PULL_IMAGE" in
     exit 2 ;;
 esac
 
-# port_in_use PORT -> 0 if something already listens on PORT on this host.
-port_in_use() {
-  if command -v ss >/dev/null 2>&1; then
-    ss -ltnH 2>/dev/null | awk '{print $4}' | grep -qE "[:.]${1}\$"
-  elif command -v netstat >/dev/null 2>&1; then
-    netstat -ltn 2>/dev/null | awk '{print $4}' | grep -qE "[:.]${1}\$"
-  else
-    return 1
-  fi
-}
-
 # ── rollback ───────────────────────────────────────────────────────────────────
 # start_app_or_go_back CURRENT_ID -> starts whatever arrmada:dev is now and waits for
 # it. If it doesn't come up, the build it replaced (kept as arrmada:rolled-back) is put
@@ -545,25 +529,6 @@ if [ -n "$ROLLBACK" ]; then
   exit 0
 fi
 
-# ── long conversion? ───────────────────────────────────────────────────────────
-# Restarting the app abandons a conversion in flight, and a 4K encode can take a day.
-# Asked before anything changes (the pull included), and only once: a copy of this
-# script re-run after the pull (--pulled) has already been through it. Only asks on a
-# terminal; -y, ARRMADA_UPDATE_FORCE=1 and unattended runs print the warning and go on.
-# The app reports this only to callers inside its own container.
-if [ -z "$PULLED" ]; then
-  _health=$(health_json)
-  _sec=$(printf '%s\n' "$_health" | json_num convert_running_sec)
-  if [ -n "$_sec" ] && [ "$_sec" -gt 7200 ]; then
-    _pct=$(printf '%s\n' "$_health" | json_num convert_progress)
-    say "! A conversion has been running for $((_sec / 3600))h $(((_sec % 3600) / 60))m (${_pct:-0}%). Updating now restarts it from the beginning."
-    if ! confirm "Update anyway?"; then
-      say "Not updating; nothing was changed. Run ./update.sh again once it's done (or with -y to go ahead)."
-      exit 0
-    fi
-  fi
-fi
-
 # ── pull latest (skip cleanly if this isn't a git checkout) ─────────────────────
 # If the pull changed this script, run the new one: it may know about settings or steps
 # this older copy doesn't, and they should apply now rather than on the next update.
@@ -614,21 +579,6 @@ if [ -z "$PULLED" ]; then
   fi
 elif [ -z "$PRE_PULL" ] && [ -d .git ] && command -v git >/dev/null 2>&1; then
   PRE_PULL=$(git rev-parse -q --verify ORIG_HEAD 2>/dev/null || true)
-fi
-
-# Settings added since this install: give each a free value once, never overwrite.
-if ! grep -qE '^ARRMADA_AUDIOBOOK_PORT=' .env; then
-  AUDIOPORT=""
-  for p in 13379 13380 13381 13382 18379; do
-    if ! port_in_use "$p"; then AUDIOPORT=$p; break; fi
-  done
-  [ -z "$AUDIOPORT" ] && AUDIOPORT=18379
-  {
-    say ""
-    say "# Audiobook server for listening apps (off until switched on in Services → Audiobooks)."
-    say "ARRMADA_AUDIOBOOK_PORT=$AUDIOPORT"
-  } >> .env
-  say "Added ARRMADA_AUDIOBOOK_PORT=$AUDIOPORT to .env (the audiobook server's port)."
 fi
 
 # The build that's running now, if it's answering: the rollback target once the new

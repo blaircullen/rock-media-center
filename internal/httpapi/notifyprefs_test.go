@@ -13,7 +13,7 @@ import (
 // another, unknown keys are ignored, and keys left out keep their value.
 func TestNotifyPrefsEndpointScopedToCaller(t *testing.T) {
 	s := newRouteServer(t, func(d *Deps) {
-		d.Requests = requests.NewService(d.Store.DB(), nil, nil, nil, nil, nil, nil, "", d.Log)
+		d.Requests = requests.NewService(d.Store.DB(), nil, nil, nil, nil, nil, "", d.Log)
 	})
 	_, kid := s.user(t, "kid@example.com", auth.RoleRequester)
 	_, aunt := s.user(t, "aunt@example.com", auth.RoleRequester)

@@ -6,8 +6,8 @@ const admin = visibleSections(true).map((s) => s.id);
 const manager = visibleSections(false).map((s) => s.id);
 
 describe("visibleSections", () => {
-  it("gives a manager what the old Media and Library tabs showed, plus Connections, Subtitles, Convert, Alerts (read-only) and Media servers", () => {
-    expect(manager).toEqual(["library", "media", "connections", "subtitles", "convert", "alerts", "media-servers"]);
+  it("gives a manager what the old Media and Library tabs showed, plus Connections, Alerts (read-only) and Media servers", () => {
+    expect(manager).toEqual(["library", "media", "connections", "alerts", "media-servers"]);
   });
 
   it("gives an admin every section, Status included", () => {
@@ -23,11 +23,10 @@ describe("settingsRedirect", () => {
     expect(settingsRedirect("/settings/library", "", "", manager)).toBeNull();
   });
 
-  it("splits the old Subtitles & Convert section by its card anchor", () => {
-    expect(settingsRedirect("/settings/tools", "", "#subtitles", manager)).toBe("/settings/subtitles#subtitles");
-    expect(settingsRedirect("/settings/tools", "", "#convert", manager)).toBe("/settings/convert#convert");
-    expect(settingsRedirect("/settings/tools", "", "", admin)).toBe("/settings/subtitles");
-    expect(settingsRedirect("/settings/tools", "?x=1", "#convert", admin)).toBe("/settings/convert?x=1#convert");
+  it("sends the removed Subtitles, Convert and Audiobook server sections to the default", () => {
+    for (const gone of ["tools", "subtitles", "convert", "audiobook-server"]) {
+      expect(settingsRedirect(`/settings/${gone}`, "", "", admin)).toBe("/settings/library");
+    }
   });
 
   it("opens Library for bare /settings", () => {
@@ -97,7 +96,7 @@ describe("settingsRedirect", () => {
 
 describe("LINKS into Settings", () => {
   // Every deep link copy uses must name a section and a card that exist.
-  it.each([LINKS.apiKeys, LINKS.connections, LINKS.diskGuard, LINKS.recycleBin, LINKS.libraryFolders, LINKS.libraryReview, LINKS.users, LINKS.alerts, LINKS.plexConnection, LINKS.jellyfinConnection, LINKS.mediaServerCards, LINKS.mediaServers, LINKS.plexServer, LINKS.jellyfinServer, LINKS.plexSignIn, LINKS.jellyfinSignIn, LINKS.tautulliImport, LINKS.audiobookshelfImport, LINKS.subtitlesSettings, LINKS.convertSettings, LINKS.audiobookServer])("%s resolves", (link) => {
+  it.each([LINKS.apiKeys, LINKS.connections, LINKS.diskGuard, LINKS.recycleBin, LINKS.libraryFolders, LINKS.libraryReview, LINKS.users, LINKS.alerts, LINKS.plexConnection, LINKS.jellyfinConnection, LINKS.mediaServerCards, LINKS.mediaServers, LINKS.plexServer, LINKS.jellyfinServer, LINKS.plexSignIn, LINKS.jellyfinSignIn, LINKS.tautulliImport])("%s resolves", (link) => {
     const [path, anchor] = link.split("#");
     const section = sectionFromPath(path);
     expect(admin).toContain(section);

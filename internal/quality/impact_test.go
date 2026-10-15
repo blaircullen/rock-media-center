@@ -48,8 +48,8 @@ func TestImpactMustHEVCMovesH264ToReplace(t *testing.T) {
 	}
 }
 
-// The dry run reads a file the way the sweeps do: Convert's probed facts beat the release
-// name. A file Convert found to be HEVC meets a new "Must HEVC" whatever its x264 name
+// The dry run reads a file the way the sweeps do: A probed fact beats the release
+// name. A file found to be HEVC meets a new "Must HEVC" whatever its x264 name
 // says, so it isn't counted as eligible for replacement.
 func TestImpactProbedFactsMeetMustOverName(t *testing.T) {
 	s, ctx := testService(t)

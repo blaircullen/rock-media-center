@@ -28,7 +28,7 @@ func (l *listJobs) List(_ context.Context, f jobs.Filter) ([]jobs.Job, error) {
 
 // Recent jobs come back in words: each linked to its movie (by its title), the person who
 // started it named, a request linked, a running job's time so far, a failure's error, and
-// a target that names nothing readable (a Kindle send's reference) left unshown.
+// a target that names nothing readable left unshown.
 func TestRecentJobsNamesTargetsAndTriggers(t *testing.T) {
 	fj := &listJobs{}
 	s := newRouteServer(t, func(d *Deps) {
@@ -44,8 +44,8 @@ func TestRecentJobsNamesTargetsAndTriggers(t *testing.T) {
 	t1 := t0.Add(1500 * time.Millisecond)
 	fj.rows = []jobs.Job{
 		{ID: 3, Kind: "movie.search", Target: jobTarget("movie", m.ID), Trigger: "user:" + itoa(int(u.ID)), Status: jobs.StatusSucceeded, CreatedAt: &t0, StartedAt: &t0, FinishedAt: &t1},
-		{ID: 2, Kind: "book.search", Target: "book:9", Trigger: "request:41", Status: jobs.StatusFailed, Error: "no indexers", CreatedAt: &t0, StartedAt: &t0, FinishedAt: &t1},
-		{ID: 1, Kind: "kindle.send", Target: "kindle:abc123", Trigger: "user:" + itoa(int(u.ID)), Status: jobs.StatusRunning, CreatedAt: &t0, StartedAt: &t0},
+		{ID: 2, Kind: "series.search", Target: "series:9", Trigger: "request:41", Status: jobs.StatusFailed, Error: "no indexers", CreatedAt: &t0, StartedAt: &t0, FinishedAt: &t1},
+		{ID: 1, Kind: "download.block", Target: "opaque:abc123", Trigger: "user:" + itoa(int(u.ID)), Status: jobs.StatusRunning, CreatedAt: &t0, StartedAt: &t0},
 	}
 
 	rec := s.do("GET", "/api/v1/system/jobs?limit=500", mgr)
@@ -61,16 +61,16 @@ func TestRecentJobsNamesTargetsAndTriggers(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil || len(out.Jobs) != 3 {
 		t.Fatalf("decode: %v (%d rows)", err, len(out.Jobs))
 	}
-	mv, bk, ks := out.Jobs[0], out.Jobs[1], out.Jobs[2]
+	mv, sr, bl := out.Jobs[0], out.Jobs[1], out.Jobs[2]
 	if mv.Label != "Search for a movie" || mv.TargetLabel != "Arrival (2016)" || mv.TargetPath != "/movies/"+itoa(int(m.ID)) ||
 		mv.TriggerLabel != "sam" || mv.DurationMS != 1500 {
 		t.Errorf("movie row = %+v", mv)
 	}
-	if bk.TargetLabel != "Book #9" || bk.TargetPath != "/books/9" || bk.TriggerLabel != "Request #41" || bk.TriggerPath != "/requests?id=41" || bk.Error != "no indexers" {
-		t.Errorf("book row = %+v", bk)
+	if sr.TargetLabel != "Show #9" || sr.TargetPath != "/series/9" || sr.TriggerLabel != "Request #41" || sr.TriggerPath != "/requests?id=41" || sr.Error != "no indexers" {
+		t.Errorf("series row = %+v", sr)
 	}
-	if ks.Label != "Send to Kindle" || ks.TargetLabel != "" || ks.TargetPath != "" || ks.DurationMS < 59_000 {
-		t.Errorf("kindle row = %+v", ks)
+	if bl.Label != "Block a download and search again" || bl.TargetLabel != "" || bl.TargetPath != "" || bl.DurationMS < 59_000 {
+		t.Errorf("block row = %+v", bl)
 	}
 
 	// Staff only.
@@ -84,7 +84,7 @@ func TestRecentJobsNamesTargetsAndTriggers(t *testing.T) {
 }
 
 func TestJobKindLabelFallsBackToWords(t *testing.T) {
-	if got := jobKindLabel("convert.group_retry"); got != "Convert group retry" {
+	if got := jobKindLabel("movie.group_retry"); got != "Movie group retry" {
 		t.Errorf("fallback = %q", got)
 	}
 	if got := jobKindLabel("task"); got != "Run now" {

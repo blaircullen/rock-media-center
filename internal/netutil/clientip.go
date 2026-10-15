@@ -5,7 +5,7 @@
 // same box. Those stamp the visitor's address into Cf-Connecting-Ip, X-Forwarded-For
 // or Forwarded. From anyone else those headers are just text an attacker can set, so
 // they're believed only when the request reached us from a loopback or private
-// address. Login throttling, the LAN/outside verdict and the audiobook server all ask
+// address. Login throttling, and the LAN/outside verdict all ask
 // here, so they can't disagree about an address.
 package netutil
 

@@ -69,9 +69,9 @@ func TestBuildURLIDParams(t *testing.T) {
 			want: map[string]string{"t": "tvsearch", "q": "The Wire", "imdbid": "", "tvdbid": ""},
 		},
 		{
-			name: "a book search never sends ids",
+			name: "a music search never sends ids",
 			caps: &Caps{Search: SearchMode{Available: true, Params: []string{"q", "imdbid"}}, Movie: movieCaps.Movie},
-			q:    SearchQuery{Text: "Dune", MediaType: MediaBook, IMDBID: "tt0110413"},
+			q:    SearchQuery{Text: "Dune", MediaType: MediaMusic, IMDBID: "tt0110413"},
 			want: map[string]string{"t": "search", "q": "Dune", "imdbid": ""},
 		},
 		{

@@ -6,7 +6,7 @@ import (
 )
 
 // Each library defaults to its OWN subfolder of the shared library dir. They used to all
-// default to the library root, which put movies, TV, books and music in one directory and
+// default to the library root, which put movies, TV and music in one directory and
 // had every module's scan walking the others' files.
 func TestPerLibraryDirDefaults(t *testing.T) {
 	t.Setenv("ARRMADA_LIBRARY_DIR", "/storage/media")
@@ -20,8 +20,6 @@ func TestPerLibraryDirDefaults(t *testing.T) {
 	}{
 		{c.MoviesDir, filepath.Join("/storage/media", "movies"), "movies"},
 		{c.TVDir, filepath.Join("/storage/media", "tvshows"), "tv"},
-		{c.EbooksDir, filepath.Join("/storage/media", "ebooks"), "ebooks"},
-		{c.AudiobooksDir, filepath.Join("/storage/media", "audiobooks"), "audiobooks"},
 		{c.MusicDir, filepath.Join("/storage/media", "music"), "music"},
 	} {
 		if tc.got != tc.want {

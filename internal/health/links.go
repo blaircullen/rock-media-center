@@ -14,7 +14,6 @@ var (
 	FixDiskGuard       = &Fix{Key: "diskGuard", Path: "/settings/downloads#disk-guard", Label: "Disk guard settings"}
 	FixRecycleBin      = &Fix{Key: "recycleBin", Path: "/settings/downloads#recycle-bin", Label: "Recycle bin settings"}
 	FixAPIKeys         = &Fix{Key: "apiKeys", Path: "/settings/connections#api-keys", Label: "API keys"}
-	FixAudiobookServer = &Fix{Key: "audiobookServer", Path: "/settings/audiobook-server", Label: "Audiobook server"}
 	FixPlexConnection  = &Fix{Key: "plexConnection", Path: "/settings/connections#plex", Label: "Plex connection"}
 	FixTasks           = &Fix{Key: "tasks", Path: "/settings/status#tasks", Label: "Tasks"}
 	FixBackups         = &Fix{Key: "backups", Path: "/settings/system#backups", Label: "Backups"}
@@ -38,13 +37,9 @@ var (
 	FixImportProblems     = &Fix{Key: "importProblems", Path: "/activity/needs-you#import-failures", Label: "Needs you"}
 	FixWrongCategory      = &Fix{Key: "wrongCategory", Path: "/activity/needs-you#wrong-category", Label: "Needs you"}
 	FixDownloadsSearching = &Fix{Key: "downloadsSearching", Path: "/activity/wanted", Label: "What's searching"}
-	// Convert's Problems tab: files it gave up on, and files waiting for disk space. No LINKS
-	// key: the path is followed as it is (LINKS is in the requester's first load, full).
-	FixConvertProblems = &Fix{Path: "/convert?tab=problems", Label: "Convert problems"}
-	// Problems requesters reported: Requests → Issues. No LINKS key, for the same reason.
+	// Problems requesters reported: Requests → Issues. No LINKS key: the path is followed
+	// as it is.
 	FixIssues = &Fix{Path: "/requests?tab=issues", Label: "Issues"}
-	// The Subtitles Overview's needs-attention board. No LINKS key, for the same reason.
-	FixSubtitles = &Fix{Path: "/subtitles", Label: "Subtitles"}
 )
 
 // connectionsPath is Settings → Connections, where every integration has a card.

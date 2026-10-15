@@ -85,7 +85,7 @@ func TestUsenetClientStatusAndCategories(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &st); err != nil || st.Usenet == nil {
 		t.Fatalf("status body %s: %v", rec.Body, err)
 	}
-	if strings.Join(st.Usenet.Missing, ",") != "arrmada-tv,arrmada-books,arrmada-music" || st.Usenet.ServersWorking != 1 {
+	if strings.Join(st.Usenet.Missing, ",") != "arrmada-tv,arrmada-music" || st.Usenet.ServersWorking != 1 {
 		t.Errorf("facts = %+v", st.Usenet)
 	}
 	mu.Lock()
@@ -109,7 +109,7 @@ func TestUsenetClientStatusAndCategories(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(out.Created, ",") != "arrmada-tv,arrmada-books,arrmada-music" || len(out.Usenet.Missing) != 0 {
+	if strings.Join(out.Created, ",") != "arrmada-tv,arrmada-music" || len(out.Usenet.Missing) != 0 {
 		t.Errorf("add categories = %s", rec.Body)
 	}
 

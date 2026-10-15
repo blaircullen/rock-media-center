@@ -27,7 +27,7 @@ const (
 	secretClientPass   = "qb-pass-31aa4e"
 	secretTMDB         = "tmdb-key-9e14c2d7"
 	secretProwlarrKey  = "prowlarr-key-c0ffee"
-	secretOSPassword   = "os-pass-a1b2c3"
+	secretMailPassword = "mail-pass-a1b2c3"
 	secretFlareURLUser = "fsuser:fspass"
 )
 
@@ -78,7 +78,7 @@ func newConnServer(t *testing.T, verifiers map[string]func(context.Context, stri
 	if err != nil {
 		t.Fatal(err)
 	}
-	for id, v := range map[string]string{"tmdb": secretTMDB, "opensubtitles_password": secretOSPassword, "flaresolverr": "http://" + secretFlareURLUser + "@127.0.0.1:1"} {
+	for id, v := range map[string]string{"tmdb": secretTMDB, "smtp_password": secretMailPassword, "flaresolverr": "http://" + secretFlareURLUser + "@127.0.0.1:1"} {
 		if err := cs.deps.APIKeys.Set(ctx, id, v); err != nil {
 			t.Fatal(err)
 		}
@@ -140,14 +140,14 @@ func TestConnectionsListShape(t *testing.T) {
 	for _, want := range [][2]string{
 		{"prowlarr", "default"}, {"flaresolverr", "default"}, {"indexer", tlRef},
 		{"indexer", strconv.FormatInt(cs.feed.ID, 10)}, {"download_client", strconv.FormatInt(cs.client.ID, 10)},
-		{"apikey", "tmdb"}, {"apikey", "tvdb"}, {"apikey", "omdb"}, {"apikey", "hardcover"}, {"apikey", "opensubtitles_api"},
+		{"apikey", "tmdb"}, {"apikey", "tvdb"}, {"apikey", "omdb"},
 	} {
 		if it, ok := l.item(want[0], want[1]); !ok || it.State == "" || it.Card == "" {
 			t.Errorf("%s/%s missing or stateless: %+v", want[0], want[1], it)
 		}
 	}
-	if _, ok := l.item("apikey", "opensubtitles_password"); ok {
-		t.Error("the OpenSubtitles password has a card of its own")
+	if _, ok := l.item("apikey", "smtp_password"); ok {
+		t.Error("the mail password has a card of its own")
 	}
 
 	tl, _ := l.item("indexer", tlRef)
@@ -211,7 +211,7 @@ func TestConnectionsNeverLeakSecrets(t *testing.T) {
 	bodies = append(bodies, body)
 
 	for _, b := range bodies {
-		for _, s := range []string{secretIndexerKey, secretIndexerPass, secretQueryKey, secretClientPass, secretTMDB, secretProwlarrKey, secretOSPassword, secretFlareURLUser, "fspass"} {
+		for _, s := range []string{secretIndexerKey, secretIndexerPass, secretQueryKey, secretClientPass, secretTMDB, secretProwlarrKey, secretMailPassword, secretFlareURLUser, "fspass"} {
 			if strings.Contains(b, s) {
 				t.Errorf("a response carries the secret %q: %s", s, b)
 			}
@@ -288,7 +288,7 @@ func TestConnectionTest(t *testing.T) {
 		t.Errorf("manager testing a key: HTTP %d, want 403", code)
 	}
 	for _, path := range []string{"/api/v1/connections/indexer/9999/test", "/api/v1/connections/indexer/abc/test",
-		"/api/v1/connections/nope/default/test", "/api/v1/connections/prowlarr/other/test", "/api/v1/connections/apikey/opensubtitles_password/test"} {
+		"/api/v1/connections/nope/default/test", "/api/v1/connections/prowlarr/other/test", "/api/v1/connections/apikey/smtp_password/test"} {
 		c := mgr
 		if strings.Contains(path, "/apikey/") {
 			c = admin

@@ -35,8 +35,6 @@ func libraryDirSettings(cfg *config.Config) []struct {
 	}{
 		{keyLibMovies, &cfg.MoviesDir, "movies"},
 		{keyLibTV, &cfg.TVDir, "tv"},
-		{keyLibEbooks, &cfg.EbooksDir, "ebooks"},
-		{keyLibAudiobooks, &cfg.AudiobooksDir, "audiobooks"},
 		{keyLibMusic, &cfg.MusicDir, "music"},
 		{keyLibDownloads, &cfg.DownloadsDir, "downloads"},
 	}
@@ -75,12 +73,10 @@ var candidateMounts = []string{"/storage", "/media", "/transcode"}
 
 // folderNames are the usual names for each library, most likely first.
 var folderNames = map[string][]string{
-	"movies":     {"movies", "films", "movie"},
-	"tv":         {"tvshows", "tv", "tv shows", "shows", "series", "television"},
-	"ebooks":     {"ebooks", "e-books", "books"},
-	"audiobooks": {"audiobooks", "audio books", "audiobook"},
-	"music":      {"music"},
-	"downloads":  {"torrents", "downloads", "download"},
+	"movies":    {"movies", "films", "movie"},
+	"tv":        {"tvshows", "tv", "tv shows", "shows", "series", "television"},
+	"music":     {"music"},
+	"downloads": {"torrents", "downloads", "download"},
 }
 
 // suggestFolders looks two levels into each mount for folders named like each library,
@@ -184,8 +180,8 @@ func (a *api) handleSetupState(w http.ResponseWriter, r *http.Request) {
 	complete := a.deps.Settings.GetBool(ctx, keySetupComplete, false)
 
 	saved := map[string]string{
-		"movies": a.libMovies(r), "tv": a.libTV(r), "ebooks": a.libEbooks(r),
-		"audiobooks": a.libAudiobooks(r), "music": a.libMusic(r), "downloads": a.libDownloads(r),
+		"movies": a.libMovies(r), "tv": a.libTV(r),
+		"music": a.libMusic(r), "downloads": a.libDownloads(r),
 	}
 	// Folders apply live, so what's running is what's saved.
 	running := saved
@@ -246,7 +242,7 @@ func (a *api) handleSetupState(w http.ResponseWriter, r *http.Request) {
 // plexFamily is what the wizard's Plex step starts its two family switches from.
 type plexFamily struct {
 	Enabled bool `json:"enabled"`
-	// AutoApproveTypes is "movie,series,book" (any subset). Until someone has chosen it the
+	// AutoApproveTypes is "movie,series" (any subset). Until someone has chosen it the
 	// wizard starts with nothing ticked, whatever the stored default would give: letting
 	// people's requests through unasked is an owner's explicit choice.
 	AutoApproveTypes string `json:"auto_approve_types"`

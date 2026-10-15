@@ -11,11 +11,6 @@ const (
 	TopicMovieChanged = "movie.changed"
 	// TopicSeriesImported: episodes of a show were imported.
 	TopicSeriesImported = "series.imported"
-	// TopicBookImported: a book edition or audiobook version was imported.
-	TopicBookImported = "book.imported"
-	// TopicBookFilesChanged: a book's files were renamed or deleted (not imported — that
-	// would tell the requester it's ready), so the audiobook catalogue re-reads them.
-	TopicBookFilesChanged = "book.files_changed"
 )
 
 // MovieImported is TopicMovieImported's payload.
@@ -53,15 +48,4 @@ type Episode struct {
 type SeriesImported struct {
 	SeriesID int64     `json:"series_id"`
 	Episodes []Episode `json:"episodes,omitempty"`
-}
-
-// BookImported is TopicBookImported's payload.
-type BookImported struct {
-	BookID  int64  `json:"book_id"`
-	Edition string `json:"edition"`
-}
-
-// BookFilesChanged is TopicBookFilesChanged's payload.
-type BookFilesChanged struct {
-	BookID int64 `json:"book_id"`
 }

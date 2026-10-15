@@ -38,39 +38,7 @@ type dashboardPayload struct {
 	QueueNote          string          `json:"queue_note,omitempty"`
 	Library            libraryCounts   `json:"library"`
 	Activity           []activityEvent `json:"activity"`
-	// Listening is who's listening to audiobooks right now. AudioOff: the audiobook
-	// server isn't running, so there's nothing to show.
-	Listening []nowListening `json:"listening"`
-	AudioOff  bool           `json:"audio_off,omitempty"`
 }
-
-// nowListening is one live audiobook session. Arrmada's rule for listening is that a
-// manager sees how much and when people listen, never what: the book (title, cover,
-// place) is filled in only on the viewer's own sessions.
-type nowListening struct {
-	User      string  `json:"user"`
-	Device    string  `json:"device"`
-	Client    string  `json:"client"`
-	StartedAt int64   `json:"started_at"`
-	LastAt    int64   `json:"last_at"`
-	Seconds   float64 `json:"seconds"`
-	Playing   bool    `json:"playing"`
-	Mine      bool    `json:"mine"`
-	BookID    int64   `json:"book_id,omitempty"`
-	Title     string  `json:"title,omitempty"`
-	Author    string  `json:"author,omitempty"`
-	CoverURL  string  `json:"cover_url,omitempty"`
-	Position  float64 `json:"position,omitempty"`
-	Duration  float64 `json:"duration,omitempty"`
-}
-
-// Apps report every few seconds to a minute while playing and stop when paused, so a
-// session that reported in the last 90 s is playing; one quiet for up to 10 minutes is
-// shown as paused, and after that it's no longer "now".
-const (
-	listenPlayingWindow = 90 * time.Second
-	listenPausedWindow  = 10 * time.Minute
-)
 
 // storageVolume is one filesystem, not one folder. Several libraries usually live on
 // the same array, and five identical bars say nothing five times over — Roots lists
@@ -127,8 +95,6 @@ type libraryCounts struct {
 	Series          int `json:"series"`
 	Episodes        int `json:"episodes"`
 	EpisodesMissing int `json:"episodes_missing"`
-	Books           int `json:"books"`
-	BooksMissing    int `json:"books_missing"`
 	Artists         int `json:"artists"`
 	Albums          int `json:"albums"`
 }
@@ -137,7 +103,7 @@ type libraryCounts struct {
 // event tables the detail pages already write. They were only ever readable one title
 // at a time; this is the same record, unified and newest-first.
 type activityEvent struct {
-	Kind   string `json:"kind"` // movie | series | book | music (the artist)
+	Kind   string `json:"kind"` // movie | series | music (the artist)
 	ID     int64  `json:"id"`
 	Title  string `json:"title"`
 	Event  string `json:"event"`
@@ -198,58 +164,7 @@ func (a *api) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	out.Listening, out.AudioOff = a.nowListening(ctx, r)
-
 	a.writeJSON(w, http.StatusOK, out)
-}
-
-// nowListening lists live audiobook sessions, the viewer's own with their book.
-func (a *api) nowListening(ctx context.Context, r *http.Request) ([]nowListening, bool) {
-	out := []nowListening{}
-	if a.deps.AudioServer == nil {
-		return out, true
-	}
-	if a.deps.AudioManager != nil {
-		if running, _ := a.deps.AudioManager.Running(); !running {
-			return out, true
-		}
-	}
-	now := time.Now()
-	store := a.deps.AudioServer.Listen()
-	live, err := store.Live(ctx, now.Add(-listenPausedWindow))
-	if err != nil || len(live) == 0 {
-		return out, false
-	}
-	names := map[int64]string{}
-	if users, err := a.deps.Auth.ListUsers(ctx); err == nil {
-		for _, u := range users {
-			names[u.ID] = u.Username
-		}
-	}
-	var me int64
-	if u, ok := userFrom(r); ok && u != nil {
-		me = u.ID
-	}
-	for _, l := range live {
-		n := nowListening{User: names[l.UserID], Device: l.Device, Client: l.Client, StartedAt: l.StartedAt,
-			LastAt: l.LastAt, Seconds: l.Seconds, Playing: now.Sub(time.UnixMilli(l.LastAt)) <= listenPlayingWindow}
-		if n.User == "" {
-			n.User = "Someone"
-		}
-		if me != 0 && l.UserID == me {
-			n.Mine = true
-			if key, pos, ok := store.SessionItem(ctx, me, l.SessionID); ok {
-				if info, ok := a.deps.AudioServer.Info(ctx, key); ok {
-					n.BookID, n.Title, n.Author, n.CoverURL, n.Position = info.BookID, info.Title, info.Author, info.CoverURL, pos
-					if p, ok, _ := store.Progress(ctx, me, key); ok {
-						n.Duration = p.Duration
-					}
-				}
-			}
-		}
-		out = append(out, n)
-	}
-	return out, false
 }
 
 // storageVolumes measures every configured root and folds the ones sharing a
@@ -261,8 +176,6 @@ func (a *api) storageVolumes() []storageVolume {
 	roots := []root{
 		{"Movies", c.MoviesDir},
 		{"TV", c.TVDir},
-		{"Ebooks", c.EbooksDir},
-		{"Audiobooks", c.AudiobooksDir},
 		{"Music", c.MusicDir},
 		{"Downloads", c.DownloadsDir},
 		{"App data", c.DataDir},
@@ -328,8 +241,6 @@ func (a *api) libraryCounts(ctx context.Context) libraryCounts {
 		JOIN seasons sn ON sn.series_id = e.series_id AND sn.season_number = e.season_number
 		WHERE s.monitored = 1 AND sn.monitored = 1 AND e.monitored = 1 AND e.has_file = 0
 		  AND e.season_number > 0 AND e.air_date <> '' AND date(e.air_date) <= date('now')`)
-	count(&lc.Books, `SELECT COUNT(*) FROM books`)
-	count(&lc.BooksMissing, `SELECT COUNT(*) FROM books WHERE monitored = 1 AND has_file = 0`)
 	count(&lc.Artists, `SELECT COUNT(*) FROM artists`)
 	count(&lc.Albums, `SELECT COUNT(*) FROM albums`)
 	return lc

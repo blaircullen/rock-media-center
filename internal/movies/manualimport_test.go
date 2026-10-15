@@ -53,7 +53,7 @@ func TestManualImportCandidatesCapped(t *testing.T) {
 }
 
 // A manual import of a library folder never offers what Arrmada keeps out of the library
-// on purpose: Convert's held originals and the recycle bin.
+// on purpose: held originals and the recycle bin.
 func TestManualImportCandidatesSkipHiddenFolders(t *testing.T) {
 	dir := t.TempDir()
 	sparseVideo(t, filepath.Join(dir, "Film (2020)", "Film.2020.mkv"))

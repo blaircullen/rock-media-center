@@ -11,7 +11,7 @@ import (
 // needs doing: the search in flight covers it.
 var ErrAlreadySearching = errors.New("already being searched")
 
-// claims is the per-title lock that keeps two searches of the same movie, show or book
+// claims is the per-title lock that keeps two searches of the same movie, show or album
 // from running at once. The job runner already makes two clicks one job, but a click
 // and the 5-minute sweep are different work: without this, both queried every indexer
 // and could both grab. In-memory on purpose — a search doesn't survive a restart either.
@@ -51,5 +51,4 @@ func (c *claims) claimed(key string) bool {
 
 func movieKey(id int64) string  { return "movie:" + strconv.FormatInt(id, 10) }
 func seriesKey(id int64) string { return "series:" + strconv.FormatInt(id, 10) }
-func bookKey(id int64) string   { return "book:" + strconv.FormatInt(id, 10) }
 func albumKey(id int64) string  { return "album:" + strconv.FormatInt(id, 10) }

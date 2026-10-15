@@ -132,7 +132,7 @@ func TestListIncludesSubscriptions(t *testing.T) {
 	if c != (Counts{NeedsApproval: 2, InProgress: 1}) {
 		t.Errorf("bob's counts = %+v", c)
 	}
-	// Own only, as My Books asks.
+	// Own only, as the My requests page asks.
 	if got, _, _ := s.List(ctx, ListFilter{UserID: 8}); len(got) != 1 || got[0].ID != mine {
 		t.Errorf("own only = %v", titles(got))
 	}

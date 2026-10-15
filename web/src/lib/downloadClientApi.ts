@@ -35,7 +35,7 @@ export interface DownloadClientTest {
 /** One of Arrmada's categories in a usenet client, and whether it has it. */
 export interface UsenetCategory {
   name: string;
-  /** What Arrmada files under it: movies, tv, books, music. */
+  /** What Arrmada files under it: movies, tv, music. */
   for: string;
   present: boolean;
   /** Set when the category has a folder of its own, with whether Arrmada sees it. */

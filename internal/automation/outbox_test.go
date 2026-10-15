@@ -58,10 +58,8 @@ func outboxFor(t *testing.T, c *Coordinator) (*outbox.Outbox, *recorder) {
 	box := outbox.New(c.db, c.log)
 	rec := &recorder{}
 	for topic, consumers := range map[string][]string{
-		outbox.TopicMovieImported:    {"convert", "subtitles", "requests.ready"},
-		outbox.TopicSeriesImported:   {"convert", "subtitles", "requests.ready"},
-		outbox.TopicBookImported:     {"requests.ready", "audioserver.cache"},
-		outbox.TopicBookFilesChanged: {"audioserver.cache"},
+		outbox.TopicMovieImported:  {"requests.ready"},
+		outbox.TopicSeriesImported: {"requests.ready"},
 	} {
 		for _, name := range consumers {
 			box.Register(topic, name, rec.handler(topic+"/"+name))
@@ -92,8 +90,8 @@ func saturate(t *testing.T, bus *eventbus.Bus, topic string) {
 	}
 }
 
-// With the bus dropping every movie.downloaded, an attached import still reaches Convert,
-// Subtitles and the requester — each exactly once, from the outbox row written with the
+// With the bus dropping every movie.downloaded, an attached import still reaches the
+// requester exactly once, from the outbox row written with the
 // file record.
 func TestAttachMovieImportSideEffectsSurviveDroppedBus(t *testing.T) {
 	ctx := context.Background()
@@ -116,14 +114,14 @@ func TestAttachMovieImportSideEffectsSurviveDroppedBus(t *testing.T) {
 	}
 
 	drainOutbox(t, box)
-	for _, consumer := range []string{"convert", "subtitles", "requests.ready"} {
+	for _, consumer := range []string{"requests.ready"} {
 		key := outbox.TopicMovieImported + "/" + consumer
 		if n := rec.count(key); n != 1 {
 			t.Fatalf("%s ran %d times, want exactly once", key, n)
 		}
 	}
 	var p outbox.MovieImported
-	rec.last(t, outbox.TopicMovieImported+"/convert", &p)
+	rec.last(t, outbox.TopicMovieImported+"/requests.ready", &p)
 	if p.MovieID != 7 || p.Path != target {
 		t.Fatalf("payload = %+v", p)
 	}
@@ -133,8 +131,8 @@ func TestAttachMovieImportSideEffectsSurviveDroppedBus(t *testing.T) {
 
 	// Nothing is left to run again.
 	drainOutbox(t, box)
-	if n := rec.count(outbox.TopicMovieImported + "/convert"); n != 1 {
-		t.Fatalf("convert ran %d times after a second drain", n)
+	if n := rec.count(outbox.TopicMovieImported + "/requests.ready"); n != 1 {
+		t.Fatalf("requests.ready ran %d times after a second drain", n)
 	}
 }
 
@@ -154,14 +152,14 @@ func TestMovieImportSideEffectsSurviveRestart(t *testing.T) {
 	// The "second process": a fresh outbox with the consumers registered again.
 	box, rec := outboxFor(t, c)
 	drainOutbox(t, box)
-	if n := rec.count(outbox.TopicMovieImported + "/convert"); n != 1 {
-		t.Fatalf("convert ran %d times after the restart, want 1", n)
+	if n := rec.count(outbox.TopicMovieImported + "/requests.ready"); n != 1 {
+		t.Fatalf("requests.ready ran %d times after the restart, want 1", n)
 	}
 }
 
 // The outbox row and the file record are one transaction: when the row can't be written,
 // the movie isn't marked downloaded either, so the attach is retried rather than leaving a
-// Downloaded movie that Convert, Subtitles and its requester never hear about.
+// Downloaded movie that its requester never hears about.
 func TestMarkImportedRollsBackWithoutOutboxRow(t *testing.T) {
 	ctx := context.Background()
 	c, mv, _, _ := attachTestCoord(t)
@@ -190,9 +188,9 @@ func TestMarkImportedRollsBackWithoutOutboxRow(t *testing.T) {
 }
 
 // "Import anyway" from Review goes through the same path as an automatic import, so the
-// movie gets its Convert/Subtitles/ready rows even though nothing is published by hand.
+// movie gets its ready row even though nothing is published by hand.
 func TestReviewMovieImportEnqueuesMovieImported(t *testing.T) {
-	c, _, ctx := reviewTestCoord(t)
+	c, ctx := reviewTestCoord(t)
 	box, rec := outboxFor(t, c)
 	mustExec(t, c, `INSERT INTO movies (id, tmdb_id, title, year, monitored) VALUES (5, 1, 'Arrival', 2016, 1)`)
 	dl := t.TempDir()
@@ -216,8 +214,8 @@ func TestReviewMovieImportEnqueuesMovieImported(t *testing.T) {
 	if p.MovieID != 5 || p.Path == "" {
 		t.Fatalf("payload = %+v", p)
 	}
-	if rec.count(outbox.TopicMovieImported+"/convert") != 1 || rec.count(outbox.TopicMovieImported+"/subtitles") != 1 {
-		t.Fatal("Convert and Subtitles weren't both told")
+	if rec.count(outbox.TopicMovieImported+"/requests.ready") != 1 {
+		t.Fatal("the requester wasn't told")
 	}
 }
 
@@ -227,13 +225,13 @@ func TestSeriesImportedEnqueuesPlacedEpisodes(t *testing.T) {
 	box, rec := outboxFor(t, c)
 	c.seriesImported(context.Background(), 12, []series.EpisodeRef{{Season: 1, Episode: 2}, {Season: 1, Episode: 3}})
 	drainOutbox(t, box)
-	for _, consumer := range []string{"convert", "subtitles", "requests.ready"} {
+	for _, consumer := range []string{"requests.ready"} {
 		if n := rec.count(outbox.TopicSeriesImported + "/" + consumer); n != 1 {
 			t.Fatalf("%s ran %d times", consumer, n)
 		}
 	}
 	var p outbox.SeriesImported
-	rec.last(t, outbox.TopicSeriesImported+"/subtitles", &p)
+	rec.last(t, outbox.TopicSeriesImported+"/requests.ready", &p)
 	if p.SeriesID != 12 || len(p.Episodes) != 2 || p.Episodes[1] != (outbox.Episode{Season: 1, Episode: 3}) {
 		t.Fatalf("payload = %+v", p)
 	}

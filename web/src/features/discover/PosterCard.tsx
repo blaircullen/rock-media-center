@@ -18,7 +18,7 @@ export interface PosterCardProps {
   children?: ReactNode;
 }
 
-// PosterCard is the poster tile every Discover surface shows, films and series and books
+// PosterCard is the poster tile every Discover surface shows, films and series
 // alike: the whole poster opens the item's sheet, a corner badge says where it stands, a
 // hover lifts it and offers a quick request, and an always-visible caption names it.
 export function PosterCard({ title, art, badge, progress, onOpen, quick, full, children }: PosterCardProps) {

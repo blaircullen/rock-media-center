@@ -84,7 +84,7 @@ func (s *Service) skipUsenet(idx Indexer) bool {
 	return true
 }
 
-// recentTTL is how long an RSS feed pull is reused. The movie, series and book RSS
+// recentTTL is how long an RSS feed pull is reused. The movie, series and music RSS
 // sweeps each call Recent independently and fire within seconds of each other, so every
 // cycle pulled the identical unfiltered feed from every indexer three times over. A
 // window this short cannot delay a new release noticeably — the sweeps themselves run
@@ -130,14 +130,6 @@ func copyErrors(m map[string]string) map[string]string {
 func NewService(db *sql.DB, log *slog.Logger, fs *flaresolverr.Client) *Service {
 	s := &Service{repo: NewRepo(db), registry: NewRegistry(fs), log: log}
 	s.registry.SetLogger(log) // per-page request tracing
-	// Persist a rotated MyAnonaMouse session so it doesn't silently expire.
-	s.registry.SetSessionPersister(func(id int64, session string) {
-		if err := s.repo.SetSession(context.Background(), id, session); err != nil {
-			s.log.Warn("indexer: could not persist rotated mam_id", "id", id, "err", err)
-		} else {
-			s.log.Info("indexer: refreshed MyAnonaMouse session", "id", id)
-		}
-	})
 	// A TorrentLeech login keeps going after the search that started it gives up; when it
 	// ends with nobody waiting, its outcome is recorded here so the row shows it. It
 	// doesn't move the backoff: the searcher paces its own logins.
@@ -662,7 +654,7 @@ func (s *Service) fetchRecent(ctx context.Context, limit int) (SearchResult, err
 	wg.Wait()
 
 	// One line per pull naming what each feed returned, so the owner can see every
-	// indexer — TorrentLeech and MyAnonaMouse included — is actually being polled.
+	// indexer — TorrentLeech included — is actually being polled.
 	if len(counts) > 0 {
 		sort.Strings(counts)
 		s.log.Info("indexer feeds read", "items", strings.Join(counts, ", "), "failed", failed, "paused", skipped)
@@ -712,9 +704,8 @@ func indexerCtx(ctx context.Context, searcher any) (context.Context, context.Can
 func (s *Service) Search(ctx context.Context, q SearchQuery) (SearchResult, error) {
 	// Releases are named in ASCII, so a title carrying diacritics ("Pokémon Heroes")
 	// finds nothing until it's folded ("Pokemon Heroes"). Done here so every caller —
-	// movies, series, books — benefits.
+	// movies, series, music — benefits.
 	q.Text = parser.FoldAccents(q.Text)
-	q.Author, q.BookTitle = parser.FoldAccents(q.Author), parser.FoldAccents(q.BookTitle)
 	q.Artist, q.Album = parser.FoldAccents(q.Artist), parser.FoldAccents(q.Album)
 	q.defaultCats = s.defaultCats == nil || s.defaultCats(ctx)
 

@@ -128,7 +128,7 @@ func (a *api) hasTitles(ctx context.Context) bool {
 }
 
 // anyImported: a download has been imported — a movie import that placed a file, or any
-// grab marked imported (series and books record theirs there).
+// grab marked imported (series record theirs there).
 func (a *api) anyImported(ctx context.Context) bool {
 	if a.deps.Library != nil {
 		if recs, err := a.deps.Library.Recent(ctx, 1); err == nil && len(recs) > 0 {

@@ -101,11 +101,6 @@ func mediaWord(key string, d map[string]any) string {
 		return "movie"
 	case "episodes.imported":
 		return "show"
-	case "book.imported":
-		if str(d, "edition") == "audiobook" {
-			return "audiobook"
-		}
-		return "ebook"
 	case "music.imported":
 		return "album"
 	}

@@ -29,22 +29,11 @@ jobs:
     # A manual run started on a branch publishes nothing.
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 90
     permissions:
       contents: read
       packages: write
     steps:
-      # Same as image.yml: the oneAPI stage needs more disk than the runner has free.
-      - name: Free disk space
-        uses: jlumbroso/free-disk-space@v1.3.1
-        with:
-          tool-cache: true
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
       - uses: actions/checkout@v7
       # Registry paths must be lower case; the owner's name is used as GitHub has it.
       # COMMIT is the short commit, as update.sh stamps a local build.
@@ -72,7 +61,7 @@ jobs:
             type=raw,value=stable,enable=${{ !contains(github.ref_name, '-') }}
           labels: |
             org.opencontainers.image.title=Arrmada
-            org.opencontainers.image.description=Self-hosted movies, series, books and music in one app
+            org.opencontainers.image.description=Self-hosted movies, series and music in one app
       - uses: docker/setup-buildx-action@v4
       - name: Log in to GitHub's container registry
         uses: docker/login-action@v4

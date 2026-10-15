@@ -13,7 +13,7 @@ import (
 // Scrubbing for log text that leaves the machine (the support bundle). Capture already
 // withholds attrs whose key names a secret and secret query parameters (redact.go); these
 // passes also catch what older versions wrote, secrets inside free text, and names —
-// books, people — that capture deliberately keeps for the admin's own Logs page.
+// people — that capture deliberately keeps for the admin's own Logs page.
 
 var (
 	// key=value / key: value where the key names a secret, in free text or attrs.
@@ -24,7 +24,7 @@ var (
 	bearer = regexp.MustCompile(`(?i)\b(bearer|basic)\s+[A-Za-z0-9._~+/=\-]{8,}`)
 	// user:password@ inside a URL.
 	userinfo = regexp.MustCompile(`(?i)([a-z][a-z0-9+.\-]*://)[^/\s:@]+:[^/\s@]+@`)
-	// Email addresses: account names, Kindle addresses.
+	// Email addresses: account names, notification addresses.
 	email = regexp.MustCompile(`[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}`)
 )
 
@@ -81,7 +81,7 @@ func RewriteAttrs(attrs string, fn func(key, val string) string) string {
 	return b.String()
 }
 
-// TermScrubber replaces whole-word occurrences of known names — book titles, authors,
+// TermScrubber replaces whole-word occurrences of known names — people,
 // people — in log text. Matching is by words, folded the way every title matcher folds
 // (parser.TitleWords), so "Dune Messiah", "dune.messiah" and "DUNE_MESSIAH" are all the
 // same name, and "Dunes" is not "Dune".

@@ -8,12 +8,10 @@ import type { ShellIconName } from "../components/ShellIcons";
 export interface RequesterNavCtx {
   /** The session is from outside the LAN: no Calendar (the server doesn't allow it there). */
   external: boolean;
-  /** The Books module is on: the shelf exists. */
-  booksEnabled: boolean;
 }
 
 export interface RequesterNavItem {
-  key: "discover" | "requests" | "calendar" | "shelf" | "listen" | "me";
+  key: "discover" | "requests" | "calendar" | "me";
   to: string;
   /** In the top bar and as the section title. */
   label: string;
@@ -27,10 +25,10 @@ export interface RequesterNavItem {
 }
 
 // REQUESTS_ROUTE: requesters have their own routed /requests page (REQ). While it exists
-// Requests takes a phone tab and Calendar moves under Me, keeping the bar at five.
+// Requests takes a phone tab and Calendar moves under Me.
 export const REQUESTS_ROUTE = true;
 
-export function requesterNav({ external, booksEnabled }: RequesterNavCtx): RequesterNavItem[] {
+export function requesterNav({ external }: RequesterNavCtx): RequesterNavItem[] {
   const items: RequesterNavItem[] = [
     { key: "discover", to: "/discover", label: "Discover", tabLabel: "Discover", icon: "discover", header: true, tab: true },
   ];
@@ -40,14 +38,8 @@ export function requesterNav({ external, booksEnabled }: RequesterNavCtx): Reque
   if (!external) {
     items.push({ key: "calendar", to: "/calendar", label: "Calendar", tabLabel: "Calendar", icon: "calendar", header: true, tab: !REQUESTS_ROUTE });
   }
-  if (booksEnabled) {
-    items.push({ key: "shelf", to: "/shelf", label: "My shelf", tabLabel: "Shelf", icon: "shelf", header: true, tab: true });
-  }
-  items.push(
-    { key: "listen", to: "/audiobooks", label: "Audiobooks", tabLabel: "Listen", icon: "listen", header: true, tab: true },
-    // Me lives in the avatar menu on wider screens; on a phone it is the last tab.
-    { key: "me", to: "/me", label: "Me", tabLabel: "Me", icon: "me", header: false, tab: true },
-  );
+  // Me lives in the avatar menu on wider screens; on a phone it is the last tab.
+  items.push({ key: "me", to: "/me", label: "Me", tabLabel: "Me", icon: "me", header: false, tab: true });
   return items;
 }
 

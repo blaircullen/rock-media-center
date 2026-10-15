@@ -60,7 +60,6 @@ type User struct {
 	AutoApprove       bool   `json:"auto_approve"`
 	AutoApproveMovie  bool   `json:"auto_approve_movie"`
 	AutoApproveSeries bool   `json:"auto_approve_series"`
-	AutoApproveBook   bool   `json:"auto_approve_book"`
 	CreatedAt         string `json:"created_at,omitempty"`
 	// PlexLinked: signs in with Plex, so the admin can block that Plex account.
 	PlexLinked bool `json:"plex_linked"`
@@ -89,14 +88,14 @@ type rowScanner interface{ Scan(dest ...any) error }
 // scanUser reads one row of userCols.
 func scanUser(r rowScanner) (User, error) {
 	var u User
-	var disabled, am, as, ab int
-	err := r.Scan(&u.ID, &u.Username, &u.Role, &disabled, &am, &as, &ab, &u.CreatedAt,
+	var disabled, am, as int
+	err := r.Scan(&u.ID, &u.Username, &u.Role, &disabled, &am, &as, &u.CreatedAt,
 		&u.PlexLinked, &u.PlexUsername, &u.PlexOnly, &u.JellyfinLinked, &u.JellyfinUsername, &u.JellyfinOnly)
 	if err != nil {
 		return u, err
 	}
 	u.Disabled = disabled != 0
-	u.setAutoApproval(am, as, ab)
+	u.setAutoApproval(am, as)
 	return u, nil
 }
 
@@ -178,8 +177,8 @@ func (s *Service) CreateUser(ctx context.Context, username, password string, rol
 
 	aa := boolToInt(autoApprove)
 	res, err := s.db.ExecContext(ctx,
-		`INSERT INTO users (username, password_hash, role, auto_approve, `+autoApproveCols+`) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		username, string(hash), string(role), aa, aa, aa, aa)
+		`INSERT INTO users (username, password_hash, role, auto_approve, `+autoApproveCols+`) VALUES (?, ?, ?, ?, ?, ?)`,
+		username, string(hash), string(role), aa, aa, aa)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return nil, ErrUserExists
@@ -188,7 +187,7 @@ func (s *Service) CreateUser(ctx context.Context, username, password string, rol
 	}
 	id, _ := res.LastInsertId()
 	u := &User{ID: id, Username: username, Role: role}
-	u.setAutoApproval(aa, aa, aa)
+	u.setAutoApproval(aa, aa)
 	return u, nil
 }
 
@@ -243,10 +242,10 @@ func (s *Service) findOrCreateLinked(ctx context.Context, k linkKind, extID, ext
 		return nil, err
 	}
 	username := s.uniqueUsername(ctx, extName, k.fallbackName)
-	am, as, ab := boolToInt(autoApprove.Movie), boolToInt(autoApprove.Series), boolToInt(autoApprove.Book)
+	am, as := boolToInt(autoApprove.Movie), boolToInt(autoApprove.Series)
 	res, err := s.db.ExecContext(ctx,
-		`INSERT INTO users (username, password_hash, role, auto_approve, `+autoApproveCols+`, `+k.idCol+`, `+k.nameCol+`, password_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
-		username, string(hash), string(role), boolToInt(autoApprove.All()), am, as, ab, extID, extName)
+		`INSERT INTO users (username, password_hash, role, auto_approve, `+autoApproveCols+`, `+k.idCol+`, `+k.nameCol+`, password_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+		username, string(hash), string(role), boolToInt(autoApprove.All()), am, as, extID, extName)
 	if isUniqueViolation(err) {
 		// Two first sign-ins at once: the other one made the account.
 		if u, err := s.userWhere(ctx, k.idCol+" = ?", extID); err == nil {
@@ -294,8 +293,8 @@ func (s *Service) UpdateUser(ctx context.Context, id int64, role Role, autoAppro
 		return errors.New("invalid role")
 	}
 	res, err := s.db.ExecContext(ctx,
-		`UPDATE users SET role = ?, auto_approve = ?, auto_approve_movie = ?, auto_approve_series = ?, auto_approve_book = ? WHERE id = ?`,
-		string(role), boolToInt(autoApprove.All()), boolToInt(autoApprove.Movie), boolToInt(autoApprove.Series), boolToInt(autoApprove.Book), id)
+		`UPDATE users SET role = ?, auto_approve = ?, auto_approve_movie = ?, auto_approve_series = ? WHERE id = ?`,
+		string(role), boolToInt(autoApprove.All()), boolToInt(autoApprove.Movie), boolToInt(autoApprove.Series), id)
 	if err != nil {
 		return err
 	}
@@ -476,9 +475,8 @@ func (s *Service) SetPassword(ctx context.Context, id int64, password string) er
 }
 
 // SetDisabled turns an account's sign-in off or back on. Disabling also signs them out
-// everywhere: web sessions are dropped and audiobook-app tokens revoked, in one
-// transaction. Nothing else is touched — requests, listening places and history stay,
-// so re-enabling gives back exactly what they had (the apps just sign in again).
+// everywhere: web sessions are dropped in the same transaction. Nothing else is touched —
+// requests and history stay, so re-enabling gives back exactly what they had.
 func (s *Service) SetDisabled(ctx context.Context, id int64, disabled bool) error {
 	return store.WithTx(ctx, s.db, func(tx *sql.Tx) error {
 		res, err := tx.ExecContext(ctx, `UPDATE users SET disabled = ? WHERE id = ?`, boolToInt(disabled), id)
@@ -490,9 +488,6 @@ func (s *Service) SetDisabled(ctx context.Context, id int64, disabled bool) erro
 		}
 		if disabled {
 			if _, err := tx.ExecContext(ctx, `DELETE FROM sessions WHERE user_id = ?`, id); err != nil {
-				return err
-			}
-			if _, err := tx.ExecContext(ctx, `UPDATE audio_tokens SET revoked = 1 WHERE user_id = ?`, id); err != nil {
 				return err
 			}
 		}
@@ -517,15 +512,15 @@ func (s *Service) RevokeUserSessions(ctx context.Context, id int64) (int64, erro
 // only by case fail closed rather than guess which one was meant.
 func (s *Service) Authenticate(ctx context.Context, username, password string) (*User, error) {
 	var (
-		u          User
-		hash       string
-		disabled   int
-		am, as, ab int
+		u        User
+		hash     string
+		disabled int
+		am, as   int
 	)
 	username = strings.TrimSpace(username)
 	const cols = `SELECT id, username, password_hash, role, disabled, ` + autoApproveCols + ` FROM users WHERE `
 	err := s.db.QueryRowContext(ctx, cols+`username = ?`, username).
-		Scan(&u.ID, &u.Username, &hash, &u.Role, &disabled, &am, &as, &ab)
+		Scan(&u.ID, &u.Username, &hash, &u.Role, &disabled, &am, &as)
 	if errors.Is(err, sql.ErrNoRows) {
 		var ids []int64
 		if ids, err = s.caseInsensitiveIDs(ctx, username); err != nil {
@@ -534,7 +529,7 @@ func (s *Service) Authenticate(ctx context.Context, username, password string) (
 		switch {
 		case len(ids) == 1:
 			err = s.db.QueryRowContext(ctx, cols+`id = ?`, ids[0]).
-				Scan(&u.ID, &u.Username, &hash, &u.Role, &disabled, &am, &as, &ab)
+				Scan(&u.ID, &u.Username, &hash, &u.Role, &disabled, &am, &as)
 		case len(ids) > 1:
 			s.warnAmbiguous(ids)
 			_ = bcrypt.CompareHashAndPassword(dummyHash, []byte(password))
@@ -543,7 +538,7 @@ func (s *Service) Authenticate(ctx context.Context, username, password string) (
 			err = sql.ErrNoRows
 		}
 	}
-	u.setAutoApproval(am, as, ab)
+	u.setAutoApproval(am, as)
 	if errors.Is(err, sql.ErrNoRows) {
 		// Spend a REAL bcrypt cycle so response time doesn't leak whether the
 		// username exists. The previous placeholder was too short to parse, so
@@ -589,27 +584,27 @@ func (s *Service) ValidateSession(ctx context.Context, raw string) (*User, error
 // can decide whether to extend it.
 func (s *Service) ValidateSessionInfo(ctx context.Context, raw string) (*User, time.Time, error) {
 	var (
-		u          User
-		disabled   int
-		am, as, ab int
-		expires    sql.NullString
-		seen       sql.NullString
+		u        User
+		disabled int
+		am, as   int
+		expires  sql.NullString
+		seen     sql.NullString
 	)
 	// strftime hands the expiry back as plain text whatever the driver makes of a
 	// TIMESTAMP column, in the same layout sqlTime writes.
 	err := s.db.QueryRowContext(ctx, `
-		SELECT u.id, u.username, u.role, u.disabled, u.auto_approve_movie, u.auto_approve_series, u.auto_approve_book, strftime('%Y-%m-%d %H:%M:%S', s.expires_at),
+		SELECT u.id, u.username, u.role, u.disabled, u.auto_approve_movie, u.auto_approve_series, strftime('%Y-%m-%d %H:%M:%S', s.expires_at),
 		       strftime('%Y-%m-%d %H:%M:%S', s.last_seen_at)
 		FROM sessions s JOIN users u ON u.id = s.user_id
 		WHERE s.token_hash = ? AND s.expires_at > ?`,
-		hashToken(raw), sqlTime(s.now())).Scan(&u.ID, &u.Username, &u.Role, &disabled, &am, &as, &ab, &expires, &seen)
+		hashToken(raw), sqlTime(s.now())).Scan(&u.ID, &u.Username, &u.Role, &disabled, &am, &as, &expires, &seen)
 	if errors.Is(err, sql.ErrNoRows) || (err == nil && disabled != 0) {
 		return nil, time.Time{}, ErrNotFound
 	}
 	if err != nil {
 		return nil, time.Time{}, err
 	}
-	u.setAutoApproval(am, as, ab)
+	u.setAutoApproval(am, as)
 	// "Last seen" for the owner's device list, written at most every ten minutes.
 	s.touchSession(ctx, raw, parseSQLTime(seen.String))
 	exp, err := time.ParseInLocation("2006-01-02 15:04:05", expires.String, time.UTC)
@@ -662,22 +657,22 @@ func (s *Service) CreateAPIKey(ctx context.Context, userID int64, name string) (
 // ValidateAPIKey returns the user owning the given API key and stamps last-used.
 func (s *Service) ValidateAPIKey(ctx context.Context, key string) (*User, error) {
 	var (
-		u          User
-		disabled   int
-		am, as, ab int
+		u        User
+		disabled int
+		am, as   int
 	)
 	h := hashToken(key)
 	err := s.db.QueryRowContext(ctx, `
-		SELECT u.id, u.username, u.role, u.disabled, u.auto_approve_movie, u.auto_approve_series, u.auto_approve_book
+		SELECT u.id, u.username, u.role, u.disabled, u.auto_approve_movie, u.auto_approve_series
 		FROM api_keys k JOIN users u ON u.id = k.user_id
-		WHERE k.key_hash = ?`, h).Scan(&u.ID, &u.Username, &u.Role, &disabled, &am, &as, &ab)
+		WHERE k.key_hash = ?`, h).Scan(&u.ID, &u.Username, &u.Role, &disabled, &am, &as)
 	if errors.Is(err, sql.ErrNoRows) || (err == nil && disabled != 0) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	u.setAutoApproval(am, as, ab)
+	u.setAutoApproval(am, as)
 	_, _ = s.db.ExecContext(ctx, `UPDATE api_keys SET last_used_at = CURRENT_TIMESTAMP WHERE key_hash = ?`, h)
 	return &u, nil
 }

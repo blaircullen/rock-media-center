@@ -31,7 +31,7 @@ describe("LibraryToolbar", () => {
           { label: "Search missing (4)", onClick: () => {}, busy: true, progress: "Searching… 2/5" },
           { label: "Re-match", onClick: () => {}, hidden: true },
         ]}
-        primary={{ label: "+ Add book", onClick: () => {} }}
+        primary={{ label: "+ Add movie", onClick: () => {} }}
       />,
     );
     expect(screen.getByText("7 in library")).toBeTruthy();
@@ -51,7 +51,7 @@ describe("LibraryToolbar", () => {
     render(
       <LibraryToolbar
         count={3}
-        pickers={[{ label: "View", value: "a", options: [{ value: "a", label: "Authors" }, { value: "b", label: "Books" }], onChange: view }]}
+        pickers={[{ label: "View", value: "a", options: [{ value: "a", label: "Posters" }, { value: "b", label: "Table" }], onChange: view }]}
         tools={[{ label: "Scan library", onClick: () => {} }]}
         toolsBadge={2}
         actions={[{ label: "Search missing (4)", onClick: sweep }, { label: "Busy one", onClick: () => {}, busy: true, busyLabel: "Searching… 1/4" }]}

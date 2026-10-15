@@ -242,26 +242,23 @@ func TestImportEpisodeSkipsEmpty(t *testing.T) {
 	}
 }
 
-// TestImportRoutesByType checks that per-media-type roots send movies, TV, and
-// book editions to their own library folders (falling back to the base root when
-// a type has no dedicated dir).
+// TestImportRoutesByType checks that per-media-type roots send movies and TV to their
+// own library folders.
 func TestImportRoutesByType(t *testing.T) {
 	src := t.TempDir()
 	base := t.TempDir()
 	movies := filepath.Join(base, "m")
 	tv := filepath.Join(base, "t")
-	ebooks := filepath.Join(base, "e")
-	audiobooks := filepath.Join(base, "a")
 
 	// Configured roots must exist up front — the importer now refuses to create a
 	// library root itself (mount guard), only subdirectories beneath it.
-	for _, d := range []string{movies, tv, ebooks, audiobooks} {
+	for _, d := range []string{movies, tv} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	im := NewImporter(base, quiet())
-	im.SetRoots(movies, tv, ebooks, audiobooks)
+	im.SetRoots(movies, tv)
 
 	// Movie → movies root.
 	mv := "Dune.Part.Two.2024.2160p.WEB-DL-FLUX"
@@ -284,34 +281,11 @@ func TestImportRoutesByType(t *testing.T) {
 	if !hasPrefix(epRes.TargetPath, tv) {
 		t.Errorf("episode target = %q, want under tv root %q", epRes.TargetPath, tv)
 	}
-
-	// Ebook → ebooks root; audiobook → audiobooks root.
-	eb, err := im.ImportBookEdition("Some Author", "Some Book", []FoundFile{{Path: mustWrite(t, src, "book.epub")}})
-	if err != nil {
-		t.Fatalf("ebook import: %v", err)
-	}
-	if !hasPrefix(eb.TargetPath, ebooks) {
-		t.Errorf("ebook target = %q, want under ebooks root %q", eb.TargetPath, ebooks)
-	}
-	ab, err := im.ImportBookEdition("Some Author", "Some Book", []FoundFile{{Path: mustWrite(t, src, "book.m4b")}})
-	if err != nil {
-		t.Fatalf("audiobook import: %v", err)
-	}
-	if !hasPrefix(ab.TargetPath, audiobooks) {
-		t.Errorf("audiobook target = %q, want under audiobooks root %q", ab.TargetPath, audiobooks)
-	}
 }
 
 func hasPrefix(path, dir string) bool {
 	rel, err := filepath.Rel(dir, path)
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
-}
-
-func mustWrite(t *testing.T, dir, name string) string {
-	t.Helper()
-	p := filepath.Join(dir, name)
-	writeFile(t, p, 1000)
-	return p
 }
 
 // TestImportAsCleanTitle checks that importing under a metadata title strips
@@ -404,22 +378,5 @@ func writeFile(t *testing.T, path string, size int) {
 	}
 	if err := os.WriteFile(path, make([]byte, size), 0o644); err != nil {
 		t.Fatal(err)
-	}
-}
-
-// A flat "Title by Author" folder is a title and an author, not a title with "by
-// Author" in it; a title that merely contains "by" stays whole.
-func TestSplitTitleBy(t *testing.T) {
-	for _, c := range []struct{ in, title, author string }{
-		{"Harry Potter and the Goblet of Fire by J.K. Rowling", "Harry Potter and the Goblet of Fire", "J.K. Rowling"},
-		{"Dune by Frank Herbert", "Dune", "Frank Herbert"},
-		{"Death by Chocolate", "Death by Chocolate", ""},
-		{"Stand By Me", "Stand By Me", ""},
-		{"Project Hail Mary", "Project Hail Mary", ""},
-	} {
-		title, author := splitTitleBy(c.in)
-		if title != c.title || author != c.author {
-			t.Errorf("splitTitleBy(%q) = (%q, %q), want (%q, %q)", c.in, title, author, c.title, c.author)
-		}
 	}
 }

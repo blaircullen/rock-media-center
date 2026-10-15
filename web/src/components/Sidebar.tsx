@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode, type RefObject } from "react";
+import { lazy, Suspense, useCallback, useEffect, type ReactNode, type RefObject } from "react";
 import { NavLink } from "react-router-dom";
 import { visibleNav } from "../lib/nav";
 import { useMe, isAdmin } from "../lib/me";
@@ -78,7 +78,7 @@ function ThemeButton() {
 // bell: this screen is wide enough that the sidebar is always open, so the inbox bell
 // lives in its brand row (AppLayout's compact bar has it otherwise).
 export function Sidebar({ open, onClose, bell = false, returnFocus }: { open: boolean; onClose: () => void; bell?: boolean; returnFocus?: RefObject<HTMLElement> }) {
-  const { user, booksEnabled, musicEnabled } = useMe();
+  const { user, musicEnabled } = useMe();
   // As a drawer: Escape or the backdrop closes it and puts focus back on the menu button
   // that opened it (a link closes it too, but focus then belongs to the new page).
   const dismiss = useCallback(() => {
@@ -93,21 +93,13 @@ export function Sidebar({ open, onClose, bell = false, returnFocus }: { open: bo
   }, [open, dismiss]);
   // Count pills from the Needs-you feed (the staff layout polls it; this only reads).
   const attention = useAttention();
-  // A dot beside Audiobooks: green when the server is running, red when it's switched on
-  // but couldn't start, nothing when it's off.
-  const [audioDot, setAudioDot] = useState<string | null>(null);
-  useEffect(() => {
-    api.myAudio()
-      .then((a) => setAudioDot(a.enabled ? (a.running ? "var(--good)" : "var(--reject)") : null))
-      .catch(() => {});
-  }, []);
   const signOut = async () => {
     try { await api.logout(); } catch { /* ignore — clearing the session locally is enough */ }
     window.location.href = "/";
   };
   // Hide nav entries for modules an admin has turned off, and admin-only pages (Logs)
   // from managers.
-  const nav = visibleNav({ admin: isAdmin(user), booksEnabled, musicEnabled });
+  const nav = visibleNav({ admin: isAdmin(user), musicEnabled });
   return (
     <>
       {/* Dim + click-to-close backdrop, only while the drawer is open on narrow windows. */}
@@ -165,9 +157,6 @@ export function Sidebar({ open, onClose, bell = false, returnFocus }: { open: bo
                     >
                       {item.tag}
                     </span>
-                  )}
-                  {item.status === "audiobook-server" && audioDot && (
-                    <span className="ml-auto h-1.5 w-1.5 rounded-full" style={{ background: audioDot }} title={audioDot === "var(--good)" ? "Running" : "Switched on but not running"} />
                   )}
                   {item.badge && <CountPill badge={badgeFor(item.badge, attention?.counts)} />}
                 </NavLink>

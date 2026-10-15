@@ -139,8 +139,8 @@ func TestIsTokenStrictVsLoose(t *testing.T) {
 	}
 }
 
-func TestNameISO1OpenSubtitlesSidecarTag(t *testing.T) {
-	type row struct{ in, name, iso1, os, tag string }
+func TestNameISO1SidecarTag(t *testing.T) {
+	type row struct{ in, name, iso1, os, tag string } // os is unused now; kept to keep the table readable
 	for _, r := range []row{
 		{"en", "English", "en", "en", "en"},
 		{"eng", "English", "en", "en", "en"},
@@ -162,9 +162,6 @@ func TestNameISO1OpenSubtitlesSidecarTag(t *testing.T) {
 		}
 		if got := ISO1(r.in); got != r.iso1 {
 			t.Errorf("ISO1(%q) = %q, want %q", r.in, got, r.iso1)
-		}
-		if got := OpenSubtitles(r.in); got != r.os {
-			t.Errorf("OpenSubtitles(%q) = %q, want %q", r.in, got, r.os)
 		}
 		if got := SidecarTag(r.in); got != r.tag {
 			t.Errorf("SidecarTag(%q) = %q, want %q", r.in, got, r.tag)

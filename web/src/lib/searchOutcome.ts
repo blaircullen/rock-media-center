@@ -16,7 +16,6 @@ export const REASON_LABELS: Record<string, string> = {
   not_torrent: "usenet only",
   not_usenet: "torrent only",
   not_wanted: "a format you don't want",
-  wrong_language: "not in your book languages",
   rejected: "rejected by your profile",
   resolution: "not a resolution you want",
   source_floor: "below your minimum source",
@@ -157,18 +156,15 @@ export function nextTryText(next: string | null | undefined, now = Date.now()): 
   return when === "now" || when === "—" ? "next automatic search on the next sweep" : `next automatic search ${when}`;
 }
 
-// A series' or book's scope as people say it: "S03", "S03E04", "Ebook", "Audiobook".
+// A series' scope as people say it: "S03", "S03E04".
 export function scopeLabel(scope: string): string {
   if (scope === "") return "";
-  if (scope === "ebook") return "Ebook";
-  if (scope === "audiobook") return "Audiobook";
   if (scope === "album") return "Album";
-  if (/^v\d+$/.test(scope)) return "Audio version";
   return scope;
 }
 
-// The newest attempt under each scope, newest first, upgrades left out: what a series or
-// book page shows as its last searches.
+// The newest attempt under each scope, newest first, upgrades left out: what a series
+// page shows as its last searches.
 export function latestPerScope(attempts: SearchAttempt[], max = 4): SearchAttempt[] {
   const seen = new Set<string>();
   const out: SearchAttempt[] = [];

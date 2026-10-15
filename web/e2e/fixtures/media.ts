@@ -1,6 +1,6 @@
 import type {
-  APIKeyStatus, ActivityFeed, BlocklistRow, Book, BookSweepStatus, BookUpgradeStatus, CalendarItem, DashboardData, DeletePreview, DownloadClientList, FitCounts,
-  FitItem, FormatInfo, Movie, MovieBulkUpdateReply, MovieDeletePreview, RecycleMode, ReleaseList, SeriesFitSummary, HistoryEvent, HistoryPage, ImportRecord, ImportReview, Indexer, Job, MovieDownloadRow, MovieSummary, MovieWantedRow, MoviesMissing, MyBook, MyRequest, QualityProfileInfo, Series, WantedLists,
+  APIKeyStatus, ActivityFeed, BlocklistRow, CalendarItem, DashboardData, DeletePreview, DownloadClientList, FitCounts,
+  FitItem, FormatInfo, Movie, MovieBulkUpdateReply, MovieDeletePreview, RecycleMode, ReleaseList, SeriesFitSummary, HistoryEvent, HistoryPage, ImportRecord, ImportReview, Indexer, Job, MovieDownloadRow, MovieSummary, MovieWantedRow, MoviesMissing, QualityProfileInfo, Series, WantedLists,
 } from "../../src/lib/api";
 import type { ConnectionSectionData } from "../../src/lib/connectionsApi";
 import type { JellyfinConfig, JellyfinSave, JellyfinTestResult } from "../../src/lib/jellyfinApi";
@@ -13,12 +13,11 @@ export const dashboard: DashboardData = {
     { roots: ["movies", "tv"], path: "/media", total_bytes: 8e12, free_bytes: 2.4e12, used_bytes: 5.6e12, used_pct: 70 },
   ],
   queue: { downloading: 2, stalled: 0, seeding: 5, paused: 0, errored: 0, down_speed: 12_400_000, up_speed: 800_000 },
-  library: { movies: 42, movies_missing: 3, series: 12, episodes: 480, episodes_missing: 7, books: 30, books_missing: 2, artists: 4, albums: 9 },
+  library: { movies: 42, movies_missing: 3, series: 12, episodes: 480, episodes_missing: 7, artists: 4, albums: 9 },
   activity: [
     { kind: "movie", id: 1, title: "The Cartographer", event: "imported", detail: "2160p WEB-DL", at_ms: NOW - 3_600_000 },
     { kind: "series", id: 1, title: "Harbour Lights", event: "grabbed", detail: "S02E04", at_ms: NOW - 7_200_000 },
   ],
-  listening: [],
   plex_configured: false,
 };
 
@@ -153,44 +152,6 @@ export const series: { series: Series[]; metadata_available: boolean } = {
   ],
 };
 
-export const books: { books: Book[]; metadata_available: boolean; upgradable?: number } = { books: [], metadata_available: true, upgradable: 0 };
-export const bookUpgrade: BookUpgradeStatus = { running: false, total: 0, done: 0, upgraded: 0, flagged: 0, unmatched: 0 };
-export const bookSweep: BookSweepStatus = { running: false, total: 0, done: 0, grabbed: 0, skipped: 0 };
-
-export const myBooks: { books: MyBook[]; requests: MyRequest[]; listen: boolean; queue_known: boolean } = {
-  // The audiobook server is on and this person may use it: audiobooks offer Listen.
-  listen: true,
-  queue_known: true,
-  books: [
-    // Arrived yesterday ("New this week"), the first of a two-book series on the shelf.
-    {
-      book_id: 1, title: "A Field Guide to Tides", author: "Marina Coves", year: 2019, series: "Coastlines #1", series_name: "Coastlines", series_position: 1,
-      description: "A walk along the shore, tide by tide: what the moon pulls, what the sea leaves behind, and how to read the line it draws.",
-      subjects: ["Nature", "Oceans"], ebook: { format: "epub", size_bytes: 2_400_000, kindle: true }, audiobook: false, mine: true, added_at: "2026-10-08 10:00:00",
-    },
-    { book_id: 2, title: "The Lighthouse Keeper's Very Long and Winding Account of Thirty Winters", author: "Elias Rook", audiobook: true, mine: false, added_at: "2026-08-01 10:00:00", audiobooks: [{ version_id: 7, item_key: "b2v7", format: "m4b", size_bytes: 310_000_000, files: 1 }] },
-    // An AZW3: Send to Kindle is shown disabled with the reason.
-    { book_id: 3, title: "Tide Tables", author: "Marina Coves", series: "Coastlines #2", series_name: "Coastlines", series_position: 2, ebook: { format: "azw3", size_bytes: 900_000, kindle: false }, audiobook: false, mine: false, added_at: "2026-07-01 10:00:00" },
-  ],
-  requests: [
-    { id: 41, title: "Knots and Splices", author: "Hal Yard", status: "pending", requested_at: "2026-10-02T10:00:00Z", stage: "pending", tracking: { stage: "pending" } },
-    // Searched three times and missed: the card says "Not found yet" and the next check.
-    {
-      id: 42, title: "Charts of the Lesser Sounds", author: "Ada Fenwick", status: "approved", requested_at: "2026-09-20T10:00:00Z", stage: "searching", note: "Not found yet", next_check_at: "2026-10-14T09:00:00Z",
-      tracking: { stage: "searching", note: "Not found yet", next_check_at: "2026-10-14T09:00:00Z", last_search_at: "2026-10-07T09:00:00Z", misses: 3 },
-    },
-    // Asked for both formats; the ebook is here, the card says the audiobook is coming.
-    { id: 43, title: "A Field Guide to Tides", author: "Marina Coves", status: "approved", requested_at: "2026-09-10T10:00:00Z", formats: "both", waiting: "audiobook", stage: "partial", note: "Ebook ready · audiobook on the way", tracking: { stage: "partial", note: "Ebook ready · audiobook on the way" } },
-    // On its way: "Downloading · 40%".
-    { id: 44, title: "Rope Work", author: "Hal Yard", status: "approved", requested_at: "2026-10-05T10:00:00Z", stage: "downloading", tracking: { stage: "downloading", progress: 0.4 } },
-    // Not out yet: "Not out yet" and the day it is.
-    { id: 45, title: "The Moon's Pull", author: "Marina Coves", status: "approved", requested_at: "2026-10-06T10:00:00Z", stage: "searching", note: "Not out yet", release_date: "2026-11-02", tracking: { stage: "searching", note: "Not out yet", release_date: "2026-11-02" } },
-  ],
-};
-
-// Send to Kindle: outgoing mail is set up, and this person hasn't saved an address yet.
-export const myKindle = { kindle_email: "", from_address: "books@example.com", smtp_configured: true };
-
 export const qualityProfiles: { profiles: QualityProfileInfo[]; formats: FormatInfo[] } = {
   profiles: [
     { key: "hd-1080p", name: "HD 1080p", media_type: "movies", built_in: true, is_default: true, summary: "1080p, prefers WEB-DL and Blu-ray" },
@@ -203,8 +164,7 @@ export const fitProfiles: { profiles: Record<string, FitCounts> } = {
   profiles: { "hd-1080p": { titles: 40, files: 40, fits: 36, over: 2, under: 1, mismatch: 1 } },
 };
 
-// The Wanted view (Downloads → Searching / Upcoming): one film searched without luck, and
-// a book waiting for its first search.
+// The Wanted view (Downloads → Searching / Upcoming): one film searched without luck.
 export const wanted: WantedLists = {
   queue_known: true,
   searching: [
@@ -222,10 +182,6 @@ export const wanted: WantedLists = {
         empty_tries: 3, main_reason: "wrong_title",
       },
     },
-    {
-      media_type: "book", id: 3, book_id: 3, title: "Charts of the Lesser Sounds", year: 2024, quality_profile: "Ebook", byline: "Ada Fenwick",
-      missing: ["Ebook"], state: "searching", search_misses: 0, due: true, next_search_at: new Date(NOW).toISOString(),
-    },
   ],
   upcoming: [],
 };
@@ -238,7 +194,7 @@ export const moviesMissing: MoviesMissing = {
   upcoming: [],
   versions: [
     { media_type: "movie", id: 1, movie_id: 1, title: "The Cartographer", year: 2023, poster_url: poster(3), quality_profile: "HD 1080p",
-      missing: ["4K"], tracks: ["4K"], state: "searching", search_misses: 0, due: true, next_search_at: new Date(NOW).toISOString(), queued: false },
+      tracks: ["4K"], state: "searching", search_misses: 0, due: true, next_search_at: new Date(NOW).toISOString(), queued: false },
   ],
 };
 export const moviesCutoff: { rows: MovieWantedRow[]; queue_known: boolean } = {
@@ -302,7 +258,7 @@ export const activity: ActivityFeed = {
 
 export const downloadClients: DownloadClientList = {
   clients: [{ id: 1, name: "qBittorrent", kind: "qbittorrent", url: "http://qbittorrent:8080", enabled: true, priority: 25, bundled: true }],
-  categories: { movies: "arrmada", tv: "arrmada-tv", books: "arrmada-books", music: "arrmada-music" },
+  categories: { movies: "arrmada", tv: "arrmada-tv", music: "arrmada-music" },
 };
 
 export const indexers: { indexers: Indexer[] } = {
@@ -325,7 +281,7 @@ export const historyEvents: HistoryEvent[] = [
   { kind: "series", item_id: 1, title: "Harbour Lights", event: "grabbed", category: "grabbed", detail: "Harbour.Lights.S02E04.1080p.WEB.H264-FIXTURE", at_ms: NOW - 2 * H, id: 30 },
   { kind: "music", item_id: 2, title: "Low Tide", event: "imported", category: "imported", detail: "Saltwater (2024)", at_ms: NOW - 3 * H, id: 4 },
   { kind: "movie", item_id: 3, title: "Driftwood", event: "added", category: "other", detail: "Added to library", at_ms: NOW - 4 * H, id: 11 },
-  { kind: "book", item_id: 7, title: "The Long Quiet", event: "failed", category: "failed", detail: "Stalled for 6h — trying another release", at_ms: NOW - 26 * H, id: 9 },
+  { kind: "music", item_id: 7, title: "The Long Quiet", event: "failed", category: "failed", detail: "Stalled for 6h — trying another release", at_ms: NOW - 26 * H, id: 9 },
   { kind: "series", item_id: 1, title: "Harbour Lights", event: "imported", category: "imported", detail: "S02E03", at_ms: NOW - 50 * H, id: 29 },
   { kind: "movie", item_id: 3, title: "Driftwood", event: "blocklisted", category: "blocklisted", detail: "Driftwood.2025.CAM-FAKE", at_ms: NOW - 52 * H, id: 10 },
 ];

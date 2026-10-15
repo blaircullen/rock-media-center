@@ -56,16 +56,6 @@ func TestDiskFreeCheck(t *testing.T) {
 	}
 }
 
-func TestAudiobookServerCheck(t *testing.T) {
-	got := run(AudiobookServerCheck(func(context.Context) (bool, bool, string) { return true, false, "port 13378 is taken" }))
-	if len(got) != 1 || got[0].Level != LevelError || !strings.Contains(got[0].Message, "port 13378") {
-		t.Errorf("on but down: %+v", got)
-	}
-	if got := run(AudiobookServerCheck(func(context.Context) (bool, bool, string) { return false, false, "" })); len(got) != 0 {
-		t.Errorf("off: %+v", got)
-	}
-}
-
 // The library check judges each folder it's given, never creates one, and flags a folder
 // inside the data folder without probing it.
 func TestLibraryFoldersCheck(t *testing.T) {

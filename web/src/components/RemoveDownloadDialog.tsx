@@ -27,7 +27,6 @@ function stopWantingLabel(it: ActivityDownload): { label: string; disabled: bool
       if (scope === null) return { label: "Also stop wanting these episodes — can't tell which ones this covers", disabled: true };
       return { label: scope ? `Also stop wanting ${scope}` : "Also stop wanting what this download was for", disabled: false };
     }
-    case "book": return { label: "Also stop wanting this book", disabled: false };
     case "music": return { label: "Also stop wanting this album", disabled: false };
     default: return { label: "Also stop wanting this movie", disabled: false };
   }

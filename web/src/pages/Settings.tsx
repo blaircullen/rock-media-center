@@ -15,9 +15,6 @@ import { StatusSection } from "./settings/Status";
 import { AlertsSettings } from "./settings/AlertsSettings";
 import { MediaServersSettings } from "./settings/MediaServers";
 import { ConnectionsSettings } from "./settings/Connections";
-import { SubtitlesSettings } from "./settings/SubtitlesSettings";
-import { ConvertSettings } from "./settings/ConvertSettings";
-import { AudiobookServerSettings } from "./settings/AudiobookServer";
 import { Page } from "../ui/Page";
 
 // How long a deep link keeps its card in view while the section's cards load (see below).
@@ -29,11 +26,8 @@ const SECTION_COMPONENTS: Record<SectionId, React.ComponentType> = {
   media: NamingSettings,
   connections: ConnectionsSettings,
   downloads: DownloadsSettings,
-  subtitles: SubtitlesSettings,
-  convert: ConvertSettings,
   alerts: AlertsSettings,
   "media-servers": MediaServersSettings,
-  "audiobook-server": AudiobookServerSettings,
   users: PeopleSettings,
   import: ImportSettings,
   system: SystemSettings,

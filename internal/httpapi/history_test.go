@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// seedHistory puts one title of each kind in the library and events in all four tables,
+// seedHistory puts one title of each kind in the library and events in all three tables,
 // several in the same second (sweeps write in bursts), so ties are exercised.
 func seedHistory(t *testing.T, a *api) {
 	t.Helper()
@@ -17,7 +17,6 @@ func seedHistory(t *testing.T, a *api) {
 	stmts := []string{
 		`INSERT INTO movies (id, tmdb_id, title, poster_url) VALUES (1, 10, 'Dune', 'https://image.tmdb.org/t/p/w500/dune.jpg')`,
 		`INSERT INTO series (id, tmdb_id, title) VALUES (1, 20, 'Silo')`,
-		`INSERT INTO books (id, ol_key, title, cover_url) VALUES (1, 'OL1W', 'Red Rising', 'https://covers.openlibrary.org/b/id/1-L.jpg')`,
 		`INSERT INTO artists (id, mbid, name, image_url) VALUES (1, 'mb-1', 'Low', '')`,
 		`INSERT INTO movie_events (movie_id, event, detail, created_at) VALUES
 			(1, 'grabbed',  'Dune.2021.2160p.WEB-DL', '2026-10-01 10:00:00'),
@@ -29,10 +28,6 @@ func seedHistory(t *testing.T, a *api) {
 			(1, 'imported',    'S02E04',                         '2026-10-01 11:00:00'),
 			(1, 'blocklisted', 'Silo.S02E05.CAM',                '2026-10-02 09:00:00'),
 			(1, 'seeded',      'Silo.S02E04 — ratio 1.0 reached', '2026-10-03 12:00:00')`,
-		`INSERT INTO book_events (book_id, event, detail, created_at) VALUES
-			(1, 'grabbed',  'Red.Rising.EPUB', '2026-10-01 11:00:00'),
-			(1, 'failed',   'Stalled for 6h',  '2026-10-02 09:00:00'),
-			(1, 'added',    'Added to library','2026-10-02 09:30:00')`,
 		`INSERT INTO artist_events (artist_id, event, detail, created_at) VALUES
 			(1, 'grabbed',  'Low - HEY WHAT (2021) [FLAC]', '2026-10-01 11:00:00'),
 			(1, 'imported', 'HEY WHAT',                      '2026-10-03 12:00:00')`,
@@ -52,15 +47,15 @@ func feedKeys(evs []historyEvent) []string {
 	return out
 }
 
-func TestEventsFeedMergesAllFourKindsNewestFirst(t *testing.T) {
+func TestEventsFeedMergesAllKindsNewestFirst(t *testing.T) {
 	a := dashAPI(t)
 	seedHistory(t, a)
 	evs, err := eventsFeed(context.Background(), a.deps.Store.DB(), eventsFilter{Limit: 100})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(evs) != 13 {
-		t.Fatalf("got %d events, want all 13: %v", len(evs), feedKeys(evs))
+	if len(evs) != 10 {
+		t.Fatalf("got %d events, want all 10: %v", len(evs), feedKeys(evs))
 	}
 	for i := 1; i < len(evs); i++ {
 		if evs[i].AtMS > evs[i-1].AtMS {
@@ -71,15 +66,15 @@ func TestEventsFeedMergesAllFourKindsNewestFirst(t *testing.T) {
 	for _, e := range evs {
 		kinds[e.Kind] = e
 	}
-	for kind, title := range map[string]string{"movie": "Dune", "series": "Silo", "book": "Red Rising", "music": "Low"} {
+	for kind, title := range map[string]string{"movie": "Dune", "series": "Silo", "music": "Low"} {
 		if kinds[kind].Title != title || kinds[kind].ItemID != 1 {
 			t.Errorf("%s resolved to %+v, want %q — the join is wrong", kind, kinds[kind], title)
 		}
 	}
-	if kinds["movie"].PosterURL == "" || kinds["book"].PosterURL == "" {
-		t.Errorf("posters missing: %+v / %+v", kinds["movie"], kinds["book"])
+	if kinds["movie"].PosterURL == "" {
+		t.Errorf("poster missing: %+v", kinds["movie"])
 	}
-	// The same second: movie before series before book before music, newest row first.
+	// The same second: movie before series before music, newest row first.
 	at := evs[0].AtMS
 	if evs[0].Kind != "movie" || evs[1].Kind != "series" || evs[2].Kind != "music" || evs[1].AtMS != at || evs[2].AtMS != at {
 		t.Errorf("ties out of order: %v", feedKeys(evs[:3]))
@@ -120,9 +115,9 @@ func TestEventsFeedFilters(t *testing.T) {
 		t.Errorf("q=%% matched %v; a wildcard must be literal", feedKeys(evs))
 	}
 
-	// "other" is the bookkeeping the default view leaves out: searched and added.
+	// "other" is the bookkeeping the default view leaves out: searched.
 	evs, _ = eventsFeed(ctx, db, eventsFilter{Categories: []string{evOther}, Limit: 50})
-	if strings.Join(feedKeys(evs), ",") != "book:3:added,movie:3:searched" {
+	if strings.Join(feedKeys(evs), ",") != "movie:3:searched" {
 		t.Errorf("other = %v", feedKeys(evs))
 	}
 }
@@ -167,7 +162,7 @@ func TestEventsFeedUsesTheCreatedIndexes(t *testing.T) {
 	a := dashAPI(t)
 	seedHistory(t, a)
 	plan := explainFeed(t, a, eventsFilter{Limit: 50, Categories: []string{evGrabbed, evImported}})
-	for _, idx := range []string{"idx_movie_events_created", "idx_series_events_created", "idx_book_events_created", "idx_artist_events_created"} {
+	for _, idx := range []string{"idx_movie_events_created", "idx_series_events_created", "idx_artist_events_created"} {
 		if !strings.Contains(plan, idx) {
 			t.Errorf("plan doesn't use %s:\n%s", idx, plan)
 		}
@@ -219,10 +214,10 @@ func TestHistoryEndpoint(t *testing.T) {
 
 	// The default leaves the bookkeeping out; event=all brings it back.
 	code, out := get("")
-	if code != 200 || len(events(out["events"])) != 11 {
+	if code != 200 || len(events(out["events"])) != 9 {
 		t.Fatalf("default: %d %s", code, out["events"])
 	}
-	if _, out = get("?event=all"); len(events(out["events"])) != 13 {
+	if _, out = get("?event=all"); len(events(out["events"])) != 10 {
 		t.Errorf("event=all: %s", out["events"])
 	}
 	if _, out = get("?kind=series&event=imported"); len(events(out["events"])) != 1 {
@@ -236,14 +231,14 @@ func TestHistoryEndpoint(t *testing.T) {
 		t.Fatal("a full page must carry next_before")
 	}
 	_, out = get("?limit=50&before=" + next)
-	if n := len(events(out["events"])); n != 7 {
-		t.Errorf("the rest after 4 = %d, want 7", n)
+	if n := len(events(out["events"])); n != 5 {
+		t.Errorf("the rest after 4 = %d, want 5", n)
 	}
 	_ = json.Unmarshal(out["next_before"], &next)
 	if next != "" {
 		t.Errorf("last page next_before = %q", next)
 	}
-	for _, bad := range []string{"?kind=audiobook", "?event=listened", "?before=12", "?before=1:podcast:2", "?limit=0", "?limit=500"} {
+	for _, bad := range []string{"?kind=podcast", "?event=listened", "?before=12", "?before=1:podcast:2", "?limit=0", "?limit=500"} {
 		if code, _ := get(bad); code != 400 {
 			t.Errorf("%s answered %d, want 400", bad, code)
 		}

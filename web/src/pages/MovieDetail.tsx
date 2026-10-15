@@ -28,7 +28,6 @@ import {
   type MovieVersion,
 } from "../lib/api";
 import { qualityApi } from "../lib/qualityApi";
-import { convertApi } from "../lib/convertApi";
 import { useLiveEvent } from "../lib/live";
 import { QUEUE_CHANGED, QUEUE_PROGRESS, progressByHash, queueChangedFor } from "../lib/queueLive";
 import { jobFailed, useJob } from "../lib/useJob";
@@ -36,9 +35,6 @@ import { attemptLine, searchJobLine } from "../lib/searchOutcome";
 import { queuedNote } from "../lib/movieQueue";
 import { Button, Menu, Modal, StatusChip, useToast } from "../ui";
 import { Switch } from "../ui/Switch";
-import { orphanApi } from "./subtitles/orphanApi";
-import { MovieSubtitles } from "../components/subtitles/MovieSubtitles";
-import { TitleProfilePicker } from "./subtitles/ProfileSelect";
 import { movieStatus, trackStatus } from "../lib/movieStatus";
 import { Page } from "../ui/Page";
 
@@ -203,7 +199,6 @@ export function MovieDetail() {
               <div className="mt-4 flex flex-wrap items-center gap-4">
                 <ProfileSelector movie={movie} onChange={load} />
                 <AvailabilitySelector movie={movie} onChange={load} />
-                <TitleProfilePicker kind="movie" id={movie.id} title={movie.title} />
               </div>
 
               <AcquisitionStatus movie={movie} onChange={load} flash={say} searchInfo={{ summary: movie.last_search, nextAt: movie.next_search_at }} />
@@ -351,7 +346,7 @@ function trackLine(movie: Movie, version: MovieVersion): string {
 }
 
 // VersionCard is one track: the same file panel the movie's only file gets (details,
-// subtitles, the missing state), its own status, and its own Search, Import, Edit and
+// the missing state), its own status, and its own Search, Import, Edit and
 // confirmed deletes — searching or importing from a track lands the file in that track.
 function VersionCard({ movie, version, onChange, onCleared, flash, profileName }: { movie: Movie; version: MovieVersion; onChange: () => void; onCleared: () => void; flash: (m: string, err?: boolean) => void; profileName: (ref: string) => string }) {
   const movieId = movie.id;
@@ -391,7 +386,7 @@ function VersionCard({ movie, version, onChange, onCleared, flash, profileName }
         <StatusChip tone={status.tone}>{status.label}</StatusChip>
       </div>
       {line && <div className="mt-1.5 text-sm text-ink-dim" role="status">{line}</div>}
-      {f && <FileBody movieId={movieId} versionId={version.id} file={f} onAdopted={version.is_default ? onChange : undefined} />}
+      {f && <FileBody file={f} />}
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         <button onClick={toggleMonitor} disabled={busy} className={small} style={ghost} aria-pressed={version.monitored}>{version.monitored ? "Monitored" : "Monitor"}</button>
         <button onClick={() => setPanel("search")} disabled={busy} className={small} style={ghost}>Search</button>
@@ -1281,7 +1276,7 @@ function FilePanel({ file, movieId, onChange, onCleared }: { file: MovieFile; mo
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="font-mono text-2xs uppercase" style={{ color: tone }}>{file.missing ? "File missing from disk" : "On disk"}</div>
-          <FileBody movieId={movieId} versionId={0} file={file} onAdopted={onChange} />
+          <FileBody file={file} />
         </div>
         <div className="flex-none">
           <button onClick={() => setConfirming(true)} className="rounded-lg px-3 py-1.5 text-sm font-semibold" style={file.missing ? { border: "1px solid var(--line)", color: "var(--ink)" } : { border: "1px solid var(--reject)", color: "var(--reject-text)" }}>{file.missing ? "Clear record" : "Delete file"}</button>
@@ -1312,22 +1307,10 @@ function FilePanel({ file, movieId, onChange, onCleared }: { file: MovieFile; mo
 }
 
 // FileBody is what every track's file shows, whichever track it is: quality and media
-// chips, size and runtime, the path (opening the file's details), its subtitles, the ones
-// that pair with no video (with Adopt, on the file Subtitles works on), and the
-// missing-from-disk note.
-function FileBody({ movieId, versionId, file, onAdopted }: { movieId: number; versionId: number; file: MovieFile; onAdopted?: () => void }) {
+// chips, size and runtime, the path (opening the file's details), the subtitle files that
+// sit beside it, and the missing-from-disk note.
+function FileBody({ file }: { file: MovieFile }) {
   const [showFile, setShowFile] = useState(false);
-  const [adopting, setAdopting] = useState<string | null>(null);
-  const toast = useToast();
-  // Adopt renames the orphan to pair with this file, so Plex shows it.
-  const adopt = async (name: string) => {
-    setAdopting(name);
-    try {
-      const r = await orphanApi.adopt(movieId, name);
-      toast(`Adopted — now ${r.name}`);
-      onAdopted?.();
-    } catch (e) { toast((e as Error).message, { tone: "error" }); } finally { setAdopting(null); }
-  };
   const subNames = file.subtitles && file.subtitles.length > 0 && (
     <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-dim">
       <span className="font-mono uppercase text-ink-faint">Subs</span>
@@ -1360,36 +1343,13 @@ function FileBody({ movieId, versionId, file, onAdopted }: { movieId: number; ve
       >
         {file.path}
       </button>
-      {/* The file Subtitles works on shows each kept language's state and Find subtitles;
-          another version's file lists its sidecars by name. */}
-      {onAdopted && !file.missing ? <MovieSubtitles movieId={movieId} fallback={subNames} onChanged={onAdopted} /> : subNames}
-      {/* Subtitles named for no video in the folder: Plex won't show them with this file. */}
-      {file.orphan_subtitles && file.orphan_subtitles.length > 0 && (
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-ink-faint" title="Named for no video in this folder, so Plex won't show them with this file">
-          <span className="font-mono uppercase">Not linked to this file</span>
-          {file.orphan_subtitles.map((s) => (
-            <span key={s} className="inline-flex items-center gap-1">
-              <span className="rounded px-1.5 py-0.5 opacity-60" style={{ border: "1px dashed var(--line)" }}>{s}</span>
-              {onAdopted && (
-                <button type="button" onClick={() => adopt(s)} disabled={adopting !== null}
-                  title="Rename it to pair with this file, so Plex shows it"
-                  className="rounded px-1.5 py-0.5 text-xs font-semibold disabled:opacity-50" style={{ border: "1px solid var(--accent-line)", color: "var(--accent-text)" }}>
-                  {adopting === s ? "…" : "Adopt"}
-                </button>
-              )}
-            </span>
-          ))}
-        </div>
-      )}
+      {subNames}
       {file.missing && <div className="mt-1.5 text-sm" style={{ color: "var(--reject-text)" }}>Tracked but not on disk. Refresh & rescan to look again, or clear the record (nothing on disk is touched) to search again.</div>}
       {showFile && (
         <FileDetailsModal
           path={file.path}
           title={file.filename || "File details"}
           subtitle={file.quality || undefined}
-          // Convert works on every track: the default file is 'movie:ID', an extra
-          // version 'movie:ID:v:VID'.
-          onCleanTracks={async () => { await convertApi.convertRequest(versionId === 0 ? `movie:${movieId}` : `movie:${movieId}:v:${versionId}`); }}
           onClose={() => setShowFile(false)}
         />
       )}

@@ -64,7 +64,7 @@ func isExternalRequest(r *http.Request) bool {
 // it. It doesn't block anything itself: which routes are reachable from outside is
 // the route table's ext() flag, checked by the router (router.go) for every route. It
 // used to be a separate prefix list here, and the two drifted — a new route under an
-// allowed prefix silently became internet-reachable, and My Books' cover images broke
+// allowed prefix silently became internet-reachable, and cover images broke
 // away from home because the list didn't name them.
 //
 // Staff are exempt: an admin or manager who has signed in gets the whole app from

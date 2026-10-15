@@ -26,7 +26,6 @@ import (
 const (
 	ReleaseKindMovie  = "movie"
 	ReleaseKindSeries = "series"
-	ReleaseKindBook   = "book"
 )
 
 const (
@@ -54,9 +53,9 @@ type ReleaseRef struct {
 	// The grab itself routes by the indexer (grabTo), so a stale token can't send an NZB
 	// to a torrent client; this is what the release was offered as.
 	Transport string
-	MediaKind string // ReleaseKindMovie | ReleaseKindSeries | ReleaseKindBook
+	MediaKind string // ReleaseKindMovie | ReleaseKindSeries
 	MediaID   int64
-	VersionID int64 // books: the audiobook version the release was matched to (0 = standard)
+	VersionID int64 // the movie version the release was matched to (0 = the default track)
 	// Series: the search the result came from — a negative Season is the whole show,
 	// Episode 0 the whole season. It is the grab's scope, so the import gate's exemption
 	// can't be widened by the browser.

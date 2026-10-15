@@ -130,8 +130,8 @@ func seasonFullyAired(s series.Series, season int) bool {
 	return false
 }
 
-// fileResRank is the resolution rank of the file on disk: what Convert probed, else the
-// release it came from, and for a converted file at least what it was converted from.
+// fileResRank is the resolution rank of the file on disk: the
+// release it came from, and for a file an earlier version converted at least what it was converted from.
 // 0 when nothing says.
 func fileResRank(cur quality.CurrentFile) int {
 	p := parser.Parse(cur.Release)
@@ -205,7 +205,7 @@ func (c *Coordinator) packUpgrades(ctx context.Context, s series.Series, idx run
 			}
 			withFiles = append(withFiles, k)
 			if sameRelease(name, e.SourceRelease) || sameRelease(name, e.ConvertedFromRelease) {
-				have = true // its files are already here (or were, before Convert)
+				have = true // its files are already here (or were, before an earlier version's conversion)
 			}
 		}
 		if have {

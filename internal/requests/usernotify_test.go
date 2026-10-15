@@ -29,7 +29,7 @@ func TestNotifyRequester(t *testing.T) {
 	}
 
 	// The movie imports → notify the requester.
-	s.notifyRequester(ctx, "movie", 123, "")
+	s.notifyRequester(ctx, "movie", 123)
 	inbox, err := s.repo.listUserNotifications(ctx, 7)
 	if err != nil {
 		t.Fatalf("list inbox: %v", err)
@@ -45,7 +45,7 @@ func TestNotifyRequester(t *testing.T) {
 	}
 
 	// A repeat import of the same movie must NOT double-notify.
-	s.notifyRequester(ctx, "movie", 123, "")
+	s.notifyRequester(ctx, "movie", 123)
 	inbox, _ = s.repo.listUserNotifications(ctx, 7)
 	if len(inbox) != 1 {
 		t.Fatalf("dedupe failed: got %d items", len(inbox))

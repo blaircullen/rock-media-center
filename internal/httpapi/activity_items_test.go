@@ -51,7 +51,7 @@ func TestDownloadsFeedLinksTitleByHash(t *testing.T) {
 	}
 	mv := movies.NewService(st.DB(), nil, nil, t.TempDir(), "", nil, log)
 	coord := automation.New(mv, nil, dl, nil, st.DB(), nil, log, "")
-	rq := requests.NewService(st.DB(), mv, nil, nil, coord, quality.NewService(st.DB()), nil, "", log)
+	rq := requests.NewService(st.DB(), mv, nil, coord, quality.NewService(st.DB()), nil, "", log)
 	a := &api{deps: Deps{
 		Store: st, Log: log, Downloads: dl, Movies: mv, Quality: quality.NewService(st.DB()),
 		Automation: coord, Requests: rq,

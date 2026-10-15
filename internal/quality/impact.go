@@ -26,11 +26,11 @@ type ImpactFile struct {
 	RuntimeMin int // the movie's or episode's length, so the bitrate window applies
 	// Held files are kept out of upgrades ("keep existing files"), so no edit moves them.
 	Held bool
-	// Facts are Convert's probed facts for the file, nil when no current analysis exists;
-	// like the sweeps, they win over what the release name says.
+	// Facts are probed facts for the file, nil when there are none; like the sweeps, they
+	// win over what the release name says.
 	Facts *FileFacts
-	// OrigRelease and OrigBytes are what a converted file was before Convert first shrank
-	// it ("" / 0 when never converted), the baseline the sweeps measure an upgrade from.
+	// OrigRelease and OrigBytes are what a converted file was before an earlier version's
+	// Convert module first shrank it ("" / 0 when never converted), the baseline the sweeps measure an upgrade from.
 	OrigRelease string
 	OrigBytes   int64
 }

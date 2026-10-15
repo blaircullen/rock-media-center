@@ -14,7 +14,7 @@ var ErrBlockNotFound = errors.New("blocklist entry not found")
 // BlockRow is one blocklist entry of any kind, for the Blocklist page.
 type BlockRow struct {
 	ID   int64  `json:"id"`
-	Type string `json:"type"` // movie | series | book | music | global
+	Type string `json:"type"` // movie | series | music | global
 	// ItemID is the library item it blocks the release for (0 for global). For a music
 	// discography it is the artist, and Discography says so.
 	ItemID      int64  `json:"item_id"`
@@ -38,7 +38,7 @@ type BlockFilter struct {
 }
 
 // blockTypes are the blocklist's media_type values.
-var blockTypes = map[string]bool{"movie": true, "series": true, "book": true, "music": true, "global": true}
+var blockTypes = map[string]bool{"movie": true, "series": true, "music": true, "global": true}
 
 // ValidBlockType reports whether t is a blocklist type ("" means all).
 func ValidBlockType(t string) bool { return t == "" || blockTypes[t] }
@@ -49,9 +49,10 @@ const maxBlockPage = 200
 // ListAllBlocks returns blocklist entries of every kind, newest first, with the title of
 // what each blocks the release for, and how many match in all.
 //
-// Only movie and series rows had a page before, so a book's or an album's block — and the
-// 'global' rows Reject writes for a release tied to nothing, which block it for every
-// title — could be neither seen nor undone.
+// Only movie and series rows had a page before, so an album's block — and the 'global'
+// rows Reject writes for a release tied to nothing, which block it for every title —
+// could be neither seen nor undone. Rows of kinds this version no longer has (an older
+// version's book or Kindle notices) are left out.
 func (c *Coordinator) ListAllBlocks(ctx context.Context, f BlockFilter) ([]BlockRow, int, error) {
 	if f.Limit <= 0 || f.Limit > maxBlockPage {
 		f.Limit = maxBlockPage
@@ -64,15 +65,13 @@ func (c *Coordinator) ListAllBlocks(ctx context.Context, f BlockFilter) ([]Block
 	const item = `CASE b.media_type
 			WHEN 'movie' THEN COALESCE(m.title, '')
 			WHEN 'series' THEN COALESCE(s.title, '')
-			WHEN 'book' THEN COALESCE(bk.title, '')
 			WHEN 'music' THEN COALESCE(al.title, '')
 			ELSE '' END`
 	const from = ` FROM blocklist b
 		LEFT JOIN movies m ON b.media_type = 'movie' AND m.id = b.movie_id
 		LEFT JOIN series s ON b.media_type = 'series' AND s.id = b.movie_id
-		LEFT JOIN books bk ON b.media_type = 'book' AND bk.id = b.movie_id
 		LEFT JOIN albums al ON b.media_type = 'music' AND al.id = b.movie_id
-		WHERE 1 = 1`
+		WHERE b.media_type IN ('movie', 'series', 'music', 'global')`
 	where, args := "", []any{}
 	if f.Type != "" {
 		where += ` AND b.media_type = ?`

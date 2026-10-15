@@ -81,8 +81,8 @@ func TestRequestReadyPublishesOnce(t *testing.T) {
 	events, cancel := s.bus.Subscribe("*")
 	defer cancel()
 
-	_ = s.notifyRequester(ctx, "movie", 11, "")
-	_ = s.notifyRequester(ctx, "movie", 11, "")
+	_ = s.notifyRequester(ctx, "movie", 11)
+	_ = s.notifyRequester(ctx, "movie", 11)
 	if got := drain(t, events); fmt.Sprint(got) != "[request.updated available user.7.request.updated available]" {
 		t.Errorf("ready: %v", got)
 	}

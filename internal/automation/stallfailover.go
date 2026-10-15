@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/indexer"
 	"github.com/tristenlammi/arrmada/internal/movies"
@@ -177,7 +176,7 @@ func (t *stallTick) take() bool {
 // stallTarget is what a fail-over needs to know about the title a stalled grab was for.
 // Each media type fills it in; failOver holds the logic they share.
 type stallTarget struct {
-	kind string // movie | series | book | music, as published on download.stalled
+	kind string // movie | series | music, as published on download.stalled
 	id   int64  // the title's id (the album's, for music)
 	name string // the title's display name
 	// block blocklists the stalled release for this title with the given reason.
@@ -515,86 +514,6 @@ func (c *Coordinator) replaceSeriesGrab(ctx context.Context, s series.Series, g 
 	}
 	_, _, took := c.grabSeriesScoped(ctx, s, releases, sortedKeys(setOf(scope)), exclude)
 	return strings.Join(took, ", "), nil
-}
-
-// detectStalledBook is the book kind's stall check: done once the edition (or audiobook
-// version) this grab was for has its file; otherwise replaced with another release of
-// that same edition.
-func (c *Coordinator) detectStalledBook(ctx context.Context, g grab, queue []download.Item, tick *stallTick) {
-	if c.books == nil {
-		c.closeStale(ctx, g, grabStatusFailed, tick)
-		return
-	}
-	b, err := c.books.Get(ctx, g.MovieID) // book id is stored in movie_id on the shared grabs table
-	if err != nil {
-		c.closeStale(ctx, g, grabStatusFailed, tick)
-		return
-	}
-	// Only the edition THIS grab was for counts as landed. Checking b.HasFile (ebook OR
-	// audiobook) meant a landed ebook flipped a still-downloading AUDIOBOOK grab to
-	// "imported" — after which ManageSeeding removed that torrent WITH its data the moment
-	// it completed, before the import sweep could run, and the book was re-grabbed on the
-	// next pass: a grab/delete/re-grab loop that also destroyed the download.
-	landed := bookEditionLanded(b, g.Title)
-	if g.VersionID > 0 {
-		// A version grab has landed when THAT version has its file — the standard
-		// audiobook being present says nothing about it. A version since removed has
-		// nothing left to wait for.
-		landed = true
-		for _, v := range b.AudioVersions {
-			if v.ID == g.VersionID {
-				landed = v.File != nil
-			}
-		}
-	}
-	if landed {
-		c.closeStale(ctx, g, grabStatusImported, tick)
-		return
-	}
-	c.judgeStall(ctx, g, queue, tick, func(context.Context) (stallTarget, bool) { return c.bookStallTarget(b, g), true })
-}
-
-// bookStallTarget is what a fail-over of book grab g needs.
-func (c *Coordinator) bookStallTarget(b books.Book, g grab) stallTarget {
-	return stallTarget{
-		kind: "book", id: b.ID, name: b.Title,
-		block: func(ctx context.Context, reason string) error {
-			c.addBlockBook(ctx, b.ID, g.Title, g.Indexer, reason)
-			return nil
-		},
-		event: func(ctx context.Context, detail string) { c.books.AddEvent(ctx, b.ID, "failed", detail) },
-		replace: func(ctx context.Context, exclude map[string]bool) (string, error) {
-			return c.replaceBookGrab(ctx, b, g, exclude)
-		},
-	}
-}
-
-// replaceBookGrab searches for the same edition the stalled grab was for: its audiobook
-// version, or the ebook / audiobook read off the release's format. A release whose format
-// can't be told tries each edition the book still lacks and the profile wants.
-func (c *Coordinator) replaceBookGrab(ctx context.Context, b books.Book, g grab, exclude map[string]bool) (string, error) {
-	sp := c.bookProfile(ctx, b.QualityProfile)
-	if g.VersionID > 0 {
-		for _, v := range b.AudioVersions {
-			if v.ID == g.VersionID {
-				return c.grabAudioVersionExcluding(ctx, b, v, sp, exclude)
-			}
-		}
-		return "", nil
-	}
-	if kind := books.EditionOf(detectBookFormat(g.Title)); kind == books.KindEbook || kind == books.KindAudiobook {
-		return c.grabBookEditionExcluding(ctx, b, kind, sp, exclude)
-	}
-	wantEbook, wantAudio := books.WantedEditions(sp.FormatScores)
-	if wantEbook && b.Ebook == nil {
-		if title, err := c.grabBookEditionExcluding(ctx, b, books.KindEbook, sp, exclude); title != "" || err != nil {
-			return title, err
-		}
-	}
-	if wantAudio && b.Audiobook == nil {
-		return c.grabBookEditionExcluding(ctx, b, books.KindAudiobook, sp, exclude)
-	}
-	return "", nil
 }
 
 // detectStalledMusic is the music kind's stall check: done once the album is complete;

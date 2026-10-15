@@ -196,7 +196,7 @@ func (r mapResolver) LookupIPAddr(_ context.Context, host string) ([]net.IPAddr,
 // ordinary rules; and neither ever gets the saved URL back.
 func TestMyAppriseKeepsRequestersOffInternalHosts(t *testing.T) {
 	s := newRouteServer(t, func(d *Deps) {
-		d.Requests = requests.NewService(d.Store.DB(), nil, nil, nil, nil, nil, nil, "", d.Log)
+		d.Requests = requests.NewService(d.Store.DB(), nil, nil, nil, nil, nil, "", d.Log)
 		d.Resolver = mapResolver{"internal.lan": "192.168.1.5", "push.example.com": "93.184.216.34", "qbittorrent": "172.18.0.4"}
 	})
 	_, kid := s.user(t, "kid@example.com", auth.RoleRequester)

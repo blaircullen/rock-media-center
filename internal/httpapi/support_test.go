@@ -125,7 +125,7 @@ func TestLogsDownloadIncludesRotated(t *testing.T) {
 // The Logs API answers increments and filters by module.
 func TestLogsRouteIncrementalAndModule(t *testing.T) {
 	f := newLogFixture(t, nil, nil)
-	f.log.With("module", "convert").Info("encode started")
+	f.log.With("module", "download").Info("encode started")
 	f.log.With("module", "indexer").Info("search sent")
 
 	var page struct {
@@ -146,12 +146,12 @@ func TestLogsRouteIncrementalAndModule(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	get("module=convert")
+	get("module=download")
 	if len(page.Entries) != 1 || page.Entries[0].Message != "encode started" || page.Capacity != 1000 || len(page.Modules) == 0 {
-		t.Fatalf("module=convert: %+v", page)
+		t.Fatalf("module=download: %+v", page)
 	}
 	cursor := page.LastSeq
-	f.log.With("module", "convert").Info("encode finished")
+	f.log.With("module", "download").Info("encode finished")
 	get("after_seq=" + jsonNum(cursor))
 	if len(page.Entries) != 1 || page.Entries[0].Message != "encode finished" || page.Reset {
 		t.Fatalf("after_seq: %+v", page)
@@ -168,17 +168,16 @@ func TestLogsRouteIncrementalAndModule(t *testing.T) {
 func jsonNum(n uint64) string { b, _ := json.Marshal(n); return string(b) }
 
 // The support bundle is written to be shared publicly. Built from an install with
-// audiobooks, people, Kindle addresses and every kind of credential — some of which have
+// people, email addresses and every kind of credential — some of which have
 // leaked into log lines the way real bugs leak them — none of those strings may appear
 // anywhere in the zip.
-func TestSupportBundleRedactsSecretsAndBooks(t *testing.T) {
+func TestSupportBundleRedactsSecretsAndPeople(t *testing.T) {
 	const (
 		tmdbKey     = "tmdbKEY9f8e7d6c5b4a"
 		plexToken   = "PlexTokZq81XwYy77"
 		jellyKey    = "JellyKeyB0b0Fe77aa"
 		smtpPass    = "smtpPa55wordXq"
 		smtpUser    = "mailer-account-77"
-		osPass      = "OpenSubsPw-551"
 		indexerKey  = "IndexerKey77aa88bb"
 		trackerPass = "TrackerPassQq19"
 		qbitPass    = "QbitPass4455zz"
@@ -186,15 +185,9 @@ func TestSupportBundleRedactsSecretsAndBooks(t *testing.T) {
 		appriseURL  = "pover://userkeyMarigold@apptokenSecret99"
 		envPlex     = "EnvPlexToken-0099x"
 
-		title1  = "Zephyrine Quillfeather Chronicles"
-		title2  = "Brindlemoor: Saltwater Hymns"
-		author  = "Oswin Thackeray-Pell"
-		series  = "Lantern Cycle Gloaming"
-		mark    = "Marigold Favourite Bit"
-		person  = "marigoldbanks"
-		plexNm  = "MarigoldOnPlex"
-		kindle  = "marigold_77@kindle.com"
-		titleID = "b12"
+		person = "marigoldbanks"
+		plexNm = "MarigoldOnPlex"
+		mailTo = "marigold_77@example.com"
 	)
 
 	f := newLogFixture(t, func(d *Deps) {
@@ -203,9 +196,8 @@ func TestSupportBundleRedactsSecretsAndBooks(t *testing.T) {
 	}, func(p string) {
 		// Lines an older version wrote, before request logging used route patterns.
 		writeLines(t, p+".1",
-			`{"time_ms":10,"level":"INFO","msg":"audiobook server: request","attrs":"method=GET path=/api/items/b12/play query=q=zephyrine status=200 bytes=10 client=Lissen"}`,
-			`{"time_ms":11,"level":"DEBUG","msg":"request","attrs":"method=GET path=/api/v1/books/42/audiobook status=200 dur_ms=3"}`,
-			`{"time_ms":12,"level":"DEBUG","msg":"audiobook server: holding a jump back until playback continues from it","attrs":"user=`+person+` item=b12 saved=10 reported=2"}`,
+			`{"time_ms":11,"level":"DEBUG","msg":"request","attrs":"method=GET path=/api/v1/movies/42/releases status=200 dur_ms=3"}`,
+			`{"time_ms":12,"level":"DEBUG","msg":"sweep: holding a title","attrs":"user=`+person+` saved=10 reported=2"}`,
 			`torn line {"time_ms":`,
 		)
 	})
@@ -213,8 +205,8 @@ func TestSupportBundleRedactsSecretsAndBooks(t *testing.T) {
 	set := f.deps.Settings
 	for k, v := range map[string]string{
 		"apikey:tmdb": tmdbKey, "apikey:smtp_password": smtpPass, "apikey:smtp_username": smtpUser,
-		"apikey:opensubtitles_password": osPass, "insights_plex_token": plexToken,
-		"insights_plex_url": "http://192.168.1.5:32400", "apikey:jellyfin": jellyKey, "jellyfin_url": "http://192.168.1.6:8096", "convert_codec": "hevc", "module_books_enabled": "true",
+		"insights_plex_token": plexToken,
+		"insights_plex_url":   "http://192.168.1.5:32400", "apikey:jellyfin": jellyKey, "jellyfin_url": "http://192.168.1.6:8096", "write_nfo": "true", "music_enabled": "true",
 	} {
 		if err := set.Set(ctx, k, v); err != nil {
 			t.Fatal(err)
@@ -231,28 +223,21 @@ func TestSupportBundleRedactsSecretsAndBooks(t *testing.T) {
 	exec(`INSERT INTO download_clients (name, kind, url, username, password) VALUES ('q', 'qbittorrent', 'http://qbit:8080', 'admin', ?)`, qbitPass)
 	exec(`INSERT INTO notifications (name, kind, url) VALUES ('d', 'discord', ?)`, "discord://1234567/"+webhookTok)
 	u, _ := f.user(t, person, auth.RoleRequester)
-	exec(`UPDATE users SET plex_username = ?, kindle_email = ?, apprise_url = ? WHERE id = ?`, plexNm, kindle, appriseURL, u.ID)
-	exec(`INSERT INTO books (ol_key, title, author, series_name) VALUES ('OL1W', ?, ?, ?)`, title1, author, series)
-	exec(`INSERT INTO books (ol_key, title, author) VALUES ('OL2W', ?, ?)`, title2, author)
-	exec(`INSERT INTO listen_bookmarks (user_id, item_key, time, title, created_at) VALUES (?, 'b12', 5, ?, 1)`, u.ID, mark)
+	exec(`UPDATE users SET plex_username = ?, apprise_url = ? WHERE id = ?`, plexNm, appriseURL, u.ID)
 
 	// Lines as today's code writes them, plus the leaks a careless line could add.
-	books := f.log.With("module", "books")
-	books.Info("book: imported", "title", title1, "edition", "audiobook", "format", "m4b")
-	books.Info("book scan: imported", "title", "Brindlemoor", "audio", 1)
-	f.log.With("module", "requests").Info("request created", "media", "book", "title", title2, "by", person, "auto_approve", false)
+	f.log.With("module", "requests").Info("request created", "media", "movie", "by", person, "auto_approve", false)
 	f.log.With("module", "indexer").Debug("torznab page", "url", "http://t.example/api?t=search&apikey="+indexerKey+"&q=zephyrine+quillfeather+chronicles")
-	f.log.With("module", "download").Info("grabbed", "release", "Zephyrine.Quillfeather.Chronicles.2024.M4B-GRP", "path", "/downloads/Oswin Thackeray-Pell - Brindlemoor")
+	f.log.With("module", "download").Info("grabbed", "release", "Some.Movie.2024.1080p-GRP", "path", "/downloads/Some Movie")
 	f.log.Warn("plex call failed", "err", "GET https://plex.tv/x?X-Plex-Token="+plexToken+": 401")
 	f.log.Warn("jellyfin: call failed", "err", "MediaBrowser Token=\""+jellyKey+"\" refused")
 	f.log.Warn("qbittorrent: login refused for password " + qbitPass)
-	f.log.Info("mail: sent to "+kindle, "user", person)
+	f.log.Info("mail: sent to "+mailTo, "user", person)
 	f.log.Info("notify: discord answered 404 for "+webhookTok, "who", plexNm)
-	f.log.Info("audiobook server: signed in", "user", person, "client", "Lissen")
-	f.log.Error("insights: plex said no", "detail", "token "+envPlex+" refused, tmdb "+tmdbKey+", smtp "+smtpUser+"/"+smtpPass+", subs "+osPass+", tracker "+trackerPass)
+	f.log.Info("signed in", "user", person, "client", "Firefox")
+	f.log.Error("insights: plex said no", "detail", "token "+envPlex+" refused, tmdb "+tmdbKey+", smtp "+smtpUser+"/"+smtpPass+", tracker "+trackerPass)
 	f.log.Info("apprise: posting to " + appriseURL)
 	f.log.Info("mail: bounce from someone@example.org")
-	f.log.Info("listen: bookmark added", "bookmark", mark, "item", titleID)
 	// A calendar feed link: only its hash is stored, and a careless line quoting the link
 	// (or the bare token in an attr) must still not carry it out.
 	feedTok, _, err := f.deps.Auth.RotateCalendarFeed(ctx, u.ID)
@@ -290,11 +275,10 @@ func TestSupportBundleRedactsSecretsAndBooks(t *testing.T) {
 	lower := strings.ToLower(bundle)
 
 	forbidden := []string{
-		tmdbKey, plexToken, jellyKey, smtpPass, smtpUser, osPass, indexerKey, trackerPass, qbitPass, webhookTok,
+		tmdbKey, plexToken, jellyKey, smtpPass, smtpUser, indexerKey, trackerPass, qbitPass, webhookTok,
 		"apptokenSecret99", "userkeyMarigold", envPlex,
-		title1, title2, "Zephyrine", "Quillfeather", "Brindlemoor", "Saltwater", author, "Thackeray", series, mark,
-		person, plexNm, kindle, "owner-admin",
-		"/api/items/b12", "b12", "/books/42", "q=zephyrine",
+		person, plexNm, mailTo, "owner-admin",
+		"/movies/42",
 		feedTok, feedHash,
 	}
 	for _, s := range forbidden {
@@ -308,7 +292,7 @@ func TestSupportBundleRedactsSecretsAndBooks(t *testing.T) {
 	// Still useful: the lines are there and say what happened (checked in the logs alone —
 	// the README names the placeholders too), and safe settings show.
 	logs := files["logs/arrmada.log.jsonl.1"] + files["logs/arrmada.log.jsonl"]
-	for _, want := range []string{"book: imported", "request created", "plex call failed", "GET /api/items/{id}/play", "/api/v1/books/{id}/audiobook", "«redacted»", "«user»", "«name»", "«email»", `"module":"books"`} {
+	for _, want := range []string{"request created", "plex call failed", "/api/v1/movies/{id}/releases", "«redacted»", "«user»", "«email»", `"module":"requests"`} {
 		if !strings.Contains(logs, want) {
 			t.Errorf("the bundle's logs should still contain %q:\n%s", want, logs)
 		}
@@ -320,7 +304,7 @@ func TestSupportBundleRedactsSecretsAndBooks(t *testing.T) {
 	if err := json.Unmarshal([]byte(files["settings.json"]), &settings); err != nil {
 		t.Fatalf("settings.json: %v", err)
 	}
-	if settings.Included["convert_codec"] != "hevc" || settings.Included["module_books_enabled"] != "true" {
+	if settings.Included["write_nfo"] != "true" || settings.Included["music_enabled"] != "true" {
 		t.Errorf("safe settings missing: %+v", settings.Included)
 	}
 	for _, k := range []string{"apikey:tmdb", "insights_plex_token", "insights_plex_url", "apikey:jellyfin", "jellyfin_url"} {

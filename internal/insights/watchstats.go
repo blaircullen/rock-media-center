@@ -7,7 +7,7 @@ import (
 
 // "Watched by" on a title's own page: who has played it on Plex or Jellyfin, how often and
 // when last, from the recorded play history (live sessions and imported Tautulli rows).
-// Only recorded video plays are read; audiobook listening lives elsewhere and is never
+// Only recorded video plays are read; listening to anything else is never
 // touched here.
 
 // UserPlays is one person's plays of a title (one row per server identity).

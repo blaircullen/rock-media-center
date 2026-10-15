@@ -38,14 +38,14 @@ export function DownloadsSettings() {
 }
 
 // DefaultCategories switches the usual search categories for indexers that name none of
-// their own (Prowlarr's synced indexers), so a book search stops coming back with films.
+// their own (Prowlarr's synced indexers), so a TV search stops coming back with films.
 // Off asks every category, as before.
 function DefaultCategories() {
   const save = useSetting("indexer_default_categories");
   return (
     <AutoToggle
       label="Search the usual categories"
-      hint="Indexers without categories of their own are asked only for the kind of release being searched for — movies, TV, books, audiobooks or music — when they list that category. Turn off if an indexer files releases in odd categories."
+      hint="Indexers without categories of their own are asked only for the kind of release being searched for — movies, TV or music — when they list that category. Turn off if an indexer files releases in odd categories."
       save={save}
     />
   );
@@ -88,7 +88,7 @@ function ageOf(unix: number): string {
 
 // RecycleBin shows what the bin is holding and lets an admin set the guard rails (max size /
 // retention, each saved when its field is left) and empty it on demand. Deleted & replaced
-// files (movie/episode deletes, Convert originals) land here instead of being erased.
+// files (movie/episode deletes) land here instead of being erased.
 function RecycleBin() {
   // Blank isn't "unlimited" here (the server would read it as 0): 0 has to be typed.
   const maxGB = useSetting("recycle_max_gb", { validate: wholeNumber(0, 100000, "The size cap") });
@@ -139,9 +139,9 @@ function RecycleBin() {
   const emptying = confirm?.kind === "empty" ? confirm : null;
 
   return (
-    <Section id="recycle-bin" title="Recycle bin" subtitle="Deleted & replaced files (movie/episode deletes and Convert originals) are moved into a hidden .arrmada-recycle folder inside the library they came from — a quick move on the same drive, hidden from Plex — instead of being erased, so a mistake can be undone until the guard rails below purge it. The size cap counts every bin together, and the oldest files go first once they're over it. Convert only starts a file whose original fits under the cap. To restore a converted film, delete the converted file first: the bin won't restore over it.">
+    <Section id="recycle-bin" title="Recycle bin" subtitle="Deleted & replaced files (movie/episode deletes) are moved into a hidden .arrmada-recycle folder inside the library they came from — a quick move on the same drive, hidden from Plex — instead of being erased, so a mistake can be undone until the guard rails below purge it. The size cap counts every bin together, and the oldest files go first once they're over it.">
       {stats && !stats.enabled ? (
-        <p className="text-sm text-ink-dim">Recycling is turned off (<code>ARRMADA_RECYCLE_DIR=off</code>) — deleted files are erased immediately, and Convert deletes each original once its conversion is verified, with no undo.</p>
+        <p className="text-sm text-ink-dim">Recycling is turned off (<code>ARRMADA_RECYCLE_DIR=off</code>) — deleted files are erased immediately, with no undo.</p>
       ) : (
         <>
           <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-base">

@@ -39,7 +39,7 @@ type grab struct {
 	SeedEnabled  bool
 	SeedRatio    float64
 	SeedHours    int
-	MediaType    string // "movie" | "series" | "book" | "music"
+	MediaType    string // "movie" | "series" | "music"
 	InfoHash     string // the torrent's real identity; "" for rows predating migration 0062
 	Status       string // one of the grabStatus* words (grabstatus.go)
 	// ReplacesPath is the file the grab's movie track held when it was grabbed (an
@@ -235,22 +235,6 @@ func (c *Coordinator) addBlockSeries(ctx context.Context, seriesID int64, title,
 	}
 }
 
-// addBlockBook blocklists a release for a book (stall fail-over).
-func (c *Coordinator) addBlockBook(ctx context.Context, bookID int64, title, indexer, reason string) {
-	_, err := c.db.ExecContext(ctx,
-		`INSERT INTO blocklist (movie_id, norm_title, title, indexer, download_url, reason, media_type)
-		 VALUES (?, ?, ?, ?, '', ?, 'book')`,
-		bookID, normTitle(title), title, indexer, reason)
-	if err != nil {
-		c.log.Warn("book: blocklist failed", "err", err)
-	}
-}
-
-// blockedSetBook returns the normalized titles blocklisted for a book.
-func (c *Coordinator) blockedSetBook(ctx context.Context, bookID int64) (map[string]bool, error) {
-	return c.blockedSetOf(ctx, bookID, "book")
-}
-
 // addBlockGlobal blocklists a release for EVERY library item — used when the release
 // itself is the problem (executables and no video: a fake or malware), not its fit for
 // one particular movie or show. blockedSetOf folds these rows into every lookup.
@@ -352,7 +336,7 @@ func boolToInt(b bool) int {
 // want it, and threading a bool through every grab recorder for their sake would put the
 // question in a dozen places that have no opinion on it.
 //
-// It covers the whole release, which is what movies and books want and what an uploaded
+// It covers the whole release, which is what movies and albums want and what an uploaded
 // series torrent means. A series grab made for one season or episode uses markGrab.
 func (c *Coordinator) markGrabManual(ctx context.Context, infoHash string) {
 	c.markGrab(ctx, infoHash, true, WholeShow)

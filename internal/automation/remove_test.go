@@ -177,11 +177,11 @@ func TestRemovedReleaseIsNotGrabbedAgain(t *testing.T) {
 	}
 }
 
-// The same hold applies to series, books and music.
+// The same hold applies to series and music.
 func TestRemovedGrabHoldsEveryKind(t *testing.T) {
 	c, _ := removeCoord(t)
 	ctx := context.Background()
-	for _, kind := range []string{"series", "book", "music"} {
+	for _, kind := range []string{"series", "music"} {
 		gid := addGrab(t, c, kind, 7, "Some.Release-GRP", "")
 		c.setGrabStatus(ctx, gid, grabStatusRemoved)
 	}
@@ -195,9 +195,6 @@ func TestRemovedGrabHoldsEveryKind(t *testing.T) {
 	}
 	if !has(c.pendingSeriesGrabTitles(ctx, 7)) {
 		t.Error("series guard ignores a removed grab")
-	}
-	if !has(c.pendingBookGrabTitles(ctx, 7)) {
-		t.Error("book guard ignores a removed grab")
 	}
 	if !has(c.pendingMusicGrabTitles(ctx, 7)) {
 		t.Error("music guard ignores a removed grab")

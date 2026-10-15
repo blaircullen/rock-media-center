@@ -1,6 +1,6 @@
 // Package langs is Arrmada's one language table: every ISO 639-1 language with its
 // 639-2/B and /T codes and English name, plus the regional variants people actually ask
-// subtitles for (pt-br, zh-tw, es-419…). Subtitles, the importer and Convert all read
+// subtitles for (pt-br, zh-tw, es-419…). The importer and the quality parser read
 // language tags through it, so "fre", "fra", "fr" and "French" are the same language
 // everywhere and an unknown tag is never mistaken for one.
 //
@@ -206,26 +206,13 @@ func Name(tok string) string {
 	return strings.TrimSpace(tok)
 }
 
-// ISO1 is the two-letter base code whisper's -l wants ("fre" → "fr", "pt-br" → "pt"), or
+// ISO1 is the two-letter base code ("fre" → "fr", "pt-br" → "pt"), or
 // "" when the tag isn't a known language.
 func ISO1(tok string) string {
 	if l, ok := Lookup(tok); ok {
 		return l.ISO1
 	}
 	return ""
-}
-
-// OpenSubtitles is the language code to search OpenSubtitles.com with. Mostly the
-// canonical code; plain Portuguese and Chinese mean pt-pt and zh-cn there, and Latin
-// American Spanish is "ea". An unknown tag is sent as given (normalised).
-func OpenSubtitles(tok string) string {
-	if l, ok := Lookup(tok); ok {
-		if l.openSubs != "" {
-			return l.openSubs
-		}
-		return l.Code
-	}
-	return norm(tok)
 }
 
 // SidecarTag is the language segment to write in a sidecar name: "<base>.<tag>.srt". It is

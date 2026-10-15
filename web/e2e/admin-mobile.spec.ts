@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./mockApi";
 
-// FE-20: the four library pages at phone and tablet width. Nothing scrolls sideways (with
+// FE-20: the three library pages at phone and tablet width. Nothing scrolls sideways (with
 // Select on or off), every "+ Add …" button stays on one line, and a phone gets the grid
 // even when the saved view is the table — which the desktop keeps.
 
@@ -10,7 +10,6 @@ const sideways = (page: Page) => page.locator("main").evaluate((el) => el.scroll
 const LIBRARIES = [
   { path: "/movies", add: "+ Add movie" },
   { path: "/series", add: "+ Add series" },
-  { path: "/books", add: "+ Add book" },
   { path: "/music", add: "+ Add artist" },
 ];
 

@@ -9,7 +9,7 @@ import (
 // Every automatic pick records what decided it (grabs.decided_by / decided_mode, migration
 // 0274). The search's collector notes each decision's winner and its deciding key as the
 // quality engine ranks; the grab recorders read the key back for the release they record.
-// A grab no ranking chose — a manual pick, an upload, a book or an album — records none.
+// A grab no ranking chose — a manual pick, an upload or an album — records none.
 
 // Decided modes besides the ranking modes (quality.RankingV1 / RankingV2).
 const decidedUpgrade = "upgrade" // an upgrade over the file on disk; the key is the gain

@@ -8,7 +8,7 @@
 
 /** The inputs a preset's form shows. Name, tie-break and minimum seeders are always there
  *  under "More options"; seed rules always show. */
-export type PresetField = "url" | "api_key" | "username" | "password" | "mam_session";
+export type PresetField = "url" | "api_key" | "username" | "password";
 
 export interface IndexerPreset {
   /** Stable id for the tile (and tests). */
@@ -20,7 +20,7 @@ export interface IndexerPreset {
   /** One line under the title. */
   blurb: string;
   /** The indexer kind it creates. "prowlarr" isn't one: that tile opens the Prowlarr card. */
-  kind: "torrentleech" | "myanonamouse" | "1337x" | "torznab" | "newznab" | "prowlarr";
+  kind: "torrentleech" | "1337x" | "torznab" | "newznab" | "prowlarr";
   /** The name a new indexer gets until the owner types their own. */
   defaultName: string;
   fields: PresetField[];
@@ -49,18 +49,6 @@ export const INDEXER_PRESETS: IndexerPreset[] = [
     fields: ["username", "password"],
     mediaTypes: [],
     help: "Native, no Prowlarr or Jackett needed. Your login is stored on your server. Uses FlareSolverr for Cloudflare. New uploads are checked every 15 minutes. 2FA isn't supported yet.",
-    privateTracker: true,
-  },
-  {
-    id: "myanonamouse",
-    label: "MyAnonaMouse",
-    monogram: "MA",
-    blurb: "Private tracker · books and audiobooks",
-    kind: "myanonamouse",
-    defaultName: "MyAnonaMouse",
-    fields: ["mam_session"],
-    mediaTypes: ["book"],
-    help: "Native books and audiobooks. In MyAnonaMouse go to Preferences → Security → Create session, allow your server's IP (ASN-locked is fine) and paste the mam_id here. Narrator, author, series, language and format come straight from MAM. If MAM is also in Prowlarr, remove it there to avoid duplicate results.",
     privateTracker: true,
   },
   {

@@ -244,7 +244,7 @@ func TestProfileSavesIdealAndRequired(t *testing.T) {
 }
 
 // Cams and their kin are refused by video profiles unless allowed — not just ranked last —
-// and never by a book profile, where "TS" is an author's initials.
+// and never by a music profile.
 func TestPreReleaseRefused(t *testing.T) {
 	cam := NewCandidate("Movie.2025.1080p.HDTS.x264-GRP", 2, 500)
 	movie := StoredProfile{MediaType: MediaMovie}
@@ -255,8 +255,8 @@ func TestPreReleaseRefused(t *testing.T) {
 	if ev := movie.Engine().Evaluate(movie.ToProfile(), cam); !ev.Eligible {
 		t.Errorf("a profile that allows pre-release copies should take it: %s", ev.RejectReason)
 	}
-	book := StoredProfile{MediaType: MediaBook, FormatScores: map[string]int{}}
-	if p := book.ToProfile(); p.RejectPreRelease {
-		t.Error("book profiles must not refuse 'pre-release' names")
+	music := StoredProfile{MediaType: MediaMusic, FormatScores: map[string]int{}}
+	if p := music.ToProfile(); p.RejectPreRelease {
+		t.Error("music profiles must not refuse 'pre-release' names")
 	}
 }

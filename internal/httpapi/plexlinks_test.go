@@ -56,7 +56,7 @@ func TestPlexLinkRoute(t *testing.T) {
 	if rec := s.do("GET", "/api/v1/plex/link?media_type=series&tmdb_id=603", kid); rec.Code != http.StatusNoContent {
 		t.Errorf("unknown title: %d, want 204", rec.Code)
 	}
-	if rec := s.do("GET", "/api/v1/plex/link?media_type=book&tmdb_id=1", kid); rec.Code != http.StatusBadRequest {
+	if rec := s.do("GET", "/api/v1/plex/link?media_type=podcast&tmdb_id=1", kid); rec.Code != http.StatusBadRequest {
 		t.Errorf("bad media type: %d", rec.Code)
 	}
 	if rec := s.do("GET", "/api/v1/plex/link?media_type=movie&tmdb_id=603", nil); rec.Code != http.StatusUnauthorized {
@@ -120,7 +120,7 @@ func TestListRequestsPlexURLOnlyWhenAvailable(t *testing.T) {
 		{MediaType: "movie", TMDBID: 2, Tracking: &requests.Tracking{Stage: requests.StageDownloading}},
 		{MediaType: "series", TMDBID: 3, Tracking: &requests.Tracking{Stage: requests.StagePartial}},
 		{MediaType: "movie", TMDBID: 4, Tracking: &requests.Tracking{Stage: requests.StageAvailable}}, // not in Plex yet
-		{MediaType: "book", TMDBID: 1, Tracking: &requests.Tracking{Stage: requests.StageAvailable}},
+		{MediaType: "podcast", TMDBID: 1, Tracking: &requests.Tracking{Stage: requests.StageAvailable}},
 		{MediaType: "movie", TMDBID: 1}, // never tracked
 	}
 	a.setRequestWatchLinks(context.Background(), list, nil)
@@ -154,7 +154,7 @@ func TestInboxPlexLinks(t *testing.T) {
 			{Ref: "movie:604", PlexURL: "saved604"}, // ready, saved link (legacy-agent match)
 			{Ref: "series:1399:r12:s2"},             // a season's ready notice
 			{Ref: "movie:603:approved:1700000000"},  // a decision: no link
-			{Ref: "book:OL1W"},                      // books aren't in Plex
+			{Ref: "podcast:1"},                      // not a title Plex has
 			{Ref: "request:40"},                     // staff 'new request'
 		}
 	}

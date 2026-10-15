@@ -1,26 +1,18 @@
 package requests
 
 import (
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
-// bookRefSuffix is what a book reference carries after the book's key: a decision
-// (":approved:<unix>", ":declined:<unix>") and/or the format that arrived
-// (":audiobook"). The key itself can hold a ':' (Hardcover's "hc:123"), so these come
-// off the end rather than splitting on ':'.
-var bookRefSuffix = regexp.MustCompile(`(:(approved|declined):\d+|:(audiobook|ebook|ready))$`)
-
 // RefPath is the app address an inbox reference leads to, for a Web Push tap to open:
 // the exact title ("movie:603…" → /discover/movie/603, "series:1399…" →
-// /discover/series/1399), the book on Discover's Books tab ("book:<key>…" →
-// /discover?tab=books&work=<key>), the request ("request:40…" → /requests?id=40), a
-// reported problem ("issue:12…" → /requests?tab=issues&issue=12; a reporter's notice is
-// keyed by its title instead, "movie:603:issue:12:resolved", and opens the title), or a
-// Send to Kindle result ("kindle:<send>" → /shelf).
-// "" for a reference it doesn't know; the caller falls back to /discover.
+// /discover/series/1399), the request ("request:40…" → /requests?id=40), or a reported
+// problem ("issue:12…" → /requests?tab=issues&issue=12; a reporter's notice is keyed by
+// its title instead, "movie:603:issue:12:resolved", and opens the title).
+// "" for a reference it doesn't know (an older version's book or Kindle notices too); the
+// caller falls back to /discover.
 //
 // Twin: refToPath in web/src/lib/refLink.ts (the bell). Keep the two, and the test
 // vectors in refpath_test.go and refLink.test.ts, in step.
@@ -35,15 +27,6 @@ func RefPath(ref string) string {
 		if positiveID(id) {
 			return "/discover/" + kind + "/" + id
 		}
-	case "book":
-		key := rest
-		for range 2 {
-			key = bookRefSuffix.ReplaceAllString(key, "")
-		}
-		if key != "" {
-			// %20 for a space, as the browser's encodeURIComponent writes it.
-			return "/discover?tab=books&work=" + strings.ReplaceAll(url.QueryEscape(key), "+", "%20")
-		}
 	case "request":
 		id, _, _ := strings.Cut(rest, ":")
 		if positiveID(id) {
@@ -54,11 +37,6 @@ func RefPath(ref string) string {
 		if positiveID(id) {
 			return "/requests?tab=issues&issue=" + id
 		}
-	case "kindle":
-		// A Send to Kindle result: the shelf (staff, who send from a book page and have
-		// no shelf, are redirected to /books by the app's routes). The reference names the
-		// send, never the book.
-		return "/shelf"
 	}
 	return ""
 }

@@ -94,7 +94,7 @@ type Spec struct {
 	// Cancel and Timeout all arrive through it.
 	Fn func(ctx context.Context, p *Progress) (any, error)
 	// Abandon, when set, is called if the job ends without Fn ever running (cancelled or
-	// shut down while queued). Work that claims something before submitting (the books
+	// shut down while queued). Work that claims something before submitting (a
 	// sweep's "running" flag) gives the claim back here.
 	Abandon func()
 }

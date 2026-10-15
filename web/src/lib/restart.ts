@@ -1,4 +1,4 @@
-import { api, type PendingRestart } from "./api";
+import { api } from "./api";
 
 // Waiting out a restart. Docker's restart policy brings Arrmada back on its own; the page
 // knows it's back when /api/v1/status reports a different started_at. (Polling for any
@@ -62,32 +62,7 @@ export async function restartAppAndWait(opts: { then?: () => void | Promise<void
   await then();
 }
 
-// fmtAge is a running time the way people say it: "3h 12m", "12m", "40s".
-export function fmtAge(sec: number): string {
-  const s = Math.max(0, Math.floor(sec));
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m`;
-  return `${s}s`;
-}
-
-// busyLines says what a restart would interrupt, for the confirm.
-export function busyLines(b: PendingRestart["busy"]): string[] {
-  const out: string[] = [];
-  const pct = `${Math.round(b.convert_progress * 100)}%`;
-  if (b.convert_running === 1) {
-    out.push(`A conversion has been running ${fmtAge(b.convert_longest_sec)} (${pct}) and will start over.`);
-  } else if (b.convert_running > 1) {
-    out.push(`${b.convert_running} conversions are running (the longest for ${fmtAge(b.convert_longest_sec)}, ${pct}) and will start over.`);
-  }
-  const subs = b.subtitles_running + b.subtitles_queued;
-  if (subs > 0) {
-    out.push(`${subs} subtitle job${subs === 1 ? "" : "s"} will stop; the next subtitle sweep queues ${subs === 1 ? "it" : "them"} again.`);
-  }
-  return out;
-}
-
 // LIBRARY_LABEL names each folder the way Settings → Library does.
 export const LIBRARY_LABEL: Record<string, string> = {
-  movies: "Movies", tv: "TV", ebooks: "Ebooks", audiobooks: "Audiobooks", music: "Music", downloads: "Downloads",
+  movies: "Movies", tv: "TV", music: "Music", downloads: "Downloads",
 };

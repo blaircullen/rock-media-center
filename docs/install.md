@@ -39,8 +39,6 @@ It works out everything else and shows a summary before it starts:
 | Ports | Free ones, so nothing clashes with Radarr (7878), qBittorrent (8080) and friends |
 | User | Whoever owns your media folder (99:100 on Unraid) |
 | Timezone | Your server's own (asked only if it can't be found) |
-| GPU | `/dev/dri` is passed through when your server has one |
-| Convert's scratch folder | `transcode/` next to the database |
 | The app | The latest release, downloaded from `ghcr.io/tristenlammi/arrmada:stable` — the stable channel, which updates follow too (compiled on the server only with `--channel main` or if the download fails — that takes 30–60 minutes and [a few GB of memory](troubleshooting.md#the-build-fails-or-gets-killed)) |
 
 When it's done it prints the address, e.g. `http://192.168.1.10:7878`.
@@ -50,7 +48,7 @@ When it's done it prints the address, e.g. `http://192.168.1.10:7878`.
 Open that address and create your admin account. A short setup then walks you through:
 
 1. **Metadata** — paste your TMDB key (checked before it's saved). Other keys are optional.
-2. **Folders** — pick each library (Movies, TV, Downloads, and optionally Books and Music)
+2. **Folders** — pick each library (Movies, TV, Downloads, and optionally Music)
    with a folder browser. Folders that look right are filled in for you.
 3. **Plex** — sign in with Plex to connect your server, and optionally let family sign in
    with their Plex accounts.
@@ -73,7 +71,6 @@ curl -fsSL https://raw.githubusercontent.com/tristenlammi/Arrmada/main/install.s
 | `--dir DIR` | Where Arrmada keeps its files |
 | `--media DIR` | The folder holding your libraries and downloads (mounted at `/storage`) |
 | `--no-media` | Use Arrmada's own managed storage instead (not recommended on Unraid: it lives in `docker.img`) |
-| `--transcode DIR` | Convert's scratch folder — a fast SSD pool, not the array (`none` to use the container) |
 | `--tz ZONE` | Timezone, e.g. `Europe/London` ([list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) |
 | `--puid N --pgid N` | Run as this user and group |
 | `--with-prowlarr` | Also run the optional Prowlarr indexer manager |
@@ -89,7 +86,6 @@ Run the same line again with an option, on the server that has Arrmada:
 
 - `--media /new/folder` — mount a different media folder (or add one to an install that
   started on managed storage). The old mounts are kept in `docker-compose.override.yml.bak`.
-- `--transcode /mnt/cache/transcode` — move Convert's scratch folder.
 - `--with-prowlarr` — add Prowlarr.
 - `--with-sabnzbd` — add SABnzbd for Usenet. Nothing else is restarted, and it's
   added to whatever `COMPOSE_PROFILES` already lists (`prowlarr,sabnzbd`, say). An install
@@ -157,8 +153,7 @@ Open it and change the lines marked `←`:
 Then `docker compose up -d`, open `http://<server>:7878`, create your admin account and
 follow the setup (TMDB key, library folders under `/storage`, Plex, indexers). The bundled
 qBittorrent is already connected; FlareSolverr runs beside it; Prowlarr and SABnzbd (for
-Usenet) are in the file, commented out, if you want them. For a GPU, uncomment the
-`devices` line.
+Usenet) are in the file, commented out, if you want them.
 
 Update with `docker compose pull && docker compose up -d`. This way has no pre-update backup
 and no automatic roll-back (that's `update.sh`); the app still copies its database to
@@ -207,7 +202,7 @@ checkout, Compose then tries to compile instead, which fails too.
 ### Compiling it yourself
 
 `docker compose up -d --build` compiles the code in the folder instead (30–60 minutes the
-first time: the subtitle and GPU tooling are built from source too). It needs **about
+first time). It needs **about
 2 GB of memory free for the build** (4 GB is comfortable): the big compiles take turns and
 use as many parallel jobs as the free memory allows. If a compiler is still killed, the
 build says so plainly (see

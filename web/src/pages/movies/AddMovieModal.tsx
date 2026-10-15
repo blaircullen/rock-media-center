@@ -7,7 +7,7 @@ import { Button, Modal } from "../../ui";
 // AddMovieModal is the library's "+ Add movie" (MOV-23): search TMDB, see which films are already in the
 // library (a link to them, not an add that can only fail), then confirm one film with its
 // quality profile, minimum availability and whether to search now. That last choice is for
-// this add only: the shared default (Series and Books read it too) changes only in
+// this add only: the shared default (Series reads it too) changes only in
 // Settings, or here when "Remember as my default" is ticked.
 
 export const AVAILABILITY: { value: MinAvailability; label: string; hint: string }[] = [
@@ -192,7 +192,7 @@ function ConfirmAdd({ film, profiles, profile, onProfile, defaultSearch, onBack,
         {searchNow !== defaultSearch && (
           <label className="mt-1 flex items-start gap-2.5 text-sm text-ink-dim">
             <input type="checkbox" className="mt-0.5" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-            <span>Remember as my default (Series and Books use it too)</span>
+            <span>Remember as my default (Series uses it too)</span>
           </label>
         )}
       </fieldset>

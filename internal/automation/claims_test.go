@@ -31,12 +31,12 @@ func TestClaimReleasedOnPanic(t *testing.T) {
 	var c claims
 	func() {
 		defer func() { _ = recover() }()
-		release, _ := c.claim("book:7")
+		release, _ := c.claim("album:7")
 		defer release()
 		var m map[string]int
 		m["x"] = 1
 	}()
-	if c.claimed("book:7") {
+	if c.claimed("album:7") {
 		t.Fatal("a panicking search kept its claim")
 	}
 }

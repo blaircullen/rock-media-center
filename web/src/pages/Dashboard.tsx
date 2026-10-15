@@ -10,7 +10,6 @@ import {
   type StorageVolume,
   type ActivityEvent,
   type InsightsStream,
-  type NowListening,
 } from "../lib/api";
 import { LINKS } from "../lib/links";
 import { eventHref } from "../lib/events";
@@ -69,7 +68,6 @@ export function Dashboard() {
   // Which media servers Now playing covers: Plex (the default), Jellyfin, or both.
   const bothServers = !!data?.plex_configured && !!data?.jellyfin_configured;
   const serversLabel = bothServers ? "Plex & Jellyfin" : data?.jellyfin_configured && !data?.plex_configured ? "Jellyfin" : "Plex";
-  const listening = data?.listening ?? [];
   const lib = data?.library;
 
   return (
@@ -93,8 +91,7 @@ export function Dashboard() {
         )}
 
         {/* Now playing — the thing you actually want to see when you open the page. The media
-            servers (Plex, Jellyfin: one list, each stream with its server) and the audiobook
-            server are separate sections: different people, different apps. */}
+            servers (Plex, Jellyfin) share one list, each stream with its server. */}
         <SectionLabel
           right={
             streams.length > 0 && data?.streams
@@ -134,27 +131,6 @@ export function Dashboard() {
           </>
         )}
 
-        <SectionLabel right={listening.some((l) => !l.mine) ? "who and for how long — never which book" : undefined}>
-          Now listening · Audiobooks{listening.length > 0 ? ` · ${listening.length}` : ""}
-        </SectionLabel>
-        {listening.length === 0 ? (
-          <Card>
-            <p className="m-0 text-base text-ink-faint">
-              {!data
-                ? "Loading…"
-                : data.audio_off
-                  ? "The audiobook server is off."
-                  : "No one is listening to an audiobook right now."}
-            </p>
-          </Card>
-        ) : (
-          <div className="grid gap-2.5 sm:grid-cols-2">
-            {listening.map((l) => (
-              <ListenCard key={`${l.user}-${l.started_at}-${l.device}`} l={l} />
-            ))}
-          </div>
-        )}
-
         {/* Storage — one bar per filesystem, not per folder. */}
         <SectionLabel>Storage</SectionLabel>
         <Card>
@@ -175,7 +151,7 @@ export function Dashboard() {
 
         {/* Library + transfers. */}
         <SectionLabel>Library</SectionLabel>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           <Tile
             to="/movies"
             label="Movies"
@@ -195,13 +171,6 @@ export function Dashboard() {
                 : ""
             }
             warn={!!lib && lib.episodes_missing > 0}
-          />
-          <Tile
-            to="/books"
-            label="Books"
-            value={lib ? lib.books : "—"}
-            sub={lib && lib.books_missing > 0 ? `${lib.books_missing} missing` : "complete"}
-            warn={!!lib && lib.books_missing > 0}
           />
           <Tile
             to={LINKS.activityQueue}
@@ -345,84 +314,6 @@ function StreamCard({ s, badge }: { s: InsightsStream; badge?: boolean }) {
       </div>
     </div>
   );
-}
-
-// ListenCard is one live audiobook session. Someone else's shows only who, on what and
-// for how long; your own shows the book and how far through it you are.
-function ListenCard({ l }: { l: NowListening }) {
-  const pct = l.duration && l.duration > 0 && l.position !== undefined ? (l.position / l.duration) * 100 : null;
-  const device = [l.device, l.client && l.client !== l.device ? l.client : ""].filter(Boolean).join(" · ");
-  return (
-    <div
-      className="flex gap-3 rounded-xl p-3"
-      style={{ background: "var(--panel)", border: "1px solid var(--line)" }}
-    >
-      {l.cover_url ? (
-        <img
-          src={l.cover_url}
-          alt=""
-          className="h-[64px] w-[64px] shrink-0 rounded-md object-cover"
-          style={{ background: "var(--panel-2)" }}
-        />
-      ) : (
-        <div
-          className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-md text-3xl"
-          style={{ background: "var(--panel-2)" }}
-          aria-hidden
-        >
-          🎧
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        {l.mine && l.title ? (
-          <>
-            {l.book_id ? (
-              <Link
-                to={`/books/${l.book_id}`}
-                className="block truncate text-md font-semibold no-underline"
-                style={{ color: "var(--ink)" }}
-              >
-                {l.title}
-              </Link>
-            ) : (
-              <div className="truncate text-md font-semibold">{l.title}</div>
-            )}
-            <div className="truncate text-sm text-ink-dim">{l.author || "You"}</div>
-          </>
-        ) : (
-          <>
-            <div className="truncate text-md font-semibold">{l.mine ? "You" : l.user}</div>
-            <div className="truncate text-sm text-ink-dim">Listening to an audiobook</div>
-          </>
-        )}
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 font-mono text-xs">
-          {l.mine && <Pill>you</Pill>}
-          <Pill tone={l.playing ? "good" : undefined}>{l.playing ? "playing" : "paused"}</Pill>
-          <span className="text-ink-faint">
-            {duration(l.seconds)} this session{device ? ` · ${device}` : ""}
-          </span>
-        </div>
-        {pct !== null && (
-          <div className="mt-2 h-1 w-full overflow-hidden rounded-full" style={{ background: "var(--panel-2)" }}>
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${Math.min(100, Math.max(0, pct))}%`,
-                background: l.playing ? "var(--good)" : "var(--ink-faint)",
-              }}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function duration(sec: number): string {
-  const m = Math.floor(sec / 60);
-  if (m < 1) return "under a minute";
-  if (m < 60) return `${m}m`;
-  return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
 function StorageBar({ v }: { v: StorageVolume }) {

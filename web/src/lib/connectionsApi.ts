@@ -45,7 +45,7 @@ export interface ConnectionItem {
   counts?: { queries_24h: number; failures_24h: number; grabs_24h: number };
   testable: boolean;
   managed_by?: "prowlarr";
-  /** Where it's edited, when that isn't its own card (Plex, alerts, the audiobook server). */
+  /** Where it's edited, when that isn't its own card (Plex, alerts). */
   fix_path?: string;
   /** Media servers only: what Arrmada uses this server for. Absent means all of it. */
   used_for?: MediaServerUse[];

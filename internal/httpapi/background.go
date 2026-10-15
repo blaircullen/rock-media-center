@@ -57,8 +57,8 @@ func (a *api) submit(r *http.Request, spec jobs.Spec) (id int64, existing bool, 
 	return 0, false, nil
 }
 
-// jobSubmitter is the runner for modules that start jobs themselves (the books re-match
-// and sweep); nil without one, which those modules handle by running the work untracked.
+// jobSubmitter is the runner for modules that start jobs themselves (the movie search
+// queue); nil without one, which those modules handle by running the work untracked.
 func (a *api) jobSubmitter() jobs.Submitter {
 	if a.deps.Jobs == nil {
 		return nil
@@ -242,13 +242,6 @@ func (a *api) seriesSearchJob(id int64) jobs.Spec {
 	return jobs.Spec{Kind: "series.search", Target: jobTarget("series", id), Class: jobs.ClassIndexerSearch, Timeout: 5 * time.Minute,
 		Fn: outcomeFn("show", func(ctx context.Context) (automation.SearchOutcome, error) {
 			return a.deps.Automation.SearchSeriesNow(ctx, id)
-		})}
-}
-
-func (a *api) bookSearchJob(id int64) jobs.Spec {
-	return jobs.Spec{Kind: "book.search", Target: jobTarget("book", id), Class: jobs.ClassIndexerSearch, Timeout: 5 * time.Minute,
-		Fn: outcomeFn("book", func(ctx context.Context) (automation.SearchOutcome, error) {
-			return a.deps.Automation.SearchBookNow(ctx, id)
 		})}
 }
 

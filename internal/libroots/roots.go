@@ -10,12 +10,10 @@ import (
 // Settings keys for the folders chosen in the app (first-run setup, Settings → Library).
 // Each falls back to the environment's folder (config.*Dir) while unset or blank.
 const (
-	KeyMovies     = "lib_movies_dir"
-	KeyTV         = "lib_tv_dir"
-	KeyEbooks     = "lib_ebooks_dir"
-	KeyAudiobooks = "lib_audiobooks_dir"
-	KeyMusic      = "lib_music_dir"
-	KeyDownloads  = "lib_downloads_dir"
+	KeyMovies    = "lib_movies_dir"
+	KeyTV        = "lib_tv_dir"
+	KeyMusic     = "lib_music_dir"
+	KeyDownloads = "lib_downloads_dir"
 )
 
 // Getter reads one setting (settings.Service.Get).
@@ -62,13 +60,7 @@ func (r *Roots) resolve(ctx context.Context, key, def string) string {
 func (r *Roots) Movies(ctx context.Context) string {
 	return r.resolve(ctx, KeyMovies, r.env().MoviesDir)
 }
-func (r *Roots) TV(ctx context.Context) string { return r.resolve(ctx, KeyTV, r.env().TVDir) }
-func (r *Roots) Ebooks(ctx context.Context) string {
-	return r.resolve(ctx, KeyEbooks, r.env().EbooksDir)
-}
-func (r *Roots) Audiobooks(ctx context.Context) string {
-	return r.resolve(ctx, KeyAudiobooks, r.env().AudiobooksDir)
-}
+func (r *Roots) TV(ctx context.Context) string    { return r.resolve(ctx, KeyTV, r.env().TVDir) }
 func (r *Roots) Music(ctx context.Context) string { return r.resolve(ctx, KeyMusic, r.env().MusicDir) }
 func (r *Roots) Downloads(ctx context.Context) string {
 	return r.resolve(ctx, KeyDownloads, r.env().DownloadsDir)
@@ -82,15 +74,13 @@ func (r *Roots) env() config.Config {
 	return r.cfg
 }
 
-// Libraries lists the five library folders (movies, tv, ebooks, audiobooks, music), in
+// Libraries lists the library folders (movies, tv, music), in
 // that order, skipping any that resolve to nothing. Downloads isn't a library.
 func (r *Roots) Libraries(ctx context.Context) []Root {
 	var out []Root
 	for _, x := range []Root{
 		{"movies", r.Movies(ctx)},
 		{"tv", r.TV(ctx)},
-		{"ebooks", r.Ebooks(ctx)},
-		{"audiobooks", r.Audiobooks(ctx)},
 		{"music", r.Music(ctx)},
 	} {
 		if x.Path != "" {
@@ -116,8 +106,6 @@ func (r *Roots) Config(ctx context.Context) config.Config {
 	c := r.env()
 	c.MoviesDir = r.Movies(ctx)
 	c.TVDir = r.TV(ctx)
-	c.EbooksDir = r.Ebooks(ctx)
-	c.AudiobooksDir = r.Audiobooks(ctx)
 	c.MusicDir = r.Music(ctx)
 	c.DownloadsDir = r.Downloads(ctx)
 	return c

@@ -23,8 +23,8 @@ func (r *statusRecorder) WriteHeader(code int) {
 func (r *statusRecorder) Unwrap() http.ResponseWriter { return r.ResponseWriter }
 
 // logRequests emits one structured line per request at debug level (error level for
-// server errors). It logs the route pattern ("GET /api/v1/books/{id}/audiobook"), never
-// the raw path: ids in a path say which book someone downloaded. The router fills
+// server errors). It logs the route pattern ("GET /api/v1/movies/{id}/releases"), never
+// the raw path: ids in a path say which title someone opened. The router fills
 // r.Pattern in place, so it's set by the time the handler returns.
 func (a *api) logRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

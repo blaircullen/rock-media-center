@@ -31,7 +31,6 @@ describe("eventHref", () => {
   it("links each kind to its page; music to the artist", () => {
     expect(eventHref("movie", 1)).toBe("/movies/1");
     expect(eventHref("series", 2)).toBe("/series/2");
-    expect(eventHref("book", 3)).toBe("/books/3");
     expect(eventHref("music", 4)).toBe("/music/4");
   });
 });
@@ -39,9 +38,9 @@ describe("eventHref", () => {
 describe("mergeFirstPage", () => {
   const ev = (kind: string, id: number) => ({ kind, id });
   it("puts what's new on top and keeps the pages Load more fetched", () => {
-    const loaded = [ev("movie", 5), ev("series", 4), ev("movie", 3), ev("book", 2), ev("movie", 1)];
+    const loaded = [ev("movie", 5), ev("series", 4), ev("movie", 3), ev("music", 2), ev("movie", 1)];
     const fresh = [ev("movie", 6), ev("movie", 5), ev("series", 4)]; // a full page of 3
-    expect(mergeFirstPage(fresh, loaded, true)).toEqual([ev("movie", 6), ev("movie", 5), ev("series", 4), ev("movie", 3), ev("book", 2), ev("movie", 1)]);
+    expect(mergeFirstPage(fresh, loaded, true)).toEqual([ev("movie", 6), ev("movie", 5), ev("series", 4), ev("movie", 3), ev("music", 2), ev("movie", 1)]);
   });
   it("takes a short fresh page as the whole list (something was deleted, or nothing more)", () => {
     expect(mergeFirstPage([ev("movie", 6)], [ev("movie", 5)], false)).toEqual([ev("movie", 6)]);

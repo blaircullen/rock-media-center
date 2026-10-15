@@ -18,7 +18,7 @@ import (
 // Jellyfin…', or '…to your library…' with both), and its notice goes out as soon as
 // either server's library index shows the title — "ready to watch on Plex", with a Watch
 // link per server that has it — or, if none shows it, after plexGrace with wording that
-// says it may take a few more minutes. Books are never on a media server and never wait.
+// says it may take a few more minutes.
 //
 // Everything that decides 'ready' (the import's outbox row, the ready sweep, and the
 // server check that runs every two minutes and after each index rebuild) goes through the
@@ -111,7 +111,7 @@ func (w *plexWaiter) ch() chan struct{} {
 type plexVerdict int
 
 const (
-	plexOff  plexVerdict = iota // no media server (or a book): tell them now, as always
+	plexOff  plexVerdict = iota // no media server: tell them now, as always
 	plexHas                     // a server has it: "ready to watch on Plex"
 	plexLate                    // no server showed it within the grace period: tell them anyway
 	plexWait                    // not yet
@@ -272,13 +272,10 @@ func serverNames(kinds []mediaserver.Kind) string {
 	return strings.Join(names, " and ")
 }
 
-// readyBody is a request's 'ready' wording: a book is ready to read; a movie or show is
-// ready to watch — on the server that has it, or with a word of warning when none has
-// shown it within the grace period.
+// readyBody is a request's 'ready' wording: a movie or show is ready to watch — on the
+// server that has it, or with a word of warning when none has shown it within the grace
+// period.
 func readyBody(req Request, v plexVerdict, note readyNote) string {
-	if req.MediaType == "book" {
-		return fmt.Sprintf("“%s” is ready to read.", req.Title)
-	}
 	return readyWords(requestedWhat(req), v, note)
 }
 

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// The movie, series and book RSS sweeps each call Recent independently, within seconds
+// The movie, series and music RSS sweeps each call Recent independently, within seconds
 // of each other, so every cycle pulled the identical feed from every indexer three times
 // over. A pull inside the TTL must be served from the cache instead of refetching.
 func TestRecentCacheServesInsideTTL(t *testing.T) {

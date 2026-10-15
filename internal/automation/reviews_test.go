@@ -6,16 +6,14 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/tristenlammi/arrmada/internal/books"
-	"github.com/tristenlammi/arrmada/internal/metadata"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/music"
 	"github.com/tristenlammi/arrmada/internal/store"
 )
 
-// reviewTestCoord is a store-backed coordinator with movies, books and music wired, so
+// reviewTestCoord is a store-backed coordinator with movies and music wired, so
 // a review of one kind can be checked against items of the others sharing the same ids.
-func reviewTestCoord(t *testing.T) (*Coordinator, *books.Service, context.Context) {
+func reviewTestCoord(t *testing.T) (*Coordinator, context.Context) {
 	t.Helper()
 	st, err := store.Open(t.TempDir())
 	if err != nil {
@@ -23,15 +21,13 @@ func reviewTestCoord(t *testing.T) (*Coordinator, *books.Service, context.Contex
 	}
 	t.Cleanup(func() { _ = st.Close() })
 	log := slog.Default()
-	bk := books.NewService(st.DB(), nil, log)
 	c := &Coordinator{
 		db:     st.DB(),
 		log:    log,
 		movies: movies.NewService(st.DB(), nil, nil, t.TempDir(), "", nil, log),
-		books:  bk,
 		music:  music.NewService(st.DB(), nil, log),
 	}
-	return c, bk, context.Background()
+	return c, context.Background()
 }
 
 func seedReview(t *testing.T, c *Coordinator, mediaType string, expectedID int64, contentPath string) int64 {
@@ -52,27 +48,25 @@ func mustExec(t *testing.T, c *Coordinator, q string, args ...any) {
 	}
 }
 
-// A movie id sent for a book review used to be looked up as a BOOK id, filing the
-// download under whichever book shared that number. It must be refused, untouched.
+// A movie id sent for a music review used to be looked up as an ALBUM id, filing the
+// download under whichever album shared that number. It must be refused, untouched.
 func TestImportReviewRejectsTargetOfAnotherKind(t *testing.T) {
-	c, bk, ctx := reviewTestCoord(t)
-	added, _ := bk.AddWorks(ctx, []metadata.BookResult{{Key: "OL1W", Title: "Dune", Author: "Frank Herbert"}}, "", true)
-	if len(added) != 1 {
-		t.Fatalf("seed book: got %d", len(added))
-	}
+	c, ctx := reviewTestCoord(t)
+	mustExec(t, c, `INSERT INTO artists (id, mbid, name) VALUES (1, 'a1', 'Radiohead')`)
+	mustExec(t, c, `INSERT INTO albums (id, artist_id, mbid, title, year) VALUES (1, 1, 'r1', 'OK Computer', 1997)`)
 	mustExec(t, c, `INSERT INTO movies (tmdb_id, title, monitored) VALUES (1, 'Dune', 1)`)
 	var before int
-	_ = c.db.QueryRow(`SELECT COUNT(*) FROM book_events`).Scan(&before)
+	_ = c.db.QueryRow(`SELECT COUNT(*) FROM artist_events`).Scan(&before)
 
-	id := seedReview(t, c, "book", added[0].ID, t.TempDir())
-	err := c.ImportReview(ctx, id, added[0].ID, "movie")
+	id := seedReview(t, c, "music", 1, t.TempDir())
+	err := c.ImportReview(ctx, id, 1, "movie")
 	if !errors.Is(err, ErrWrongTargetKind) {
 		t.Fatalf("want ErrWrongTargetKind, got %v", err)
 	}
 	var after int
-	_ = c.db.QueryRow(`SELECT COUNT(*) FROM book_events`).Scan(&after)
+	_ = c.db.QueryRow(`SELECT COUNT(*) FROM artist_events`).Scan(&after)
 	if after != before {
-		t.Errorf("a refused import wrote %d book event(s)", after-before)
+		t.Errorf("a refused import wrote %d music event(s)", after-before)
 	}
 	var status string
 	_ = c.db.QueryRow(`SELECT status FROM import_reviews WHERE id = ?`, id).Scan(&status)
@@ -84,20 +78,18 @@ func TestImportReviewRejectsTargetOfAnotherKind(t *testing.T) {
 // An unmatched review carries id 0. "Import anyway" with no target used to look up
 // album 0 and answer 500; it must say a target is needed instead.
 func TestImportReviewWithNoItemNeedsTarget(t *testing.T) {
-	c, _, ctx := reviewTestCoord(t)
-	for _, kind := range []string{"music", "book"} {
-		id := seedReview(t, c, kind, 0, t.TempDir())
-		err := c.ImportReview(ctx, id, 0, "")
-		if !errors.Is(err, ErrNeedsTarget) {
-			t.Errorf("%s review with no item: want ErrNeedsTarget, got %v", kind, err)
-		}
+	c, ctx := reviewTestCoord(t)
+	id := seedReview(t, c, "music", 0, t.TempDir())
+	err := c.ImportReview(ctx, id, 0, "")
+	if !errors.Is(err, ErrNeedsTarget) {
+		t.Errorf("music review with no item: want ErrNeedsTarget, got %v", err)
 	}
 }
 
 // The music picker lists albums, labelled with their artist, and never anything else;
 // q matches the album title or the artist name.
 func TestReviewTargetsForMusicListsAlbums(t *testing.T) {
-	c, _, ctx := reviewTestCoord(t)
+	c, ctx := reviewTestCoord(t)
 	mustExec(t, c, `INSERT INTO artists (id, mbid, name) VALUES (1, 'a1', 'Radiohead'), (2, 'a2', 'Portishead')`)
 	mustExec(t, c, `INSERT INTO albums (id, artist_id, mbid, title, year) VALUES
 		(1, 1, 'r1', 'OK Computer', 1997), (2, 1, 'r2', 'Kid A', 2000), (3, 2, 'r3', 'Dummy', 1994)`)
@@ -135,32 +127,9 @@ func TestReviewTargetsForMusicListsAlbums(t *testing.T) {
 	}
 }
 
-// Book reviews list books with the author as the subtitle, filterable by either.
-func TestReviewTargetsForBooksListsBooks(t *testing.T) {
-	c, bk, ctx := reviewTestCoord(t)
-	_, _ = bk.AddWorks(ctx, []metadata.BookResult{
-		{Key: "OL1W", Title: "Dune", Author: "Frank Herbert"},
-		{Key: "OL2W", Title: "Mistborn", Author: "Brandon Sanderson"},
-	}, "", true)
-	mustExec(t, c, `INSERT INTO movies (tmdb_id, title, monitored) VALUES (1, 'Dune', 1)`)
-
-	id := seedReview(t, c, "book", 0, t.TempDir())
-	got, _, err := c.ReviewTargets(ctx, id, "sanderson", 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) != 1 || got[0].Title != "Mistborn" || got[0].Subtitle != "Brandon Sanderson" || got[0].Kind != "book" {
-		t.Errorf("q=sanderson → %+v", got)
-	}
-	all, _, _ := c.ReviewTargets(ctx, id, "", 0)
-	if len(all) != 2 {
-		t.Errorf("want 2 books and no movies, got %+v", all)
-	}
-}
-
 // With Music off there is nothing to pick from, and the picker says what to turn on.
 func TestReviewTargetsModuleOff(t *testing.T) {
-	c, _, ctx := reviewTestCoord(t)
+	c, ctx := reviewTestCoord(t)
 	c.music = nil
 	id := seedReview(t, c, "music", 0, t.TempDir())
 	_, _, err := c.ReviewTargets(ctx, id, "", 0)
@@ -169,23 +138,10 @@ func TestReviewTargetsModuleOff(t *testing.T) {
 	}
 }
 
-// A library bigger than the picker's limit says so, for books and albums alike, so the
+// A library bigger than the picker's limit says so, for albums, so the
 // page can ask for a filter instead of implying the rest don't exist.
 func TestReviewTargetsReportsTruncation(t *testing.T) {
-	c, bk, ctx := reviewTestCoord(t)
-	_, _ = bk.AddWorks(ctx, []metadata.BookResult{
-		{Key: "OL1W", Title: "Dune", Author: "Frank Herbert"},
-		{Key: "OL2W", Title: "Mistborn", Author: "Brandon Sanderson"},
-		{Key: "OL3W", Title: "Zodiac", Author: "Neal Stephenson"},
-	}, "", true)
-	id := seedReview(t, c, "book", 0, t.TempDir())
-	if got, more, _ := c.ReviewTargets(ctx, id, "", 2); len(got) != 2 || !more {
-		t.Errorf("limit 2 of 3 books: %d rows, truncated=%v; want 2 and true", len(got), more)
-	}
-	if got, more, _ := c.ReviewTargets(ctx, id, "", 3); len(got) != 3 || more {
-		t.Errorf("limit 3 of 3 books: %d rows, truncated=%v; want 3 and false", len(got), more)
-	}
-
+	c, ctx := reviewTestCoord(t)
 	mustExec(t, c, `INSERT INTO artists (id, mbid, name) VALUES (1, 'a1', 'Radiohead')`)
 	mustExec(t, c, `INSERT INTO albums (id, artist_id, mbid, title, year) VALUES
 		(1, 1, 'r1', 'OK Computer', 1997), (2, 1, 'r2', 'Kid A', 2000), (3, 1, 'r3', 'Amnesiac', 2001)`)

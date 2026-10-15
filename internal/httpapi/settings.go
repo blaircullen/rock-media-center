@@ -10,7 +10,6 @@ import (
 	"github.com/tristenlammi/arrmada/internal/automation"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/indexer"
-	"github.com/tristenlammi/arrmada/internal/langs"
 	"github.com/tristenlammi/arrmada/internal/library"
 	"github.com/tristenlammi/arrmada/internal/quality"
 	"github.com/tristenlammi/arrmada/internal/recyclebin"
@@ -33,12 +32,6 @@ const (
 	keyDiskGuardResume     = download.KeyDiskGuardResum
 )
 
-// booksEnabled reports whether the Books module is turned on (default true). Used to gate
-// the nav entry + Discover tab; disabling hides Books without deleting any data.
-func (a *api) booksEnabled(ctx context.Context) bool {
-	return a.deps.Settings.GetBool(ctx, settings.KeyModuleBooks, true)
-}
-
 // musicEnabled reports whether the Music module is turned on (off by default — it's a
 // preview). Off hides the nav entry, 404s the Music API and stops its searches and imports;
 // nothing is deleted.
@@ -49,8 +42,7 @@ func (a *api) musicEnabled(ctx context.Context) bool {
 // handleGetSettings returns the user-facing app preferences. Every key here must also be
 // accepted by handleUpdateSettings: clients PUT these values back, and the decoder
 // rejects fields it doesn't know. A read-only server_time/server_tz in this response
-// broke every Settings save for weeks, so read-only facts go on their own endpoint
-// (Convert reports the server clock from /convert/settings).
+// broke every Settings save for weeks, so read-only facts go on their own endpoint.
 // seriesMonitorDefault is the monitoring preset a new show gets when the add doesn't pick
 // one; a stored value that isn't a preset reads as the default.
 func (a *api) seriesMonitorDefault(ctx context.Context) string {
@@ -73,13 +65,12 @@ func (a *api) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		"naming_series_episode":   a.deps.Settings.Get(ctx, keyNamingSeriesEpisode, library.DefaultEpisodeFile),
 		"write_nfo":               a.deps.Settings.GetBool(ctx, keyWriteNFO, false),
 		"download_artwork":        a.deps.Settings.GetBool(ctx, keyDownloadArtwrk, false),
-		"books_enabled":           a.booksEnabled(ctx),
 		"music_enabled":           a.musicEnabled(ctx),
 		"plex_login_enabled":      a.deps.Settings.GetBool(ctx, "plex_login_enabled", false),
 		"plex_signin_staff":       a.deps.Settings.GetBool(ctx, keyPlexSignInStaff, false),
 		"tmdb_region":             a.deps.Settings.Get(ctx, "tmdb_region", ""),
 		"plex_login_auto_approve": a.plexAutoApproval(ctx).All(),
-		// Which media types a new Plex sign-in auto-approves ("movie,series,book").
+		// Which media types a new Plex sign-in auto-approves ("movie,series").
 		"plex_login_auto_approve_types": a.plexAutoApproval(ctx).String(),
 		// Sign in with Jellyfin (off until the owner turns it on), its Quick Connect (on with
 		// it), whether it may open a staff account, and what a new sign-in auto-approves.
@@ -88,8 +79,7 @@ func (a *api) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		"jellyfin_signin_staff":             a.deps.Settings.GetBool(ctx, keyJellyfinSignInStaff, false),
 		"jellyfin_login_auto_approve_types": a.jellyfinAutoApproval(ctx).String(),
 		// Recycle bin guard rails. These default to REAL limits, not 0/unlimited: the
-		// bin is on by default and every delete, quality upgrade and Convert original
-		// lands in it, so an unlimited default silently grows until the volume fills.
+		// bin is on by default and every delete and quality upgrade lands in it, so an unlimited default silently grows until the volume fills.
 		// Set either to 0 to opt back into unlimited.
 		"recycle_max_gb":         a.deps.Settings.Get(ctx, "recycle_max_gb", recyclebin.DefaultMaxGB),
 		"recycle_retention_days": a.deps.Settings.Get(ctx, "recycle_retention_days", recyclebin.DefaultRetentionDays),
@@ -106,12 +96,10 @@ func (a *api) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		"upgrade_max_grabs_per_sweep": automation.ParseUpgradeBudget(a.deps.Settings.Get(ctx, automation.KeyUpgradeBudget, "")),
 		// Request limits per person, per window of days (0 = unlimited; Settings → Users).
 		"request_quota_days": quota.Days, "request_quota_movies": quota.Movie,
-		"request_quota_seasons": quota.Season, "request_quota_books": quota.Book,
+		"request_quota_seasons": quota.Season,
 		// Search indexers that name no categories of their own in the media type's usual
-		// ones (movies 2000, TV 5000, books 7000/7020, audiobooks 3030, music 3000).
+		// ones (movies 2000, TV 5000, music 3000).
 		"indexer_default_categories": a.deps.Settings.GetBool(ctx, indexer.KeyDefaultCategories, true),
-		// The languages automatic book grabs accept, canonical codes in order; [] = any.
-		"books_languages": a.bookLanguages(ctx),
 		// How releases are ranked: v1 (classic, the default) or v2 (ordered keys, preview).
 		// Under v1, v2 runs in the shadow and its disagreements are recorded for review.
 		"quality_ranking": a.qualityRanking(ctx),
@@ -129,30 +117,6 @@ func (a *api) qualityRanking(ctx context.Context) string {
 	return quality.NormalizeRanking(a.deps.Settings.Get(ctx, quality.KeyRanking, quality.RankingV1))
 }
 
-// bookLanguages is the saved book languages list (default English).
-func (a *api) bookLanguages(ctx context.Context) []string {
-	return automation.ParseBookLanguages(a.deps.Settings.Get(ctx, automation.KeyBookLanguages, automation.DefaultBookLanguages))
-}
-
-// parseBookLanguagesUpdate turns a PUT's list into the stored comma list, or says which
-// entry isn't a language. Nothing unknown is stored: one bad code would reject every
-// release that states its language.
-func parseBookLanguagesUpdate(in []string) (string, string) {
-	codes := make([]string, 0, len(in))
-	seen := map[string]bool{}
-	for _, tok := range in {
-		l, ok := langs.Lookup(tok)
-		if !ok {
-			return "", "unknown language " + strconv.Quote(strings.TrimSpace(tok))
-		}
-		if !seen[l.Code] {
-			seen[l.Code] = true
-			codes = append(codes, l.Code)
-		}
-	}
-	return strings.Join(codes, ","), ""
-}
-
 // maxUpgradeBudget bounds the per-sweep upgrade limit. Anything near it is effectively
 // "no limit", which 0 already says.
 const maxUpgradeBudget = 1000
@@ -168,34 +132,31 @@ type settingsUpdate struct {
 	NamingSeriesEpisode  *string `json:"naming_series_episode"`
 	WriteNFO             *bool   `json:"write_nfo"`
 	DownloadArtwork      *bool   `json:"download_artwork"`
-	BooksEnabled         *bool   `json:"books_enabled"`
 	MusicEnabled         *bool   `json:"music_enabled"`
 	PlexLoginEnabled     *bool   `json:"plex_login_enabled"`
 	PlexSignInStaff      *bool   `json:"plex_signin_staff"`
 	TMDBRegion           *string `json:"tmdb_region"`
 	PlexLoginAutoApprove *bool   `json:"plex_login_auto_approve"` // legacy: every type or none
 	// PlexLoginAutoApproveTypes wins over the legacy bool when both are sent.
-	PlexLoginAutoApproveTypes *string   `json:"plex_login_auto_approve_types"`
-	JellyfinLoginEnabled      *bool     `json:"jellyfin_login_enabled"`
-	JellyfinQuickConnect      *bool     `json:"jellyfin_quickconnect_enabled"`
-	JellyfinSignInStaff       *bool     `json:"jellyfin_signin_staff"`
-	JellyfinAutoApproveTypes  *string   `json:"jellyfin_login_auto_approve_types"`
-	RecycleMaxGB              *string   `json:"recycle_max_gb"`
-	RecycleRetentionDays      *string   `json:"recycle_retention_days"`
-	DiskGuard                 *bool     `json:"downloads_disk_guard"`
-	DiskGuardPausePct         *string   `json:"downloads_disk_guard_pause_pct"`
-	DiskGuardResumePct        *string   `json:"downloads_disk_guard_resume_pct"`
-	StallMinutes              *int      `json:"downloads_stall_minutes"`
-	UpgradeBudget             *int      `json:"upgrade_max_grabs_per_sweep"`
-	QuotaDays                 *int      `json:"request_quota_days"`
-	QuotaMovies               *int      `json:"request_quota_movies"`
-	QuotaSeasons              *int      `json:"request_quota_seasons"`
-	QuotaBooks                *int      `json:"request_quota_books"`
-	DefaultCategories         *bool     `json:"indexer_default_categories"`
-	BookLanguages             *[]string `json:"books_languages"`
-	QualityRanking            *string   `json:"quality_ranking"`
-	NetworkPreference         *string   `json:"download_network_preference"`
-	PublicURL                 *string   `json:"app_public_url"`
+	PlexLoginAutoApproveTypes *string `json:"plex_login_auto_approve_types"`
+	JellyfinLoginEnabled      *bool   `json:"jellyfin_login_enabled"`
+	JellyfinQuickConnect      *bool   `json:"jellyfin_quickconnect_enabled"`
+	JellyfinSignInStaff       *bool   `json:"jellyfin_signin_staff"`
+	JellyfinAutoApproveTypes  *string `json:"jellyfin_login_auto_approve_types"`
+	RecycleMaxGB              *string `json:"recycle_max_gb"`
+	RecycleRetentionDays      *string `json:"recycle_retention_days"`
+	DiskGuard                 *bool   `json:"downloads_disk_guard"`
+	DiskGuardPausePct         *string `json:"downloads_disk_guard_pause_pct"`
+	DiskGuardResumePct        *string `json:"downloads_disk_guard_resume_pct"`
+	StallMinutes              *int    `json:"downloads_stall_minutes"`
+	UpgradeBudget             *int    `json:"upgrade_max_grabs_per_sweep"`
+	QuotaDays                 *int    `json:"request_quota_days"`
+	QuotaMovies               *int    `json:"request_quota_movies"`
+	QuotaSeasons              *int    `json:"request_quota_seasons"`
+	DefaultCategories         *bool   `json:"indexer_default_categories"`
+	QualityRanking            *string `json:"quality_ranking"`
+	NetworkPreference         *string `json:"download_network_preference"`
+	PublicURL                 *string `json:"app_public_url"`
 }
 
 // adminSettingChange names the first admin-only setting req would change, or "" if it
@@ -213,8 +174,6 @@ func (a *api) adminSettingChange(ctx context.Context, req *settingsUpdate) strin
 		return p != nil && strings.TrimSpace(*p) != strings.TrimSpace(cur)
 	}
 	switch {
-	case boolChanged(req.BooksEnabled, a.booksEnabled(ctx)):
-		return "the Books module"
 	case boolChanged(req.MusicEnabled, a.musicEnabled(ctx)):
 		return "the Music module"
 	case boolChanged(req.PlexLoginEnabled, st.GetBool(ctx, "plex_login_enabled", false)):
@@ -343,7 +302,7 @@ func (a *api) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if msg := validQuota(req.QuotaDays, req.QuotaMovies, req.QuotaSeasons, req.QuotaBooks); msg != "" {
+	if msg := validQuota(req.QuotaDays, req.QuotaMovies, req.QuotaSeasons); msg != "" {
 		a.writeError(w, http.StatusBadRequest, msg)
 		return
 	}
@@ -355,14 +314,6 @@ func (a *api) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		publicURL = v
-	}
-	var bookLangs string
-	if req.BookLanguages != nil {
-		var msg string
-		if bookLangs, msg = parseBookLanguagesUpdate(*req.BookLanguages); msg != "" {
-			a.writeError(w, http.StatusBadRequest, msg)
-			return
-		}
 	}
 	// ISO 3166-1 alpha-2 ("AU"), or empty to go back to TMDB's global lists. Checked up
 	// here with the rest, so a bad region doesn't leave the keys before it saved.
@@ -386,7 +337,7 @@ func (a *api) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	for key, v := range map[string]*int{
 		requests.KeyQuotaDays: req.QuotaDays, requests.KeyQuotaMovies: req.QuotaMovies,
-		requests.KeyQuotaSeasons: req.QuotaSeasons, requests.KeyQuotaBooks: req.QuotaBooks,
+		requests.KeyQuotaSeasons: req.QuotaSeasons,
 	} {
 		if v != nil && !save(a.deps.Settings.Set(ctx, key, strconv.Itoa(*v))) {
 			return
@@ -422,9 +373,6 @@ func (a *api) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	if req.DownloadArtwork != nil && !save(a.deps.Settings.SetBool(ctx, keyDownloadArtwrk, *req.DownloadArtwork)) {
 		return
 	}
-	if req.BooksEnabled != nil && !save(a.deps.Settings.SetBool(ctx, settings.KeyModuleBooks, *req.BooksEnabled)) {
-		return
-	}
 	if req.PlexLoginEnabled != nil && !save(a.deps.Settings.SetBool(ctx, "plex_login_enabled", *req.PlexLoginEnabled)) {
 		return
 	}
@@ -448,21 +396,11 @@ func (a *api) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	if req.JellyfinAutoApproveTypes != nil && !save(a.deps.Settings.Set(ctx, keyJellyfinAutoApproveTypes, auth.ParseAutoApproval(*req.JellyfinAutoApproveTypes).String())) {
 		return
 	}
-	// The page sends every setting on each save, so note whether the bin's rules really changed.
-	binWas := a.deps.Settings.Get(ctx, "recycle_max_gb", recyclebin.DefaultMaxGB) + "/" +
-		a.deps.Settings.Get(ctx, "recycle_retention_days", recyclebin.DefaultRetentionDays)
 	if req.RecycleMaxGB != nil && !save(a.deps.Settings.Set(ctx, "recycle_max_gb", strings.TrimSpace(*req.RecycleMaxGB))) {
 		return
 	}
 	if req.RecycleRetentionDays != nil && !save(a.deps.Settings.Set(ctx, "recycle_retention_days", strings.TrimSpace(*req.RecycleRetentionDays))) {
 		return
-	}
-	binNow := a.deps.Settings.Get(ctx, "recycle_max_gb", recyclebin.DefaultMaxGB) + "/" +
-		a.deps.Settings.Get(ctx, "recycle_retention_days", recyclebin.DefaultRetentionDays)
-	if binNow != binWas && a.deps.Convert != nil {
-		// Convert holds back files whose originals didn't fit in the bin; a new cap is
-		// the owner's answer to that, so they shouldn't wait a day to see it.
-		a.deps.Convert.BinSettingsChanged(ctx)
 	}
 	if req.MusicEnabled != nil && !save(a.deps.Settings.SetBool(ctx, settings.KeyModuleMusic, *req.MusicEnabled)) {
 		return
@@ -480,9 +418,6 @@ func (a *api) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.UpgradeBudget != nil && !save(a.deps.Settings.Set(ctx, automation.KeyUpgradeBudget, strconv.Itoa(*req.UpgradeBudget))) {
-		return
-	}
-	if req.BookLanguages != nil && !save(a.deps.Settings.Set(ctx, automation.KeyBookLanguages, bookLangs)) {
 		return
 	}
 	if req.QualityRanking != nil && !save(a.deps.Settings.Set(ctx, quality.KeyRanking, strings.TrimSpace(*req.QualityRanking))) {

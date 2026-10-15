@@ -3,7 +3,7 @@
 //
 // The acquisition unit is the ALBUM. Releases ship as an album, and "quality" for music is a
 // FORMAT preference (FLAC over MP3 320 over MP3 V0…) scored through the shared quality
-// profile's format_scores — the same shape the Books module uses, not the resolution ladder
+// profile's format_scores — not the resolution ladder
 // movies and series use.
 package music
 

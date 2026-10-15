@@ -1199,36 +1199,6 @@ func (r *Repo) SetEpisodeFile(ctx context.Context, seriesID int64, season, episo
 	return err
 }
 
-// RepointEpisodeFile moves EVERY episode currently pointing at oldPath to newPath.
-//
-// A single file can serve several episodes — a double-length "S03E01E02" is one file with
-// two episode rows. Updating just one of them leaves the others pointing at a path that
-// may no longer exist (a convert can change the container), so the reverse lookup has to
-// be by path, not by episode number.
-func (r *Repo) RepointEpisodeFile(ctx context.Context, seriesID int64, oldPath, newPath string, size int64) (int64, error) {
-	res, err := r.db.ExecContext(ctx,
-		`UPDATE episodes SET has_file = 1, file_path = ?, size_bytes = ?
-		  WHERE series_id = ? AND file_path = ?`,
-		newPath, size, seriesID, oldPath)
-	if err != nil {
-		return 0, err
-	}
-	n, _ := res.RowsAffected()
-	return n, nil
-}
-
-// SetConvertedFromForPath records, on every episode of the series served by the file at
-// path, the release and size it had before Convert first shrank it. The release is the
-// episode's recorded source release as it stands — call this BEFORE its codec is
-// restamped. An episode that already has a baseline keeps its first one.
-func (r *Repo) SetConvertedFromForPath(ctx context.Context, seriesID int64, path string, size int64) error {
-	_, err := r.db.ExecContext(ctx,
-		`UPDATE episodes SET converted_from_release = source_release, converted_from_size = ?
-		  WHERE series_id = ? AND has_file = 1 AND file_path = ?
-		    AND converted_from_release = '' AND converted_from_size = 0`, size, seriesID, path)
-	return err
-}
-
 // ClearEpisodeConvertedFrom forgets an episode's pre-conversion baseline: a new file was
 // imported for it.
 func (r *Repo) ClearEpisodeConvertedFrom(ctx context.Context, seriesID int64, season, episode int) error {
@@ -1265,7 +1235,8 @@ type EpisodeFile struct {
 	SourceRelease string // the release it came from, not the renamed library file
 	RuntimeMin    int    // needed to turn size into a bitrate
 	Held          bool   // kept out of profile-driven upgrades (upgrade_hold)
-	// What the file was before Convert first shrank it ("" / 0 when never converted).
+	// What the file was before an earlier version's Convert first shrank it ("" / 0 when
+	// never converted).
 	ConvertedFromRelease string
 	ConvertedFromSize    int64
 }
@@ -1285,7 +1256,8 @@ type LibraryEpisodeFile struct {
 	SourceRelease   string
 	RuntimeMin      int
 	Held            bool // kept out of profile-driven upgrades (upgrade_hold)
-	// What the file was before Convert first shrank it ("" / 0 when never converted).
+	// What the file was before an earlier version's Convert first shrank it ("" / 0 when
+	// never converted).
 	ConvertedFromRelease string
 	ConvertedFromSize    int64
 }

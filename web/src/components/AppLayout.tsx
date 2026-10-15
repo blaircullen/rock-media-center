@@ -7,7 +7,6 @@ import { PageSkeleton } from "./PageSkeleton";
 import { RestartBanner } from "./RestartBanner";
 import { NotificationBell } from "./NotificationBell";
 import { PushPromptHost } from "./PushPromptHost";
-import { PlayerHost } from "../lib/playerStub";
 import { useDocumentTitle } from "../lib/title";
 import { prefetchStaffPages } from "../lib/prefetch";
 import { useAttention, useAttentionPoll } from "../lib/useAttention";
@@ -93,8 +92,7 @@ export function AppLayout() {
         <PushPromptHost />
         {/* Asks before a link or Back leaves a form with unsaved edits. */}
         <UnsavedGuardHost />
-        {/* pb-chrome: the last row scrolls clear of the audiobook mini-player and the
-            iPhone home indicator. */}
+        {/* pb-chrome: the last row scrolls clear of the iPhone home indicator. */}
         {/* relative: absolutely placed pieces (a screen-reader-only label) belong to this
             scroll box. Without it they are placed against the page and stretch it, which
             adds a second scrollbar. */}
@@ -108,7 +106,6 @@ export function AppLayout() {
           </ErrorBoundary>
         </main>
       </div>
-      <PlayerHost sidebar />
     </div>
   );
 }

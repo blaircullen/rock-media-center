@@ -9,9 +9,9 @@ import (
 
 // The Library tab: the library seen through what people watch — the most watched titles,
 // what has sat unwatched since it was added, and the titles that keep forcing Plex to
-// transcode (what Convert could fix). Most watched and the hot spots come from recorded
+// transcode. Most watched and the hot spots come from recorded
 // plays only; never watched needs the Plex library index and says when it can't have it.
-// The tab only links to a title's page and to Convert: nothing here starts a conversion.
+// The tab only links to a title's page: nothing here changes a file.
 
 // LibraryItem is one title on the Library tab. Media and TMDB come from the Plex library
 // index ("" / 0 when it doesn't know the title); the HTTP layer fills ArrmadaID from them.

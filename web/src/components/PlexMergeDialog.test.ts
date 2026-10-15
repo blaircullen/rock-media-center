@@ -4,7 +4,7 @@ import { mergeLines } from "./PlexMergeDialog";
 
 const base: PlexMergePreview = {
   from: "dup", to: "owner", requests: 2, following: 0, notifications: 0, push_devices: 0, quota_usage: 0,
-  audiobook_progress: false, audiobook_password: false, signed_in_devices: 0, listening_apps: 0,
+  signed_in_devices: 0,
 };
 
 describe("mergeLines", () => {

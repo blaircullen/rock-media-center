@@ -4,7 +4,7 @@ import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { AutoText, AutoToggle } from "../../components/settings/auto";
 import { Section } from "../../components/settings/ui";
 import { api, type PendingRestart } from "../../lib/api";
-import { busyLines, restartAppAndWait } from "../../lib/restart";
+import { restartAppAndWait } from "../../lib/restart";
 import { useSetting } from "../../lib/useSettings";
 import { Backups } from "./Backups";
 
@@ -12,12 +12,10 @@ import { Backups } from "./Backups";
 // database backups. The API keys live with the other integrations on Settings → Connections.
 export function SystemSettings() {
   // A module switch shows in the nav and Discover as soon as it's saved.
-  const books = useSetting("books_enabled");
   const music = useSetting("music_enabled");
   return (
     <div className="flex flex-col gap-6">
       <Section id="modules" title="Modules" subtitle="Turn modules on or off. Disabling hides a module from the navigation and from Discover — nothing is deleted, and it can be re-enabled anytime.">
-        <AutoToggle label="Books" hint="Ebook and audiobook library, and the Books tab in Discover. Metadata comes from Hardcover when a key is set, otherwise Open Library." save={books} />
         <AutoToggle label="Music (preview)" hint="Artists and albums from MusicBrainz with automatic album downloads. Still being hardened. Turning it off hides Music and stops its searches and imports; finished downloads wait until it's back on. Nothing is deleted." save={music} />
       </Section>
       <PublicURLSection />
@@ -60,7 +58,6 @@ function RestartSection() {
     setRestarting(true); setErr(null);
     try { await restartAppAndWait(); } catch (e) { setErr((e as Error).message); setRestarting(false); }
   };
-  const lines = st ? busyLines(st.busy) : [];
 
   return (
     <Section id="restart" title="Restart" subtitle="Restart Arrmada, for example after a change that only applies at startup. This page reloads once it's back, usually in a few seconds.">
@@ -80,9 +77,6 @@ function RestartSection() {
           body={
             <div className="flex flex-col gap-1.5">
               <span>This page reloads once Arrmada is back, usually in a few seconds.</span>
-              {lines.length > 0
-                ? lines.map((l) => <span key={l} style={{ color: "var(--avoid-text)" }}>{l}</span>)
-                : <span>Nothing is converting or making subtitles right now.</span>}
             </div>
           }
           confirmLabel="Restart now"

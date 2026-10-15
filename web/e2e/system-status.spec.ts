@@ -13,8 +13,8 @@ test.describe("admin", () => {
     await expect(card.getByText("2026.10.08 (abc1234)")).toBeVisible();
     await expect(card.getByText("180 MB")).toBeVisible();
     await expect(card.getByRole("link", { name: "3 h ago" })).toBeVisible();
-    // The array holding Movies, TV and Books is one drive, not three.
-    await expect(card.getByText("Movies · TV · Books & audiobooks")).toBeVisible();
+    // The array holding Movies and TV is one drive, not three.
+    await expect(card.getByText("Movies · TV")).toBeVisible();
     await expect(card.getByRole("progressbar")).toHaveCount(3);
   });
 

@@ -4,7 +4,7 @@ import { sanitizeNext } from "./session";
 describe("sanitizeNext", () => {
   it("keeps a same-site path", () => {
     expect(sanitizeNext("/movies/12")).toBe("/movies/12");
-    expect(sanitizeNext("/discover?tab=books#top")).toBe("/discover?tab=books#top");
+    expect(sanitizeNext("/discover?tab=series#top")).toBe("/discover?tab=series#top");
   });
 
   it("rejects anything that could leave the site", () => {

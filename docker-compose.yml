@@ -29,23 +29,10 @@ services:
         VERSION: ${ARRMADA_VERSION:-dev}
         COMMIT: ${ARRMADA_COMMIT:-unknown}
     container_name: Arrmada-app
-    # x265 binds its worker thread pools to NUMA nodes with set_mempolicy(2), which
-    # Docker's default seccomp profile blocks — the encode then logs "set_mempolicy:
-    # Operation not permitted" repeatedly and, on some CPUs (notably hybrid P-core/E-core
-    # parts), crashes outright. SYS_NICE permits the call so x265 threads normally.
-    #
-    # The app also detects this at startup and falls back to unpooled threading, so an
-    # existing container without this capability still converts — just less efficiently.
-    cap_add:
-      - SYS_NICE
     ports:
       # Host web-UI port ← .env (install.sh auto-picks a free one so it never clashes
       # with Radarr's 7878 etc.). The app always listens on 7878 *inside* the container.
       - "${ARRMADA_PORT:-7878}:7878"
-      # Audiobook server for listening apps (Lissen and other Audiobookshelf clients),
-      # switched on in Services → Audiobooks. It listens on 13378 inside; the host port
-      # defaults to 13379 so it never collides with an Audiobookshelf still on 13378.
-      - "${ARRMADA_AUDIOBOOK_PORT:-13379}:13378"
     environment:
       # Login is always required — there is no way to disable it. First launch shows a
       # one-time "create admin" form.
@@ -64,15 +51,13 @@ services:
       # code, compiled here). install.sh and update.sh keep it in .env; the in-app update
       # check compares the running build with the same thing.
       ARRMADA_CHANNEL: "${ARRMADA_CHANNEL:-stable}"
-      # The host's timezone (install.sh writes it to .env). Schedules — the Convert encode
-      # window, the nightly sweeps, listening-per-day — run on this clock; without it the
+      # The host's timezone (install.sh writes it to .env). Schedules — the nightly
+      # sweeps, the daily stats — run on this clock; without it the
       # app ran on UTC while its companions below were already on local time.
       TZ: "${TZ:-Etc/UTC}"
       # Insights can also be pointed at Plex here instead of in its Settings tab.
       ARRMADA_PLEX_URL: "${ARRMADA_PLEX_URL:-}"
       ARRMADA_PLEX_TOKEN: "${ARRMADA_PLEX_TOKEN:-}"
-      # The host port above, so the app can show people the address to type.
-      ARRMADA_AUDIOBOOK_HOST_PORT: "${ARRMADA_AUDIOBOOK_PORT:-13379}"
       # The bundled qBittorrent companion; auto-registered as a download client.
       ARRMADA_QBITTORRENT_URL: "http://arrmada-qbittorrent:8080"
       # Bundled FlareSolverr — used to get past Cloudflare on protected trackers.
@@ -101,18 +86,15 @@ services:
       # Set ARRMADA_DOWNLOADS_DIR in .env to land downloads on your array (same
       # filesystem as the library, so imports hardlink).
       ARRMADA_DOWNLOADS_DIR: "${ARRMADA_DOWNLOADS_DIR:-/media/downloads}"
-      # Optional: point Movies / TV / Books at separate library folders (empty = use the
+      # Optional: point Movies / TV / Music at separate library folders (empty = use the
       # shared library above). See docker-compose.override.example.yml to bind existing
       # folders read-only.
       ARRMADA_MOVIES_DIR: "${ARRMADA_MOVIES_DIR:-}"
       ARRMADA_TV_DIR: "${ARRMADA_TV_DIR:-}"
-      ARRMADA_EBOOKS_DIR: "${ARRMADA_EBOOKS_DIR:-}"
-      ARRMADA_AUDIOBOOKS_DIR: "${ARRMADA_AUDIOBOOKS_DIR:-}"
       ARRMADA_MUSIC_DIR: "${ARRMADA_MUSIC_DIR:-}"
       # Movie/TV metadata. Get a free v3 API key from https://www.themoviedb.org/settings/api
       ARRMADA_TMDB_API_KEY: "${ARRMADA_TMDB_API_KEY:-}"
       ARRMADA_OMDB_API_KEY: "${ARRMADA_OMDB_API_KEY:-}"
-      ARRMADA_HARDCOVER_API_KEY: "${ARRMADA_HARDCOVER_API_KEY:-}"
       # Incoming BitTorrent port — Arrmada applies this inside qBittorrent so it
       # matches the published port above. Same source (.env) as the ports block.
       ARRMADA_QBIT_PORT: "${ARRMADA_QBIT_PORT:-6881}"
@@ -303,17 +285,9 @@ services:
         dir = tv
         newzbin = ""
         priority = -100
-        [[arrmada-books]]
-        name = arrmada-books
-        order = 3
-        pp = 3
-        script = Default
-        dir = books
-        newzbin = ""
-        priority = -100
         [[arrmada-music]]
         name = arrmada-music
-        order = 4
+        order = 3
         pp = 3
         script = Default
         dir = music

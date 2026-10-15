@@ -3,30 +3,19 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path/filepath"
 
-	"github.com/tristenlammi/arrmada/internal/audioserver"
-	"github.com/tristenlammi/arrmada/internal/convert"
 	"github.com/tristenlammi/arrmada/internal/issues"
 	"github.com/tristenlammi/arrmada/internal/outbox"
 	"github.com/tristenlammi/arrmada/internal/requests"
-	"github.com/tristenlammi/arrmada/internal/safego"
-	"github.com/tristenlammi/arrmada/internal/series"
-	"github.com/tristenlammi/arrmada/internal/subtitles"
 )
 
 // importConsumers is everything that acts on an import, as outbox consumers. Each runs
-// until it succeeds, so each must be safe to run twice: Convert upserts its index,
-// Subtitles dedupes its ensure-job per file, the inbox's unique ref stops a second
-// "ready", and dropping a cache twice costs a re-read.
+// until it succeeds, so each must be safe to run twice: the inbox's unique ref stops a
+// second "ready", and a second scan request for a folder is debounced into the first.
 type importConsumers struct {
-	convert   *convert.Service
-	subtitles *subtitles.Service
-	requests  *requests.Service
-	audio     *audioserver.Server
-	grp       *safego.Group // background work a handler starts (the audiobook warm-up)
+	requests *requests.Service
 	// plex queues a debounced scan of a changed folder on every media server (Plex and
 	// Jellyfin, mediaservers.go; the field and the consumer name predate Jellyfin). It
 	// never blocks or fails, so the consumer is done as soon as the folder is queued, the
@@ -47,8 +36,7 @@ type importConsumers struct {
 //
 // Within a topic the Plex scan (which only queues a folder) and then the requester's
 // "ready" are registered first: one import's rows are written in registration order and
-// run oldest first, one at a time, so neither is held behind Convert probing a file on a
-// sleeping array.
+// run oldest first, one at a time.
 func (c importConsumers) register(box *outbox.Outbox) {
 	c.registerPlex(box)
 	box.Register(outbox.TopicMovieImported, "requests.ready", decode(func(ctx context.Context, p outbox.MovieImported) error {
@@ -60,23 +48,6 @@ func (c importConsumers) register(box *outbox.Outbox) {
 		}
 		return c.issues.OnMovieImported(ctx, p.MovieID, p.VersionID)
 	}))
-	box.Register(outbox.TopicMovieImported, "convert", decode(func(ctx context.Context, p outbox.MovieImported) error {
-		return c.convert.IndexMovie(ctx, p.MovieID) // a movie deleted since is simply forgotten
-	}))
-	box.Register(outbox.TopicMovieImported, "subtitles", decode(func(ctx context.Context, p outbox.MovieImported) error {
-		c.subtitles.OnMovieImported(ctx, p.MovieID)
-		return nil
-	}))
-
-	// Renames and deletes: both indexes follow the movie's current record — a new path
-	// replaces the old one, a movie with no file (or no longer in the library) drops out.
-	box.Register(outbox.TopicMovieChanged, "convert", decode(func(ctx context.Context, p outbox.MovieChanged) error {
-		return c.convert.IndexMovie(ctx, p.MovieID)
-	}))
-	box.Register(outbox.TopicMovieChanged, "subtitles", decode(func(ctx context.Context, p outbox.MovieChanged) error {
-		return c.subtitles.OnMovieChanged(ctx, p.MovieID)
-	}))
-
 	box.Register(outbox.TopicSeriesImported, "requests.ready", decode(func(ctx context.Context, p outbox.SeriesImported) error {
 		return c.requests.NotifySeriesReady(ctx, p.SeriesID)
 	}))
@@ -91,40 +62,12 @@ func (c importConsumers) register(box *outbox.Outbox) {
 		}
 		return c.issues.OnSeriesImported(ctx, p.SeriesID, eps)
 	}))
-	box.Register(outbox.TopicSeriesImported, "convert", decode(func(ctx context.Context, p outbox.SeriesImported) error {
-		return gone(c.convert.IndexSeries(ctx, p.SeriesID), series.ErrNotFound)
-	}))
-	box.Register(outbox.TopicSeriesImported, "subtitles", decode(func(ctx context.Context, p outbox.SeriesImported) error {
-		eps := make([]series.EpisodeRef, 0, len(p.Episodes))
-		for _, e := range p.Episodes {
-			eps = append(eps, series.EpisodeRef{Season: e.Season, Episode: e.Episode})
-		}
-		c.subtitles.OnSeriesImported(ctx, p.SeriesID, eps)
-		return nil
-	}))
-
-	box.Register(outbox.TopicBookImported, "requests.ready", decode(func(ctx context.Context, p outbox.BookImported) error {
-		return c.requests.NotifyBookReady(ctx, p.BookID)
-	}))
-	// The warm-up probes files and can take a while; it runs in the run group with the
-	// app's own context, not the handler's, which ends when the handler returns.
-	audioWarm := func(fn func(ctx context.Context)) { c.grp.Go("audiobook server: warm-up", fn) }
-	box.Register(outbox.TopicBookImported, "audioserver.cache", decode(func(ctx context.Context, p outbox.BookImported) error {
-		c.audio.OnBookChanged(ctx, p.BookID, audioWarm)
-		return nil
-	}))
-	// A rename or delete: the catalogue re-reads the book's files, and nobody is told
-	// it's ready.
-	box.Register(outbox.TopicBookFilesChanged, "audioserver.cache", decode(func(ctx context.Context, p outbox.BookFilesChanged) error {
-		c.audio.OnBookChanged(ctx, p.BookID, audioWarm)
-		return nil
-	}))
 }
 
 // registerPlex adds the Plex scan consumers: each queues a debounced partial scan of the
 // folder that changed (plexscan), so a season pack or a burst of renames costs one scan
-// per folder. Changes that never reach the outbox — series renames and deletes, Convert's
-// swaps — call the scanner directly (wired in main).
+// per folder. Changes that never reach the outbox — series renames and deletes — call the
+// scanner directly (wired in main).
 func (c importConsumers) registerPlex(box *outbox.Outbox) {
 	// The movie's folder: the new file, or an upgrade's replacement.
 	box.Register(outbox.TopicMovieImported, "plex.scan", decode(func(_ context.Context, p outbox.MovieImported) error {
@@ -173,13 +116,4 @@ func decode[T any](h func(ctx context.Context, p T) error) outbox.Handler {
 		}
 		return h(ctx, p)
 	}
-}
-
-// gone treats "the item no longer exists" as done: it was deleted after the import, and
-// there is nothing left to index. Retrying it twenty times would only fill the log.
-func gone(err, notFound error) error {
-	if errors.Is(err, notFound) {
-		return nil
-	}
-	return err
 }

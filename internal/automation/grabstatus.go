@@ -47,7 +47,7 @@ const (
 )
 
 // pendingTitleWhere is the grab-row filter behind the per-title re-grab guards (movies,
-// series, books, music).
+// series, music).
 //   - A 'grabbed' row holds its release for a day, so a grab stuck there forever can't
 //     block that release for good.
 //   - A 'held' row holds it for as long as the review is pending: the download is already

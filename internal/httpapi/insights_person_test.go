@@ -12,7 +12,7 @@ import (
 )
 
 // A person's page is staff information (their devices and addresses): a requester gets
-// 403, an unknown id 404, staff the profile — with no audiobook data in it.
+// 403, an unknown id 404, staff the profile — with no listening data in it.
 func TestInsightsPersonRoute(t *testing.T) {
 	s := insightsRouteServer(t)
 	if _, err := s.st.DB().ExecContext(context.Background(),

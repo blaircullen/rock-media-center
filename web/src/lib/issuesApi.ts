@@ -42,7 +42,7 @@ export interface Issue {
   status: IssueStatus;
   /** What the reporters were told it was closed with. */
   resolution?: string;
-  /** The fix staff started (replace, subtitles) and what became of it. */
+  /** The fix staff started (replace) and what became of it. */
   action?: string;
   action_note?: string;
   action_at?: number;
@@ -90,8 +90,8 @@ export const issuesApi = {
   episodes: (tmdbId: number) => req<{ seasons: IssueSeasonFiles[] }>(`/api/v1/issues/episodes/${tmdbId}`),
   resolve: (id: number, note: string) => req<Issue>(`/api/v1/issues/${id}/resolve`, post({ note })),
   dismiss: (id: number, note: string) => req<Issue>(`/api/v1/issues/${id}/dismiss`, post({ note })),
-  /** Start a one-click fix: replace the copy, or make the subtitles again. */
-  fix: (id: number, action: "replace" | "subtitles") => req<Issue>(`/api/v1/issues/${id}/fix`, post({ action })),
+  /** Start a one-click fix: replace the copy. */
+  fix: (id: number, action: "replace") => req<Issue>(`/api/v1/issues/${id}/fix`, post({ action })),
 };
 
 /** "S01E04" for an episode, "" for a movie. */

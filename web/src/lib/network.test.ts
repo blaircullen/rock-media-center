@@ -25,7 +25,7 @@ describe("releases with no client for their network", () => {
   it("can't be grabbed, and only those", () => {
     expect(noClientFor({ reject_reason: NO_USENET_CLIENT })).toBe(true);
     expect(noClientFor({ reject_reason: NO_TORRENT_CLIENT })).toBe(true);
-    expect(noClientFor({ reject_reason: "Not in your book languages" })).toBe(false);
+    expect(noClientFor({ reject_reason: "Not in your language" })).toBe(false);
     expect(noClientFor({})).toBe(false);
   });
 });

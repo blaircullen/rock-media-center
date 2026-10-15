@@ -17,7 +17,7 @@ vi.mock("../../lib/useLiveQuery", () => ({ useLiveRefresh: () => () => {} }));
 
 const idx = (over: Partial<Indexer> = {}): Indexer => ({ id: 1, name: "TorrentLeech", kind: "torrentleech", priority: 25, enabled: true, ...over });
 const client = (over: Partial<DownloadClient> = {}): DownloadClient => ({ id: 1, name: "qBittorrent", kind: "qbittorrent", url: "http://qb:8080", enabled: true, priority: 25, ...over });
-const CATS = { movies: "arrmada", tv: "arrmada-tv", books: "arrmada-books", music: "arrmada-music" };
+const CATS = { movies: "arrmada", tv: "arrmada-tv", music: "arrmada-music" };
 
 const idxCard = (i: Indexer): ConnectionItem => ({
   kind: "indexer", ref: String(i.id), card: `indexer-${i.id}`, name: i.name, type: i.kind, configured: true, enabled: i.enabled,
@@ -81,7 +81,7 @@ describe("adding an indexer", () => {
     page();
     const dialog = await openCatalogue();
     const tiles = within(dialog).getAllByRole("button").map((b) => b.textContent ?? "");
-    for (const t of ["TorrentLeech", "MyAnonaMouse", "1337x", "Prowlarr", "Jackett / other Torznab"]) {
+    for (const t of ["TorrentLeech", "1337x", "Prowlarr", "Jackett / other Torznab"]) {
       expect(tiles.some((x) => x.includes(t))).toBe(true);
     }
     expect(tiles.some((x) => /newznab|usenet/i.test(x))).toBe(false);
@@ -154,16 +154,6 @@ describe("adding an indexer", () => {
     expect(create).toHaveBeenCalledWith(expect.objectContaining({ kind: "1337x", name: "1337x", url: "", media_types: ["movie", "series"] }));
   });
 
-  it("MyAnonaMouse defaults to Books only", async () => {
-    serve({});
-    page();
-    const form = await pick(/MyAnonaMouse/);
-    const scope = within(form).getByRole("group", { name: "Used for" });
-    const pressed = within(scope).getAllByRole("button").filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.textContent);
-    expect(pressed).toEqual(["Books"]);
-    expect(within(form).getByLabelText("mam_id session")).toBeTruthy();
-  });
-
   it("the Prowlarr tile opens the Prowlarr card instead of a form", async () => {
     serve({});
     page();
@@ -217,18 +207,18 @@ describe("an indexer's card", () => {
     fireEvent.click(within(card).getByRole("button", { name: "Edit" }));
     expect(within(card).getByText("tie-break 25").getAttribute("title")).toMatch(/Only breaks ties/);
     const pill = (l: string) => within(card).getByRole("button", { name: l });
-    expect(["Movies", "TV", "Books", "Music"].every((l) => pill(l).getAttribute("aria-pressed") === "true")).toBe(true);
+    expect(["Movies", "TV", "Music"].every((l) => pill(l).getAttribute("aria-pressed") === "true")).toBe(true);
     await act(async () => { fireEvent.click(pill("Music")); });
-    expect(upd).toHaveBeenCalledWith(1, expect.objectContaining({ media_types: ["movie", "series", "book"] }));
+    expect(upd).toHaveBeenCalledWith(1, expect.objectContaining({ media_types: ["movie", "series"] }));
   });
 
   it("won't turn off the last lit pill", async () => {
-    serve({ indexers: [idx({ media_types: ["book"] })] });
+    serve({ indexers: [idx({ media_types: ["music"] })] });
     const upd = vi.spyOn(indexerApi, "updateIndexer");
     page();
     const card = await cardOf("indexer-1");
     fireEvent.click(within(card).getByRole("button", { name: "Edit" }));
-    await act(async () => { fireEvent.click(within(card).getByRole("button", { name: "Books" })); });
+    await act(async () => { fireEvent.click(within(card).getByRole("button", { name: "Music" })); });
     expect(upd).not.toHaveBeenCalled();
     expect(within(card).getByRole("alert").textContent).toMatch(/Disable the indexer instead/);
   });

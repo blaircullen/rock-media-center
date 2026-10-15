@@ -255,35 +255,6 @@ func TestUpcomingRoutesAndCachesPerMediaType(t *testing.T) {
 	}
 }
 
-// A slow /trending/weekly.json must fail fast on its own deadline rather than hanging
-// the Books row until the 15s client timeout.
-func TestTrendingBooksHasOwnDeadline(t *testing.T) {
-	release := make(chan struct{})
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		<-release // hang until the client gives up
-	}))
-	defer func() { close(release); srv.Close() }()
-
-	// The client timeout stays generous (as in production); only the trending-specific
-	// deadline is shrunk so the test doesn't have to wait it out.
-	ol := &OpenLibrary{http: &http.Client{Timeout: 15 * time.Second}, base: srv.URL}
-	prev := olTrendingTimeout
-	olTrendingTimeout = 100 * time.Millisecond
-	defer func() { olTrendingTimeout = prev }()
-
-	start := time.Now()
-	items, err := ol.TrendingBooks(context.Background())
-	if err == nil {
-		t.Fatal("expected a timeout error, got nil (an empty row would render as 'no results')")
-	}
-	if items != nil {
-		t.Errorf("expected no items on timeout, got %+v", items)
-	}
-	if elapsed := time.Since(start); elapsed > 5*time.Second {
-		t.Errorf("trending waited %v — it must not ride the 15s client timeout", elapsed)
-	}
-}
-
 // Adult rows must never reach a discovery surface, and the browse floor must drop
 // the obscure junk TMDB doesn't flag — while leaving explicit search untouched so
 // a real-but-obscure title stays findable.

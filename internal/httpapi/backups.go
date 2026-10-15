@@ -79,7 +79,7 @@ func (a *api) handleBackupsList(w http.ResponseWriter, r *http.Request) {
 func (a *api) canRestart() bool { return a.deps.Restart != nil && inContainer() }
 
 // restoreConfirmPhrase must be typed to restore: a restore replaces every module's state,
-// audiobook places included.
+// everyone's settings included.
 const restoreConfirmPhrase = "RESTORE"
 
 // manualRestartCommand is what the card shows when the app can't restart itself.

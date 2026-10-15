@@ -13,7 +13,6 @@ import (
 	"github.com/tristenlammi/arrmada/internal/connstatus"
 	"github.com/tristenlammi/arrmada/internal/health"
 	"github.com/tristenlammi/arrmada/internal/metadata"
-	"github.com/tristenlammi/arrmada/internal/subtitles"
 )
 
 // recheckTMDB re-runs the health panel's TMDB key check after the key changed or was
@@ -55,15 +54,11 @@ func (a *api) handleGetAPIKeys(w http.ResponseWriter, r *http.Request) {
 // handleTestAPIKey makes a real request with a key and reports the outcome. With no body
 // it tests the saved key; with {"value": "..."} it tests that candidate instead — a key
 // typed and not yet saved — which is sent to the provider once and never stored or
-// logged. The OpenSubtitles key also takes a typed "username" and "password" (setup asks
-// for all three together); empty ones mean the saved values. Only keys with a verifier
-// wired up can be tested; anything else is a 400.
+// logged. Only keys with a verifier wired up can be tested; anything else is a 400.
 func (a *api) handleTestAPIKey(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var body struct {
-		Value    string `json:"value"`
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Value string `json:"value"`
 	}
 	// The body is optional: the Test button on a saved key sends none.
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10))
@@ -73,24 +68,17 @@ func (a *api) handleTestAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	candidate := strings.TrimSpace(body.Value)
-	user, pass := strings.TrimSpace(body.Username), strings.TrimSpace(body.Password)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
-	var res keyTestResult
-	var err error
-	if user != "" || pass != "" {
-		res, err = a.loginTest(ctx, id, candidate, user, pass)
-	} else {
-		res, err = a.keyTest(ctx, id, candidate)
-	}
+	res, err := a.keyTest(ctx, id, candidate)
 	if err != nil {
 		a.writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	// A test of the saved TMDB key settles the health panel's TMDB warning either way.
 	// A candidate says nothing about the key in use, so it leaves the panel alone.
-	typed := candidate != "" || user != "" || pass != ""
+	typed := candidate != ""
 	if id == "tmdb" && !typed {
 		a.recheckTMDB(r)
 	}
@@ -120,19 +108,6 @@ var errNoKeyTest = errors.New("no test is available for that key")
 func (a *api) keyTest(ctx context.Context, id, candidate string) (keyTestResult, error) {
 	var res keyTestResult
 	switch verify, ok := a.deps.KeyVerifiers[id]; {
-	case id == "hardcover":
-		// A typed key gets a quick "who am I"; the saved one the full search-and-fetch run.
-		if candidate != "" {
-			if !ok {
-				return res, errors.New("Hardcover can only test the saved key; save it, then Test")
-			}
-			res.Detail, res.Err = verify(ctx, candidate)
-			return res, nil
-		}
-		if a.deps.Books == nil {
-			return res, errNoKeyTest
-		}
-		res.Detail, res.Err = a.deps.Books.VerifyHardcover(ctx)
 	case id == "flaresolverr":
 		if candidate != "" {
 			return res, errors.New("FlareSolverr can only test the saved URL; save it, then Test")
@@ -140,7 +115,7 @@ func (a *api) keyTest(ctx context.Context, id, candidate string) (keyTestResult,
 		res.Detail, res.Err = testFlareSolverr(ctx, a.deps.FlareSolverr)
 	case ok:
 		res.Detail, res.Err = verify(ctx, candidate)
-		if errors.Is(res.Err, metadata.ErrNotConfigured) || errors.Is(res.Err, subtitles.ErrNotConfigured) {
+		if errors.Is(res.Err, metadata.ErrNotConfigured) {
 			res.Err = errors.New("no key is set to test")
 		}
 	case id == "tmdb" && candidate == "":
@@ -159,23 +134,6 @@ func (a *api) keyTest(ctx context.Context, id, candidate string) (keyTestResult,
 		}
 	default:
 		return res, errNoKeyTest
-	}
-	return res, nil
-}
-
-// loginTest is the OpenSubtitles Test with a typed username or password (and the typed
-// key, or the saved one when candidate is empty). Every other key takes no login.
-func (a *api) loginTest(ctx context.Context, id, candidate, user, pass string) (keyTestResult, error) {
-	var res keyTestResult
-	if id != "opensubtitles_api" {
-		return res, errors.New("only the OpenSubtitles test takes a username and password")
-	}
-	if a.deps.SubtitleLoginVerifier == nil {
-		return res, errNoKeyTest
-	}
-	res.Detail, res.Err = a.deps.SubtitleLoginVerifier(ctx, candidate, user, pass)
-	if errors.Is(res.Err, subtitles.ErrNotConfigured) {
-		res.Err = errors.New("no API key is set to test")
 	}
 	return res, nil
 }
@@ -199,21 +157,14 @@ func (a *api) keyConfigured(ctx context.Context, id string) bool {
 }
 
 // resetKeyStatus forgets a key's recorded Tests after it changed: they said nothing about
-// the new value. The OpenSubtitles login is tested through the API key's Test.
-// Called after every save and clear.
+// the new value. Called after every save and clear.
 func (a *api) resetKeyStatus(ctx context.Context, id string) {
-	// Subtitles forgets a rejected login and lets the next sweep retry what it parked.
-	if strings.HasPrefix(id, "opensubtitles_") && a.deps.Subtitles != nil {
-		a.deps.Subtitles.CredentialsChanged(ctx)
-	}
 	if a.deps.ConnStatus == nil {
 		return
 	}
 	switch id {
 	case "flaresolverr":
 		_ = a.deps.ConnStatus.Reset(ctx, connstatus.KindFlareSolverr, flareSolverrRef)
-	case "opensubtitles_username", "opensubtitles_password":
-		_ = a.deps.ConnStatus.Reset(ctx, connKindAPIKey, "opensubtitles_api")
 	default:
 		_ = a.deps.ConnStatus.Reset(ctx, connKindAPIKey, id)
 	}
@@ -257,17 +208,12 @@ func (a *api) handleSetAPIKey(w http.ResponseWriter, r *http.Request) {
 	if id == "tmdb" {
 		a.recheckTMDB(r)
 	}
-	// A Hardcover key makes Hardcover the books catalogue; bring the library across now.
-	if id == "hardcover" && strings.TrimSpace(req.Value) != "" && a.deps.Books != nil {
-		a.deps.Books.MaybeSubmitUpgrade(a.runCtx(), a.jobSubmitter(), triggerFor(r))
-	}
 	// Return the fresh status so the UI reflects the new state (masked) without a reload.
 	a.writeJSON(w, http.StatusOK, map[string]any{"keys": a.keyStatuses(r.Context())})
 }
 
 // handleClearAPIKey removes a saved credential, so it falls back to the install-time env
-// var if there is one. Clearing Hardcover leaves books on the ids they already have; new
-// lookups go back to Open Library.
+// var if there is one.
 func (a *api) handleClearAPIKey(w http.ResponseWriter, r *http.Request) {
 	if a.deps.APIKeys == nil {
 		a.writeError(w, http.StatusInternalServerError, "key store unavailable")

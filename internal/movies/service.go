@@ -496,9 +496,8 @@ func (s *Service) importMovieFile(ctx context.Context, video string, tmdbID int,
 	_ = s.repo.AddEvent(ctx, created.ID, "imported", "Found during library scan: "+filepath.Base(video))
 	s.log.Info("library scan: imported", "title", details.Title, "year", details.Year)
 	// For the UI only, and without a title: a scan adopting a thousand existing files is
-	// not a thousand "Imported" alerts. No outbox row either — Convert's nightly sweep
-	// indexes new paths, and queueing Subtitles for a whole adopted library is the
-	// 6-hourly sweep's call, not a scan's.
+	// not a thousand "Imported" alerts. No outbox row either: adopting files someone
+	// already has is nobody's "ready".
 	s.publish("movie.downloaded", map[string]any{"id": created.ID, "version_id": int64(0), "path": video, "source": "scan"})
 	created.HasFile, created.MovieFilePath = true, video
 	return created, nil
@@ -506,8 +505,8 @@ func (s *Service) importMovieFile(ctx context.Context, video string, tmdbID int,
 
 // attachExisting gives a film already in the library, with no file, the file found on
 // disk: read once, recorded as its default file with a 'detected' event, and announced
-// like an import (the outbox row lets Convert and Subtitles index it, and tells whoever
-// requested the film that it's ready — it was wanted, so that's news).
+// like an import (the outbox row tells whoever requested the film that it's ready — it
+// was wanted, so that's news).
 func (s *Service) attachExisting(ctx context.Context, m Movie, video, eventPrefix string) error {
 	media := mediaJSONOf(s.probeTrack(video))
 	err := s.repo.inTx(ctx, func(tx *sql.Tx, r *Repo) error {
@@ -758,7 +757,7 @@ func (s *Service) MarkImportedTo(ctx context.Context, id, versionID int64, path,
 	again := target.HasFile && target.FilePath == path
 
 	// The file record and the outbox row land together: once the movie reads as
-	// downloaded, Convert, Subtitles and the requester are certain to hear about it. If
+	// downloaded, the requester is certain to hear about it. If
 	// anything fails nothing is written, and the import's attach is retried.
 	err = s.repo.inTx(ctx, func(tx *sql.Tx, r *Repo) error {
 		if target.IsDefault {
@@ -776,15 +775,15 @@ func (s *Service) MarkImportedTo(ctx context.Context, id, versionID int64, path,
 				_ = r.SetVersionSourceRelease(ctx, target.ID, sourceRelease)
 			}
 		}
-		// A new file: whatever an earlier one was before Convert shrank it says nothing
-		// about this one. Convert's own path changes go through RepointMovieFile and keep it.
+		// A new file: whatever an earlier one was before a conversion says nothing about
+		// this one.
 		if err := r.ClearConvertedFrom(ctx, id, target.ID); err != nil {
 			return err
 		}
 		if !again {
 			_ = r.AddEvent(ctx, id, event, detail)
 			// A new file ends this track's upgrade hold: the hold kept the file it had, and
-			// that file is gone. (A convert or rename repoints instead, and keeps it.)
+			// that file is gone. (A rename moves the record instead, and keeps it.)
 			if err := r.clearHold(ctx, id, target.ID); err != nil {
 				return err
 			}
@@ -962,99 +961,6 @@ func (s *Service) fetchArt(ctx context.Context, dst, url string) {
 	}
 	defer f.Close()
 	_, _ = io.Copy(f, io.LimitReader(resp.Body, 25<<20))
-}
-
-// SetConvertedFrom records what the file at path was before Convert shrank it, on every
-// track of the movie holding that file: its recorded release and sizeBytes (0 = unknown).
-// Convert calls it just before RepointMovieFile, while the release still names the
-// original codec. A track that already has a baseline keeps its first one.
-func (s *Service) SetConvertedFrom(ctx context.Context, movieID int64, path string, sizeBytes int64) error {
-	return s.repo.SetConvertedFromForPath(ctx, movieID, path, sizeBytes)
-}
-
-// RepointMovieFile updates the movie's file records for a PATH-ONLY change (convert,
-// rename): every version whose file sits at oldPath follows to newPath, and the
-// recorded source_release is preserved — optionally gaining a codec token.
-//
-// This exists so Convert does NOT go through MarkImported: stamping source_release
-// with a synthetic tag there destroyed the upgrade baseline (the tag parsed to
-// nothing, every release outscored it, and automation re-downloaded the exact
-// release the file came from — an endless download → re-encode loop), and the
-// import quality gate could even refuse the update, leaving the record pointing at
-// a recycled file. codecToken (e.g. "x265" after an HEVC conversion) keeps
-// bitrate-upgrade scoring honest: without it the halved file was costed at the old
-// codec's efficiency and looked like a starving encode begging to be replaced. The token
-// replaces the old codec in place (parser.RestampCodec) rather than being appended, so
-// the name still reads as the new codec and its "-GROUP" still parses.
-func (s *Service) RepointMovieFile(ctx context.Context, movieID int64, oldPath, newPath string, size int64, codecToken string) (int, error) {
-	// The pre-conversion baseline is NOT touched here: a repoint is the same content under
-	// a new path or codec, and SetConvertedFrom recorded what it was before.
-	versions, err := s.VersionRows(ctx, movieID)
-	if err != nil {
-		return 0, err
-	}
-	restamp := func(rel string) string {
-		if rel == "" || codecToken == "" {
-			return rel
-		}
-		codec := parser.Parse("x " + codecToken).Codec
-		if parser.Parse(rel).Codec == codec {
-			return rel // already reads as the new codec
-		}
-		return parser.RestampCodec(rel, codec)
-	}
-	n := 0
-	var moved []int64 // version ids whose record changed path just now
-	defer func() {
-		// Convert reindexes this movie itself after a swap; the change still goes out so
-		// Subtitles and anything watching paths (the UI, a Plex scan) follow the new name.
-		if len(moved) == 0 || oldPath == newPath {
-			return
-		}
-		s.enqueueChange(ctx, outbox.MovieChanged{MovieID: movieID, VersionID: moved[0], Change: outbox.ChangeRenamed, OldPath: oldPath, Path: newPath})
-		for _, vid := range moved {
-			s.publish("movie.renamed", map[string]any{"id": movieID, "version_id": vid, "old_path": oldPath, "new_path": newPath})
-		}
-	}()
-	for _, v := range versions {
-		if !v.HasFile || v.FilePath != newPath && v.FilePath != oldPath {
-			continue
-		}
-		if v.FilePath == newPath {
-			n++ // already repointed (retry after a partial failure)
-			continue
-		}
-		// The cached media info follows the file: carried over unread for a pure rename
-		// (same size and mtime), read once for a changed file. Left describing the original,
-		// the upgrade sweep costed a converted file at its old size, and Convert's analysis
-		// of it (trusted only for a matching size) was never used.
-		info := s.movedMedia(v.File, newPath)
-		if v.IsDefault {
-			if err := s.setDefaultFileWith(ctx, movieID, newPath, info); err != nil {
-				return n, err
-			}
-			if upd := restamp(v.SourceRelease); upd != v.SourceRelease {
-				_ = s.repo.SetSourceRelease(ctx, movieID, upd)
-			}
-		} else {
-			vsize := size
-			if vsize <= 0 && info != nil && !info.Missing {
-				vsize = info.SizeBytes
-			}
-			if err := s.repo.SetVersionFile(ctx, v.ID, newPath, vsize, mediaJSONOf(info)); err != nil {
-				return n, err
-			}
-			if upd := restamp(v.SourceRelease); upd != v.SourceRelease {
-				_ = s.repo.SetVersionSourceRelease(ctx, v.ID, upd)
-			}
-		}
-		moved = append(moved, v.ID)
-		n++
-	}
-	if n > 0 {
-		s.log.Info("movie: file repointed", "movie_id", movieID, "new", newPath, "records", n)
-	}
-	return n, nil
 }
 
 // VersionRows returns all tracks for a movie — the default (the movie row) followed by
@@ -1587,7 +1493,7 @@ func (s *Service) ManualImportCandidates(ctx context.Context, dir string, maxRes
 			truncated = true
 			return fs.SkipAll
 		}
-		// Arrmada's own hidden folders (the recycle bins, Convert's originals hold) hold
+		// Arrmada's own hidden folders (the recycle bins) hold
 		// files that are deliberately out of the library — never offer them for import.
 		if err == nil && d.IsDir() && p != dir && library.SkipScanDir(d.Name()) {
 			return fs.SkipDir

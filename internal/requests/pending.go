@@ -6,7 +6,7 @@ import "context"
 // straight from the table, without List's library lookups. The Needs-you feed reads it
 // every 30 seconds, and a pending request has nothing on disk worth looking up.
 func (s *Service) Pending(ctx context.Context, limit int) ([]Request, error) {
-	q := `SELECT ` + cols + ` FROM requests WHERE status = ? ORDER BY id`
+	q := `SELECT ` + cols + ` FROM requests WHERE ` + knownKinds + ` AND status = ? ORDER BY id`
 	args := []any{StatusPending}
 	if limit > 0 {
 		q += ` LIMIT ?`

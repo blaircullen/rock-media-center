@@ -2,14 +2,9 @@ import { describe, expect, it } from "vitest";
 import { NAV, crumbFor, visibleNav } from "./nav";
 
 const tos = (viewer: Parameters<typeof visibleNav>[0]) => visibleNav(viewer).flatMap((g) => g.items.map((i) => i.to));
-const all = { admin: true, booksEnabled: true, musicEnabled: true };
+const all = { admin: true, musicEnabled: true };
 
 describe("visibleNav", () => {
-  it("drops Books while the Books module is off", () => {
-    expect(tos(all)).toContain("/books");
-    expect(tos({ ...all, booksEnabled: false })).not.toContain("/books");
-  });
-
   it("drops Music while the Music module is off", () => {
     expect(tos(all)).toContain("/music");
     expect(tos({ ...all, musicEnabled: false })).not.toContain("/music");
@@ -27,8 +22,8 @@ describe("visibleNav", () => {
 });
 
 describe("NAV", () => {
-  it("groups the sidebar as Home, Library, Tools, Plex, System", () => {
-    expect(NAV.map((g) => g.group)).toEqual(["", "Library", "Tools", "Watching", "System"]);
+  it("groups the sidebar as Home, Library, Watching, System", () => {
+    expect(NAV.map((g) => g.group)).toEqual(["", "Library", "Watching", "System"]);
   });
 
   it("has one Activity entry, with the pill, instead of Downloads, History, Review and Blocklist", () => {
@@ -51,13 +46,11 @@ describe("crumbFor", () => {
 
   it("gives detail pages their sidebar parent", () => {
     expect(crumbFor("/movies/12")).toBe("Library / Movies");
-    expect(crumbFor("/books/author/x")).toBe("Library / Books");
     expect(crumbFor("/music/album/3")).toBe("Library / Music");
   });
 
   it("names the group the sidebar shows the page in", () => {
     expect(crumbFor("/quality")).toBe("System / Quality profiles");
-    expect(crumbFor("/convert")).toBe("Tools / Convert");
     expect(crumbFor("/activity/queue")).toBe("Home / Activity");
     expect(crumbFor("/insights")).toBe("Watching / Insights");
     expect(crumbFor("/discover")).toBe("Home / Discover");

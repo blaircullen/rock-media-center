@@ -206,7 +206,7 @@ func TestDownloadClientCategoriesAreArrmadas(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil {
 		t.Fatal(err)
 	}
-	want := download.Categories{Movies: "arrmada-films", TV: "arrmada-tv", Books: "arrmada-books", Music: "arrmada-music"}
+	want := download.Categories{Movies: "arrmada-films", TV: "arrmada-tv", Music: "arrmada-music"}
 	if list.Categories != want {
 		t.Errorf("categories = %+v, want %+v", list.Categories, want)
 	}

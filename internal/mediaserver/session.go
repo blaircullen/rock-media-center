@@ -73,7 +73,7 @@ type Session struct {
 	SrcContainer  string
 	SrcBitrate    int64
 	// The source video stream's bit depth (8, 10; 0 = not reported) and codec profile
-	// ("main 10", "high"), from Media[0].Part[0]'s video Stream: Convert's devices panel
+	// ("main 10", "high"), from Media[0].Part[0]'s video Stream: the devices panel
 	// tells HEVC 10-bit from 8-bit with them.
 	SrcVideoBitDepth int
 	SrcVideoProfile  string

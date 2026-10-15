@@ -119,7 +119,6 @@ func TestQueueMediaTypeByCategory(t *testing.T) {
 	cases := map[string]string{
 		download.CategoryMusic:        "music",
 		download.CategoryTV:           "series",
-		download.CategoryBooks:        "book",
 		download.DefaultMovieCategory: "movie",
 		"movies-custom":               "movie",
 		"":                            "movie",

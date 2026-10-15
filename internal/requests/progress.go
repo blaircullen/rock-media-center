@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/tristenlammi/arrmada/internal/automation"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/library"
 	"github.com/tristenlammi/arrmada/internal/mediaserver"
@@ -74,21 +73,12 @@ type Tracking struct {
 	// AddingTo, at stage "adding", names the media servers the title is being added to
 	// ("plex", "jellyfin"): the card says "Adding to Plex…", or "…your library…" for both.
 	AddingTo []mediaserver.Kind `json:"adding_to,omitempty"`
-	// NextCheckAt is when a book that hasn't been found yet will be searched for again
-	// (RFC3339, UTC). The page formats it in the viewer's own locale; the server never
-	// writes a date into the copy.
-	NextCheckAt string `json:"next_check_at,omitempty"`
-	// ReleaseDate is, for a book that isn't out yet (Note "Not out yet"), the day it comes
-	// out (YYYY-MM-DD): a calendar day, sent as a date so every viewer's page shows the
-	// same day ("Out 12 Mar") whatever its time zone. NextCheckAt is then that day's start.
-	ReleaseDate string `json:"release_date,omitempty"`
 	// While it's searching: when it was last checked (RFC3339, UTC — the later of the
-	// sweep's own stamp and the newest stored search), how many searches in a row have
-	// found nothing suitable, and for a book, whether the ladder has slowed to a monthly
-	// check. Times and counts only: a requester never sees indexers, releases or reasons.
-	LastSearchAt  string `json:"last_search_at,omitempty"`
-	Misses        int    `json:"misses,omitempty"`
-	SearchStopped bool   `json:"search_stopped,omitempty"`
+	// sweep's own stamp and the newest stored search) and how many searches in a row have
+	// found nothing suitable. Times and counts only: a requester never sees indexers,
+	// releases or reasons.
+	LastSearchAt string `json:"last_search_at,omitempty"`
+	Misses       int    `json:"misses,omitempty"`
 }
 
 // seriesComplete is the one rule for "this series request is done": something is on disk
@@ -164,9 +154,6 @@ func (s *Service) lastChecked(ctx context.Context, reqs []Request) {
 		}
 		t.Misses = rq.searchMisses
 		t.LastSearchAt = rfc3339(parseSearchStamp(rq.lastSearchAt))
-		// Slowed to monthly, but still on the ladder (an unmonitored book isn't searched
-		// again at all, and says only "Not found yet").
-		t.SearchStopped = rq.MediaType == "book" && rq.searchMisses > books.MonthlyAfter && rq.nextCheckAt != ""
 		ids[rq.MediaType] = append(ids[rq.MediaType], rq.libID)
 	}
 	if s.coord == nil {
@@ -196,7 +183,7 @@ func (s *Service) lastChecked(ctx context.Context, reqs []Request) {
 }
 
 // parseSearchStamp reads a last_search_at as stored: SQLite's datetime('now') for movies
-// and series, RFC 3339 once the books repo has read it.
+// and series, or RFC 3339.
 func parseSearchStamp(s string) time.Time {
 	if s == "" {
 		return time.Time{}
@@ -356,24 +343,10 @@ func track(rq *Request, acqs []automation.Acquisition, byHash map[string]*downlo
 	case rq.Available:
 		t.Stage = StagePartial // a series with some episodes, nothing more coming yet
 		return t
-	case rq.partNote != "":
-		// A book asked for in both formats with one of them here.
-		t.Stage, t.Note = StagePartial, rq.partNote
-		return t
 	default:
 		t.Stage = StageSearching
-		switch {
-		case !rq.released:
+		if !rq.released {
 			t.Note = "Not out yet"
-			if rq.MediaType == "book" {
-				// The release day is when it's first searched: "Out 12 Mar — we'll grab it then".
-				t.NextCheckAt, t.ReleaseDate = rq.nextCheckAt, rq.releaseDate
-			}
-		case rq.MediaType == "book" && rq.searchMisses > 0:
-			// Searched and not found, as opposed to just added: say so, and when the
-			// next look is, instead of an open-ended "Searching".
-			t.Note = "Not found yet"
-			t.NextCheckAt = rq.nextCheckAt
 		}
 		return t
 	}

@@ -101,8 +101,6 @@ func (a *api) titleSearchJob(kind string, id int64) (jobs.Spec, bool) {
 		return a.movieSearchJob(id), true
 	case "series":
 		return a.seriesSearchJob(id), true
-	case "book":
-		return a.bookSearchJob(id), true
 	case "music":
 		return a.albumSearchJob(id), true
 	}
@@ -261,7 +259,7 @@ func (a *api) handleBulkReviews(w http.ResponseWriter, r *http.Request) {
 
 // handleReviewTargets lists the library items a review's download could be imported
 // into — always items of the review's own kind, filtered by ?q= on title (and author or
-// artist for books and albums).
+// artist for albums).
 func (a *api) handleReviewTargets(w http.ResponseWriter, r *http.Request) {
 	id, ok := a.pathID(w, r)
 	if !ok {

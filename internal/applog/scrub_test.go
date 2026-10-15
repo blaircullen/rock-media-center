@@ -12,7 +12,7 @@ func TestRedactText(t *testing.T) {
 		{`body {"password":"hunter22","user":"x"}`, `body {"password":"«redacted»","user":"x"}`},
 		{"Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.x", "Authorization: Bearer «redacted»"},
 		{"dial qbit http://admin:s3cretpw@qbit:8080/api", "dial qbit http://«redacted»@qbit:8080/api"},
-		{"sent to reader_42@kindle.com ok", "sent to «email» ok"},
+		{"sent to reader_42@example.org ok", "sent to «email» ok"},
 		{"password_login=true token=«redacted»", "password_login=true token=«redacted»"},
 	}
 	for _, c := range cases {
@@ -23,14 +23,14 @@ func TestRedactText(t *testing.T) {
 }
 
 func TestRewriteAttrs(t *testing.T) {
-	in := "media=book title=The Long Road by=Marigold Banks status=200"
+	in := "media=movie title=The Long Road by=Marigold Banks status=200"
 	got := RewriteAttrs(in, func(k, v string) string {
 		if k == "by" {
 			return "«user»"
 		}
 		return v
 	})
-	if want := "media=book title=The Long Road by=«user» status=200"; got != want {
+	if want := "media=movie title=The Long Road by=«user» status=200"; got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
 	if got := RewriteAttrs("no pairs here", func(k, v string) string { return "x" }); got != "no pairs here" {
@@ -52,9 +52,9 @@ func TestTermScrubber(t *testing.T) {
 	s.Seal()
 
 	cases := []struct{ in, want string }{
-		{"book: imported title=Zephyrine Quillfeather Chronicles edition=audiobook", "book: imported title=«name» edition=audiobook"},
+		{"imported title=Zephyrine Quillfeather Chronicles format=m4b", "imported title=«name» format=m4b"},
 		{"grabbed Zephyrine.Quillfeather.Chronicles.2024.M4B", "grabbed «name».2024.M4B"},
-		{"path=/audiobooks/ZEPHYRINE_QUILLFEATHER_CHRONICLES/01.mp3", "path=/audiobooks/«name»/01.mp3"},
+		{"path=/media/ZEPHYRINE_QUILLFEATHER_CHRONICLES/01.mp3", "path=/media/«name»/01.mp3"},
 		{"Dune Messiah and Dunes", "«name» and Dunes"},
 		{"pokemon heroes (2003)", "«name» (2003)"},
 		{"Ender's Game", "«name»"},

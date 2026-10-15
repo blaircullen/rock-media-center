@@ -38,7 +38,7 @@ func TestUpgradeCandidateLeavesConvertedFileAlone(t *testing.T) {
 	}
 }
 
-// The converted-from skip only covers a file in a codec Convert writes. An x264 file is
+// The converted-from skip only covers a file in a codec an earlier version's Convert wrote. An x264 file is
 // still upgraded to the same group's x265 release under a profile that prefers HEVC.
 func TestSameGroupCodecUpgradeStillAllowed(t *testing.T) {
 	s, ctx := testService(t)

@@ -1,12 +1,10 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./mockApi";
 import { cards } from "./fixtures/discover";
-import { requestableBook } from "./fixtures/books";
 import type { DiscoverCard } from "../src/lib/api";
 
-// FE-32: Discover split into features/discover, its card and rail shared with the Books
-// tab. The Movies tab and the Books tab render their rows, a card opens its sheet and
-// Escape closes it, and the cross-row de-duplication still keeps a title to one row.
+// FE-32: Discover split into features/discover, its card and rail. The Movies
+// tab renders its rows, a card opens its sheet and Escape closes it, and the cross-row de-duplication still keeps a title to one row.
 
 const extra = (n: number, title: string): DiscoverCard => ({ ...cards[0], tmdb_id: 5000 + n, title, media_type: "movie" });
 const fresh = [extra(1, "Brine"), extra(2, "Keel"), extra(3, "Mooring"), extra(4, "Spindrift"), extra(5, "Squall")];
@@ -37,18 +35,6 @@ test.describe("Discover after the split", () => {
 
     await trending.getByRole("button", { name: `View details for ${cards[0].title}` }).click();
     const sheet = page.getByRole("dialog", { name: cards[0].title });
-    await expect(sheet).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(sheet).toHaveCount(0);
-  });
-
-  test("Books: rows render with the shared card, and the sheet opens and closes", async ({ page, api }) => {
-    await page.goto("/discover?tab=books");
-    await api.quiet();
-    const card = page.getByRole("button", { name: `View details for ${requestableBook.title}` }).first();
-    await expect(card).toBeVisible();
-    await card.click();
-    const sheet = page.getByRole("dialog", { name: requestableBook.title });
     await expect(sheet).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(sheet).toHaveCount(0);

@@ -4,10 +4,9 @@
 //
 // An issue is about one library item — a movie, or one episode of a show — and one kind of
 // problem. A second person reporting the same thing joins the open issue instead of opening
-// another. Staff fix it by replacing the copy (blocklist the release and grab another) or by
-// starting a subtitle job; the issue then waits in "fixing" and resolves itself when the new
-// file lands (the import's outbox row) or the subtitle job finishes, with a backstop sweep
-// for a missed signal.
+// another. Staff fix it by replacing the copy (blocklist the release and grab another); the
+// issue then waits in "fixing" and resolves itself when the new file lands (the import's
+// outbox row), with a backstop sweep for a missed signal.
 package issues
 
 import (
@@ -29,14 +28,10 @@ const (
 	StatusDismissed = "dismissed"
 )
 
-// Fixes staff can start from an issue.
-const (
-	// ActionReplace blocklists the release the current file came from and searches for
-	// another copy; the new file replaces the old one on import.
-	ActionReplace = "replace"
-	// ActionSubtitles queues a subtitle job that makes the kept languages again.
-	ActionSubtitles = "subtitles"
-)
+// ActionReplace, the fix staff can start from an issue, blocklists the release the current
+// file came from and searches for another copy; the new file replaces the old one on
+// import.
+const ActionReplace = "replace"
 
 // Categories are the kinds of problem a report can name, as the sheet offers them
 // ("Picture", "Sound", "Subtitles", "Wrong file", "Something else").
@@ -70,7 +65,7 @@ var (
 	ErrNoFile = errors.New("there's no file for that yet — nothing to report")
 	// ErrClosed: the issue is already resolved or dismissed.
 	ErrClosed = errors.New("that problem is already closed")
-	// ErrNoFix: the fix isn't wired (no subtitles service, no search).
+	// ErrNoFix: the fix isn't wired (no search).
 	ErrNoFix = errors.New("that fix isn't available")
 )
 
@@ -102,13 +97,12 @@ type Issue struct {
 	Status         string `json:"status"`
 	// Resolution is the note it was resolved or dismissed with: what the reporters are told.
 	Resolution string `json:"resolution,omitempty"`
-	// Action is the fix staff started (replace, subtitles), ActionNote what became of it
-	// ("The subtitle job couldn't find any: …"). ActionFile, ActionJob: staff only.
+	// Action is the fix staff started (replace), ActionNote what became of it ("Nothing new
+	// arrived in a week."). ActionFile: staff only.
 	Action     string `json:"action,omitempty"`
 	ActionNote string `json:"action_note,omitempty"`
 	ActionFile string `json:"action_file,omitempty"`
 	ActionSize int64  `json:"-"`
-	ActionJob  int64  `json:"action_job,omitempty"`
 	ActionAt   int64  `json:"action_at,omitempty"`
 	CreatedAt  int64  `json:"created_at"`
 	UpdatedAt  int64  `json:"updated_at"`
@@ -202,7 +196,7 @@ func ShapeForRequester(list []Issue, userID int64) {
 		}
 		i.Note, i.ReportedBy, i.ReportedByName = "", 0, ""
 		i.Reporters = nil
-		i.ActionFile, i.ActionJob, i.ActionNote = "", 0, ""
+		i.ActionFile, i.ActionNote = "", ""
 		i.ResolvedByName = ""
 		i.LibraryID = 0
 	}

@@ -18,7 +18,7 @@ import (
 )
 
 // musicCategory keeps album downloads in their own download-client category so the album
-// importer handles them, not the movie/series/book importers.
+// importer handles them, not the movie/series importers.
 const musicCategory = download.CategoryMusic
 
 // SearchMusicMissing sweeps monitored albums that are missing tracks and grabs the best
@@ -314,7 +314,7 @@ func (c *Coordinator) grabAlbumExcluding(ctx context.Context, a music.Artist, al
 	}
 
 	// Only releases that actually name THIS artist and album. Without this a search for one
-	// album happily grabs another by the same artist — the hole the Books module shipped
+	// album happily grabs another by the same artist — the hole an earlier module shipped
 	// with, and the reason its downloads landed on the wrong title. Releases no client can
 	// take go too (usenet without a usenet client): a FLAC from usenet would otherwise
 	// outrank every torrent and fail the grab on every sweep.
@@ -527,7 +527,7 @@ func (c *Coordinator) ImportMusicDownloads(ctx context.Context) {
 
 		// Verify the download really is the album it was grabbed for. Without this the
 		// target is re-derived from the torrent name alone and a mismatch lands silently —
-		// the defect the Books import carried until it was fixed.
+		// a defect an earlier importer carried.
 		if gid, idx, grabbed := c.grabbedMediaForHash(ctx, it.Hash, it.Name, "music"); grabbed {
 			if expected, gerr := c.music.GetAlbum(ctx, gid); gerr == nil && (!ok || album.ID != expected.ID) {
 				c.log.Warn("music import: download doesn't look like the album it was grabbed for — sending to review",
@@ -566,7 +566,7 @@ func (c *Coordinator) ImportMusicDownloads(ctx context.Context) {
 				"album", album.Title, "release", it.Name)
 		default:
 			// No audio at all — a still-archived release, or content the container can't
-			// read. Books had no branch here and silently retried every 30 seconds forever.
+			// read. A kind with no branch here would silently retried every 30 seconds forever.
 			n := c.noteUnmatched(it.Hash)
 			switch {
 			case n == 1:
@@ -739,7 +739,7 @@ func findAudioFiles(contentPath string) []music.AudioFile {
 }
 
 // recordMusicGrab records a grab so the pending guard, seed rules and stall fail-over can
-// see it. stall_minutes comes from the profile — writing a literal 0 is what made the book
+// see it. stall_minutes comes from the profile — writing a literal 0 is what made a book
 // stall fail-over dead code for months.
 func (c *Coordinator) recordMusicGrab(ctx context.Context, albumID int64, title, indexerName, profile, infoHash string) {
 	defer c.grabsChanged()

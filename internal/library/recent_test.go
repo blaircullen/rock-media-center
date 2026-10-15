@@ -6,7 +6,7 @@ import (
 )
 
 // The imports list (History's "Files imported") shows files that were placed. A
-// dismissed review, a pack that placed nothing, or a series/book import recorded only so
+// dismissed review, a pack that placed nothing, or a series import recorded only so
 // the download isn't imported twice has no target path, and isn't an import.
 func TestRecentLeavesOutRowsWithoutAFile(t *testing.T) {
 	ctx := context.Background()

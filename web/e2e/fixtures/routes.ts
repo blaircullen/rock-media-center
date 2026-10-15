@@ -1,11 +1,9 @@
 import type { PersonaInfo } from "./users";
-import * as books from "./books";
 import * as discover from "./discover";
 import * as media from "./media";
 import * as mod from "./modules";
 import * as sys from "./system";
 import * as alerts from "./alerts";
-import * as audio from "./audio";
 import * as seriesDetail from "./seriesDetail";
 import { NOW } from "./clock";
 
@@ -40,13 +38,6 @@ export function routes(p: PersonaInfo): MockRoute[] {
     // the same answer as Status.
     { method: "PUT", path: "/api/v1/system/update-check", respond: ({ body }) => ({ ...sys.systemStatus.update, ...(body as object), latest: null, behind: null }) },
     { method: "POST", path: "/api/v1/system/update-check", body: sys.systemStatus.update },
-    get("/api/v1/me/audio", sys.myAudio(p)),
-    get("/api/v1/me/audio/listening", sys.myListening),
-    // The Listen tab (the player specs answer the rest of the listening API).
-    get("/api/v1/me/audio/shelves", { shelves: audio.shelves }),
-    get("/api/v1/me/audio/library", { items: [audio.carl, audio.doomsday, audio.finished], total: 3, page: 0, limit: 60 }),
-    // Covers are images; the answer only has to exist (an empty one draws the blank cover).
-    { method: "GET", path: /^\/api\/v1\/me\/audio\/items\/[^/]+\/cover$/, status: 204 },
     get("/api/v1/me/notifications", discover.notifications),
     { method: "POST", path: /^\/api\/v1\/me\/notifications\/\d+\/read$/, status: 204 },
     get("/api/v1/me/quota", sys.quota(p)),
@@ -104,15 +95,7 @@ export function routes(p: PersonaInfo): MockRoute[] {
     { method: "GET", path: /^\/api\/v1\/media\/(movie|series)\/(\d+)$/, respond: ({ params }) => discover.mediaDetail(params[0], Number(params[1])) },
     { method: "GET", path: /^\/api\/v1\/media\/series\/(\d+)\/seasons$/, respond: ({ params }) => discover.seriesSeasons(Number(params[0])) },
     { method: "GET", path: "/api/v1/calendar", respond: ({ url }) => media.calendar(url) },
-    get("/api/v1/me/books", media.myBooks),
-    get("/api/v1/me/kindle", media.myKindle),
 
-    // Discover → Books
-    get(/^\/api\/v1\/books\/discover\/browse\/[a-z_]+$/, books.browse),
-    get("/api/v1/books/discover/recommended", { rows: [] }),
-    // Hardcover ("hc:") books also ask for "readers also liked".
-    get("/api/v1/books/discover/similar", { books: [] }),
-    { method: "GET", path: "/api/v1/books/discover/detail", respond: ({ url }) => books.detail(url.searchParams.get("key") ?? "") },
 
     // Staff console
     get("/api/v1/dashboard", media.dashboard),
@@ -120,7 +103,7 @@ export function routes(p: PersonaInfo): MockRoute[] {
     get("/api/v1/attention", sys.attention),
     get("/api/v1/downloads", media.activity),
     get("/api/v1/wanted", media.wanted),
-    { method: "POST", path: /^\/api\/v1\/wanted\/(movie|series|book|music)\/(\d+)\/search$/, status: 202, body: media.wantedSearchStarted },
+    { method: "POST", path: /^\/api\/v1\/wanted\/(movie|series|music)\/(\d+)\/search$/, status: 202, body: media.wantedSearchStarted },
     get(`/api/v1/jobs/${media.wantedSearchStarted.job_id}`, media.wantedSearchJob),
     get("/api/v1/downloadclients", media.downloadClients),
     get(/^\/api\/v1\/downloadclients\/\d+\/status$/, { listen_port: 6881 }),
@@ -184,36 +167,13 @@ export function routes(p: PersonaInfo): MockRoute[] {
     { method: "POST", path: /^\/api\/v1\/movies\/\d+\/search$/, status: 202, body: { status: "queued", queued: true, position: 1 } },
     { method: "POST", path: /^\/api\/v1\/series\/\d+\/search$/, status: 202, body: { status: "searching" } },
     get(/^\/api\/v1\/movies\/\d+\/releases$/, media.movieReleases),
-    get("/api/v1/books", media.books),
-    get("/api/v1/books/upgrade", media.bookUpgrade),
-    get("/api/v1/books/search-missing", media.bookSweep),
-    get("/api/v1/books/authors/images", { images: {}, pending: 0 }),
-    get("/api/v1/books/duplicates", { groups: [], past_merges: [] }),
     get("/api/v1/music/artists", mod.artists),
     get("/api/v1/quality/profiles", media.qualityProfiles),
-    // Settings → Downloads and → Audiobook server (only the full Settings sweep visits them).
+    // Settings → Downloads (only the full Settings sweep visits it).
     get("/api/v1/downloads/disk-guard", { enabled: true, measurable: true, path: "/downloads", used_pct: 42, pause_pct: 95, resume_pct: 90, holding: 0, shared_with: [], shared_with_library: false }),
-    get("/api/v1/audioserver", { enabled: false, running: false, host_port: "13378", public_url: "", users: [], devices: [], items: 0, items_ready: 0, trace_until: 0 }),
     get(/^\/api\/v1\/quality\/ranking-shadow/, { mode: "v1", decisions: 0, disagreements: 0, days: [], disagreement_rows: [] }),
     get("/api/v1/library/fit/profiles", media.fitProfiles),
-    get("/api/v1/convert/stats", mod.convertStats),
-    get("/api/v1/convert/hardware", mod.convertHardware),
-    get("/api/v1/convert/settings", mod.convertSettings),
-    get("/api/v1/convert/status", mod.convertStatus),
-    get("/api/v1/convert/jobs", mod.convertJobs),
-    get("/api/v1/convert/history", mod.convertHistory),
-    get("/api/v1/convert/devices", mod.convertDevices),
     get("/api/v1/recycle", sys.recycle),
-    get("/api/v1/subtitles/coverage", mod.subtitleCoverage),
-    get("/api/v1/subtitles/settings", mod.subtitleSettings),
-    get("/api/v1/subtitles/models", mod.subtitleModels),
-    get("/api/v1/subtitles/jobs", mod.subtitleJobs),
-    get("/api/v1/subtitles/profiles", mod.subtitleProfiles),
-    get("/api/v1/subtitles/attention", mod.subtitleAttention),
-    // The per-file drawer and the detail pages' subtitle chips.
-    { method: "GET", path: "/api/v1/subtitles/file", respond: ({ url }) => mod.subtitleFile(url) },
-    get("/api/v1/subtitles/library", { items: [], groups: [], scanning: false, stale: false }),
-    get("/api/v1/languages", mod.languages),
     get("/api/v1/insights/plex", mod.plexConfig),
     // The media servers Insights can watch: Plex only, not connected (Jellyfin isn't wired).
     get("/api/v1/insights/servers", { servers: [{ server: "plex", configured: false, monitoring: false, status: "unconfigured", poll_seconds: 30 }] }),

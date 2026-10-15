@@ -20,28 +20,24 @@ type ErrMergeRefused struct{ Reason string }
 
 func (e *ErrMergeRefused) Error() string { return e.Reason }
 
-// MergePreview is what a merge would move, as counts. By the audiobook privacy rule it says
-// whether the duplicate has listening data, never which books.
+// MergePreview is what a merge would move, as counts.
 type MergePreview struct {
 	From string `json:"from"`
 	To   string `json:"to"`
 	// The links that move, and the names they were made with.
-	PlexLink          bool   `json:"plex_link"`
-	PlexUsername      string `json:"plex_username,omitempty"`
-	JellyfinLink      bool   `json:"jellyfin_link"`
-	JellyfinUsername  string `json:"jellyfin_username,omitempty"`
-	Requests          int    `json:"requests"`
-	Following         int    `json:"following"`     // requests they follow
-	Notifications     int    `json:"notifications"` // inbox entries
-	PushDevices       int    `json:"push_devices"`
-	QuotaUsage        int    `json:"quota_usage"` // request-limit entries counted against them
-	AudiobookProgress bool   `json:"audiobook_progress"`
-	AudiobookPassword bool   `json:"audiobook_password"` // moves only if the target has none
+	PlexLink         bool   `json:"plex_link"`
+	PlexUsername     string `json:"plex_username,omitempty"`
+	JellyfinLink     bool   `json:"jellyfin_link"`
+	JellyfinUsername string `json:"jellyfin_username,omitempty"`
+	Requests         int    `json:"requests"`
+	Following        int    `json:"following"`     // requests they follow
+	Notifications    int    `json:"notifications"` // inbox entries
+	PushDevices      int    `json:"push_devices"`
+	QuotaUsage       int    `json:"quota_usage"` // request-limit entries counted against them
 	// What the duplicate is signed in on, which is signed out rather than moved: a session
 	// handed to another account would open that account (staff, possibly) on whatever
 	// device held it.
 	SignedInDevices int `json:"signed_in_devices"`
-	ListeningApps   int `json:"listening_apps"`
 }
 
 type querier interface {
@@ -111,7 +107,6 @@ func (s *Service) MergePreview(ctx context.Context, targetID, fromID int64) (Mer
 		PlexLink: from.plexID != "", PlexUsername: from.plexName,
 		JellyfinLink: from.jellyfinID != "", JellyfinUsername: from.jellyfinNm,
 	}
-	var places int
 	counts := []struct {
 		q   string
 		dst any
@@ -121,23 +116,12 @@ func (s *Service) MergePreview(ctx context.Context, targetID, fromID int64) (Mer
 		{`SELECT COUNT(*) FROM user_notifications WHERE user_id = ?`, &p.Notifications},
 		{`SELECT COUNT(*) FROM push_subscriptions WHERE user_id = ?`, &p.PushDevices},
 		{`SELECT COUNT(*) FROM request_usage WHERE user_id = ?`, &p.QuotaUsage},
-		{`SELECT COUNT(*) FROM listen_progress WHERE user_id = ?`, &places},
-		{`SELECT COUNT(*) > 0 FROM audio_passwords WHERE user_id = ?`, &p.AudiobookPassword},
 		{`SELECT COUNT(*) FROM sessions WHERE user_id = ?`, &p.SignedInDevices},
-		{`SELECT COUNT(DISTINCT family) FROM audio_tokens WHERE user_id = ? AND revoked = 0`, &p.ListeningApps},
 	}
 	for _, c := range counts {
 		if err := s.db.QueryRowContext(ctx, c.q, fromID).Scan(c.dst); err != nil {
 			return MergePreview{}, err
 		}
-	}
-	p.AudiobookProgress = places > 0
-	if p.AudiobookPassword {
-		var targetHas bool
-		if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) > 0 FROM audio_passwords WHERE user_id = ?`, targetID).Scan(&targetHas); err != nil {
-			return MergePreview{}, err
-		}
-		p.AudiobookPassword = !targetHas
 	}
 	return p, nil
 }
@@ -148,14 +132,13 @@ func (s *Service) MergePlexDuplicate(ctx context.Context, targetID, fromID int64
 }
 
 // MergeDuplicate moves fromID's requests, followed requests, inbox, push devices,
-// request-limit usage and audiobook data onto targetID, moves its Plex and Jellyfin links,
+// request-limit usage and reported problems onto targetID, moves its Plex and Jellyfin links,
 // and deletes fromID. It is one transaction: any failure leaves both accounts exactly as
 // they were. A new per-user table (or per-user column on users) must be added here.
 //
 // Where both accounts have the same thing, the target's wins: an inbox entry for the same
-// title, a followed request, an audiobook place or bookmark for the same book, and the
-// audiobook password. The duplicate's browser sessions and listening-app sign-ins are
-// signed out, not moved (see MergePreview.SignedInDevices).
+// title, a followed request. The duplicate's browser sessions are signed out, not moved
+// (see MergePreview.SignedInDevices).
 func (s *Service) MergeDuplicate(ctx context.Context, targetID, fromID int64) error {
 	return store.WithTx(ctx, s.db, func(tx *sql.Tx) error {
 		target, from, err := mergeCheck(ctx, tx, targetID, fromID)
@@ -197,28 +180,16 @@ func (s *Service) MergeDuplicate(ctx context.Context, targetID, fromID int64) er
 			{"reported problems", `UPDATE issues SET reported_by = ?, reported_by_name = ? WHERE reported_by = ?`, []any{targetID, to, fromID}},
 			{"reported problems", `UPDATE OR IGNORE issue_reporters SET user_id = ?, user_name = ? WHERE user_id = ?`, []any{targetID, to, fromID}},
 			{"reported problems", `DELETE FROM issue_reporters WHERE user_id = ?`, []any{fromID}},
-			// Audiobooks: places and bookmarks move unless the target has its own for that
-			// book; history, sessions and the listening log all move (they're keyed by
-			// session or row id, so nothing collides).
-			{"audiobook places", `UPDATE OR IGNORE listen_progress SET user_id = ? WHERE user_id = ?`, []any{targetID, fromID}},
-			{"audiobook bookmarks", `UPDATE OR IGNORE listen_bookmarks SET user_id = ? WHERE user_id = ?`, []any{targetID, fromID}},
-			{"audiobook history", `UPDATE listen_history SET user_id = ? WHERE user_id = ?`, []any{targetID, fromID}},
-			{"audiobook sessions", `UPDATE listen_sessions SET user_id = ? WHERE user_id = ?`, []any{targetID, fromID}},
-			{"listening log", `UPDATE listen_log SET user_id = ? WHERE user_id = ?`, []any{targetID, fromID}},
-			{"audiobook password", `INSERT OR IGNORE INTO audio_passwords (user_id, hash, updated_at) SELECT ?, hash, updated_at FROM audio_passwords WHERE user_id = ?`, []any{targetID, fromID}},
 			{"personal alerts", `UPDATE users SET apprise_url = (SELECT apprise_url FROM users WHERE id = ?) WHERE id = ? AND apprise_url = ''`, []any{fromID, targetID}},
 			// Their per-event notification choices, when the target never made any.
 			{"notification choices", `UPDATE users SET notify_prefs = (SELECT notify_prefs FROM users WHERE id = ?) WHERE id = ? AND notify_prefs = ''`, []any{fromID, targetID}},
-			// Their Send-to-Kindle address, when the target has none.
-			{"Kindle address", `UPDATE users SET kindle_email = (SELECT kindle_email FROM users WHERE id = ?) WHERE id = ? AND kindle_email = ''`, []any{fromID, targetID}},
 		}
 		steps = append(steps, links...)
 		steps = append(steps,
 			// The duplicate's calendar feed link stops working, like its sessions: it was
 			// made for that account's view, and the person can make a new one in a click.
 			step{"calendar feed", `DELETE FROM calendar_feeds WHERE user_id = ?`, []any{fromID}},
-			// Sessions, API keys, listening-app sign-ins and anything not moved go with the
-			// row (ON DELETE CASCADE).
+			// Sessions, API keys and anything not moved go with the row (ON DELETE CASCADE).
 			step{"the duplicate account", `DELETE FROM users WHERE id = ?`, []any{fromID}},
 		)
 		for _, st := range steps {

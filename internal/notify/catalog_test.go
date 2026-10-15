@@ -22,7 +22,6 @@ var samples = map[string]map[string]any{
 	"release.grabbed":       {"title": "Dune.2021.2160p.WEB-DL", "indexer": "Tracker", "network": "torrent"},
 	"movie.imported":        {"id": int64(12), "version_id": int64(0), "path": "/m/Dune.mkv", "title": "Dune", "upgrade": true},
 	"episodes.imported":     {"title": "Severance", "id": int64(3), "count": 2},
-	"book.imported":         {"title": "Dune", "id": int64(9), "edition": "audiobook", "version": "Unabridged"},
 	"music.imported":        {"artist_id": int64(1), "album_id": int64(5), "placed": 10, "artist": "Björk", "album": "Homogenic"},
 	"plex.stream.started":   {"user": "sam", "title": "Dune", "player": "TV"},
 	"plex.buffering":        {"user": "sam", "title": "Dune"},
@@ -32,10 +31,6 @@ var samples = map[string]map[string]any{
 	EventDownloadStalled:    {"count": 1, "title": "Dune has stalled", "link": "/activity/queue?filter=problems"},
 	EventHealthProblem:      {"count": 1, "title": "qBittorrent is unreachable", "level": "error", "link": "/settings/status"},
 	EventHealthResolved:     {"count": 1, "title": "qBittorrent is unreachable", "link": "/settings/status"},
-	EventConvertFailed:      {"title": "Dune (2021)", "key": "movie:12", "note": "ffmpeg exited with status 1", "count": 3, "at": int64(1_800_000_000)},
-	EventConvertStalled:     {"count": 1, "title": "Convert is stuck: the scratch folder is full", "detail": "Dune (2021): needs ~91 GB of scratch", "link": "/convert?tab=problems"},
-	EventConvertSummary:     {"files": 7, "saved_bytes": int64(312) << 30, "problems": 2},
-	EventAuthorRelease:      {"author_id": int64(3), "author": "Brandon Sanderson", "count": 2, "titles": []string{"Wind and Truth", "Isles of the Emberdark"}},
 }
 
 // The Needs-you events write one item as its sentence and several as a summary, the
@@ -110,14 +105,7 @@ func TestCatalogFormat(t *testing.T) {
 			t.Errorf("%s: missing group or label", d.Key)
 		}
 	}
-	m, _ := mustLookup(t, "book.imported").Format(samples["book.imported"])
-	if m.Body != "📚 Dune (audiobook · Unabridged)" || m.Link != "/books/9" {
-		t.Errorf("book.imported = %+v", m)
-	}
-	m, _ = mustLookup(t, "book.imported").Format(map[string]any{"title": "Emma", "edition": "ebook"})
-	if m.Body != "📚 Emma (ebook)" {
-		t.Errorf("ebook body = %q", m.Body)
-	}
+	var m Message
 	m, _ = mustLookup(t, "request.auto_approved").Format(samples["request.auto_approved"])
 	if m.Body != "✅ Auto-approved: Dune (2021) for Sam" {
 		t.Errorf("auto-approved body = %q", m.Body)
@@ -125,14 +113,6 @@ func TestCatalogFormat(t *testing.T) {
 	m, _ = mustLookup(t, "issue.reported").Format(samples["issue.reported"])
 	if m.Body != "Sam reported a problem with Severance S01E04: sound.\nNote: “no English audio”" || m.Link != "/requests?tab=issues&issue=5" {
 		t.Errorf("issue.reported = %+v", m)
-	}
-	m, _ = mustLookup(t, EventAuthorRelease).Format(samples[EventAuthorRelease])
-	if m.Title != "New books" || m.Body != "📚 2 new books from Brandon Sanderson: Wind and Truth, Isles of the Emberdark" || m.Link != "/books/authors/3" {
-		t.Errorf("book.author_release = %+v", m)
-	}
-	m, _ = mustLookup(t, EventAuthorRelease).Format(map[string]any{"author_id": float64(3), "author": "Brandon Sanderson", "count": float64(1), "titles": []any{"Wind and Truth"}})
-	if m.Title != "New book" || m.Body != "📚 New from Brandon Sanderson: Wind and Truth" {
-		t.Errorf("one new book = %+v", m)
 	}
 	if _, ok := mustLookup(t, "movie.imported").Format(map[string]any{"title": "Dune", "source": "scan"}); ok {
 		t.Error("a library scan adopting a file should not alert")
@@ -214,33 +194,33 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 	}
 }
 
-// Publishing book.imported reaches only the connection subscribed to it.
+// Publishing episodes.imported reaches only the connection subscribed to it.
 func TestRunDispatchesByTopic(t *testing.T) {
 	s, rec, bus := newTestService(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if _, err := s.Create(ctx, Connection{Name: "books", URL: "ntfy://books", Events: []string{"book.imported"}, Enabled: true}); err != nil {
+	if _, err := s.Create(ctx, Connection{Name: "shows", URL: "ntfy://shows", Events: []string{"episodes.imported"}, Enabled: true}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := s.Create(ctx, Connection{Name: "grabs", URL: "ntfy://grabs", Events: []string{"release.grabbed"}, Enabled: true}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.Create(ctx, Connection{Name: "off", URL: "ntfy://off", Events: []string{"book.imported"}, Enabled: false}); err != nil {
+	if _, err := s.Create(ctx, Connection{Name: "off", URL: "ntfy://off", Events: []string{"episodes.imported"}, Enabled: false}); err != nil {
 		t.Fatal(err)
 	}
 	done := make(chan struct{}, 2)
 	go func() { s.Run(ctx); done <- struct{}{} }()
 	go func() { s.RunWorker(ctx); done <- struct{}{} }()
 	// Run subscribes asynchronously; keep publishing until it's listening.
-	waitFor(t, "the book alert", func() bool {
-		bus.Publish("book.imported", map[string]any{"title": "Dune", "id": int64(1), "edition": "audiobook"})
+	waitFor(t, "the episodes alert", func() bool {
+		bus.Publish("series.imported", map[string]any{"title": "Severance", "id": int64(1), "count": 2})
 		return len(rec.got()) > 0
 	})
 	cancel()
 	<-done
 	<-done
 	for _, g := range rec.got() {
-		if g != "ntfy://books|Imported|📚 Dune (audiobook)" {
+		if g != "ntfy://shows|Imported|📥 Severance (2 episodes)" {
 			t.Errorf("unexpected send %q", g)
 		}
 	}
@@ -249,11 +229,11 @@ func TestRunDispatchesByTopic(t *testing.T) {
 func TestConnectionCRUDRoundTripsEvents(t *testing.T) {
 	s, _, _ := newTestService(t)
 	ctx := context.Background()
-	c, err := s.Create(ctx, Connection{Name: "a", URL: "ntfy://a", Events: []string{"plex.buffering", "book.imported"}, Enabled: true})
+	c, err := s.Create(ctx, Connection{Name: "a", URL: "ntfy://a", Events: []string{"plex.buffering", "episodes.imported"}, Enabled: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(c.Events, ",") != "book.imported,plex.buffering" {
+	if strings.Join(c.Events, ",") != "episodes.imported,plex.buffering" {
 		t.Fatalf("created events = %v", c.Events)
 	}
 	c.Events = []string{"release.grabbed"}

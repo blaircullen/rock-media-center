@@ -3,7 +3,7 @@ import type { HTMLAttributes } from "react";
 export type PageWidth = "default" | "wide";
 
 export interface PageProps extends HTMLAttributes<HTMLDivElement> {
-  /** wide is for the poster grids (Discover, the libraries, an author's shelf, Activity). */
+  /** wide is for the poster grids (Discover, the libraries, Activity). */
   width?: PageWidth;
   /** Vertical padding and layout; replaces the default "py-6". */
   className?: string;

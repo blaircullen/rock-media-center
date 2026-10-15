@@ -153,10 +153,51 @@ func (c *Coordinator) SearchTitle(ctx context.Context, kind string, id int64) (S
 		return c.SearchMovie(ctx, id)
 	case "series":
 		return c.SearchSeriesNow(ctx, id)
-	case "book":
-		return c.SearchBookNow(ctx, id)
 	case "music":
 		return c.SearchAlbumNow(ctx, id)
 	}
 	return SearchOutcome{}, fmt.Errorf("unknown media type %q", kind)
 }
+
+// naturalLess compares two strings treating consecutive digits as one number, so
+// "Part 2" sorts before "Part 10".
+func naturalLess(a, b string) bool {
+	la, lb := strings.ToLower(a), strings.ToLower(b)
+	i, j := 0, 0
+	for i < len(la) && j < len(lb) {
+		ca, cb := la[i], lb[j]
+		if isDigit(ca) && isDigit(cb) {
+			// Compare the whole digit runs as numbers. Leading zeros don't change the
+			// value, so "09" and "9" tie here and fall through to the next difference.
+			si, sj := i, j
+			for i < len(la) && isDigit(la[i]) {
+				i++
+			}
+			for j < len(lb) && isDigit(lb[j]) {
+				j++
+			}
+			na := strings.TrimLeft(la[si:i], "0")
+			nb := strings.TrimLeft(lb[sj:j], "0")
+			if len(na) != len(nb) {
+				return len(na) < len(nb) // more digits = bigger number
+			}
+			if na != nb {
+				return na < nb
+			}
+			continue
+		}
+		if ca != cb {
+			return ca < cb
+		}
+		i++
+		j++
+	}
+	// One is a prefix of the other, or they're equal ignoring case — shorter first, then
+	// fall back to the raw bytes so the order is total and stable.
+	if len(la)-i != len(lb)-j {
+		return len(la)-i < len(lb)-j
+	}
+	return a < b
+}
+
+func isDigit(c byte) bool { return c >= '0' && c <= '9' }

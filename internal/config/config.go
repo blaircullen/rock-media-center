@@ -56,14 +56,11 @@ type Config struct {
 	// default scan root for every module.
 	LibraryDir string
 	// Per-library roots. Each defaults to its own subfolder of LibraryDir (movies, tvshows,
-	// ebooks, audiobooks, music) so the types don't share one directory. Point them anywhere
-	// with the matching env var, or in Settings → Library. EbooksDir and AudiobooksDir may be
-	// the same path (both books under one folder) or different.
-	MoviesDir     string
-	TVDir         string
-	EbooksDir     string
-	AudiobooksDir string
-	MusicDir      string
+	// music) so the types don't share one directory. Point them anywhere with the matching
+	// env var, or in Settings → Library.
+	MoviesDir string
+	TVDir     string
+	MusicDir  string
 	// DownloadCategory is the download-client category Arrmada imports from.
 	DownloadCategory string
 	// DownloadsDir is where the download client writes files (shared volume);
@@ -84,14 +81,6 @@ type Config struct {
 	// ProwlarrURL, when set, is the default address of an (optional) Prowlarr
 	// instance used by "Sync from Prowlarr". Must be reachable from the server.
 	ProwlarrURL string
-	// OpenSubtitles credentials for the Subtitles module (opensubtitles.com REST API).
-	// The API key enables search; a free username/password additionally enables download.
-	OpenSubtitlesAPIKey   string
-	OpenSubtitlesUsername string
-	OpenSubtitlesPassword string
-	// ConvertScratchDir is the working directory the Convert module encodes into before
-	// atomically replacing the original. Ideally a fast local disk. Empty = <DataDir>/convert.
-	ConvertScratchDir string
 	// SkipMigrationSnapshot upgrades the database without the automatic pre-migrate
 	// snapshot. Only for a data disk too full to hold the copy; the app refuses to
 	// upgrade otherwise rather than risk the only copy.
@@ -110,42 +99,36 @@ type Config struct {
 // Every key is prefixed ARRMADA_ so it never collides with other services.
 func Load() (Config, error) {
 	c := Config{
-		Host:                  env("ARRMADA_HOST", "0.0.0.0"),
-		BaseURLIgnored:        ignoredBaseURL(os.Getenv("ARRMADA_BASE_URL")),
-		DataDir:               env("ARRMADA_DATA_DIR", "./data"),
-		LogLevel:              strings.ToLower(env("ARRMADA_LOG_LEVEL", "info")),
-		ExternalHeader:        env("ARRMADA_EXTERNAL_HEADER", "Cf-Connecting-Ip"),
-		QbittorrentURL:        env("ARRMADA_QBITTORRENT_URL", ""),
-		SABnzbdURL:            env("ARRMADA_SABNZBD_URL", ""),
-		SABnzbdConfig:         env("ARRMADA_SABNZBD_CONFIG", "/bundled/sabnzbd/sabnzbd.ini"),
-		LibraryDir:            env("ARRMADA_LIBRARY_DIR", "./library"),
-		DownloadCategory:      env("ARRMADA_DOWNLOAD_CATEGORY", "arrmada"),
-		DownloadsDir:          env("ARRMADA_DOWNLOADS_DIR", "./downloads"),
-		RecycleDir:            env("ARRMADA_RECYCLE_DIR", ""),
-		FlaresolverrURL:       env("ARRMADA_FLARESOLVERR_URL", ""),
-		TMDBAPIKey:            env("ARRMADA_TMDB_API_KEY", ""),
-		OMDBAPIKey:            env("ARRMADA_OMDB_API_KEY", ""),
-		ProwlarrURL:           env("ARRMADA_PROWLARR_URL", ""),
-		OpenSubtitlesAPIKey:   env("ARRMADA_OPENSUBTITLES_API_KEY", ""),
-		OpenSubtitlesUsername: env("ARRMADA_OPENSUBTITLES_USERNAME", ""),
-		OpenSubtitlesPassword: env("ARRMADA_OPENSUBTITLES_PASSWORD", ""),
-		ConvertScratchDir:     env("ARRMADA_CONVERT_SCRATCH_DIR", ""),
-		PlexURL:               env("ARRMADA_PLEX_URL", ""),
-		PlexToken:             env("ARRMADA_PLEX_TOKEN", ""),
-		GeoIPDB:               env("ARRMADA_GEOIP_DB", ""),
+		Host:             env("ARRMADA_HOST", "0.0.0.0"),
+		BaseURLIgnored:   ignoredBaseURL(os.Getenv("ARRMADA_BASE_URL")),
+		DataDir:          env("ARRMADA_DATA_DIR", "./data"),
+		LogLevel:         strings.ToLower(env("ARRMADA_LOG_LEVEL", "info")),
+		ExternalHeader:   env("ARRMADA_EXTERNAL_HEADER", "Cf-Connecting-Ip"),
+		QbittorrentURL:   env("ARRMADA_QBITTORRENT_URL", ""),
+		SABnzbdURL:       env("ARRMADA_SABNZBD_URL", ""),
+		SABnzbdConfig:    env("ARRMADA_SABNZBD_CONFIG", "/bundled/sabnzbd/sabnzbd.ini"),
+		LibraryDir:       env("ARRMADA_LIBRARY_DIR", "./library"),
+		DownloadCategory: env("ARRMADA_DOWNLOAD_CATEGORY", "arrmada"),
+		DownloadsDir:     env("ARRMADA_DOWNLOADS_DIR", "./downloads"),
+		RecycleDir:       env("ARRMADA_RECYCLE_DIR", ""),
+		FlaresolverrURL:  env("ARRMADA_FLARESOLVERR_URL", ""),
+		TMDBAPIKey:       env("ARRMADA_TMDB_API_KEY", ""),
+		OMDBAPIKey:       env("ARRMADA_OMDB_API_KEY", ""),
+		ProwlarrURL:      env("ARRMADA_PROWLARR_URL", ""),
+		PlexURL:          env("ARRMADA_PLEX_URL", ""),
+		PlexToken:        env("ARRMADA_PLEX_TOKEN", ""),
+		GeoIPDB:          env("ARRMADA_GEOIP_DB", ""),
 	}
 
 	// Per-library roots default to their own subfolder of the shared library dir.
 	//
 	// They used to default to the library root ITSELF, which meant every unset type shared
-	// one folder: movies, TV, books and music all writing into the same directory, and each
+	// one folder: movies, TV and music all writing into the same directory, and each
 	// module's scan walking the others' files. A conventional per-type subfolder is what
 	// people set these to by hand anyway, so it's the better default — and each is still
 	// overridable by env var or in Settings → Library.
 	c.MoviesDir = env("ARRMADA_MOVIES_DIR", filepath.Join(c.LibraryDir, "movies"))
 	c.TVDir = env("ARRMADA_TV_DIR", filepath.Join(c.LibraryDir, "tvshows"))
-	c.EbooksDir = env("ARRMADA_EBOOKS_DIR", filepath.Join(c.LibraryDir, "ebooks"))
-	c.AudiobooksDir = env("ARRMADA_AUDIOBOOKS_DIR", filepath.Join(c.LibraryDir, "audiobooks"))
 	c.MusicDir = env("ARRMADA_MUSIC_DIR", filepath.Join(c.LibraryDir, "music"))
 
 	port, err := strconv.Atoi(env("ARRMADA_PORT", "7878"))

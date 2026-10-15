@@ -225,8 +225,8 @@ func PlanToken(items []RenameItem) string {
 // move, is left alone and reported. Files move without ever replacing another file
 // (library.Importer.Move), take their subtitles along, and — when the folder changes —
 // the movie.nfo and artwork too; the emptied old folder is removed. Every moved track's
-// record changes in one transaction with its movie.changed row, so Convert, Subtitles and
-// a Plex scan follow the new name.
+// record changes in one transaction with its movie.changed row, so a Plex scan follows the
+// new name.
 func (s *Service) ApplyRename(ctx context.Context, items []RenameItem) ([]RenameResult, error) {
 	var order []int64
 	byMovie := map[int64][]RenameItem{}

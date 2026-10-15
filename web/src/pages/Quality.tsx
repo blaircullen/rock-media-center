@@ -48,12 +48,11 @@ const NO_PRESETS: MusicPreset[] = [];
 // Quality profiles. A video profile is built around its TARGET FILE — the codec, HDR, audio
 // and bitrate window you want — which decides what's grabbed, how releases rank, and how the
 // library's files are judged. Sources, rules and upgrades sit underneath it; raw scores and
-// custom formats live in Advanced. Books and music have their own, simpler builders.
+// custom formats live in Advanced. Music has its own, simpler builder.
 
 const MEDIA_TABS = [
   { key: "movie", label: "Movies" },
   { key: "series", label: "Series" },
-  { key: "book", label: "Books" },
   { key: "music", label: "Music" },
 ] as const;
 type Media = (typeof MEDIA_TABS)[number]["key"];
@@ -92,12 +91,6 @@ const MAX_SOURCES = [
 const REJECT_TYPES = ["XviD", "AVI", "WMV", "3D"];
 // Executable/script extensions — pre-rejected on new profiles for safety.
 const EXECUTABLE_TYPES = ["exe", "bat", "cmd", "scr", "msi", "com", "vbs", "ps1"];
-
-// Book file formats, grouped by edition — the score-able formats in a book profile.
-const BOOK_FORMATS: { group: string; formats: string[] }[] = [
-  { group: "Ebook", formats: ["EPUB", "AZW3", "MOBI", "AZW", "PDF", "CBZ", "CBR", "FB2"] },
-  { group: "Audiobook", formats: ["M4B", "MP3", "M4A", "FLAC", "AAC", "OGG", "OPUS"] },
-];
 
 // How much better a release must be before it's worth replacing a same-resolution file.
 // Expressed as a percentage, not Mbps: "2 Mbps better" more than doubles a 480p file and
@@ -324,11 +317,9 @@ export function Quality() {
         </div>
 
         <p className="mb-4 text-base text-ink-dim">
-          {media === "book"
-            ? "A book profile picks which formats to grab (EPUB, M4B…) and can boost releases by keyword — e.g. GraphicAudio +100 to prefer full-cast dramatizations. Higher score wins."
-            : media === "music"
-              ? "A music profile is a ladder of audio qualities. Arrmada grabs the best tier available on your ladder. Albums you already have aren't replaced when a better tier turns up — there's no music upgrade sweep yet."
-              : "A profile describes the file you want — codec, HDR, audio and a bitrate window. Arrmada grabs to it, ranks releases by it, and shows which files in your library don't fit."}
+          {media === "music"
+            ? "A music profile is a ladder of audio qualities. Arrmada grabs the best tier available on your ladder. Albums you already have aren't replaced when a better tier turns up — there's no music upgrade sweep yet."
+            : "A profile describes the file you want — codec, HDR, audio and a bitrate window. Arrmada grabs to it, ranks releases by it, and shows which files in your library don't fit."}
         </p>
 
         {error && <div className="mb-3 rounded-lg p-3 text-sm" style={{ border: "1px solid var(--reject)", color: "var(--reject-text)" }}>{error}</div>}
@@ -383,7 +374,7 @@ const copyOf = (sp: StoredProfile): StoredProfile => ({ ...sp, id: 0, name: `${s
 
 // QualityEditorRoute is /quality/:media/new, /quality/:media/:key and /quality/:media/:key/copy.
 // It loads what the builder needs (the profile, and the media's formats, rules and music
-// ladder from the list), then hands it to the video, book or music builder. Cancel and
+// ladder from the list), then hands it to the video or music builder. Cancel and
 // Save go back to the list for that media.
 export function QualityEditorRoute() {
   const params = useParams<{ media: string; "*": string }>();
@@ -397,7 +388,7 @@ export function QualityEditorRoute() {
   const toast = useToast();
   const carried = (location.state as EditorState | null)?.profile;
   const isVideo = media === "movie" || media === "series";
-  const needsList = !!media && media !== "book";
+  const needsList = !!media;
 
   const listQ = useQuery(`quality:${media}`, () => qualityApi.qualityProfiles(media ?? "movie"), { enabled: needsList });
   const profileQ = useQuery(`quality-profile:${key}`, () => qualityApi.qualityProfile(key), { enabled: !!media && mode !== "new" && !carried, staleMs: 0 });
@@ -432,7 +423,6 @@ export function QualityEditorRoute() {
   }
   if (!initial || (needsList && !listQ.data)) return <EditorFrame><Skeleton variant="list" count={3} /></EditorFrame>;
 
-  if (media === "book") return <BookBuilder key={location.key} initial={initial} {...done} />;
   const list = listQ.data!;
   if (media === "music") return <MusicBuilder key={location.key} initial={initial} ladder={list.music_ladder ?? NO_LADDER} presets={list.music_presets ?? NO_PRESETS} {...done} />;
   const unwanted = { catalog: list.unwanted ?? NO_UNWANTED, groups: list.unwanted_groups ?? NO_GROUPS };
@@ -481,7 +471,6 @@ function movedSummary(m: ProfileMoveCounts): string {
   const parts = [
     ...n(m.movies, "film", "films"),
     ...n(m.series, "show", "shows"),
-    ...n(m.books, "book", "books"),
     ...n(m.artists, "artist", "artists"),
     ...n(m.requests, "request", "requests"),
     ...n(m.grabs, "download", "downloads"),
@@ -518,8 +507,8 @@ function ProfileCard({ info, media, counts, others, onEdit, onDuplicate, onChang
   };
   const titles = counts?.titles ?? 0;
   const noun = media === "series" ? (titles === 1 ? "show" : "shows") : titles === 1 ? "film" : "films";
-  // Books and music have no fit counts, so their titles go unnumbered.
-  const what = counts ? `${titles} ${noun}` : media === "book" ? "its books" : "its artists";
+  // Music has no fit counts, so its titles go unnumbered.
+  const what = counts ? `${titles} ${noun}` : "its artists";
   return (
     <div className="rounded-xl p-3.5" style={{ ...panelStyle, border: `1px solid ${info.is_default ? "var(--accent)" : "var(--line)"}` }}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
@@ -1511,82 +1500,6 @@ function MusicBuilder({ initial, ladder, presets, onCancel, onSaved }: { initial
         <div className="rounded-xl p-4 text-sm text-ink-faint" style={panelStyle}>
           Automatic album upgrades aren't built yet. An album is grabbed once, at the best tier available on your ladder.
         </div>
-
-        <SectionLabel>Reject</SectionLabel>
-        <RejectEditor rejected={sp.rejected ?? []} onChange={(r) => patch({ rejected: r })} />
-      </div>
-      </Page>
-      <SaveBar dirty={dirty} saving={saving} error={error} onSave={save} onCancel={leave} />
-    </>
-  );
-}
-
-// =====================================================================================
-// Book builder
-// =====================================================================================
-
-// BookBuilder edits a book quality profile: which formats to grab (per edition) and keyword
-// boosts (e.g. GraphicAudio +100), plus hard-reject terms. No resolution/bitrate.
-function BookBuilder({ initial, onCancel, onSaved }: { initial: StoredProfile; onCancel: () => void; onSaved: (sp: StoredProfile) => void }) {
-  const start = useMemo(() => ({ ...initial, format_scores: initial.format_scores ?? {}, keywords: initial.keywords ?? [], rejected: initial.rejected ?? [] }), [initial]);
-  const [sp, setSp] = useState<StoredProfile>(start);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const startJSON = useRef(JSON.stringify(start));
-  const dirty = JSON.stringify(sp) !== startJSON.current;
-  const markClean = useUnsavedGuard(dirty, DISCARD);
-  const patch = (p: Partial<StoredProfile>) => setSp((s) => ({ ...s, ...p }));
-  const setFormatScore = (name: string, score: number) => {
-    const next = { ...sp.format_scores };
-    if (score <= 0) delete next[name];
-    else next[name] = score;
-    patch({ format_scores: next });
-  };
-  // Back and Cancel just leave: the route guard asks first while there are edits.
-  const leave = onCancel;
-  const save = async () => {
-    if (!sp.name.trim()) { setError("Give the profile a name."); return; }
-    setSaving(true);
-    setError(null);
-    try {
-      if (sp.id > 0) await qualityApi.updateQualityProfile(sp.id, sp);
-      else await qualityApi.createQualityProfile(sp);
-      markClean();
-      onSaved(sp);
-    } catch (e) { setError((e as Error).message); setSaving(false); }
-  };
-
-  return (
-    <>
-      <PageHeader title={sp.id > 0 ? "Edit book profile" : "New book profile"} tail="Books" />
-      <Page className="pb-4 pt-6">
-        <div className="max-w-form">
-        <div className="mb-4"><button onClick={leave} className="text-sm text-ink-dim hover:text-[var(--ink)]">← Back</button></div>
-        <label htmlFor="bp-name" className="mb-1.5 block font-mono text-2xs font-bold uppercase tracking-wide text-accent-text">Name</label>
-        <input id="bp-name" value={sp.name} onChange={(e) => patch({ name: e.target.value })} placeholder="Audiobooks — GraphicAudio first" className="mb-1 w-full rounded-lg px-3 py-2 text-md" style={fieldStyle} />
-
-        {BOOK_FORMATS.map((grp) => (
-          <div key={grp.group} className="mb-2">
-            <SectionLabel>{grp.group} formats</SectionLabel>
-            <p className="-mt-1 mb-2 text-xs text-ink-faint">Score a format above 0 to grab it (higher = preferred); 0 skips it. The {grp.group.toLowerCase()} edition is fetched only if at least one of its formats is scored.</p>
-            <div className="flex flex-col gap-1.5">
-              {grp.formats.map((f) => {
-                const v = sp.format_scores?.[f] ?? 0;
-                return (
-                  <div key={f} className="flex items-center gap-3 rounded-lg px-2.5 py-1.5" style={panelStyle}>
-                    <span className="w-[56px] font-mono text-sm font-semibold">{f}</span>
-                    <input type="range" min={0} max={100} step={5} value={v} aria-label={`${f} score`} onChange={(e) => setFormatScore(f, Number(e.target.value))} className="flex-1 accent-[var(--accent)]" />
-                    <input type="number" min={0} value={v} aria-label={`${f} score`} onChange={(e) => setFormatScore(f, Math.max(0, Number(e.target.value)))} className="w-[60px] rounded-lg px-2 py-1 text-right font-mono text-sm" style={fieldStyle} />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-
-        <SectionLabel>Name contains</SectionLabel>
-        <p className="-mt-1 mb-2 text-xs text-ink-faint">Add points to any release whose name contains a term — GraphicAudio +100, Dramatized +80, Unabridged +20. Combined with the format score; highest total wins.</p>
-        <KeywordEditor keywords={sp.keywords ?? []} onChange={(kw) => patch({ keywords: kw })} />
 
         <SectionLabel>Reject</SectionLabel>
         <RejectEditor rejected={sp.rejected ?? []} onChange={(r) => patch({ rejected: r })} />

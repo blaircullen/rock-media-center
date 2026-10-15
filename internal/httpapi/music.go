@@ -208,7 +208,7 @@ func (a *api) handleSetAlbumMonitored(w http.ResponseWriter, r *http.Request) {
 }
 
 // musicErr maps a module error to a status, so a missing id is a 404 rather than a 500 —
-// the mistake the Books handlers made on seven endpoints.
+// an easy mistake on a handler.
 func (a *api) musicErr(w http.ResponseWriter, err error, msg string) {
 	if errors.Is(err, music.ErrNotFound) {
 		a.writeError(w, http.StatusNotFound, "not found")

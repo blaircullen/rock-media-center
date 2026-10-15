@@ -52,18 +52,16 @@ func TestLogLibraryDirs(t *testing.T) {
 // specific name and the shallowest match.
 func TestSuggestFolders(t *testing.T) {
 	root := t.TempDir()
-	for _, d := range []string{"media/movies", "media/tvshows", "media/ebooks", "media/audiobooks", "torrents", "books-old", "downloads/films"} {
+	for _, d := range []string{"media/movies", "media/tvshows", "torrents", "downloads/films"} {
 		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	got := suggestFolders([]string{root})
 	want := map[string]string{
-		"movies":     "media/movies",
-		"tv":         "media/tvshows",
-		"ebooks":     "media/ebooks",
-		"audiobooks": "media/audiobooks",
-		"downloads":  "torrents",
+		"movies":    "media/movies",
+		"tv":        "media/tvshows",
+		"downloads": "torrents",
 	}
 	for lib, rel := range want {
 		if got[lib] != filepath.ToSlash(filepath.Join(root, rel)) {
@@ -82,7 +80,7 @@ func TestFolderRestartState(t *testing.T) {
 		"downloads differs": {keyLibDownloads: "/storage/torrents"},
 		"music differs":     {keyLibMusic: "/storage/music"},
 		"blank saved":       {keyLibTV: "  "},
-		"two differ":        {keyLibTV: "/storage/tv", keyLibEbooks: "/storage/books"},
+		"two differ":        {keyLibTV: "/storage/tv", keyLibMusic: "/storage/music"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			a := pathsAPI(t)
@@ -123,8 +121,8 @@ func TestPendingRestartRoles(t *testing.T) {
 		if rec.Code != want {
 			t.Errorf("%s: HTTP %d, want %d", role, rec.Code, want)
 		}
-		if want == http.StatusOK && !strings.Contains(rec.Body.String(), `"busy"`) {
-			t.Errorf("%s: no busy summary in %s", role, rec.Body.String())
+		if want == http.StatusOK && !strings.Contains(rec.Body.String(), `"restart_needed"`) {
+			t.Errorf("%s: no restart summary in %s", role, rec.Body.String())
 		}
 	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // Which devices play which formats as they are, from the plays Insights recorded — for
-// Convert's "Your devices" panel. Convert can write HEVC 10-bit or AV1, and a player that
+// a "Your devices" panel. A file in HEVC 10-bit or AV1 needs a player that
 // can't decode those makes Plex transcode every film it converted; the plays already say
 // which players direct-played (or direct-streamed) each format and which had the video
 // transcoded.

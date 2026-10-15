@@ -13,7 +13,6 @@ import (
 var quotaNouns = map[string][2]string{
 	requests.QuotaMovie:  {"movie request", "movie requests"},
 	requests.QuotaSeason: {"season", "seasons"},
-	requests.QuotaBook:   {"book request", "book requests"},
 }
 
 // quotaWindow is "this week" for the usual seven days, else "in N days".
@@ -46,7 +45,7 @@ func quotaMessage(e *requests.ErrQuotaExceeded) string {
 	return fmt.Sprintf("You've used your %d %s %s. The next one frees up %s.", e.Limit, noun(e.Limit), quotaWindow(e.Days), when)
 }
 
-// handleMyQuota is the caller's request limits and use: {days, movie, season, book}, each
+// handleMyQuota is the caller's request limits and use: {days, movie, season}, each
 // {limit (0: unlimited), used, resets_at}. Staff read as unlimited.
 //
 //	GET /api/v1/me/quota
@@ -65,7 +64,7 @@ func (a *api) handleMyQuota(w http.ResponseWriter, r *http.Request) {
 }
 
 // The global request limits in the settings API: request_quota_days (1–365) and per
-// window request_quota_movies / _seasons / _books (0 = unlimited, at most 1000).
+// window request_quota_movies / _seasons (0 = unlimited, at most 1000).
 const maxQuota = 1000
 
 // quotaChanged reports whether a settings save would change the global limits from cur
@@ -73,15 +72,15 @@ const maxQuota = 1000
 func quotaChanged(req *settingsUpdate, cur requests.Limits) bool {
 	differs := func(p *int, v int) bool { return p != nil && *p != v }
 	return differs(req.QuotaDays, cur.Days) || differs(req.QuotaMovies, cur.Movie) ||
-		differs(req.QuotaSeasons, cur.Season) || differs(req.QuotaBooks, cur.Book)
+		differs(req.QuotaSeasons, cur.Season)
 }
 
 // validQuota says what's wrong with a quota field, "" when it's fine.
-func validQuota(days, movies, seasons, books *int) string {
+func validQuota(days, movies, seasons *int) string {
 	if days != nil && (*days < 1 || *days > 365) {
 		return "the request limit window must be 1 to 365 days"
 	}
-	for _, v := range []*int{movies, seasons, books} {
+	for _, v := range []*int{movies, seasons} {
 		if v != nil && (*v < 0 || *v > maxQuota) {
 			return "a request limit must be between 0 (no limit) and " + strconv.Itoa(maxQuota)
 		}

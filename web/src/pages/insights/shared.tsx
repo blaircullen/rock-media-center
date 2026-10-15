@@ -204,7 +204,7 @@ const ABOUT = {
   people: "Per-person activity — last seen, platform, total plays and watch time.",
   graphs: "Plays by day, hour, platform and user, plus bandwidth over time.",
   reliability: "The buffering view — see historically when and where streams choked, by user, platform and title.",
-  library: "Your library by what's watched — most watched, never watched, and the titles your media server keeps transcoding, linked to Convert.",
+  library: "Your library by what's watched — most watched, never watched, and the titles your media server keeps transcoding.",
 };
 
 // SetupState stands in for a tab only while no media server is set up and the database has

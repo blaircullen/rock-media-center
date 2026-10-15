@@ -102,7 +102,6 @@ func TestPurgeVanishedBlocks(t *testing.T) {
 	}
 	add("series", "Reacher S04E06 1080p WEB h264-NTb", vanishedBlockReason)
 	add("movie", "Some.Film.2020.1080p.WEB-DL-GRP", vanishedBlockReason)
-	add("book", "Author - Book [EPUB]", vanishedBlockReason)
 	add("music", "Artist - Album [FLAC]", vanishedBlockReason)
 	keep := []string{
 		vanishedAgainBlockReason,
@@ -125,8 +124,8 @@ func TestPurgeVanishedBlocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n != 13 {
-		t.Errorf("removed %d rows, want 13", n)
+	if n != 12 {
+		t.Errorf("removed %d rows, want 12", n)
 	}
 	rows, err := db.QueryContext(ctx, `SELECT reason FROM blocklist ORDER BY id`)
 	if err != nil {
@@ -142,7 +141,7 @@ func TestPurgeVanishedBlocks(t *testing.T) {
 	if strings.Join(left, "|") != strings.Join(keep, "|") {
 		t.Errorf("rows left = %q, want every other reason kept:\n%q", left, keep)
 	}
-	if out := logs.String(); !strings.Contains(out, "rows=13") || !strings.Contains(out, "releases=5") {
+	if out := logs.String(); !strings.Contains(out, "rows=12") || !strings.Contains(out, "releases=4") {
 		t.Errorf("the startup line should report the count:\n%s", out)
 	}
 

@@ -16,9 +16,7 @@ import (
 // release it has grabbed before is never grabbed again.
 
 // atmosShow is an upgrade show whose profile prefers Atmos, with S04E06 on disk: the NTb
-// release, recorded (as every import records it) by its downloaded file's name. The probe
-// of the file didn't report the Atmos track the name claims — the disagreement that made
-// the release look better than itself.
+// release, recorded (as every import records it) by its downloaded file's name.
 func atmosShow(t *testing.T) (upgradeShow, string) {
 	t.Helper()
 	u := newUpgradeShow(t, false)
@@ -32,7 +30,6 @@ func atmosShow(t *testing.T) (upgradeShow, string) {
 	const size = int64(4 << 30) // the fake indexer offers every release at 4 GiB
 	sparseFile(t, path, size)
 	u.addEpisode(t, 4, 6, 36, path, "Show.S04E06.1080p.AMZN.WEB-DL.DDP5.1.Atmos.H.264-NTb.mkv", size, false)
-	u.h.c.SetFileFacts(fakeFacts{path: {size: size, facts: quality.FileFacts{Resolution: "1080p", Codec: "h264", HDR: "SDR"}}})
 	return u, path
 }
 
@@ -61,23 +58,6 @@ func TestUpgradeSweepKnowsTheFileByItsIndexerTitle(t *testing.T) {
 	}
 	if got := u.grabbedTitles(t); len(got) != 0 {
 		t.Fatalf("grabbed %v as an upgrade of the file it already is — the import gate refuses it on arrival", got)
-	}
-}
-
-// Another group's release with the Atmos the probed file lacks is a real upgrade: the sweep
-// grabs it and the import gate takes it, the same verdict on both sides.
-func TestUpgradeSweepStillTakesAnotherGroupsBetterRelease(t *testing.T) {
-	u, _ := atmosShow(t)
-	const flux = "Show S04E06 1080p AMZN WEB-DL DDP5 1 Atmos H 264-FLUX"
-	u.h.ix.offer(flux)
-	if err := u.h.c.upgradeSeries(u.h.ctx, u.id, nil); err != nil {
-		t.Fatal(err)
-	}
-	if got := u.grabbedTitles(t); !reflect.DeepEqual(got, []string{flux}) {
-		t.Fatalf("grabbed %v, want %s", got, flux)
-	}
-	if !importGateTakes(t, u, "Show.S04E06.1080p.AMZN.WEB-DL.DDP5.1.Atmos.H.264-FLUX.mkv") {
-		t.Error("the import gate must take the upgrade the sweep grabbed")
 	}
 }
 

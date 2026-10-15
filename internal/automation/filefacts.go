@@ -12,30 +12,6 @@ import (
 	"github.com/tristenlammi/arrmada/internal/series"
 )
 
-// FileFactsSource is where the upgrade decisions read what a library file really is:
-// Convert's analysis of it (convert.Service.FactsForPath). It answers false whenever the
-// analysis may not describe the file any more, and the file is then judged by its
-// release name as it always was.
-type FileFactsSource interface {
-	FactsForPath(ctx context.Context, path string, sizeBytes int64) (quality.FileFacts, bool)
-}
-
-// SetFileFacts wires the source of probed file facts. Nil (tests, or Convert not built)
-// leaves every decision on release names.
-func (c *Coordinator) SetFileFacts(src FileFactsSource) { c.fileFacts = src }
-
-// factsFor returns the probed facts for a file whose size the caller knows, or nil.
-func (c *Coordinator) factsFor(ctx context.Context, path string, sizeBytes int64) *quality.FileFacts {
-	if c.fileFacts == nil || path == "" || sizeBytes <= 0 {
-		return nil
-	}
-	f, ok := c.fileFacts.FactsForPath(ctx, path, sizeBytes)
-	if !ok {
-		return nil
-	}
-	return &f
-}
-
 // versionSizeBytes is the size the database records for a version's file: the cached
 // media info's when present, else the version row's.
 func versionSizeBytes(v movies.Version) int64 {
@@ -47,14 +23,13 @@ func versionSizeBytes(v movies.Version) int64 {
 
 // currentMovieFile is a movie version's file as the upgrade and downgrade decisions judge
 // it: its release (or the baseline built for a scanned file), its size and the movie's
-// runtime, with Convert's probed facts when they still describe the file.
+// runtime, and what it was before an earlier version's conversion (read from older records).
 func (c *Coordinator) currentMovieFile(ctx context.Context, m movies.Movie, v movies.Version) quality.CurrentFile {
 	size := versionSizeBytes(v)
 	return quality.CurrentFile{
 		Release:     upgradeBaseline(m, v),
 		SizeGB:      gbOf(size),
 		RuntimeMin:  m.Runtime,
-		Facts:       c.factsFor(ctx, v.FilePath, size),
 		OrigRelease: v.ConvertedFromRelease,
 		OrigSizeGB:  gbOf(v.ConvertedFromSize),
 	}
@@ -73,8 +48,8 @@ func (c *Coordinator) CurrentMovieFile(ctx context.Context, m movies.Movie) qual
 
 // currentEpisodeFile is an episode's file as the upgrade decisions judge it: the release
 // it was imported from — never the renamed library file (see upgradeSeries) — its size,
-// the episode length, Convert's probed facts when they still describe the file, and what
-// it was before a conversion.
+// the episode length, and what it was before an earlier version's conversion (read from older
+// records).
 func (c *Coordinator) currentEpisodeFile(ctx context.Context, e series.Episode) quality.CurrentFile {
 	return c.episodeFileOf(ctx, series.EpisodeFile{
 		Path: e.FilePath, SizeBytes: e.SizeBytes, SourceRelease: e.SourceRelease, RuntimeMin: e.Runtime,
@@ -88,7 +63,6 @@ func (c *Coordinator) episodeFileOf(ctx context.Context, f series.EpisodeFile) q
 		Release:     f.SourceRelease,
 		SizeGB:      gbOf(f.SizeBytes),
 		RuntimeMin:  f.RuntimeMin,
-		Facts:       c.factsFor(ctx, f.Path, f.SizeBytes),
 		OrigRelease: f.ConvertedFromRelease,
 		OrigSizeGB:  gbOf(f.ConvertedFromSize),
 	}
@@ -100,7 +74,7 @@ func (c *Coordinator) episodeFileOf(ctx context.Context, f series.EpisodeFile) q
 // Without this, disk-imported movies could never be considered for an upgrade at all.
 //
 // The scanned-file baseline carries everything the cached media info knows — HDR, Atmos and
-// lossless audio included. Without them a file with no current Convert analysis never met an
+// lossless audio included. Without them a scanned file never met an
 // HDR or Atmos target and was searched for an upgrade on every sweep.
 func upgradeBaseline(m movies.Movie, v movies.Version) string {
 	if s := strings.TrimSpace(v.SourceRelease); s != "" {

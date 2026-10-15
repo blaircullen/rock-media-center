@@ -19,17 +19,12 @@ var refPathVectors = []struct{ ref, want string }{
 	{"series:1399:r12", "/discover/series/1399"},
 	{"series:1399:r12:s3", "/discover/series/1399"},
 	{"series:1399:r12:approved:1700000000", "/discover/series/1399"},
-	{"book:OL27448W", "/discover?tab=books&work=OL27448W"},
-	{"book:OL27448W:audiobook", "/discover?tab=books&work=OL27448W"},
-	{"book:hc:123", "/discover?tab=books&work=hc%3A123"},
-	{"book:hc:123:approved:1700000000", "/discover?tab=books&work=hc%3A123"},
-	{"book:hc:123:audiobook", "/discover?tab=books&work=hc%3A123"},
-	{"book:a b/c", "/discover?tab=books&work=a%20b%2Fc"},
+	{"book:OL27448W", ""}, // an older version's book notice: nothing to open
 	{"request:40:new:1700000000", "/requests?id=40"},
 	{"request:40:new:1700000000:2", "/requests?id=40"},
 	{"issue:12:new", "/requests?tab=issues&issue=12"},
 	{"issue:0:new", ""},
-	{"kindle:9f2c41d07a1b3e55", "/shelf"},
+	{"kindle:9f2c41d07a1b3e55", ""},
 	{"movie:603:issue:12:resolved", "/discover/movie/603"},
 	{"series:1399:issue:12:dismissed", "/discover/series/1399"},
 	{"1007", ""},
@@ -86,10 +81,6 @@ func TestReadyPushURL(t *testing.T) {
 	if err := s.notifyReady(ctx, req); err != nil {
 		t.Fatal(err)
 	}
-	book := Request{ID: 9999, MediaType: "book", OLKey: "hc:123", Title: "Dune", RequestedBy: 7, DecidedAt: 1700000000}
-	if _, err := s.notifyPartiesCount(ctx, book, "Request approved", "“Dune” was approved.", decisionRef(book, "approved"), "request-approved", nil); err != nil {
-		t.Fatal(err)
-	}
 	// An unknown reference still opens something sensible.
 	if _, err := s.notifyPartiesCount(ctx, Request{ID: 9998, MediaType: "movie", RequestedBy: 7}, "x", "y", "legacy-ref", "test", nil); err != nil {
 		t.Fatal(err)
@@ -97,7 +88,7 @@ func TestReadyPushURL(t *testing.T) {
 
 	push.mu.Lock()
 	defer push.mu.Unlock()
-	want := []string{"/discover/movie/603", "/discover?tab=books&work=hc%3A123", "/discover"}
+	want := []string{"/discover/movie/603", "/discover"}
 	if len(push.urls) != len(want) {
 		t.Fatalf("pushes = %v, want %v", push.urls, want)
 	}

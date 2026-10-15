@@ -8,7 +8,7 @@ import (
 )
 
 // mergeFixture: an admin with no Plex link, a duplicate Plex requester (plex id 4242) who
-// requested, follows, has an inbox, a phone, quota usage, audiobook places and a password,
+// requested, follows, has an inbox, a phone and quota usage,
 // and a third person whose request both of them follow.
 type mergeFixture struct {
 	s                *Service
@@ -45,11 +45,6 @@ func newMergeFixture(t *testing.T) *mergeFixture {
 	exec(`INSERT INTO user_notifications (user_id, title, ref) VALUES (?, 'ready', 'movie:3')`, f.admin.ID)
 	exec(`INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth) VALUES (?, 'https://push.example/1', 'k', 'a')`, f.dup.ID)
 	exec(`INSERT INTO request_usage (user_id, request_id, kind, units, created_at) VALUES (?, ?, 'movie', 1, 1)`, f.dup.ID, f.dupReq)
-	exec(`INSERT INTO listen_progress (user_id, item_key, position, updated_at) VALUES (?, 'b1', 5, 1)`, f.dup.ID)
-	exec(`INSERT INTO listen_progress (user_id, item_key, position, updated_at) VALUES (?, 'b2', 7, 1)`, f.dup.ID)
-	exec(`INSERT INTO listen_progress (user_id, item_key, position, updated_at) VALUES (?, 'b1', 100, 1)`, f.admin.ID)
-	exec(`INSERT INTO listen_log (session_id, user_id, started_at, ended_at, seconds) VALUES ('s1', ?, 1, 2, 60)`, f.dup.ID)
-	exec(`INSERT INTO audio_passwords (user_id, hash, updated_at) VALUES (?, 'dup-hash', 1)`, f.dup.ID)
 	// Two reported problems: one only the duplicate reported, one both did.
 	dupIssue := exec(`INSERT INTO issues (media_type, library_id, title, category, reported_by, reported_by_name, created_at, updated_at) VALUES ('movie', 1, 'Dup asked', 'audio', ?, 'ownerplex', 1, 1)`, f.dup.ID)
 	bothIssue := exec(`INSERT INTO issues (media_type, library_id, title, category, reported_by, reported_by_name, created_at, updated_at) VALUES ('movie', 2, 'Admin asked', 'video', ?, 'owner', 1, 1)`, f.admin.ID)
@@ -57,7 +52,6 @@ func newMergeFixture(t *testing.T) *mergeFixture {
 	exec(`INSERT INTO issue_reporters (issue_id, user_id, user_name, created_at) VALUES (?, ?, 'owner', 1)`, bothIssue, f.admin.ID)
 	exec(`INSERT INTO issue_reporters (issue_id, user_id, user_name, created_at) VALUES (?, ?, 'ownerplex', 2)`, bothIssue, f.dup.ID)
 	exec(`UPDATE users SET notify_prefs = '{"approved":false}' WHERE id = ?`, f.dup.ID)
-	exec(`UPDATE users SET kindle_email = 'kid_1@kindle.com' WHERE id = ?`, f.dup.ID)
 	if _, _, err := s.CreateSession(ctx, f.dup.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +75,7 @@ func TestMergePlexDuplicateMovesRequests(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := MergePreview{From: "ownerplex", To: "owner", PlexLink: true, PlexUsername: "ownerplex", Requests: 1, Following: 2, Notifications: 2, PushDevices: 1, QuotaUsage: 1, AudiobookProgress: true, AudiobookPassword: true, SignedInDevices: 1}
+	want := MergePreview{From: "ownerplex", To: "owner", PlexLink: true, PlexUsername: "ownerplex", Requests: 1, Following: 2, Notifications: 2, PushDevices: 1, QuotaUsage: 1, SignedInDevices: 1}
 	if p != want {
 		t.Errorf("preview = %+v\nwant      %+v", p, want)
 	}
@@ -102,12 +96,7 @@ func TestMergePlexDuplicateMovesRequests(t *testing.T) {
 		{"inbox de-duplicated", `SELECT COUNT(*) FROM user_notifications WHERE user_id = ?`, []any{a}, 2},
 		{"push device moved", `SELECT COUNT(*) FROM push_subscriptions WHERE user_id = ?`, []any{a}, 1},
 		{"quota usage moved", `SELECT COUNT(*) FROM request_usage WHERE user_id = ?`, []any{a}, 1},
-		{"admin keeps its own place in b1", `SELECT COUNT(*) FROM listen_progress WHERE user_id = ? AND item_key = 'b1' AND position = 100`, []any{a}, 1},
-		{"admin gains the place in b2", `SELECT COUNT(*) FROM listen_progress WHERE user_id = ? AND item_key = 'b2'`, []any{a}, 1},
-		{"listening log moved", `SELECT COUNT(*) FROM listen_log WHERE user_id = ?`, []any{a}, 1},
-		{"audiobook password moved (the admin had none)", `SELECT COUNT(*) FROM audio_passwords WHERE user_id = ? AND hash = 'dup-hash'`, []any{a}, 1},
 		{"notification choices moved (the admin made none)", `SELECT COUNT(*) FROM users WHERE id = ? AND notify_prefs = '{"approved":false}'`, []any{a}, 1},
-		{"Kindle address moved (the admin had none)", `SELECT COUNT(*) FROM users WHERE id = ? AND kindle_email = 'kid_1@kindle.com'`, []any{a}, 1},
 		{"reported problems moved, one row per issue", `SELECT COUNT(*) FROM issue_reporters WHERE user_id = ?`, []any{a}, 2},
 		{"the duplicate's report is the admin's", `SELECT COUNT(*) FROM issues WHERE reported_by = ? AND reported_by_name = 'owner'`, []any{a}, 2},
 		{"duplicate gone", `SELECT COUNT(*) FROM users WHERE id = ?`, []any{f.dup.ID}, 0},

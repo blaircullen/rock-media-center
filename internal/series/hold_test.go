@@ -11,7 +11,7 @@ import (
 )
 
 // The upgrade hold on episodes: set in bulk on episodes with a file, kept through a
-// convert's repoint and a renumbering rebuild, ended by a new import, a profile change or
+// renumbering rebuild, ended by a new import, a profile change or
 // Resume (one season, or the whole show).
 func TestEpisodeUpgradeHoldLifecycle(t *testing.T) {
 	st, err := store.Open(t.TempDir())
@@ -93,14 +93,7 @@ func TestEpisodeUpgradeHoldLifecycle(t *testing.T) {
 		t.Error("CurrentEpisodeFile doesn't report the hold")
 	}
 
-	// A convert repoints the file: still held.
-	if _, err := svc.RepointEpisodeFile(ctx, 1, path(1, 1), filepath.Join(dir, "Show", "S01E01.av1.mkv"), 500); err != nil {
-		t.Fatal(err)
-	}
-	if !svc.CurrentEpisodeFile(ctx, 1, 1, 1).Held {
-		t.Error("a convert's repoint ended the hold")
-	}
-	// So does a renumbering rebuild, wherever the file lands.
+	// A renumbering rebuild keeps it, wherever the file lands.
 	seasons, err := svc.repo.SeasonsFor(ctx, 1)
 	if err != nil {
 		t.Fatal(err)

@@ -123,7 +123,7 @@ test.describe("desktop", () => {
 
   // The first thing a new install shows: the setup wizard's first step.
   test("setup-wizard", async ({ page, api }) => {
-    const blank = { movies: "", tv: "", ebooks: "", audiobooks: "", music: "", downloads: "" };
+    const blank = { movies: "", tv: "", music: "", downloads: "" };
     await extra(page, {
       "GET /api/v1/setup": {
         ...configuredSetup, needed: true, complete: false, tmdb_configured: false, libraries_chosen: false, keys: freshKeys,

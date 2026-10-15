@@ -101,9 +101,9 @@ describe("Connections", () => {
     const jf = within(servers).getByText("Jellyfin").closest("#jellyfin") as HTMLElement;
     expect(within(jf).getByText("Not connected")).toBeTruthy();
     expect(within(jf).getByRole("button", { name: "Connect Jellyfin" })).toBeTruthy();
-    // Plex left the old section, which is now just alerts and apps.
+    // Plex left the old section, which is now just alerts.
     const other = document.getElementById("other-connections") as HTMLElement;
-    expect(within(other).getByRole("heading", { name: "Alerts and apps" })).toBeTruthy();
+    expect(within(other).getByRole("heading", { name: "Alerts" })).toBeTruthy();
     expect(other.querySelector("#plex")).toBeNull();
     expect(other.querySelector("#notifications")).toBeTruthy();
   });

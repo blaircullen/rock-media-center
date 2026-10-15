@@ -69,8 +69,8 @@ export function NotificationBell({ placement = "down" }: { placement?: "down" | 
   const load = () => api.myNotifications().then((r) => { setItems(r.notifications ?? []); setUnread(r.unread); }).catch(() => {});
   // Most notices are about a request (approved, declined, ready; a new one, for staff), and
   // each is written before the request's change is announced: the request feed's events
-  // bring the badge along within a second; a notice about nothing on the request feed (a
-  // Send to Kindle result) says so on user.<id>.inbox.updated. Once a minute catches the rest.
+  // bring the badge along within a second; a notice about nothing on the request feed says
+  // so on user.<id>.inbox.updated. Once a minute catches the rest.
   useLiveRefresh(load, { topics: BELL_TOPICS, fallbackMs: 60_000, debounceMs: 1000, immediate: true });
 
   // Close on outside click (the side panel lives outside the bell's own box).
@@ -107,9 +107,10 @@ export function NotificationBell({ placement = "down" }: { placement?: "down" | 
     }
   };
   // Mark read (badge only drops when the server call succeeds), then jump to what it's
-  // about, by its reference: the exact title (Dune 2021, not 1984), the book on Discover's
-  // Books tab, or a staff "New request". Only an old notice whose reference says nothing
-  // falls back to searching Discover for the quoted title.
+  // about, by its reference: the exact title (Dune 2021, not 1984) or a staff "New
+  // request". Only an old notice whose reference says nothing falls back to searching
+  // Discover for the quoted title; a leftover notice about a book (a module Arrmada no
+  // longer has) just marks read.
   const markRead = async (n: UserNotification) => {
     if (n.read) return;
     try {
@@ -129,9 +130,9 @@ export function NotificationBell({ placement = "down" }: { placement?: "down" | 
       return;
     }
     const title = searchTitleOf(n);
-    if (title) {
+    if (title && n.media_type !== "book") {
       setOpen(false);
-      navigate(n.media_type === "book" ? `/discover?tab=books&q=${encodeURIComponent(title)}` : `/discover?q=${encodeURIComponent(title)}`);
+      navigate(`/discover?q=${encodeURIComponent(title)}`);
     }
   };
 

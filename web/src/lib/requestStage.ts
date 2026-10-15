@@ -30,8 +30,7 @@ export interface RequestStage {
   unknown?: boolean;
 }
 
-// StagedRequest is all requestStage reads: a request's status and tracking, which My
-// shelf's own request rows have too.
+// StagedRequest is all requestStage reads: a request's status and tracking.
 export type StagedRequest = Pick<MediaRequest, "media_type" | "status" | "available" | "tracking" | "decline_reason">;
 
 // requestStage turns a request's tracking into its badge and a one-line detail. queueKnown
@@ -41,15 +40,14 @@ export function requestStage(rq: StagedRequest, queueKnown = true): RequestStage
   if (!queueKnown && QUEUE_STAGES.has(tr?.stage ?? "")) {
     return { badge: "Status unknown", tone: "faint", detail: "Can't check downloads right now", unknown: true };
   }
-  const ready = rq.media_type === "book" ? "Ready" : "Ready to watch";
+  const ready = "Ready to watch";
   const eps = tr?.total ? `${tr.have ?? 0} of ${tr.total} episodes` : "";
   const pct = Math.round((tr?.progress ?? 0) * 100);
   switch (tr?.stage) {
     case "available":
       return { badge: "Ready", tone: "good", detail: ready, detailTone: "var(--good-text)" };
     case "partial":
-      // A series: "3 of 10 episodes ready". A book asked for in both formats with one
-      // here: the server's "Ebook ready · audiobook on the way".
+      // A series: "3 of 10 episodes ready"; otherwise the server's own note.
       return { badge: "Partly ready", tone: "good", detail: eps ? `${eps} ready` : tr.note || "Partly ready", detailTone: "var(--good-text)" };
     case "downloading": {
       const parts = [`${pct}%`];
@@ -121,9 +119,9 @@ export function formatSeasons(seasons?: number[]): string {
   return parts.join(", ");
 }
 
-// mediaLabel is the short type chip: Movie, TV or Book.
+// mediaLabel is the short type chip: Movie or TV.
 export function mediaLabel(t: MediaRequest["media_type"]): string {
-  return t === "series" ? "TV" : t === "book" ? "Book" : "Movie";
+  return t === "series" ? "TV" : "Movie";
 }
 
 // requestAge is how long ago a request was made, from its SQLite timestamp ("3d ago").
@@ -135,5 +133,5 @@ export function requestAge(at: string, now = Date.now()): string {
 // libraryPath is the staff library page a request became, when it has one.
 export function libraryPath(rq: MediaRequest): string | null {
   if (!rq.library_id) return null;
-  return rq.media_type === "movie" ? `/movies/${rq.library_id}` : rq.media_type === "series" ? `/series/${rq.library_id}` : `/books/${rq.library_id}`;
+  return rq.media_type === "movie" ? `/movies/${rq.library_id}` : `/series/${rq.library_id}`;
 }

@@ -32,31 +32,6 @@ var videoExts = map[string]bool{
 	".wmv": true, ".ts": true, ".mpg": true, ".mpeg": true, ".webm": true, ".flv": true,
 }
 
-var ebookExts = map[string]bool{
-	".epub": true, ".mobi": true, ".azw3": true, ".azw": true, ".pdf": true,
-	".cbz": true, ".cbr": true, ".fb2": true, ".djvu": true, ".lit": true,
-}
-
-var audiobookExts = map[string]bool{
-	".m4b": true, ".m4a": true, ".mp3": true, ".aac": true, ".flac": true, ".ogg": true, ".opus": true,
-}
-
-func isEbook(p string) bool     { return ebookExts[strings.ToLower(filepath.Ext(p))] }
-func isAudiobook(p string) bool { return audiobookExts[strings.ToLower(filepath.Ext(p))] }
-func isBookFile(p string) bool  { return isEbook(p) || isAudiobook(p) }
-
-// BookFileFormat returns the uppercase format tag for a file path (EPUB, M4B, MP3…).
-func BookFileFormat(path string) string {
-	return strings.ToUpper(strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), "."))
-}
-
-// IsAudiobookFile reports whether a path is an audiobook file (vs an ebook).
-func IsAudiobookFile(p string) bool { return isAudiobook(p) }
-
-// FoundFile is a media file discovered on disk (path + size). Shared by video, ebook,
-// and audiobook discovery.
-type FoundFile = FoundVideo
-
 // Limits for a listing someone is browsing (manual import). Listing a library root used
 // to walk every file on the array, and kept walking after the browser had gone; nobody
 // reads past a few hundred rows, so stop there and say the list is cut short.
@@ -97,58 +72,6 @@ func (l *walkLimits) full() bool {
 	return false
 }
 
-// FindBookFiles returns every ebook + audiobook file at contentPath (no size floor).
-func FindBookFiles(contentPath string) []FoundFile {
-	out, _, _ := FindBookFilesCtx(context.Background(), contentPath, 0, 0)
-	return out
-}
-
-// FindBookFilesCtx is FindBookFiles bounded for a listing: it stops when ctx ends
-// (returning what it found and ctx.Err()), after maxResults files, or after maxVisited
-// entries, and reports truncated when there was more. Zero limits mean unbounded.
-func FindBookFilesCtx(ctx context.Context, contentPath string, maxResults, maxVisited int) ([]FoundFile, bool, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, false, err
-	}
-	info, err := os.Stat(contentPath)
-	if err != nil {
-		return nil, false, nil
-	}
-	if !info.IsDir() {
-		if isBookFile(contentPath) {
-			return []FoundFile{{Path: contentPath, Size: info.Size()}}, false, nil
-		}
-		return nil, false, nil
-	}
-	lim := &walkLimits{ctx: ctx, maxResults: maxResults, maxVisited: maxVisited}
-	var out []FoundFile
-	werr := filepath.WalkDir(contentPath, func(p string, d os.DirEntry, err error) error {
-		if serr := lim.step(); serr != nil {
-			return serr
-		}
-		// Hidden folders inside a book are Arrmada's own (merge backups) or a system's
-		// (.AppleDouble, .recycle): never book files.
-		if err == nil && d.IsDir() && p != contentPath && SkipScanDir(d.Name()) {
-			return filepath.SkipDir
-		}
-		if err != nil || d.IsDir() || !isBookFile(p) {
-			return nil
-		}
-		if isSampleName(p) {
-			return nil
-		}
-		if fi, e := d.Info(); e == nil {
-			if lim.full() {
-				return fs.SkipAll
-			}
-			out = append(out, FoundFile{Path: p, Size: fi.Size()})
-			lim.results++
-		}
-		return nil
-	})
-	return out, lim.truncated, ctxErr(werr)
-}
-
 // ctxErr keeps a cancellation from a walk and drops everything else, which the walks
 // have always ignored (an unreadable sub-folder just isn't listed).
 func ctxErr(err error) error {
@@ -156,209 +79,6 @@ func ctxErr(err error) error {
 		return err
 	}
 	return nil
-}
-
-// FindEbooks returns only the ebook files at contentPath.
-func FindEbooks(contentPath string) []FoundFile {
-	var out []FoundFile
-	for _, f := range FindBookFiles(contentPath) {
-		if isEbook(f.Path) {
-			out = append(out, f)
-		}
-	}
-	return out
-}
-
-// BookImport is the result of placing a book edition into the library.
-type BookImport struct {
-	TargetPath string
-	Format     string
-	SizeBytes  int64
-	FileCount  int
-}
-
-// BookFolder is a book's on-disk folder discovered during a library scan.
-type BookFolder struct {
-	Author     string
-	Title      string
-	Ebooks     []FoundFile
-	Audiobooks []FoundFile
-}
-
-// FindBookFolders walks the book roots (ebook + audiobook, once when they're the same
-// folder) for folders containing ebook/audiobook files, grouped by author (parent folder)
-// and title (the folder name). Used by the book library scan. The roots are resolved on
-// every call, so a folder changed in Settings is scanned from then on.
-func (im *Importer) FindBookFolders() []BookFolder {
-	return im.FindBookFoldersIn(im.ebookDir(), im.audiobookDir())
-}
-
-// FindBookFoldersIn is FindBookFolders over explicit roots (empty/duplicate roots are skipped).
-func (im *Importer) FindBookFoldersIn(roots ...string) []BookFolder {
-	byDir := map[string]*BookFolder{}
-	seen := map[string]bool{}
-	{
-		var uniq []string
-		for _, r := range roots {
-			if r != "" && !seen[r] {
-				seen[r] = true
-				uniq = append(uniq, r)
-			}
-		}
-		roots = uniq
-	}
-	for _, root := range roots {
-		_ = filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {
-			// Hidden folders are Arrmada's own (the merge backups under the audiobooks
-			// root) or a system's: scanned as books they'd turn into bogus titles, or an
-			// edition that vanishes when the backup is pruned.
-			if err == nil && d.IsDir() && p != root && SkipScanDir(d.Name()) {
-				return filepath.SkipDir
-			}
-			if err != nil || d.IsDir() || !isBookFile(p) {
-				return nil
-			}
-			if isSampleName(p) {
-				return nil
-			}
-			dir := filepath.Dir(p)
-			bf := byDir[dir]
-			if bf == nil {
-				author := ""
-				parent := filepath.Dir(dir)
-				if parent != root && parent != "." {
-					author = filepath.Base(parent)
-				}
-				title := filepath.Base(dir)
-				if author == "" {
-					// A flat folder named "Title by Author": the author is not part of
-					// the title, and searching the two words together found guides to
-					// the book rather than the book.
-					title, author = splitTitleBy(title)
-				}
-				bf = &BookFolder{Author: author, Title: title}
-				byDir[dir] = bf
-			}
-			fi, _ := d.Info()
-			var size int64
-			if fi != nil {
-				size = fi.Size()
-			}
-			if isAudiobook(p) {
-				bf.Audiobooks = append(bf.Audiobooks, FoundFile{Path: p, Size: size})
-			} else {
-				bf.Ebooks = append(bf.Ebooks, FoundFile{Path: p, Size: size})
-			}
-			return nil
-		})
-	}
-	out := make([]BookFolder, 0, len(byDir))
-	for _, bf := range byDir {
-		out = append(out, *bf)
-	}
-	return out
-}
-
-// ImportBookEdition hardlinks a book edition into "<root>/<Author>/<Title>/". A single
-// file becomes "<Title>.ext"; a multi-file audiobook keeps each file's name in the
-// book folder (TargetPath then points at the folder). Format is the dominant extension.
-// titleByRe reads "<title> by <Author Name>" where the name is two to four capitalised
-// words or initials — "Death by Chocolate" keeps its title.
-var titleByRe = regexp.MustCompile(`^(.*\S)\s+(?i:by)\s+((?:[A-Z][\w.'’\-]*)(?:\s+[A-Z][\w.'’\-]*){1,3}|[A-Z]\.[\w.]*\s+[A-Z][\w'’\-]*)$`)
-
-// splitTitleBy separates a folder name of the form "Title by Author"; anything else
-// comes back as the title with no author.
-func splitTitleBy(name string) (title, author string) {
-	if m := titleByRe.FindStringSubmatch(strings.TrimSpace(name)); m != nil {
-		return strings.TrimSpace(m[1]), strings.TrimSpace(m[2])
-	}
-	return name, ""
-}
-
-func (im *Importer) ImportBookEdition(author, title string, files []FoundFile) (*BookImport, error) {
-	if len(files) == 0 {
-		return nil, fmt.Errorf("no book files to import")
-	}
-	root := im.bookRootForFiles(files)
-	if err := im.checkRoot(root); err != nil {
-		return nil, err
-	}
-	dir := im.bookDirIn(root, author, title)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return nil, fmt.Errorf("create book dir: %w", err)
-	}
-	cleanStaleTemps(dir)
-	if len(files) == 1 {
-		target := filepath.Join(dir, clean(title)+filepath.Ext(files[0].Path))
-		method, err := im.linkOrCopy(files[0].Path, target)
-		if err != nil {
-			return nil, fmt.Errorf("import book: %w", err)
-		}
-		im.logImport(title, files[0].Path, target, method)
-		var size int64
-		if fi, _ := os.Stat(target); fi != nil {
-			size = fi.Size()
-		}
-		return &BookImport{TargetPath: target, Format: BookFileFormat(target), SizeBytes: size, FileCount: 1}, nil
-	}
-	// Multi-file (e.g. an mp3 audiobook): keep names inside the book folder. Per-file
-	// failures are logged and counted out of FileCount; only a total wipeout errors.
-	var total int64
-	format := ""
-	placed := 0
-	var lastErr error
-	for _, f := range files {
-		target := filepath.Join(dir, clean(strings.TrimSuffix(filepath.Base(f.Path), filepath.Ext(f.Path)))+filepath.Ext(f.Path))
-		method, err := im.linkOrCopy(f.Path, target)
-		if err != nil {
-			lastErr = err
-			im.log.Warn("book file import failed", "title", title, "source", f.Path, "err", err)
-			continue
-		}
-		placed++
-		im.logImport(title, f.Path, target, method)
-		if fi, _ := os.Stat(target); fi != nil {
-			total += fi.Size()
-		}
-		format = BookFileFormat(f.Path)
-	}
-	if placed == 0 {
-		return nil, fmt.Errorf("import book: no files could be placed: %w", lastErr)
-	}
-	return &BookImport{TargetPath: dir, Format: format, SizeBytes: total, FileCount: placed}, nil
-}
-
-// BookLibraryFiles returns the book files present in a book's library folder
-// (rescan). Ebooks and audiobooks may live under different roots, so both are
-// checked (deduped when they share one folder).
-func (im *Importer) BookLibraryFiles(author, title string) []FoundFile {
-	out := FindBookFiles(im.bookDirIn(im.ebookDir(), author, title))
-	if im.audiobookDir() != im.ebookDir() {
-		out = append(out, FindBookFiles(im.bookDirIn(im.audiobookDir(), author, title))...)
-	}
-	return out
-}
-
-// BookEditionCanonical returns the canonical path a single-file book edition should
-// live at ("<root>/<Author>/<Title>/<Title>.ext"), rooted by the file's kind.
-func (im *Importer) BookEditionCanonical(author, title, srcPath string) string {
-	root := im.ebookDir()
-	if isAudiobook(srcPath) {
-		root = im.audiobookDir()
-	}
-	return filepath.Join(im.bookDirIn(root, author, title), clean(title)+filepath.Ext(srcPath))
-}
-
-func (im *Importer) bookDirIn(root, author, title string) string {
-	a := clean(author)
-	if a == "" {
-		a = "Unknown Author"
-	}
-	t := clean(title)
-	if t == "" {
-		t = "Unknown"
-	}
-	return filepath.Join(root, a, t)
 }
 
 var reIllegal = regexp.MustCompile(`[<>:"/\\|?*\x00-\x1f]`)
@@ -433,7 +153,7 @@ type Importer struct {
 // A nil func, or one that returns "", means that kind of media has no folder, and its
 // imports fail with an error saying so.
 type RootFuncs struct {
-	Movie, TV, Ebook, Audiobook, Music func() string
+	Movie, TV, Music func() string
 }
 
 // SetEpisodeTitleFunc installs a lookup so episode files are named with their
@@ -483,16 +203,16 @@ func (im *Importer) SetRootFuncs(f RootFuncs) {
 	im.root = ""
 }
 
-// SetRoots fixes each media type's folder (movies, TV, ebooks, audiobooks). An empty
-// value falls back to the NewImporter root. Tests use it; the app uses SetRootFuncs.
-func (im *Importer) SetRoots(movie, tv, ebook, audiobook string) {
+// SetRoots fixes each media type's folder (movies, TV). An empty value falls back to the
+// NewImporter root. Tests use it; the app uses SetRootFuncs.
+func (im *Importer) SetRoots(movie, tv string) {
 	fixed := func(p string) func() string {
 		if p == "" {
 			return nil
 		}
 		return func() string { return p }
 	}
-	im.roots.Movie, im.roots.TV, im.roots.Ebook, im.roots.Audiobook = fixed(movie), fixed(tv), fixed(ebook), fixed(audiobook)
+	im.roots.Movie, im.roots.TV = fixed(movie), fixed(tv)
 }
 
 // rootFor resolves one folder: its func when set, otherwise the NewImporter root.
@@ -511,23 +231,6 @@ func (im *Importer) TVRoot() string { return im.tvDir() }
 
 // MusicDir is where album folders are written.
 func (im *Importer) MusicDir() string { return im.rootFor(im.roots.Music) }
-
-func (im *Importer) ebookDir() string { return im.rootFor(im.roots.Ebook) }
-
-// AudiobookRoot is the folder audiobooks are placed under.
-func (im *Importer) AudiobookRoot() string { return im.audiobookDir() }
-
-func (im *Importer) audiobookDir() string { return im.rootFor(im.roots.Audiobook) }
-
-// bookRootForFiles picks the audiobook or ebook root from the files being
-// imported (a single edition is one kind — the coordinator imports each kind
-// separately).
-func (im *Importer) bookRootForFiles(files []FoundFile) string {
-	if len(files) > 0 && isAudiobook(files[0].Path) {
-		return im.audiobookDir()
-	}
-	return im.ebookDir()
-}
 
 // NewImporter creates an importer whose every media type lands under root until
 // SetRoots or SetRootFuncs says otherwise. The app passes "" and sets live folders.
@@ -1656,7 +1359,7 @@ var subtitleExts = map[string]bool{".srt": true, ".ass": true, ".ssa": true, ".s
 
 // importSidecarSubs links external subtitle files from a finished download next to
 // the imported video, following the Plex/Jellyfin "<base>.<lang>[.forced|.sdh].<ext>"
-// convention so the Subtitles module and players pick them up. It only takes subtitles
+// convention so players pick them up. It only takes subtitles
 // that belong to this release: for a single-file torrent (contentPath is the file, in a
 // shared save dir) it matches only the video's own base name, never a neighbor's.
 func (im *Importer) importSidecarSubs(contentPath, srcVideo, targetVideo string) {

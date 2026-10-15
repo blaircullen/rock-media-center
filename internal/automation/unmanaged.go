@@ -40,14 +40,14 @@ func (c *Coordinator) GrabbedHashes(ctx context.Context) (map[string]bool, error
 }
 
 // ImportUnmanaged imports a finished torrent Arrmada didn't grab into library item
-// targetID of kind (movie | series | book | music). contentPath is where its files are,
+// targetID of kind (movie | series | music). contentPath is where its files are,
 // already vetted by the caller to lie inside the download or library folders. Its hash is
 // then recorded as imported, so the queue shows it in the library and the import sweeps
 // leave it alone. No grab is created: seed cleanup still never touches a torrent it
 // didn't grab.
 func (c *Coordinator) ImportUnmanaged(ctx context.Context, it download.Item, contentPath, kind string, targetID int64) error {
 	switch kind {
-	case "movie", "series", "book", "music":
+	case "movie", "series", "music":
 	default:
 		return fmt.Errorf("%w: %q isn't a kind of library item", ErrWrongTargetKind, kind)
 	}

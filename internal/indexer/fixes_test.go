@@ -100,13 +100,10 @@ func TestTrackerThrottlesHonorCancelledContext(t *testing.T) {
 	tl.lastReq = time.Now()
 	x := NewX1337Searcher(nil)
 	x.lastReq = time.Now()
-	m := NewMAMSearcher(nil)
-	m.lastReq = time.Now()
 
 	for name, fn := range map[string]func(context.Context) error{
 		"torrentleech": tl.throttle,
 		"1337x":        x.throttle,
-		"myanonamouse": m.throttle,
 	} {
 		start := time.Now()
 		if err := fn(ctx); err == nil {

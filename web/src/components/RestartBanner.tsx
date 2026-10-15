@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, type PendingRestart } from "../lib/api";
 import { isAdmin, useMe } from "../lib/me";
-import { busyLines, FOLDERS_SAVED_EVENT, LIBRARY_LABEL, restartAppAndWait } from "../lib/restart";
+import { FOLDERS_SAVED_EVENT, LIBRARY_LABEL, restartAppAndWait } from "../lib/restart";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 // RestartBanner sits above every staff page while a saved setting is waiting on a restart.
@@ -36,7 +36,6 @@ export function RestartBanner() {
     setRestarting(true); setErr(null);
     try { await restartAppAndWait(); } catch (e) { setErr((e as Error).message); setRestarting(false); }
   };
-  const lines = busyLines(st.busy);
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 text-sm" style={{ background: "var(--panel-2)", borderBottom: "1px solid var(--avoid)", color: "var(--ink)" }} role="status">
@@ -58,9 +57,6 @@ export function RestartBanner() {
           body={
             <div className="flex flex-col gap-1.5">
               <span>Arrmada restarts and starts using the new folders. Files already imported stay where they are. This page reloads once it's back, usually in a few seconds.</span>
-              {lines.length > 0
-                ? lines.map((l) => <span key={l} style={{ color: "var(--avoid-text)" }}>{l}</span>)
-                : <span>Nothing is converting or making subtitles right now.</span>}
             </div>
           }
           confirmLabel="Restart now"

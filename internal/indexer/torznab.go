@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -404,20 +403,6 @@ func parseRetryAfter(v string, now time.Time) time.Duration {
 	return 0
 }
 
-// torznabText applies a book edition the only way a general tracker can express it: as a
-// word in the query, because its release NAMES carry "audiobook" while its categories are
-// whatever the indexer decided to define. (A dedicated book tracker has a real category
-// for the edition and does the opposite — see mamCatsFor.)
-//
-// Ebook is deliberately not appended: "ebook" rarely appears in a release name, so adding
-// it would filter out the very releases it's meant to find.
-func torznabText(q SearchQuery) string {
-	if q.Text != "" && q.BookEdition == "audiobook" {
-		return q.Text + " audiobook"
-	}
-	return q.Text
-}
-
 func buildURL(idx Indexer, t string, q SearchQuery) (string, error) {
 	u, err := url.Parse(idx.URL)
 	if err != nil {
@@ -433,25 +418,17 @@ func buildURL(idx Indexer, t string, q SearchQuery) (string, error) {
 	if len(cats) == 0 {
 		cats = idx.Categories
 	}
-	text := torznabText(q)
+	text := q.Text
 	if len(cats) == 0 && t == "search" {
 		cats = defaultCategories(idx, q)
-		if slices.Contains(cats, catAudiobook) {
-			// The default audiobook category already says it; the word would only drop
-			// the releases in it whose names don't happen to carry "audiobook".
-			text = q.Text
-		}
 	}
 	// An id the indexer takes replaces the text: q alongside it would narrow the id match
 	// to releases that also carry the text, which is exactly what a foreign or re-titled
-	// release doesn't. A book or music search says the same thing in its own fields.
+	// release doesn't. A music search says the same thing in its own fields.
 	name, value := idParam(idx, q)
 	switch {
 	case t == "search" && name != "":
 		qs.Set(name, value)
-	case mode == "book":
-		setNonEmpty(qs, "author", q.Author)
-		setNonEmpty(qs, "title", q.BookTitle)
 	case mode == "music":
 		setNonEmpty(qs, "artist", q.Artist)
 		setNonEmpty(qs, "album", q.Album)
@@ -628,10 +605,10 @@ func setNonEmpty(qs url.Values, name, value string) {
 }
 
 // searchMode is the Torznab function a query uses on this indexer: searchType's, except
-// that a book or music search whose parts the indexer's stored caps say its book-search
-// (music-search) takes uses t=book (t=music). Every part the query has must be one the
-// mode lists — an author dropped because the indexer can't take it would widen the
-// search to every book of that title — so anything less stays today's t=search&q=….
+// that a music search whose parts the indexer's stored caps say its music-search takes
+// uses t=music. Every part the query has must be one the mode lists — an artist dropped
+// because the indexer can't take it would widen the search to every album of that title —
+// so anything less stays today's t=search&q=….
 func searchMode(idx Indexer, base string, q SearchQuery) string {
 	t := searchType(base, q)
 	if base != "search" {
@@ -655,10 +632,6 @@ func searchMode(idx Indexer, base string, q SearchQuery) string {
 		return some
 	}
 	switch q.MediaType {
-	case MediaBook:
-		if takesAll(caps.Book, map[string]string{"author": q.Author, "title": q.BookTitle}) {
-			return "book"
-		}
 	case MediaMusic:
 		parts := map[string]string{"artist": q.Artist, "album": q.Album}
 		// Older indexers call it audio-search; the function is t=music either way.
@@ -671,16 +644,13 @@ func searchMode(idx Indexer, base string, q SearchQuery) string {
 
 // Default Newznab categories per kind of search (defaultCategories).
 const (
-	catMovies    = 2000
-	catAudio     = 3000
-	catAudiobook = 3030
-	catTV        = 5000
-	catBooks     = 7000
-	catEbook     = 7020
+	catMovies = 2000
+	catAudio  = 3000
+	catTV     = 5000
 )
 
 // defaultCategories are the categories a search asks an indexer for when neither the
-// query nor the indexer names any — a Prowlarr-synced row has none, so a book search went
+// query nor the indexer names any — a Prowlarr-synced row has none, so a music search went
 // to every category and could come back with films. Only for an indexer whose stored caps
 // list categories, only those it lists (a category it doesn't have would match nothing),
 // and only while the indexer_default_categories setting is on. Nothing in common, no caps,
@@ -701,15 +671,6 @@ func defaultCategories(idx Indexer, q SearchQuery) []int {
 		want = []int{catTV}
 	case MediaMusic:
 		want = []int{catAudio}
-	case MediaBook:
-		switch q.BookEdition {
-		case "ebook":
-			want = []int{catBooks, catEbook}
-		case "audiobook":
-			want = []int{catAudiobook}
-		default:
-			want = []int{catBooks, catEbook, catAudiobook}
-		}
 	}
 	var out []int
 	for _, c := range want {

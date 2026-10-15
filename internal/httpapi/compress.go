@@ -12,7 +12,7 @@ import (
 // gzip header and the CPU buy nothing.
 const gzipMinBytes = 1400
 
-// gzipLevel trades a little size for speed: the 2.5 MB books list compresses to ~20%
+// gzipLevel trades a little size for speed: the 2.5 MB movies list compresses to ~20%
 // in ~20 ms at level 4, where the default level takes over three times as long for
 // another 2%.
 const gzipLevel = 4
@@ -23,8 +23,7 @@ var gzipPool = sync.Pool{New: func() any {
 }}
 
 // compressJSON gzips the API's larger JSON answers for a browser that accepts it. The
-// library lists are megabytes of JSON for a big library (2,500 movies is ~1.2 MB, 1,500
-// books ~2.5 MB) and compress five to six times: on Wi-Fi or from outside the house the
+// library lists are megabytes of JSON for a big library (2,500 movies is ~1.2 MB) and compress five to six times: on Wi-Fi or from outside the house the
 // transfer, not the server, was most of the wait.
 //
 // Only GETs under /api/v1/ (never the websocket) and only JSON: files, streams and

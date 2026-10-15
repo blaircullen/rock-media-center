@@ -21,12 +21,10 @@ import (
 // back to the env-configured default (config.*Dir) when unset or blank, so the app works
 // before the user picks anything.
 const (
-	keyLibMovies     = libroots.KeyMovies
-	keyLibTV         = libroots.KeyTV
-	keyLibEbooks     = libroots.KeyEbooks
-	keyLibAudiobooks = libroots.KeyAudiobooks
-	keyLibMusic      = libroots.KeyMusic
-	keyLibDownloads  = libroots.KeyDownloads
+	keyLibMovies    = libroots.KeyMovies
+	keyLibTV        = libroots.KeyTV
+	keyLibMusic     = libroots.KeyMusic
+	keyLibDownloads = libroots.KeyDownloads
 )
 
 // roots resolves the folders the same way the importer, the coordinator and the disk
@@ -41,22 +39,18 @@ func (a *api) roots() *libroots.Roots {
 }
 
 // libMovies etc. return the effective (settings-or-default) path for each library.
-func (a *api) libMovies(r *http.Request) string     { return a.roots().Movies(r.Context()) }
-func (a *api) libTV(r *http.Request) string         { return a.roots().TV(r.Context()) }
-func (a *api) libEbooks(r *http.Request) string     { return a.roots().Ebooks(r.Context()) }
-func (a *api) libAudiobooks(r *http.Request) string { return a.roots().Audiobooks(r.Context()) }
-func (a *api) libMusic(r *http.Request) string      { return a.roots().Music(r.Context()) }
-func (a *api) libDownloads(r *http.Request) string  { return a.roots().Downloads(r.Context()) }
+func (a *api) libMovies(r *http.Request) string    { return a.roots().Movies(r.Context()) }
+func (a *api) libTV(r *http.Request) string        { return a.roots().TV(r.Context()) }
+func (a *api) libMusic(r *http.Request) string     { return a.roots().Music(r.Context()) }
+func (a *api) libDownloads(r *http.Request) string { return a.roots().Downloads(r.Context()) }
 
 // handleGetLibraryPaths returns the configured folder for each library.
 func (a *api) handleGetLibraryPaths(w http.ResponseWriter, r *http.Request) {
 	a.writeJSON(w, http.StatusOK, map[string]any{
-		"movies":     a.libMovies(r),
-		"tv":         a.libTV(r),
-		"ebooks":     a.libEbooks(r),
-		"audiobooks": a.libAudiobooks(r),
-		"music":      a.libMusic(r),
-		"downloads":  a.libDownloads(r),
+		"movies":    a.libMovies(r),
+		"tv":        a.libTV(r),
+		"music":     a.libMusic(r),
+		"downloads": a.libDownloads(r),
 	})
 }
 
@@ -69,7 +63,7 @@ func (a *api) pickedConfig(ctx context.Context) config.Config {
 
 // folderLabel is how the UI names each library folder, for messages.
 var folderLabel = map[string]string{
-	"movies": "Movies", "tv": "TV", "ebooks": "Ebooks", "audiobooks": "Audiobooks",
+	"movies": "Movies", "tv": "TV",
 	"music": "Music", "downloads": "Downloads",
 }
 
@@ -121,12 +115,10 @@ func folderNotDir(label, p string) string {
 // right now) must still be able to save its other folders.
 func (a *api) handleSetLibraryPaths(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Movies     *string `json:"movies"`
-		TV         *string `json:"tv"`
-		Ebooks     *string `json:"ebooks"`
-		Audiobooks *string `json:"audiobooks"`
-		Music      *string `json:"music"`
-		Downloads  *string `json:"downloads"`
+		Movies    *string `json:"movies"`
+		TV        *string `json:"tv"`
+		Music     *string `json:"music"`
+		Downloads *string `json:"downloads"`
 		// Create makes any missing folder (after the user clicked "Create it") instead
 		// of refusing it.
 		Create bool `json:"create"`
@@ -142,8 +134,6 @@ func (a *api) handleSetLibraryPaths(w http.ResponseWriter, r *http.Request) {
 	}{
 		{"movies", keyLibMovies, req.Movies, a.libMovies(r)},
 		{"tv", keyLibTV, req.TV, a.libTV(r)},
-		{"ebooks", keyLibEbooks, req.Ebooks, a.libEbooks(r)},
-		{"audiobooks", keyLibAudiobooks, req.Audiobooks, a.libAudiobooks(r)},
 		{"music", keyLibMusic, req.Music, a.libMusic(r)},
 		{"downloads", keyLibDownloads, req.Downloads, a.libDownloads(r)},
 	}
@@ -299,7 +289,7 @@ func (a *api) handleCheckLibraryFolder(w http.ResponseWriter, r *http.Request) {
 	kind := q.Get("kind")
 	label, ok := folderLabel[kind]
 	if !ok {
-		a.writeError(w, http.StatusBadRequest, "kind must be movies, tv, ebooks, audiobooks, music or downloads")
+		a.writeError(w, http.StatusBadRequest, "kind must be movies, tv, music or downloads")
 		return
 	}
 	if p == "" {

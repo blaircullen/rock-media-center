@@ -423,27 +423,6 @@ func (r *Repo) ClearFile(ctx context.Context, id int64) error {
 	return err
 }
 
-// SetConvertedFromForPath records, on every track of a movie whose file is at path, the
-// release and size the file had before Convert first shrank it. The release is the
-// track's recorded source release as it stands — call this BEFORE the repoint restamps
-// its codec. A track that already has a baseline keeps it: a re-conversion's "before" is
-// itself a conversion, and upgrades must beat the first original.
-func (r *Repo) SetConvertedFromForPath(ctx context.Context, movieID int64, path string, size int64) error {
-	return r.inTx(ctx, func(_ *sql.Tx, r *Repo) error {
-		if _, err := r.q().ExecContext(ctx,
-			`UPDATE movies SET converted_from_release = source_release, converted_from_size = ?
-			  WHERE id = ? AND has_file = 1 AND movie_file_path = ?
-			    AND converted_from_release = '' AND converted_from_size = 0`, size, movieID, path); err != nil {
-			return err
-		}
-		_, err := r.q().ExecContext(ctx,
-			`UPDATE movie_versions SET converted_from_release = source_release, converted_from_size = ?
-			  WHERE movie_id = ? AND has_file = 1 AND file_path = ?
-			    AND converted_from_release = '' AND converted_from_size = 0`, size, movieID, path)
-		return err
-	})
-}
-
 // ClearConvertedFrom forgets a track's pre-conversion baseline: a new file was imported
 // into it. versionID 0 is the default track (the movie row).
 func (r *Repo) ClearConvertedFrom(ctx context.Context, movieID, versionID int64) error {

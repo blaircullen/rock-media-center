@@ -115,19 +115,16 @@ export const hiddenTitleID = 9999;
 const at = "2026-10-01T09:00:00Z";
 
 // GET /api/v1/requests (every section and the Discover strip answer the same rows): one
-// waiting, two on their way (one a book asked for as an audiobook), and one the viewer
-// follows rather than made.
+// waiting, one on its way, and one the viewer follows rather than made.
 export const requests: RequestList = {
   client_health: { ok: true },
   auto_approve: false,
-  counts: { needs_approval: 1, in_progress: 3, ready: 0, declined: 0 },
-  total: 4,
+  counts: { needs_approval: 1, in_progress: 2, ready: 0, declined: 0 },
+  total: 3,
   requests: [
     { id: 1, media_type: "movie", tmdb_id: 1003, title: "Saltwind", year: 2023, poster_url: poster(3), status: "pending", requested_by: 3, requested_by_name: "deckhand", note: "The extended cut, if there is one", relation: "owner", available: false, tracking: { stage: "pending" }, created_at: at, updated_at: at },
     { id: 2, media_type: "movie", tmdb_id: 1005, title: "Driftwood", year: 2025, poster_url: poster(5), status: "approved", requested_by: 3, requested_by_name: "deckhand", relation: "owner", available: false, download_progress: 0.42, tracking: { stage: "downloading", progress: 0.42, eta_seconds: 900 }, created_at: at, updated_at: at },
     { id: 3, media_type: "series", tmdb_id: 1009, title: "Undertow", year: 2025, poster_url: poster(9), status: "approved", requested_by: 0, relation: "subscriber", available: false, tracking: { stage: "searching" }, created_at: at, updated_at: at },
-    // A book asked for as an audiobook: its card carries the "Listen" badge.
-    { id: 4, media_type: "book", tmdb_id: 0, ol_key: "OL9003W", author: "Hal Yard", formats: "audiobook", title: "Knots and Splices", year: 2017, status: "approved", requested_by: 3, requested_by_name: "deckhand", relation: "owner", available: false, tracking: { stage: "searching" }, created_at: at, updated_at: at },
   ],
 };
 
@@ -238,13 +235,11 @@ export function created(p: PersonaInfo, body: unknown): { request: MediaRequest;
 export const plexWatchURL = "https://app.plex.tv/desktop/#!/server/fixture/details?key=%2Flibrary%2Fmetadata%2F1007";
 
 // The inbox: a 'ready' notice with a structured reference (APP-08: it opens that exact
-// title) and a Watch on Plex link, a book decision whose key holds a ':' (Hardcover), and
-// an old notice whose reference says nothing.
+// title) and a Watch on Plex link, and an old notice whose reference says nothing.
 export const notifications: { notifications: UserNotification[]; unread: number } = {
   unread: 1,
   notifications: [
     { id: 1, title: "Your request is ready", body: "“The Cartographer” is ready to watch on Plex.", media_type: "movie", ref: "movie:1007", read: false, created_at: Date.parse(at), plex_url: plexWatchURL },
-    { id: 2, title: "Request approved", body: "“Moby-Dick” was approved.", media_type: "book", ref: "book:hc:4242:approved:1759300000", read: true, created_at: Date.parse(at) - 60_000 },
     { id: 3, title: "Your request is ready", body: "“Saltwind” is ready to watch.", media_type: "series", ref: "", read: true, created_at: Date.parse(at) - 120_000 },
   ],
 };

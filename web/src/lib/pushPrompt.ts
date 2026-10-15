@@ -1,5 +1,5 @@
-// The "Get notified when it's ready?" prompt after a request. Discover and the Books tab
-// announce a successful request; the layout's PushPromptHost hears it and, unless this
+// The "Get notified when it's ready?" prompt after a request. Discover
+// announces a successful request; the layout's PushPromptHost hears it and, unless this
 // device has already answered, loads the prompt. Kept tiny: it's in the first load.
 
 export const REQUESTED_EVENT = "arrmada:requested";

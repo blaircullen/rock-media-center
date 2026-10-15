@@ -133,9 +133,9 @@ func TestRootBinsUnmatchedFallsBackToLegacy(t *testing.T) {
 // A library folder's bin is made on first use with a .plexignore of "*", so Plex never
 // lists what's in it; one shared by two libraries is one bin named after both.
 func TestRootBinWritesPlexignore(t *testing.T) {
-	books := t.TempDir()
-	b := &library.RootBins{Roots: rootsOf(libroots.Root{Name: "ebooks", Path: books}, libroots.Root{Name: "audiobooks", Path: books})}
-	dir, err := b.For(filepath.Join(books, "Author", "Title", "t.epub"))
+	shared := t.TempDir()
+	b := &library.RootBins{Roots: rootsOf(libroots.Root{Name: "movies", Path: shared}, libroots.Root{Name: "tv", Path: shared})}
+	dir, err := b.For(filepath.Join(shared, "Film (2020)", "film.mkv"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestRootBinWritesPlexignore(t *testing.T) {
 		t.Fatalf(".plexignore = %q (%v), want *", got, err)
 	}
 	all := b.All()
-	if len(all) != 1 || all[0].Label != "Ebooks & Audiobooks" || all[0].Dir != dir {
+	if len(all) != 1 || all[0].Label != "Movies & TV" || all[0].Dir != dir {
 		t.Errorf("All = %+v, want one bin for the shared folder", all)
 	}
 }

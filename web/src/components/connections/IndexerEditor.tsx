@@ -72,7 +72,6 @@ export function IndexerEditor({ idx, usenet = false, onSaved, onChanged }: { idx
 function EditForm({ idx, onSaved }: { idx: Indexer; onSaved: () => void }) {
   const isTL = idx.kind === "torrentleech";
   const is1337 = idx.kind === "1337x";
-  const isMAM = idx.kind === "myanonamouse";
   const isNewznab = idx.kind === "newznab";
   const managed = Boolean(idx.prowlarr_id);
   const [name, setName] = useState(idx.name);
@@ -158,10 +157,6 @@ function EditForm({ idx, onSaved }: { idx: Indexer; onSaved: () => void }) {
         ) : is1337 ? (
           <Labeled label="Site URL (optional mirror)" span2>
             <input className={field} style={fieldStyle} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://1337x.to" />
-          </Labeled>
-        ) : isMAM ? (
-          <Labeled label="mam_id session (blank = keep)" span2>
-            <input className={field} style={fieldStyle} value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="paste a fresh mam_id to replace the stored session" autoComplete="off" />
           </Labeled>
         ) : managed ? null : (
           <>
@@ -250,7 +245,6 @@ export function Labeled({ label, hint, span2, controlId, children }: { label: st
 export const MEDIA_TYPES = [
   { key: "movie", label: "Movies" },
   { key: "series", label: "TV" },
-  { key: "book", label: "Books" },
   { key: "music", label: "Music" },
 ] as const;
 export const ALL_MEDIA = MEDIA_TYPES.map((m) => m.key as string);

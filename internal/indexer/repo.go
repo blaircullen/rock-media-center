@@ -186,16 +186,6 @@ func (r *Repo) SetCaps(ctx context.Context, id int64, capsJSON string) error {
 	return err
 }
 
-// SetSession overwrites just the stored secret (api_key) for an indexer — used
-// to persist a rotated MyAnonaMouse mam_id without touching other fields.
-func (r *Repo) SetSession(ctx context.Context, id int64, session string) error {
-	if session == "" {
-		return nil
-	}
-	_, err := r.db.ExecContext(ctx, `UPDATE indexers SET api_key=? WHERE id=?`, session, id)
-	return err
-}
-
 // Delete removes an indexer by id.
 func (r *Repo) Delete(ctx context.Context, id int64) error {
 	res, err := r.db.ExecContext(ctx, `DELETE FROM indexers WHERE id = ?`, id)

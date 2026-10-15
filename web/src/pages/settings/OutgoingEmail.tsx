@@ -6,8 +6,8 @@ import { useQuery, setQueryData } from "../../lib/query";
 import { useUnsavedGuard } from "../../lib/useUnsavedGuard";
 import { Button, useConfirm, useToast } from "../../ui";
 
-// Settings → Alerts → Outgoing email: the mail account Arrmada sends from (Send to Kindle
-// today). Admin-only. The server, the login and the password are credentials: they're
+// Settings → Alerts → Outgoing email: the mail account Arrmada sends from.
+// Admin-only. The server, the login and the password are credentials: they're
 // typed here and never shown again — the card says they're saved, with a short hint, and a
 // blank field keeps what's saved. So unlike the auto-saving cards, this one has a Save.
 
@@ -26,7 +26,7 @@ export function OutgoingEmail() {
     <Section
       id="outgoing-email"
       title="Outgoing email"
-      subtitle="The mail account Arrmada sends from — used for Send to Kindle. Use your own provider's SMTP details with an app password, not your normal password."
+      subtitle="The mail account Arrmada sends from. Use your own provider's SMTP details with an app password, not your normal password."
     >
       {error && !data ? (
         <p className="text-sm" style={{ color: "var(--reject-text)" }}>Couldn’t load the outgoing email settings — {error.message}</p>
@@ -86,7 +86,7 @@ function MailForm({ view }: { view: SMTPView }) {
   };
 
   const removeAll = async () => {
-    const ok = await confirm({ title: "Remove outgoing email?", body: "The server, login and password are forgotten, and Send to Kindle stops until it's set up again.", confirmLabel: "Remove", tone: "danger" });
+    const ok = await confirm({ title: "Remove outgoing email?", body: "The server, login and password are forgotten, and outgoing email stops until it's set up again.", confirmLabel: "Remove", tone: "danger" });
     if (!ok) return;
     try { setQueryData(KEY, await mailApi.clear()); setResult(null); } catch (e) { toast((e as Error).message, { tone: "error" }); }
   };
@@ -133,7 +133,7 @@ function MailForm({ view }: { view: SMTPView }) {
       </div>
       <Note tone="info">
         Most providers want an <b>app password</b> for this (Gmail, iCloud, Fastmail, Outlook all offer one in your account’s security settings).
-        Send from your own address so mail isn’t marked as spam. Kindle owners add the From address to Amazon’s approved senders.
+        Send from your own address so mail isn’t marked as spam.
       </Note>
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="primary" onClick={save} busy={busy} busyLabel="Saving…">Save</Button>

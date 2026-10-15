@@ -15,13 +15,11 @@ import { scanLine, unmatchedOf, useLibraryScan } from "../lib/useLibraryScan";
 // installer), then browse + select here.
 type PathKey = keyof LibraryPaths;
 // job: the kind of job a row's scan runs as, so a scan started anywhere shows on its row.
-// Ebooks and Audiobooks share the one book scan. review: its unmatched folders are listed
+// review: its unmatched folders are listed
 // under the rows ("needs review").
 const ROWS: { key: PathKey; label: string; hint: string; scan?: () => Promise<{ job_id?: number }>; job?: string; review?: boolean }[] = [
   { key: "movies", label: "Movies", hint: "folder of movie subfolders", scan: () => api.scanLibrary(), job: "movie.scan", review: true },
   { key: "tv", label: "TV Shows", hint: "folder of show subfolders", scan: () => api.scanSeries(), job: "series.scan", review: true },
-  { key: "ebooks", label: "Ebooks", hint: "folder of book subfolders", scan: () => api.scanBooks(), job: "books.scan" },
-  { key: "audiobooks", label: "Audiobooks", hint: "may share the ebooks folder", scan: () => api.scanBooks(), job: "books.scan" },
   { key: "music", label: "Music", hint: "folder of artist subfolders", scan: () => api.scanMusic(), job: "music.scan" },
   { key: "downloads", label: "Downloads", hint: "where the download client saves files — the disk guard watches this folder" },
 ];
@@ -56,7 +54,7 @@ export function LibraryFolders() {
 
   return (
     <div>
-      <p className="mb-4 max-w-[64ch] text-base text-ink-dim">Point each library at a folder inside your mounted media. Use <b>Browse</b> to pick from the folders Arrmada can see — a picked folder is saved straight away — then <b>Scan</b> to catalog what's there. Ebooks and audiobooks can share one folder.</p>
+      <p className="mb-4 max-w-[64ch] text-base text-ink-dim">Point each library at a folder inside your mounted media. Use <b>Browse</b> to pick from the folders Arrmada can see — a picked folder is saved straight away — then <b>Scan</b> to catalog what's there.</p>
 
       <div className="flex flex-col gap-2.5">
         {ROWS.map((row) => (

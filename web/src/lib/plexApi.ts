@@ -24,8 +24,7 @@ export const plexApi = {
     req<{ merged: boolean }>(`/api/v1/users/${target}/merge`, { method: "POST", body: JSON.stringify({ from_user_id: from }) }),
 };
 
-// PlexMergePreview is what a merge moves, as counts. Audiobook data is only yes/no: admins
-// see how much people listen, never what.
+// PlexMergePreview is what a merge moves, as counts.
 export interface PlexMergePreview {
   from: string;
   to: string;
@@ -40,10 +39,7 @@ export interface PlexMergePreview {
   notifications: number;
   push_devices: number;
   quota_usage: number;
-  audiobook_progress: boolean;
-  audiobook_password: boolean;
   signed_in_devices: number;
-  listening_apps: number;
 }
 
 export interface PlexLink {

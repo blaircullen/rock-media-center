@@ -9,7 +9,7 @@ import (
 )
 
 // keyPlexAutoApproveTypes is which media types a new Plex sign-in's requests approve
-// themselves for, as "movie,series,book" (any subset; "" is none).
+// themselves for, as "movie,series" (any subset; "" is none).
 const keyPlexAutoApproveTypes = "plex_login_auto_approve_types"
 
 // plexAutoApproval is the auto-approve a new Plex sign-in (or an Overseerr import's new
@@ -49,7 +49,6 @@ func plexAutoApproveUpdate(req *settingsUpdate) (string, bool) {
 type autoApprovalFields struct {
 	AutoApproveMovie  *bool `json:"auto_approve_movie"`
 	AutoApproveSeries *bool `json:"auto_approve_series"`
-	AutoApproveBook   *bool `json:"auto_approve_book"`
 }
 
 func (f autoApprovalFields) apply(a auth.AutoApproval) auth.AutoApproval {
@@ -58,9 +57,6 @@ func (f autoApprovalFields) apply(a auth.AutoApproval) auth.AutoApproval {
 	}
 	if f.AutoApproveSeries != nil {
 		a.Series = *f.AutoApproveSeries
-	}
-	if f.AutoApproveBook != nil {
-		a.Book = *f.AutoApproveBook
 	}
 	return a
 }

@@ -288,14 +288,14 @@ type Profile struct {
 	// outright (they parse as CAM), rather than only ranking them last.
 	RejectPreRelease bool `json:"reject_prerelease,omitempty"`
 	// Unwanted is the profile's Unwanted pack choices (unwanted.go); the zero value is the
-	// defaults. NoUnwanted turns the pack off — book and music profiles, whose names are
-	// titles and authors, not video tags.
+	// defaults. NoUnwanted turns the pack off — music profiles, whose names are titles
+	// and artists, not video tags.
 	Unwanted   Unwanted `json:"unwanted,omitempty"`
 	NoUnwanted bool     `json:"no_unwanted,omitempty"`
 	// GroupTiers order releases by group under ranking v2 (grouptiers.go); never a reject.
 	GroupTiers GroupTiers `json:"group_tiers,omitempty"`
-	// OwnerLanguages are the audio languages the household keeps (Convert's audio
-	// languages); a release in one of them is never foreign-only. Empty means English.
+	// OwnerLanguages are the audio languages the household keeps; a release in one of
+	// them is never foreign-only. Empty means English.
 	OwnerLanguages []string `json:"owner_languages,omitempty"`
 	// PreferNetwork is the download_network_preference setting (NetworkUsenet or
 	// NetworkTorrent) when it prefers one: between a usenet and a torrent release that

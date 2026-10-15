@@ -22,10 +22,9 @@ export const sabFacts: UsenetFacts = {
   categories: [
     { name: "arrmada", for: "movies", present: true },
     { name: "arrmada-tv", for: "tv", present: true },
-    { name: "arrmada-books", for: "books", present: false },
     { name: "arrmada-music", for: "music", present: false },
   ],
-  missing_categories: ["arrmada-books", "arrmada-music"],
+  missing_categories: ["arrmada-music"],
   complete_folder: { what: "complete_folder", remote: "/downloads/complete", local: "/media/downloads/complete", visible: true },
   servers: [{ name: "news.example.net", optional: false, connections: 20, ok: true }],
   servers_configured: 1,
@@ -33,7 +32,7 @@ export const sabFacts: UsenetFacts = {
   language: "de",
   not_english: true,
   warnings: [
-    'SABnzbd is missing Arrmada\'s arrmada-books, arrmada-music categories. Use "Add missing categories"',
+    'SABnzbd is missing Arrmada\'s arrmada-music category. Use "Add missing categories"',
     'SABnzbd\'s language is "de". Its failure reasons are translated, which makes them harder for Arrmada to read; English works best (SABnzbd → Config → General)',
   ],
 };
@@ -128,7 +127,7 @@ export async function mockUsenet(page: Page, api: MockedApi, { withClient = true
     if (method === "POST" && p === `/api/v1/downloadclients/${SAB_ID}/categories`) {
       record();
       facts = sabFactsFixed;
-      return json(route, { created: ["arrmada-books", "arrmada-music"], usenet: facts });
+      return json(route, { created: ["arrmada-music"], usenet: facts });
     }
     if (method === "GET" && p === "/api/v1/connections") { record(); return json(route, hasClient ? connectionsWithSab() : connections); }
     if (method === "POST" && p === `/api/v1/connections/download_client/${SAB_ID}/test`) {

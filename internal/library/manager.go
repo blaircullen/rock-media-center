@@ -461,10 +461,10 @@ func (m *Manager) SetRecycleDir(dir string) { m.imp.SetRecycleDir(dir) }
 // movie folders match the library record rather than the scene release name.
 func (m *Manager) SetTitleResolver(r TitleResolver) { m.resolver = r }
 
-// SetRoots routes imports to fixed per-media-type destinations (movies, TV, ebooks,
-// audiobooks); empty values fall back to the base library root. Tests use it.
-func (m *Manager) SetRoots(movie, tv, ebook, audiobook string) {
-	m.imp.SetRoots(movie, tv, ebook, audiobook)
+// SetRoots routes imports to fixed per-media-type destinations (movies, TV); empty
+// values fall back to the base library root. Tests use it.
+func (m *Manager) SetRoots(movie, tv string) {
+	m.imp.SetRoots(movie, tv)
 }
 
 // SetRootFuncs resolves each destination live (see Importer.SetRootFuncs).
@@ -474,7 +474,7 @@ func (m *Manager) SetRootFuncs(f RootFuncs) { m.imp.SetRootFuncs(f) }
 func (m *Manager) SetBin(b Bin) { m.imp.SetBin(b) }
 
 // Recent returns the latest imports that placed a file. Rows recorded only so a download
-// isn't imported twice (a dismissed review, a series or book import) have no path.
+// isn't imported twice (a dismissed review, a series import) have no path.
 func (m *Manager) Recent(ctx context.Context, limit int) ([]ImportRecord, error) {
 	return m.repo.recent(ctx, limit)
 }

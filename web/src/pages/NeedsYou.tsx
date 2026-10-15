@@ -262,7 +262,6 @@ function UnmanagedSection() {
 const KINDS: { key: ReviewKind; label: string }[] = [
   { key: "movie", label: "Movie" },
   { key: "series", label: "Show" },
-  { key: "book", label: "Book" },
   { key: "music", label: "Album" },
 ];
 

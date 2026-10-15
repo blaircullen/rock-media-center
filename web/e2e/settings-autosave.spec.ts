@@ -49,7 +49,7 @@ test.describe("admin", () => {
     await expect(folder).toHaveValue(settings.naming_movie_folder);
   });
 
-  test("turning Books off saves at once and hides it from the nav", async ({ page, api }) => {
+  test("turning Music off saves at once and hides it from the nav", async ({ page, api }) => {
     await installExtra(page, api, [
       putSettings,
       { method: "GET", path: "/api/v1/apikeys", body: { keys: [] } },
@@ -57,10 +57,10 @@ test.describe("admin", () => {
     ]);
     await page.goto("/settings/system");
     const nav = page.getByRole("navigation").first();
-    await expect(nav.getByRole("link", { name: "Books", exact: true })).toBeVisible();
-    await page.getByRole("switch", { name: "Books" }).click();
-    await expect(nav.getByRole("link", { name: "Books", exact: true })).toHaveCount(0);
-    expect(api.callsTo("PUT", "/api/v1/settings").map((c) => c.body)).toEqual([{ books_enabled: false }]);
+    await expect(nav.getByRole("link", { name: "Music", exact: true })).toBeVisible();
+    await page.getByRole("switch", { name: "Music (preview)" }).click();
+    await expect(nav.getByRole("link", { name: "Music", exact: true })).toHaveCount(0);
+    expect(api.callsTo("PUT", "/api/v1/settings").map((c) => c.body)).toEqual([{ music_enabled: false }]);
   });
 
   test("the Discovery region on Connections saves on Enter, with no Save button", async ({ page, api }) => {
@@ -78,7 +78,7 @@ test.describe("admin", () => {
 
   test("a typed folder saves only that row, and only when confirmed", async ({ page, api }) => {
     await installExtra(page, api, [
-      { method: "PUT", path: "/api/v1/system/library", respond: ({ body }) => ({ movies: "/media/movies", tv: "/media/tv", ebooks: "/media/ebooks", audiobooks: "/media/audiobooks", music: "/media/music", downloads: "/media/downloads", ...(body as object) }) },
+      { method: "PUT", path: "/api/v1/system/library", respond: ({ body }) => ({ movies: "/media/movies", tv: "/media/tv", music: "/media/music", downloads: "/media/downloads", ...(body as object) }) },
     ]);
     await page.goto("/settings/library");
     const tv = page.getByRole("textbox", { name: "TV Shows folder" });

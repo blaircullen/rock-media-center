@@ -12,11 +12,10 @@ import (
 	"github.com/tristenlammi/arrmada/internal/automation"
 	"github.com/tristenlammi/arrmada/internal/issues"
 	"github.com/tristenlammi/arrmada/internal/jobs"
-	"github.com/tristenlammi/arrmada/internal/subtitles"
 )
 
 // One-click fixes for a reported problem (staff). The issue moves to "fixing" and resolves
-// itself when the new file lands or the subtitle job finishes (internal/issues/fix.go).
+// itself when the new file lands (internal/issues/fix.go).
 // The page confirms a replace before it gets here: the current file goes to the recycle
 // bin when the new one is imported.
 
@@ -25,7 +24,7 @@ type fixStartError struct{ msg string }
 
 func (e *fixStartError) Error() string { return e.msg }
 
-// handleFixIssue starts a fix: {"action": "replace" | "subtitles"}.
+// handleFixIssue starts a fix: {"action": "replace"}.
 func (a *api) handleFixIssue(w http.ResponseWriter, r *http.Request) {
 	id, ok := a.pathID(w, r)
 	if !ok {
@@ -60,30 +59,11 @@ func (a *api) issueFix(r *http.Request, action string) issues.FixFunc {
 		if a.deps.Automation == nil {
 			return nil
 		}
-		return func(ctx context.Context, i issues.Issue, cur issues.Item) (int64, string, error) {
+		return func(ctx context.Context, i issues.Issue, cur issues.Item) (string, error) {
 			if i.MediaType == issues.MediaSeries {
-				return 0, "Blocklisted this episode's copy; searching for another.", a.replaceEpisode(r, i)
+				return "Blocklisted this episode's copy; searching for another.", a.replaceEpisode(r, i)
 			}
-			return 0, "Blocklisted this copy; searching for another.", a.replaceMovie(ctx, r, i, cur)
-		}
-	case issues.ActionSubtitles:
-		if a.deps.Subtitles == nil {
-			return nil
-		}
-		return func(ctx context.Context, i issues.Issue, _ issues.Item) (int64, string, error) {
-			// Redo: what's there now is what was reported, so every kept language is made
-			// again rather than only the missing ones.
-			var job *subtitles.Job
-			var err error
-			if i.MediaType == issues.MediaSeries {
-				job, err = a.deps.Subtitles.QueueEpisode(ctx, i.LibraryID, i.Season, i.Episode, true, subtitles.PrioManual)
-			} else {
-				job, err = a.deps.Subtitles.QueueMovie(ctx, i.LibraryID, true, subtitles.PrioManual)
-			}
-			if err != nil {
-				return 0, "", &fixStartError{"couldn't queue the subtitle job: " + err.Error()}
-			}
-			return job.ID, "Making the subtitles again.", nil
+			return "Blocklisted this copy; searching for another.", a.replaceMovie(ctx, r, i, cur)
 		}
 	}
 	return nil

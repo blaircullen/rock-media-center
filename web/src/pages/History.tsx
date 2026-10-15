@@ -38,7 +38,7 @@ function useHistoryFilters() {
 
 // HistoryPanel is Activity → History: a dated log of what happened to every title —
 // grabs, imports, upgrades, failures, blocklists, removals and seed clean-ups — for
-// movies, series, books and music, each row linking to its title. It doesn't poll: it
+// movies, series and music, each row linking to its title. It doesn't poll: it
 // refetches when the window comes back into focus and when the server announces a grab
 // or an import.
 export function HistoryPanel() {
@@ -200,7 +200,7 @@ function EventLog({ kind, event, q }: { kind: string; event: string; q: string }
   );
 }
 
-const KIND_WORD: Record<HistoryEvent["kind"], string> = { movie: "Movie", series: "TV", book: "Book", music: "Music" };
+const KIND_WORD: Record<HistoryEvent["kind"], string> = { movie: "Movie", series: "TV", music: "Music" };
 
 function EventRow({ e }: { e: HistoryEvent }) {
   const chip = categoryChip(e.category);

@@ -76,7 +76,7 @@ type Options struct {
 	Server string
 }
 
-// Timings. A season pack lands episode by episode over a few seconds, Convert swaps and
+// Timings. A season pack lands episode by episode over a few seconds, upgrades swap and
 // renames come in bursts, and Plex itself coalesces poorly — so each folder waits for
 // things to settle, but never more than a minute in all.
 const (

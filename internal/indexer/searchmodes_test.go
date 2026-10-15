@@ -10,15 +10,14 @@ import (
 	"testing"
 )
 
-// INT-23: book and music searches use t=book / t=music when the stored caps say so, and an
+// INT-23: music searches use t=music when the stored caps say so, and an
 // indexer with caps but no categories of its own is asked for the media type's usual ones.
 func TestBuildURLSearchModesAndDefaultCategories(t *testing.T) {
 	general := Caps{
 		Search:     SearchMode{Available: true, Params: []string{"q"}},
 		Movie:      SearchMode{Available: true, Params: []string{"q", "imdbid"}},
-		Book:       SearchMode{Available: true, Params: []string{"q", "author", "title"}},
 		Music:      SearchMode{Available: true, Params: []string{"q", "artist", "album"}},
-		Categories: []int{2000, 2040, 3000, 3030, 5000, 7000, 7020},
+		Categories: []int{2000, 2040, 3000, 5000},
 	}
 	on := func(q SearchQuery) SearchQuery { q.defaultCats = true; return q }
 	cases := []struct {
@@ -28,30 +27,6 @@ func TestBuildURLSearchModesAndDefaultCategories(t *testing.T) {
 		q          SearchQuery
 		want       map[string]string // param → value ("" = absent)
 	}{
-		{
-			name: "audiobook on a general tracker: cat 3030 and no edition word",
-			caps: &general,
-			q:    on(SearchQuery{Text: "Dune", MediaType: MediaBook, BookEdition: "audiobook"}),
-			want: map[string]string{"t": "search", "cat": "3030", "q": "Dune"},
-		},
-		{
-			name: "book with author and title uses t=book",
-			caps: &general,
-			q:    on(SearchQuery{Text: "Frank Herbert Dune", Author: "Frank Herbert", BookTitle: "Dune", MediaType: MediaBook, BookEdition: "ebook"}),
-			want: map[string]string{"t": "book", "author": "Frank Herbert", "title": "Dune", "q": "", "cat": "7000,7020"},
-		},
-		{
-			name: "book-search without author stays t=search",
-			caps: &Caps{Book: SearchMode{Available: true, Params: []string{"q", "title"}}},
-			q:    on(SearchQuery{Text: "Frank Herbert Dune", Author: "Frank Herbert", BookTitle: "Dune", MediaType: MediaBook}),
-			want: map[string]string{"t": "search", "q": "Frank Herbert Dune", "author": "", "title": "", "cat": ""},
-		},
-		{
-			name: "title-only book query on a book-search that takes title",
-			caps: &general,
-			q:    on(SearchQuery{Text: "Dune", BookTitle: "Dune", MediaType: MediaBook}),
-			want: map[string]string{"t": "book", "title": "Dune", "author": "", "cat": "7000,7020,3030"},
-		},
 		{
 			name: "album uses t=music with artist and album",
 			caps: &general,
@@ -67,8 +42,8 @@ func TestBuildURLSearchModesAndDefaultCategories(t *testing.T) {
 		{
 			name: "default categories intersect with caps",
 			caps: &Caps{Categories: []int{2000, 7000}},
-			q:    on(SearchQuery{Text: "x", MediaType: MediaBook}),
-			want: map[string]string{"cat": "7000"},
+			q:    on(SearchQuery{Text: "x", MediaType: MediaMovie}),
+			want: map[string]string{"cat": "2000"},
 		},
 		{
 			name: "nothing in common sends no cat",
@@ -82,13 +57,6 @@ func TestBuildURLSearchModesAndDefaultCategories(t *testing.T) {
 			categories: []int{2045},
 			q:          on(SearchQuery{Text: "x", MediaType: MediaMovie}),
 			want:       map[string]string{"cat": "2045"},
-		},
-		{
-			name:       "the indexer's own audiobook category keeps today's query word",
-			caps:       &general,
-			categories: []int{3030},
-			q:          on(SearchQuery{Text: "Dune", MediaType: MediaBook, BookEdition: "audiobook"}),
-			want:       map[string]string{"cat": "3030", "q": "Dune audiobook"},
 		},
 		{
 			name: "the query's categories win",
@@ -130,27 +98,21 @@ func TestBuildURLSearchModesAndDefaultCategories(t *testing.T) {
 	}
 }
 
-// No stored caps: book, music and every other search build exactly today's URL, setting
+// No stored caps: music and every other search build exactly today's URL, setting
 // on or not, structured parts or not.
 func TestBuildURLNoCapsIsToday(t *testing.T) {
 	idx := Indexer{URL: "http://prowlarr:9696/3/api", APIKey: "k", Kind: KindTorznab}
 	for _, q := range []SearchQuery{
-		{Text: "Frank Herbert Dune", Author: "Frank Herbert", BookTitle: "Dune", MediaType: MediaBook, BookEdition: "audiobook", Limit: 60},
 		{Text: "Radiohead OK Computer", Artist: "Radiohead", Album: "OK Computer", MediaType: MediaMusic, Limit: 100},
 		{Text: "Arrival 2016", MediaType: MediaMovie, Limit: 100},
 	} {
-		plain := SearchQuery{Text: q.Text, MediaType: q.MediaType, BookEdition: q.BookEdition, Limit: q.Limit}
+		plain := SearchQuery{Text: q.Text, MediaType: q.MediaType, Limit: q.Limit}
 		q.defaultCats = true
 		got, _ := buildURL(idx, "search", q)
 		want, _ := buildURL(idx, "search", plain)
 		if got != want {
 			t.Errorf("url = %s, want today's %s", got, want)
 		}
-	}
-	// And today's audiobook query still carries the word.
-	raw, _ := buildURL(idx, "search", SearchQuery{Text: "Dune", MediaType: MediaBook, BookEdition: "audiobook"})
-	if u, _ := url.Parse(raw); u.Query().Get("q") != "Dune audiobook" || u.Query().Get("t") != "search" {
-		t.Errorf("no-caps audiobook url = %s", raw)
 	}
 }
 

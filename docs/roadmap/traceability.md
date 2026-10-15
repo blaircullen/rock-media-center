@@ -5,16 +5,8 @@ _Every audit finding (2026-10-08) and UI walkthrough note, and the roadmap task(
 | Finding | Severity | Title | Task(s) |
 |---|---|---|---|
 | audiobooks-1 | medium | The request log shows what people listen to, and managers can read it in the Logs page | [SEC-04](SEC.md#sec-04) |
-| audiobooks-2 | medium | PATCH /api/me/progress skips every sync guard: it counts as "Manual" and always wins | [AUD-03](AUD.md#aud-03) |
-| audiobooks-3 | medium | Closing a session with no body (or syncing without currentTime) counts as a jump to 0:00 | [AUD-01](AUD.md#aud-01) |
-| audiobooks-4 | medium | Finished books restart at their last seconds, so the "Listen Again" shelf doesn't work | [AUD-02](AUD.md#aud-02) |
-| audiobooks-5 | medium | Rejected uploads and discarded places leave no trace, so "you can always put it back" isn't true | [AUD-04](AUD.md#aud-04), [AUD-05](AUD.md#aud-05) |
-| audiobooks-6 | medium | Compatibility checks only test that keys exist; Plappa fails silently and the ids aren't UUID-shaped | [AUD-09](AUD.md#aud-09), [AUD-10](AUD.md#aud-10), [AUD-11](AUD.md#aud-11), [AUD-12](AUD.md#aud-12), [AUD-13](AUD.md#aud-13), [AUD-14](AUD.md#aud-14) |
-| audiobooks-7 | high | /audiobooks is a settings page, not somewhere to listen, and it offers iPhone users nothing | [APP-09](APP.md#app-09), [APP-10](APP.md#app-10), [APP-11](APP.md#app-11), [APP-12](APP.md#app-12), [AUD-07](AUD.md#aud-07), [AUD-08](AUD.md#aud-08), [AUD-12](AUD.md#aud-12) |
-| audiobooks-8 | low | The 30-minute warm-up re-walks and stats every audiobook file, which on Unraid can keep array disks from spinning down | [AUD-15](AUD.md#aud-15) |
-| audiobooks-9 | medium | Audiobook merge deletes the source files without checking the output, and pulls files out from under listeners | [BOOK-26](BOOK.md#book-26), [SAFE-06](SAFE.md#safe-06) |
-| audiobooks-10 | low | Forward jumps are trusted without limit: one bad report can mark a book finished | [AUD-06](AUD.md#aud-06) |
-| audiobooks-11 | low | Apps never see cover or metadata edits, and narrators are never shown | [AUD-16](AUD.md#aud-16), [AUD-17](AUD.md#aud-17) |
+| audiobooks-7 | high | /audiobooks is a settings page, not somewhere to listen, and it offers iPhone users nothing | [APP-09](APP.md#app-09), [APP-10](APP.md#app-10), [APP-11](APP.md#app-11), [APP-12](APP.md#app-12), AUD-07, AUD-08, AUD-12 |
+| audiobooks-9 | medium | Audiobook merge deletes the source files without checking the output, and pulls files out from under listeners | BOOK-26, [SAFE-06](SAFE.md#safe-06) |
 | backend-1 | medium | Any signed-in account can make the server walk and list any directory on the host | [SEC-01](SEC.md#sec-01), [SEC-12](SEC.md#sec-12) |
 | backend-2 | medium | API permissions don't match the product: about 80 staff routes are open to requester/readonly users on the LAN | [SEC-02](SEC.md#sec-02), [SEC-10](SEC.md#sec-10) |
 | backend-3 | low | Requester-level accounts can make the server send notification requests to internal hosts (SSRF) | [SEC-13](SEC.md#sec-13) |
@@ -25,42 +17,18 @@ _Every audit finding (2026-10-08) and UI walkthrough note, and the roadmap task(
 | backend-8 | medium | The recycle bin quietly turns into permanent delete, and its 50 GB default cap purges a single 4K remux within an hour | [SAFE-07](SAFE.md#safe-07), [SAFE-08](SAFE.md#safe-08), [SAFE-16](SAFE.md#safe-16), [SAFE-17](SAFE.md#safe-17) |
 | backend-9 | medium | Background work is untracked goroutines: one panic restarts the app, and 'Search now' reports nothing | [ACQ-15](ACQ.md#acq-15), [ACQ-19](ACQ.md#acq-19), [BE-02](BE.md#be-02), [BE-07](BE.md#be-07), [BE-08](BE.md#be-08), [BE-09](BE.md#be-09), [BE-10](BE.md#be-10), [OBS-03](OBS.md#obs-03), [OBS-06](OBS.md#obs-06), [OBS-20](OBS.md#obs-20) |
 | backend-10 | low | SQLite: deferred read-then-write transactions hit SQLITE_BUSY, and database errors fail open in safety checks | [BE-04](BE.md#be-04), [BE-05](BE.md#be-05) |
-| backend-11 | medium | Startup book de-duplication deletes audiobook versions and orphans everyone's listening progress | [BOOK-01](BOOK.md#book-01), [BOOK-10](BOOK.md#book-10), [BOOK-11](BOOK.md#book-11), [BOOK-12](BOOK.md#book-12) |
 | backend-12 | low | When the download client is down, the app shows 'nothing downloading' and keeps grabbing | [ACQ-22](ACQ.md#acq-22), [ACQ-23](ACQ.md#acq-23) |
 | backend-13 | medium | Session expiry or revocation leaves the app broken until a manual reload; sessions hard-expire every 30 days | [FE-02](FE.md#fe-02), [SEC-14](SEC.md#sec-14) |
 | backend-14 | medium | No Plex library refresh after import, upgrade, rename, delete or convert | [PLEX-04](PLEX.md#plex-04), [PLEX-05](PLEX.md#plex-05), [REQ-15](REQ.md#req-15) |
 | backend-15 | medium | Download identity rests on fuzzy title matching in three separately maintained normalizers | [ACQ-21](ACQ.md#acq-21), [ACQ-24](ACQ.md#acq-24), [ACQ-25](ACQ.md#acq-25) |
 | backend-16 | low | Critical file paths (import replacement, delete, upgrade) and route authorization have almost no tests | [BE-03](BE.md#be-03), [BE-11](BE.md#be-11), [BE-12](BE.md#be-12), [SAFE-07](SAFE.md#safe-07), [SEC-02](SEC.md#sec-02) |
 | backend-17 | low | ARRMADA_BASE_URL is only half implemented, so setting it gives a blank app | [CFG-08](CFG.md#cfg-08) |
-| books-1 | high | Requests are linked by catalogue key, so any re-key cuts them off permanently: no 'ready' notification, never 'Available', stuck in 'Searching' | [BOOK-03](BOOK.md#book-03), [BOOK-09](BOOK.md#book-09) |
-| books-2 | high | Duplicate key drops everything after ':' / ' (' / ' - ', so same-author books sharing a prefix count as one: can't add, shown 'In library', merged automatically | [BOOK-01](BOOK.md#book-01), [BOOK-02](BOOK.md#book-02), [BOOK-11](BOOK.md#book-11), [BOOK-12](BOOK.md#book-12) |
-| books-3 | high | A wanted book gets two automatic searches and is then dropped; MAM has no RSS path; the UI still says 'Arrmada is searching' | [BOOK-04](BOOK.md#book-04), [BOOK-07](BOOK.md#book-07), [BOOK-08](BOOK.md#book-08), [BOOK-18](BOOK.md#book-18) |
-| books-4 | medium | The book RSS matcher is still the substring logic the search path was fixed to avoid ('It' matches 'The Institute', 'Dune' matches 'Dune Messiah') | [BOOK-05](BOOK.md#book-05) |
-| books-5 | medium | Release-to-book matching drops non-ASCII characters and splits apostrophes, so accent or apostrophe differences mean a book never matches | [BOOK-06](BOOK.md#book-06), [BOOK-15](BOOK.md#book-15) |
-| books-6 | medium | Requesters can't choose ebook or audiobook, and once one format exists they can't request the other | [BOOK-13](BOOK.md#book-13), [BOOK-14](BOOK.md#book-14) |
-| books-7 | medium | Ebooks only reach devices as a browser download: no OPDS, no Send-to-Kindle, and the Audiobookshelf-compatible server is audio-only | [APP-19](APP.md#app-19), [AUD-18](AUD.md#aud-18), [BOOK-22](BOOK.md#book-22), [BOOK-23](BOOK.md#book-23), [BOOK-24](BOOK.md#book-24) |
-| books-8 | medium | No author monitoring or new-release detection; authors aren't entities and the author page guesses which author is meant by name | [BOOK-19](BOOK.md#book-19), [BOOK-20](BOOK.md#book-20), [BOOK-21](BOOK.md#book-21) |
-| books-9 | medium | No scheduled metadata refresh: books from 'Add author' or 'Add missing in series' stay without descriptions, genres or series | [BOOK-17](BOOK.md#book-17) |
+| books-7 | medium | Ebooks only reach devices as a browser download: no OPDS, no Send-to-Kindle, and the Audiobookshelf-compatible server is audio-only | [APP-19](APP.md#app-19), AUD-18, BOOK-22, BOOK-23, BOOK-24 |
 | books-10 | medium | Requester accounts can walk any server directory through manual-import listing, and can trigger all-indexer searches | [SEC-01](SEC.md#sec-01), [SEC-02](SEC.md#sec-02) |
 | books-11 | low | Book page links every book to Open Library, including Hardcover and Google Books keys; copy still says Open Library | [COPY-11](COPY.md#copy-11), [COPY-15](COPY.md#copy-15) |
-| books-12 | medium | Admin Books screens are a wall of buttons: up to 9 header controls that don't wrap, 9 toolbar actions on the detail page, hover-only card actions | [BOOK-25](BOOK.md#book-25) |
-| books-13 | medium | No language preference: MAM language codes are ignored when picking an automatic grab | [BOOK-16](BOOK.md#book-16) |
 | books-14 | low | Books Discover skips the always-on adult filter used on every other Discover surface | [SEC-05](SEC.md#sec-05) |
-| convert-1 | high | Transient failures retry in a hot loop with no backoff (scratch full, library disk full) | [CONV-01](CONV.md#conv-01), [CONV-03](CONV.md#conv-03) |
-| convert-2 | high | The 'recycle bin' safety net deletes 4K originals within the hour, and a conversion can't be undone | [CONV-02](CONV.md#conv-02), [CONV-06](CONV.md#conv-06), [CONV-08](CONV.md#conv-08), [CONV-09](CONV.md#conv-09), [CONV-10](CONV.md#conv-10) |
-| convert-3 | medium | Quality upgrades can undo conversions: the shrunken file looks like a bitrate downgrade | [CONV-20](CONV.md#conv-20) |
-| convert-4 | medium | Dolby Vision is removed without the UI ever saying so, and the headline copy overclaims | [CONV-05](CONV.md#conv-05), [CONV-12](CONV.md#conv-12), [CONV-15](CONV.md#conv-15), [CONV-29](CONV.md#conv-29) |
-| convert-5 | medium | No per-file plan before converting and no record of what was done after | [CONV-06](CONV.md#conv-06), [CONV-11](CONV.md#conv-11), [CONV-12](CONV.md#conv-12), [CONV-13](CONV.md#conv-13) |
-| convert-6 | medium | 'Convert now' waits behind a frozen auto job despite promising it starts right away | [CONV-14](CONV.md#conv-14) |
-| convert-7 | medium | Multi-night CPU encodes lose all progress on any restart, and there is no time forecast | [CFG-07](CFG.md#cfg-07), [CONV-22](CONV.md#conv-22), [CONV-27](CONV.md#conv-27), [CONV-28](CONV.md#conv-28) |
-| convert-8 | medium | Quality gate is weaker than 'looks the same': mean SSIM 0.97 over 60 seconds, no full-file integrity check | [CONV-05](CONV.md#conv-05), [CONV-17](CONV.md#conv-17), [CONV-19](CONV.md#conv-19) |
-| convert-9 | medium | A forced-only .srt sidecar causes the full PGS track to be dropped, and forced image subs are dropped too | [CONV-04](CONV.md#conv-04) |
-| convert-10 | medium | Non-default movie versions are invisible to Convert (and to the ideal-file check) | [CONV-24](CONV.md#conv-24) |
-| convert-11 | medium | Plex isn't told about swapped files, and Convert is silent outside its own page | [CONV-21](CONV.md#conv-21), [OBS-18](OBS.md#obs-18), [PLEX-04](PLEX.md#plex-04), [PLEX-05](PLEX.md#plex-05) |
-| convert-12 | medium | Device compatibility is guesswork even though Insights already knows what each player direct-plays | [CONV-05](CONV.md#conv-05), [CONV-25](CONV.md#conv-25), [CONV-26](CONV.md#conv-26) |
-| convert-13 | low | Heavy side steps and the final swap bypass the 'gentle and careful' guarantees | [CONV-07](CONV.md#conv-07), [CONV-18](CONV.md#conv-18) |
-| convert-14 | low | Black-bar crop is on by default for ~2% savings, and can permanently cut picture from brief open-matte shots | [CONV-05](CONV.md#conv-05), [CONV-16](CONV.md#conv-16) |
-| convert-15 | low | Smaller polish gaps: hidden settings, misleading indicators, stale docs | [CONV-05](CONV.md#conv-05), [CONV-09](CONV.md#conv-09), [CONV-23](CONV.md#conv-23) |
+| convert-7 | medium | Multi-night CPU encodes lose all progress on any restart, and there is no time forecast | [CFG-07](CFG.md#cfg-07), CONV-22, CONV-27, CONV-28 |
+| convert-11 | medium | Plex isn't told about swapped files, and Convert is silent outside its own page | CONV-21, [OBS-18](OBS.md#obs-18), [PLEX-04](PLEX.md#plex-04), [PLEX-05](PLEX.md#plex-05) |
 | discover-1 | high | No request management page, and admins are never told a request is waiting | [REQ-03](REQ.md#req-03), [REQ-05](REQ.md#req-05), [REQ-07](REQ.md#req-07) |
 | discover-2 | high | Series requests grab every season; Plex sign-ins auto-approve by default; no quotas; request is one hover click | [REQ-09](REQ.md#req-09), [REQ-10](REQ.md#req-10), [REQ-11](REQ.md#req-11), [REQ-12](REQ.md#req-12), [REQ-13](REQ.md#req-13), [REQ-14](REQ.md#req-14) |
 | discover-3 | low | Subscribers ('You're on the list') never see the request they joined | [REQ-03](REQ.md#req-03), [REQ-06](REQ.md#req-06) |
@@ -174,7 +142,6 @@ _Every audit finding (2026-10-08) and UI walkthrough note, and the roadmap task(
 | product-8 | medium | Navigation and setup are scattered: Plex is connected inside Insights, admin alerts live in Insights, and Activity is split across three pages | [ACQ-26](ACQ.md#acq-26), [CFG-15](CFG.md#cfg-15), [CFG-16](CFG.md#cfg-16), [CFG-18](CFG.md#cfg-18), [FE-16](FE.md#fe-16), [FE-28](FE.md#fe-28), [OBS-10](OBS.md#obs-10), [OBS-11](OBS.md#obs-11), [OBS-16](OBS.md#obs-16) |
 | product-9 | medium | The setup wizard stops before indexers and Plex; next steps are plain text, not links | [CFG-21](CFG.md#cfg-21), [CFG-22](CFG.md#cfg-22), [CFG-23](CFG.md#cfg-23), [CFG-24](CFG.md#cfg-24), [OBS-04](OBS.md#obs-04) |
 | product-10 | medium | 'Searching…' pulses forever, even though the backend knows when it last searched and how many tries came up empty | [ACQ-15](ACQ.md#acq-15), [ACQ-16](ACQ.md#acq-16), [ACQ-18](ACQ.md#acq-18), [ACQ-19](ACQ.md#acq-19), [ACQ-20](ACQ.md#acq-20) |
-| product-11 | medium | The ebook journey ends at 'Download EPUB': no OPDS feed, Send-to-Kindle or reader, and no format choice when requesting | [BOOK-13](BOOK.md#book-13), [BOOK-14](BOOK.md#book-14), [BOOK-22](BOOK.md#book-22), [BOOK-23](BOOK.md#book-23), [BOOK-24](BOOK.md#book-24) |
 | product-12 | low | History is the barest page in the app: imports only, no dates, no links, no filters | [ACQ-26](ACQ.md#acq-26), [ACQ-27](ACQ.md#acq-27) |
 | product-13 | medium | Stale or dishonest UI copy across the app | [COPY-02](COPY.md#copy-02), [COPY-03](COPY.md#copy-03), [COPY-08](COPY.md#copy-08), [COPY-09](COPY.md#copy-09), [COPY-10](COPY.md#copy-10) |
 | product-14 | medium | No way for requesters to report a problem (bad audio, out-of-sync subtitles, wrong file) | [REQ-22](REQ.md#req-22), [REQ-23](REQ.md#req-23) |
@@ -206,21 +173,7 @@ _Every audit finding (2026-10-08) and UI walkthrough note, and the roadmap task(
 | series-13 | low | The detail endpoint parses the whole download queue once per missing episode, every 3 seconds; History never refreshes | [SER-18](SER.md#ser-18) |
 | series-14 | low | The series upgrade sweep only sees about 100 recent results and only single-episode releases | [SER-22](SER.md#ser-22) |
 | series-15 | low | The 'Metadata not configured' banner tells users to set an env var and restart | [COPY-02](COPY.md#copy-02) |
-| subtitles-1 | high | With OpenSubtitles configured, the AI fallback never runs: no-match and quota-exhausted files get nothing, forever | [SUB-01](SUB.md#sub-01), [SUB-12](SUB.md#sub-12), [SUB-22](SUB.md#sub-22) |
-| subtitles-2 | high | Forced (foreign-parts-only) subtitles are treated as full subtitles everywhere | [SUB-03](SUB.md#sub-03), [SUB-07](SUB.md#sub-07), [SUB-09](SUB.md#sub-09), [SUB-33](SUB.md#sub-33), [SUB-34](SUB.md#sub-34) |
-| subtitles-3 | medium | After a movie upgrade, the old release's sidecar counts as coverage for the new file, which Plex can't match | [SUB-04](SUB.md#sub-04), [SUB-05](SUB.md#sub-05), [SUB-10](SUB.md#sub-10) |
-| subtitles-4 | high | No sync quality control: non-hash downloads are taken blindly and the 'Health' column is a permanent stub | [SUB-11](SUB.md#sub-11), [SUB-17](SUB.md#sub-17), [SUB-18](SUB.md#sub-18), [SUB-19](SUB.md#sub-19), [SUB-22](SUB.md#sub-22) |
-| subtitles-5 | medium | Redo can't fix a bad download, and redoes every language | [SUB-11](SUB.md#sub-11), [SUB-20](SUB.md#sub-20), [SUB-28](SUB.md#sub-28) |
-| subtitles-6 | medium | Whisper translate path forces the wrong source language and fails on untagged English audio | [SUB-06](SUB.md#sub-06), [SUB-21](SUB.md#sub-21) |
-| subtitles-7 | medium | Single in-memory first-in-first-out queue: new imports wait behind days of AI backlog, and the queue is lost on restart | [SUB-02](SUB.md#sub-02), [SUB-23](SUB.md#sub-23), [SUB-25](SUB.md#sub-25) |
-| subtitles-8 | medium | Failures are shown as 'skipped — nothing produced'; reasons live only in a 500-line in-memory log | [SUB-11](SUB.md#sub-11), [SUB-14](SUB.md#sub-14), [SUB-24](SUB.md#sub-24) |
-| subtitles-9 | medium | UI and backend copy is stale or misleading ('soon' AI, stripping, Health) | [COPY-05](COPY.md#copy-05), [SUB-13](SUB.md#sub-13), [SUB-32](SUB.md#sub-32), [SUB-34](SUB.md#sub-34) |
-| subtitles-10 | medium | Language support is a hard-coded 16-language table, split across three tables that disagree | [SUB-03](SUB.md#sub-03), [SUB-08](SUB.md#sub-08), [SUB-09](SUB.md#sub-09), [SUB-31](SUB.md#sub-31), [SUB-33](SUB.md#sub-33), [SUB-35](SUB.md#sub-35) |
-| subtitles-11 | medium | Provider status is fake-green: no credential test, wrong passwords fail silently, 429 pauses downloads for 24h | [SUB-13](SUB.md#sub-13) |
-| subtitles-12 | medium | No interactive search, no per-sidecar management, no subtitles on detail pages, no movie search box | [SUB-26](SUB.md#sub-26), [SUB-27](SUB.md#sub-27), [SUB-28](SUB.md#sub-28), [SUB-29](SUB.md#sub-29) |
-| subtitles-13 | low | Legacy endpoints bypass the queue and let any signed-in user (including requesters) trigger full-library walks | [SUB-16](SUB.md#sub-16) |
-| subtitles-14 | low | Nothing tells Plex a new subtitle exists | [SUB-30](SUB.md#sub-30) |
-| subtitles-15 | low | Changing kept languages leaves Overview and Library coverage stale for up to 6 hours | [SUB-15](SUB.md#sub-15) |
+| subtitles-9 | medium | UI and backend copy is stale or misleading ('soon' AI, stripping, Health) | [COPY-05](COPY.md#copy-05), SUB-13, SUB-32, SUB-34 |
 | system-1 | high | 'Save settings' always fails: the whole GET payload, including read-only fields, goes to a decoder that rejects unknown fields | [CFG-01](CFG.md#cfg-01), [CFG-14](CFG.md#cfg-14) |
 | system-2 | high | No backups, no restore, no rollback, and the whole household's history is in one SQLite file | [CFG-05](CFG.md#cfg-05), [CFG-06](CFG.md#cfg-06), [SAFE-01](SAFE.md#safe-01), [SAFE-11](SAFE.md#safe-11), [SAFE-12](SAFE.md#safe-12), [SAFE-13](SAFE.md#safe-13), [SAFE-15](SAFE.md#safe-15), [SAFE-18](SAFE.md#safe-18) |
 | system-3 | high | The folder legacy ARRMADA_LIBRARY_DIR points at (the managed Docker volume) still holds the recycle bin and is what two checks measure | [CFG-19](CFG.md#cfg-19), [CFG-20](CFG.md#cfg-20), [OBS-01](OBS.md#obs-01), [SAFE-16](SAFE.md#safe-16), [SAFE-17](SAFE.md#safe-17) |

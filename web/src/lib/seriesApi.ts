@@ -62,5 +62,4 @@ export const seriesApi = {
   deleteEpisodeFile: (id: number, season: number, episode: number) =>
     req<void>(`/api/v1/series/${id}/seasons/${season}/episodes/${episode}/file`, { method: "DELETE" }),
 
-  // Books
 };

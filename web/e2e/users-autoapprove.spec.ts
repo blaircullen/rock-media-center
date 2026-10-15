@@ -14,11 +14,8 @@ test.describe("admin", () => {
     await expect(checks.getByRole("checkbox", { name: "Series" })).toBeChecked();
     await checks.getByRole("checkbox", { name: "Series" }).uncheck();
     await expect.poll(() => api.callsTo("PUT", "/api/v1/users/5").length).toBe(1);
-    await checks.getByRole("checkbox", { name: "Books" }).uncheck();
-    await expect.poll(() => api.callsTo("PUT", "/api/v1/users/5").length).toBe(2);
     expect(api.callsTo("PUT", "/api/v1/users/5").map((c) => c.body)).toEqual([
-      { auto_approve_movie: true, auto_approve_series: false, auto_approve_book: true },
-      { auto_approve_movie: true, auto_approve_series: false, auto_approve_book: false },
+      { auto_approve_movie: true, auto_approve_series: false },
     ]);
     await expect(page.getByRole("button", { name: "Save changes" })).toHaveCount(0);
 

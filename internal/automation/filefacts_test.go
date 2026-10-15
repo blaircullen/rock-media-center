@@ -1,7 +1,6 @@
 package automation
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -9,20 +8,6 @@ import (
 	"github.com/tristenlammi/arrmada/internal/parser"
 	"github.com/tristenlammi/arrmada/internal/quality"
 )
-
-// fakeFacts is a FileFactsSource over a fixed map, gated on size like the real one.
-type fakeFacts map[string]struct {
-	size  int64
-	facts quality.FileFacts
-}
-
-func (f fakeFacts) FactsForPath(_ context.Context, path string, size int64) (quality.FileFacts, bool) {
-	e, ok := f[path]
-	if !ok || e.size != size {
-		return quality.FileFacts{}, false
-	}
-	return e.facts, true
-}
 
 // A library-scanned file has no recorded release, so its baseline is built from the
 // cached media info — HDR, Atmos and lossless audio included, or it never meets an HDR
@@ -52,30 +37,5 @@ func TestUpgradeBaselineCarriesProbedFormats(t *testing.T) {
 	v.SourceRelease = "Bambi.1942.2160p.BluRay.x265-GRP"
 	if got := upgradeBaseline(m, v); got != v.SourceRelease {
 		t.Errorf("baseline = %q, want the recorded release", got)
-	}
-}
-
-// The movie sweep reads Convert's facts for a version's file — only while they describe
-// the size the database has for it — and nothing at all without a source.
-func TestCurrentMovieFileFacts(t *testing.T) {
-	m := movies.Movie{Title: "Film", Year: 2021, Runtime: 120}
-	v := movies.Version{IsDefault: true, HasFile: true, FilePath: "/m/Film.mkv", SourceRelease: "Film.2021.1080p.BluRay.x264-GRP",
-		File: &movies.MovieFile{Path: "/m/Film.mkv", SizeBytes: 5 << 30}}
-	c := &Coordinator{}
-	if cur := c.currentMovieFile(context.Background(), m, v); cur.Facts != nil || cur.Release != v.SourceRelease || cur.RuntimeMin != 120 || cur.SizeGB != 5 {
-		t.Fatalf("without a source: %+v", cur)
-	}
-	c.SetFileFacts(fakeFacts{"/m/Film.mkv": {5 << 30, quality.FileFacts{Resolution: "1080p", Codec: "av1"}}})
-	if cur := c.currentMovieFile(context.Background(), m, v); cur.Facts == nil || cur.Facts.Codec != "av1" {
-		t.Fatalf("with a matching analysis: %+v", cur)
-	}
-	if cur := c.CurrentMovieFile(context.Background(), movies.Movie{Title: "Film", HasFile: true, MovieFilePath: "/m/Film.mkv",
-		SourceRelease: v.SourceRelease, File: v.File}); cur.Facts == nil {
-		t.Error("the profile-change prompt must see the same facts as the sweep")
-	}
-	// The database says a different size: the analysis is of some other file.
-	v.File.SizeBytes = 6 << 30
-	if cur := c.currentMovieFile(context.Background(), m, v); cur.Facts != nil {
-		t.Errorf("a size mismatch must fall back to the release name: %+v", cur.Facts)
 	}
 }

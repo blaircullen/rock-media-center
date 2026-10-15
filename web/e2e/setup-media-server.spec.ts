@@ -9,7 +9,7 @@ import { jellyfinSave, jellyfinTest } from "./fixtures/media";
 // checkbox; Jellyfin's address and key are tested before they're saved. Runs at 1440 px
 // (desktop) and 375 px (phone): nothing on the step scrolls sideways.
 
-const blank = { movies: "", tv: "", ebooks: "", audiobooks: "", music: "", downloads: "" };
+const blank = { movies: "", tv: "", music: "", downloads: "" };
 const fresh = {
   ...configuredSetup, needed: true, complete: false, tmdb_configured: false, libraries_chosen: false, keys: freshKeys,
   library: blank, running: blank, suggestions: {},

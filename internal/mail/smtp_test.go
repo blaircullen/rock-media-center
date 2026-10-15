@@ -30,7 +30,7 @@ func startFake(t *testing.T, o mailtest.Options) *mailtest.Server {
 }
 
 func cfgFor(s *mailtest.Server, security, user string) Config {
-	return Config{Host: s.Host, Port: s.Port, Security: security, Username: user, From: "Arrmada <books@example.com>"}
+	return Config{Host: s.Host, Port: s.Port, Security: security, Username: user, From: "Arrmada <arrmada@example.com>"}
 }
 
 // A message with an attachment arrives as multipart/mixed: the text part, then the file
@@ -40,7 +40,7 @@ func TestSendAttachmentOverSTARTTLS(t *testing.T) {
 	payload := bytes.Repeat([]byte("Les Misérables, every chapter. "), 400) // ~12 KB: several base64 lines
 	opened := false
 	msg := Message{
-		To: "reader_42@kindle.com", Subject: "Les Misérables", Body: "Sent from Arrmada.\nEnjoy.",
+		To: "reader_42@example.org", Subject: "Les Misérables", Body: "Sent from Arrmada.\nEnjoy.",
 		Attachment: &Attachment{Name: "Les Misérables - Victor Hugo.epub", ContentType: "application/epub+zip", Size: int64(len(payload)),
 			Open: func() (io.ReadCloser, error) { opened = true; return io.NopCloser(bytes.NewReader(payload)), nil }},
 	}
@@ -55,7 +55,7 @@ func TestSendAttachmentOverSTARTTLS(t *testing.T) {
 		t.Fatalf("server got %d messages, want 1", len(got))
 	}
 	m := got[0]
-	if !m.TLS || m.User != "owner" || m.From != "books@example.com" || len(m.To) != 1 || m.To[0] != "reader_42@kindle.com" {
+	if !m.TLS || m.User != "owner" || m.From != "arrmada@example.com" || len(m.To) != 1 || m.To[0] != "reader_42@example.org" {
 		t.Fatalf("envelope = %+v", m)
 	}
 
@@ -219,7 +219,7 @@ func TestErrorsCarryNoAddressOrPath(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	ok := Config{Host: "smtp.example.com", Port: 587, Security: SecurityStartTLS, From: "books@example.com"}
+	ok := Config{Host: "smtp.example.com", Port: 587, Security: SecurityStartTLS, From: "arrmada@example.com"}
 	if err := ok.Validate(); err != nil {
 		t.Fatalf("valid config: %v", err)
 	}

@@ -176,8 +176,8 @@ func TestRouteAuthz(t *testing.T) {
 	}
 }
 
-// Everything the requester UI (UserLayout: Discover incl. Books, Calendar, My Books,
-// Audiobooks, the notification bell, the account menu, sign-in) calls, traced from
+// Everything the requester UI (UserLayout: Discover, Calendar,
+// the notification bell, the account menu, sign-in) calls, traced from
 // web/src. Each must stay reachable for a requester — if one of these fails, a family
 // account's page breaks.
 var requesterUICalls = []string{
@@ -206,30 +206,7 @@ var requesterUICalls = []string{
 	"GET /api/v1/requests",
 	"POST /api/v1/requests",
 	"DELETE /api/v1/requests/1",
-	// Books Discover
-	"GET /api/v1/books/discover/browse/trending",
-	"GET /api/v1/books/discover/recommended",
-	"GET /api/v1/books/discover/search",
-	"GET /api/v1/books/discover/authors",
-	"GET /api/v1/books/discover/authors/OL1A/works",
-	"GET /api/v1/books/discover/subjects/romance",
-	"GET /api/v1/books/discover/similar",
-	"GET /api/v1/books/discover/detail",
-	// Calendar, My Books
 	"GET /api/v1/calendar",
-	"GET /api/v1/me/books",
-	"GET /api/v1/books/1/ebook",
-	"GET /api/v1/books/1/audiobook",
-	"GET /api/v1/books/1/cover-image",
-	// Audiobooks (the "You" tab)
-	"GET /api/v1/me/audio",
-	"PUT /api/v1/me/audio/password",
-	"DELETE /api/v1/me/audio/password",
-	"GET /api/v1/me/audio/listening",
-	"POST /api/v1/me/audio/accept",
-	"DELETE /api/v1/me/audio/devices/lissen",
-	"GET /api/v1/me/audio/history",
-	"POST /api/v1/me/audio/restore",
 	// Notification bell, account menu, push
 	"GET /api/v1/me/notifications",
 	"POST /api/v1/me/notifications/1/read",
@@ -264,10 +241,9 @@ func TestRequesterGetsForbiddenFromStaffAPIs(t *testing.T) {
 	rt := testRouter(t, true)
 	for _, path := range []string{
 		"/api/v1/queue", "/api/v1/downloads", "/api/v1/history", "/api/v1/movies",
-		"/api/v1/movies/1/releases", "/api/v1/series/1/releases", "/api/v1/books/1/releases",
+		"/api/v1/movies/1/releases", "/api/v1/series/1/releases",
 		"/api/v1/indexers", "/api/v1/indexers/prowlarr", "/api/v1/downloadclients",
-		"/api/v1/settings", "/api/v1/convert/logs", "/api/v1/subtitles/logs",
-		"/api/v1/library/fit", "/api/v1/books/1", "/api/v1/movies/lookup", "/api/v1/books/authors/images",
+		"/api/v1/settings", "/api/v1/movies/lookup",
 		"/api/v1/health/system", "/api/v1/movies/1/manualimport",
 	} {
 		for _, role := range []auth.Role{auth.RoleRequester, auth.RoleReadonly} {

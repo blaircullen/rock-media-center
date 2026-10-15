@@ -17,25 +17,21 @@ import (
 	"time"
 
 	// The scratch image carries no tzdata package, so every named zone failed to load
-	// and time.Now() silently stayed UTC — which made the convert encode window run on
-	// UTC hours while the user was entering local ones. A "01:00-03:30" overnight window
-	// became 11:00-13:30 local: nothing ran overnight, and a parked worker logs nothing,
-	// so it looked like scheduling was simply broken. Embedding the database (~450 KB)
-	// makes TZ=Australia/Sydney and friends resolve without an OS package.
+	// and time.Now() silently stayed UTC, putting scheduled times (the nightly backup hour,
+	// calendar days) on UTC hours while the user was entering local ones. Embedding the
+	// database (~450 KB) makes TZ=Australia/Sydney and friends resolve without an OS
+	// package.
 	_ "time/tzdata"
 
 	"github.com/tristenlammi/arrmada/internal/apikeys"
 	"github.com/tristenlammi/arrmada/internal/applog"
 	"github.com/tristenlammi/arrmada/internal/attention"
-	"github.com/tristenlammi/arrmada/internal/audioserver"
 	"github.com/tristenlammi/arrmada/internal/auth"
 	"github.com/tristenlammi/arrmada/internal/automation"
 	"github.com/tristenlammi/arrmada/internal/backup"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/buildinfo"
 	"github.com/tristenlammi/arrmada/internal/config"
 	"github.com/tristenlammi/arrmada/internal/connstatus"
-	"github.com/tristenlammi/arrmada/internal/convert"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/eventbus"
 	"github.com/tristenlammi/arrmada/internal/flaresolverr"
@@ -48,7 +44,6 @@ import (
 	"github.com/tristenlammi/arrmada/internal/jobs"
 	"github.com/tristenlammi/arrmada/internal/library"
 	"github.com/tristenlammi/arrmada/internal/libroots"
-	"github.com/tristenlammi/arrmada/internal/listening"
 	"github.com/tristenlammi/arrmada/internal/metadata"
 	"github.com/tristenlammi/arrmada/internal/movies"
 	"github.com/tristenlammi/arrmada/internal/music"
@@ -65,7 +60,6 @@ import (
 	"github.com/tristenlammi/arrmada/internal/series"
 	"github.com/tristenlammi/arrmada/internal/settings"
 	"github.com/tristenlammi/arrmada/internal/store"
-	"github.com/tristenlammi/arrmada/internal/subtitles"
 	"github.com/tristenlammi/arrmada/internal/updatecheck"
 	"github.com/tristenlammi/arrmada/internal/xem"
 )
@@ -155,10 +149,6 @@ func main() {
 	// the Logs page still has history after a restart — which is exactly when you go
 	// looking, since an update or a crash is usually what sent you there.
 	logPath := filepath.Join(cfg.DataDir, "logs", "arrmada.log.jsonl")
-	// Once, before the old lines are read back: take book, author and search details out
-	// of request lines earlier versions wrote. Reported after Persist, so the warning
-	// lands in the log it's about.
-	scrubErr := scrubLegacyLogs(logPath)
 	restored := logRing.Restore(logPath)
 	stopLogFile, logFileErr := logRing.Persist(logPath)
 	if logFileErr != nil {
@@ -183,9 +173,6 @@ func main() {
 	if restored > 0 {
 		log.Info("restored logs from the previous run", "lines", restored, "path", logPath)
 	}
-	if scrubErr != nil {
-		log.Warn("couldn't scrub audiobook details from older log files; will retry next start", "err", scrubErr)
-	}
 	logEnvironment(log, cfg)
 
 	st, err := store.OpenWith(cfg.DataDir, store.Options{
@@ -208,16 +195,6 @@ func main() {
 		log.Error("failed to load settings", "err", err)
 		os.Exit(1)
 	}
-	// One-time: converted files used to have " AV1" / " x265" appended to their recorded
-	// release, which read back as the old codec and hid the group. Rewrite those in place.
-	if _, err := convert.RepairCodecStamps(context.Background(), st.DB(), settingsSvc, log); err != nil {
-		log.Warn("convert: codec stamp repair failed", "err", err)
-	}
-	// One-time: files converted before their pre-conversion baseline was recorded get it
-	// from the Convert ledger, so upgrades can't undo those conversions either.
-	if _, err := convert.BackfillConvertedFrom(context.Background(), st.DB(), settingsSvc, log); err != nil {
-		log.Warn("convert: pre-conversion baseline backfill failed", "err", err)
-	}
 	// One-time: a download leaving the client used to blocklist its release, and one update
 	// failed over hundreds of long-gone grabs at once. Those rows block good releases.
 	if _, err := automation.PurgeVanishedBlocks(context.Background(), st.DB(), settingsSvc, modLog(log, "automation")); err != nil {
@@ -225,8 +202,8 @@ func main() {
 	}
 
 	bus := eventbus.New(log)
-	// What must happen after an import (Convert and Subtitles reindexing, the requester's
-	// "ready", the audiobook catalogue) is written here with the import and run until it
+	// What must happen after an import (the requester's "ready", media server scans) is
+	// written here with the import and run until it
 	// succeeds. The bus above is only for the UI and admin alerts. Consumers are
 	// registered further down, before the scheduler starts.
 	box := outbox.New(st.DB(), log)
@@ -299,11 +276,9 @@ func main() {
 	// environment's folders: they're what a blank setting falls back to.
 	roots := libroots.New(settingsSvc.Get, cfg)
 	rootFuncs := library.RootFuncs{
-		Movie:     libroots.Func(roots.Movies),
-		TV:        libroots.Func(roots.TV),
-		Ebook:     libroots.Func(roots.Ebooks),
-		Audiobook: libroots.Func(roots.Audiobooks),
-		Music:     libroots.Func(roots.Music),
+		Movie: libroots.Func(roots.Movies),
+		TV:    libroots.Func(roots.TV),
+		Music: libroots.Func(roots.Music),
 	}
 	// SABnzbd files by Arrmada's categories (the movie one is configurable) and, once a
 	// finished job is imported, has its leftover folder deleted only inside Arrmada's
@@ -318,7 +293,6 @@ func main() {
 	})
 	httpapi.LogLibraryDirs(context.Background(), roots, cfg, log)
 	logFolders(log, roots.Config(context.Background()),
-		settingsSvc.GetBool(context.Background(), settings.KeyModuleBooks, true),
 		settingsSvc.GetBool(context.Background(), settings.KeyModuleMusic, settings.ModuleMusicDefault))
 	// Catalogue answers are kept in SQLite across restarts and served stale while a
 	// refresh runs, so Discover opens instantly even right after a deploy.
@@ -331,12 +305,6 @@ func main() {
 	omdb := metadata.NewOMDbFunc(keyStore.Func("omdb"))
 	omdb.SetDiskCache(diskCache) // ratings for a week, so the free key's daily quota lasts
 	omdb.SetLogger(log)
-	// Books: Open Library (with a Google Books fallback) out of the box; Hardcover takes
-	// over the moment a key is in Settings, with Open Library still reachable on request.
-	olProvider := metadata.NewOpenLibrary()
-	hardcover := metadata.NewHardcoverFunc(keyStore.Func("hardcover"), olProvider)
-	hardcover.SetDiskCache(diskCache)
-	openlib := metadata.NewBookSources(hardcover, metadata.NewBooksWithFallback(olProvider, metadata.NewGoogleBooks()))
 	qualitySvc := quality.NewServiceWith(st.DB(), settingsSvc)
 	// Ranking v2's shadow-mode disagreements are logged as well as recorded.
 	qualitySvc.SetLogger(log)
@@ -374,14 +342,7 @@ func main() {
 	seriesSvc.SetMonitorDefaultFunc(func(ctx context.Context) string {
 		return settingsSvc.Get(ctx, series.KeyMonitorDefault, series.DefaultMonitorPreset)
 	})
-	booksSvc := books.NewService(st.DB(), openlib, modLog(log, "books"))
-	// Hardcover is the catalogue when a key is set; anything still on Open Library keys
-	// is re-matched without being asked. Nothing here merges book rows any more: the old
-	// boot-time fold deleted prefix siblings ('Mistborn: The Final Empire' / 'Mistborn:
-	// Secret History') along with their audio versions and everyone's listening place.
-	// Possible duplicates are flagged on the book's timeline for a person to review.
-	grp.Go("books: catalogue upgrade check", func(ctx context.Context) { booksSvc.MaybeSubmitUpgrade(ctx, jobRunner, "system") })
-	// MusicBrainz needs no key, the way Open Library needs none for books.
+	// MusicBrainz needs no key.
 	musicSvc := music.NewService(st.DB(), metadata.NewMusicBrainz(), modLog(log, "music"))
 	// Music is off by default now (it's a preview), but an install already using it must
 	// not have it switched off underneath it by an upgrade: an unsaved toggle on a library
@@ -451,7 +412,7 @@ func main() {
 	// indexers for monitored-but-missing movies, ranks releases, grabs the best,
 	// and attaches finished imports back to the movie.
 	coordinator := automation.New(movieSvc, indexers, downloads, qualitySvc, st.DB(), bus, modLog(log, "automation"), cfg.DownloadsDir)
-	coordinator.SetOutbox(box) // series and book imports queue their follow-up work
+	coordinator.SetOutbox(box) // series imports queue their follow-up work
 	// Every grab's save path and the free-space check read the downloads folder live.
 	coordinator.SetDownloadsDirFunc(libroots.Func(roots.Downloads))
 	// Movie grabs are filed under the category the movie import sweep reads, whatever a
@@ -541,36 +502,34 @@ func main() {
 	})
 	// Wire the series module into the coordinator: TV downloads land in a separate
 	// category and are hardlinked file-by-file (a season pack yields many episodes).
-	bookImporter := library.NewImporter("", modLog(log, "import"))
-	// This importer places TV episodes, book editions and albums, and scans the book
-	// folders; every folder is resolved on each use, so Settings → Library applies live.
-	bookImporter.SetRootFuncs(rootFuncs)
-	bookImporter.SetBin(bins) // replaced files go to the bins here too
+	mediaImporter := library.NewImporter("", modLog(log, "import"))
+	// This importer places TV episodes and albums; every folder is resolved on each use,
+	// so Settings → Library applies live.
+	mediaImporter.SetRootFuncs(rootFuncs)
+	mediaImporter.SetBin(bins) // replaced files go to the bins here too
 	// Name episode files with their metadata title ("<Series> - SxxEyy - <Episode> - <quality>").
-	bookImporter.SetEpisodeTitleFunc(func(seriesTitle string, year, season, episode int) string {
+	mediaImporter.SetEpisodeTitleFunc(func(seriesTitle string, year, season, episode int) string {
 		return seriesSvc.EpisodeTitleByName(context.Background(), seriesTitle, year, season, episode)
 	})
-	bookImporter.SetSeriesNaming(prefs) // user-configurable series folder / season / episode formats
+	mediaImporter.SetSeriesNaming(prefs) // user-configurable series folder / season / episode formats
 	// A new series folder can carry the show's ids ("Show (2022) {tvdb-12345}", the Plex
 	// recommended scheme); existing folders are reused as they are.
-	bookImporter.SetSeriesIDsFunc(func(seriesTitle string, year int) library.SeriesIDs {
+	mediaImporter.SetSeriesIDsFunc(func(seriesTitle string, year int) library.SeriesIDs {
 		tmdb, tvdb, imdb, _ := seriesSvc.IDsByName(context.Background(), seriesTitle, year)
 		return library.SeriesIDs{TMDB: tmdb, TVDB: tvdb, IMDB: imdb}
 	})
-	coordinator.SetSeries(seriesSvc, bookImporter)
-	// Books share the importer set above; ebooks land in their own category.
-	coordinator.SetBooks(booksSvc)
+	coordinator.SetSeries(seriesSvc, mediaImporter)
 	// Music shares the same importer; albums land in their own category.
 	coordinator.SetMusic(musicSvc)
 	// Switching Music off in Settings stops its searches, imports and manual actions on the
-	// next cycle; Books keeps its old behaviour (the toggle only hides it) for now.
+	// next cycle.
 	coordinator.SetModuleGate(func(ctx context.Context, module string) bool {
 		if module == "music" {
 			return settingsSvc.GetBool(ctx, settings.KeyModuleMusic, settings.ModuleMusicDefault)
 		}
 		return true
 	})
-	// Book file deletion honors the same recycle bin as movies.
+	// File deletes made by the coordinator honor the same recycle bin as movies.
 	coordinator.SetBin(bins)
 	// The stall timeout a profile left at "use the default" falls back to, read each check.
 	coordinator.SetStallDefault(func(ctx context.Context) int {
@@ -579,10 +538,6 @@ func main() {
 	// How many upgrades one sweep may grab (Settings → Downloads), read at each sweep.
 	coordinator.SetUpgradeBudget(func(ctx context.Context) int {
 		return automation.ParseUpgradeBudget(settingsSvc.Get(ctx, automation.KeyUpgradeBudget, ""))
-	})
-	// The languages automatic book grabs accept (Settings → Library), read per search.
-	coordinator.SetBookLanguages(func(ctx context.Context) []string {
-		return automation.ParseBookLanguages(settingsSvc.Get(ctx, automation.KeyBookLanguages, automation.DefaultBookLanguages))
 	})
 	sched.Register("import-completed", 30*time.Second, false, func(ctx context.Context) error {
 		completed, err := downloads.CompletedInCategory(ctx, cfg.DownloadCategory)
@@ -714,42 +669,6 @@ func main() {
 		coordinator.RefreshEndedSeries(ctx)
 		return nil
 	}, scheduler.Label("Re-check ended shows"), scheduler.Description("Once a week, checks whether shows that ended or were cancelled have come back with new episodes."))
-	// Sweep monitored, file-less books and grab the best-format release.
-	sched.Register("search-missing-books", 30*time.Minute, false, func(ctx context.Context) error {
-		coordinator.SearchBooksMissing(ctx)
-		return nil
-	}, scheduler.Label("Search for missing books"), scheduler.Description("Searches the indexers for monitored books missing a wanted edition."))
-	// Fill in catalogue details (description, genres, series, release date, author) for
-	// books added in bulk, and keep the rest fresh: 25 a run, about 100 a day, inside the
-	// Hardcover budget. meta_checked_at makes it restart-safe.
-	sched.Register("refresh-books", 6*time.Hour, false, func(ctx context.Context) error {
-		if !settingsSvc.GetBool(ctx, settings.KeyModuleBooks, true) {
-			return nil
-		}
-		n, skipped, err := booksSvc.RefreshDue(ctx, 25)
-		if skipped != "" {
-			log.Info(fmt.Sprintf("refresh-books: refreshed %d, skipped: %s", n, skipped))
-		} else {
-			log.Info(fmt.Sprintf("refresh-books: refreshed %d", n))
-		}
-		return err
-	}, scheduler.Label("Refresh book details"), scheduler.Description("Fills in descriptions, genres, series and release dates from the book catalogue, a few books at a time, never-refreshed books first. Holds off when most of the day's Hardcover budget is used."))
-	// New books by followed authors: each one's catalogue about once a week, 10 authors a
-	// run, inside the Hardcover budget. works_checked_at makes it restart-safe.
-	releaseJob := authorReleaseJob{
-		check:          booksSvc.CheckAuthorReleases,
-		defaultProfile: func(ctx context.Context) string { return qualitySvc.DefaultProfile(ctx, "book") },
-		emit:           notifySvc.EmitOnce,
-		search:         coordinator.SearchBookNow,
-		log:            log,
-		now:            time.Now,
-	}
-	sched.Register("check-author-releases", 6*time.Hour, false, func(ctx context.Context) error {
-		if !settingsSvc.GetBool(ctx, settings.KeyModuleBooks, true) {
-			return nil
-		}
-		return releaseJob.run(ctx)
-	}, scheduler.Label("Check followed authors for new books"), scheduler.Description("Looks at each followed author's catalogue about once a week and adds their new books, monitored, then searches the ones that are out. The first look at an author only notes what's there. Holds off when most of the day's Hardcover budget is used."))
 	// Sweep monitored albums missing tracks and grab the best release for each.
 	sched.Register("search-missing-music", 30*time.Minute, false, func(ctx context.Context) error {
 		coordinator.SearchMusicMissing(ctx)
@@ -760,20 +679,11 @@ func main() {
 		coordinator.ImportMusicDownloads(ctx)
 		return nil
 	}, scheduler.Label("Import finished music downloads"), scheduler.Description("Moves completed album downloads into the library."))
-	// Import finished ebook downloads (arrmada-books category).
-	sched.Register("import-books", 30*time.Second, false, func(ctx context.Context) error {
-		coordinator.ImportBookDownloads(ctx)
-		return nil
-	}, scheduler.Label("Import finished book downloads"), scheduler.Description("Moves completed ebook and audiobook downloads into the library."))
 	// RSS sync for series: poll indexer feeds for new episodes of running shows.
 	sched.Register("rss-sync-series", 15*time.Minute, false, func(ctx context.Context) error {
 		coordinator.RSSSyncSeries(ctx)
 		return nil
 	}, scheduler.Label("Check indexer feeds for new episodes"), scheduler.Description("Reads each indexer's recent uploads and grabs any wanted episode."))
-	sched.Register("rss-sync-books", 15*time.Minute, false, func(ctx context.Context) error {
-		coordinator.RSSSyncBooks(ctx)
-		return nil
-	}, scheduler.Label("Check indexer feeds for new books"), scheduler.Description("Reads each indexer's recent uploads and grabs any wanted book."))
 	// Look for better releases for episodes that already have a file (upgrades).
 	sched.Register("upgrade-series", 6*time.Hour, false, func(ctx context.Context) error {
 		coordinator.UpgradeSeries(ctx)
@@ -788,7 +698,7 @@ func main() {
 	// Requests module sits on top of Movies/Series: an approval adds the media and
 	// triggers a search through the existing acquisition pipeline. Created before
 	// sched.Start so its sweep is in the snapshot the scheduler launches.
-	requestsSvc := requests.NewService(st.DB(), movieSvc, seriesSvc, booksSvc, coordinator, qualitySvc, bus, notifySvc.AppriseBin(), modLog(log, "requests"))
+	requestsSvc := requests.NewService(st.DB(), movieSvc, seriesSvc, coordinator, qualitySvc, bus, notifySvc.AppriseBin(), modLog(log, "requests"))
 	// Every download whose import keeps failing — the movie importer's retry records and
 	// the series sweep's — read by request cards ("being checked"), the Activity queue's
 	// Finishing stages and the Needs-you feed alike.
@@ -826,23 +736,7 @@ func main() {
 			return requests.Limits{}, err
 		}
 		global := requests.GlobalLimits(func(key string) string { return settingsSvc.Get(ctx, key, "") })
-		return requests.LimitsFrom(global, own.Movies, own.Seasons, own.Books), nil
-	})
-	// Books carried only an author name before authors were rows of their own: link each
-	// to its author (spelling variants together, namesakes with different catalogue keys
-	// apart, an ambiguous name left unlinked). Idempotent; counts only in the log.
-	grp.Go("books: author backfill", func(ctx context.Context) {
-		if _, _, err := booksSvc.BackfillAuthors(ctx); err != nil && ctx.Err() == nil {
-			log.Warn("books: author backfill failed", "err", err)
-		}
-	})
-	// Book requests made before they remembered their library row are linked to it by
-	// title and author, so the ones whose book was re-matched to a new catalogue key
-	// stop showing "Searching" and get their "ready".
-	grp.Go("requests: book link backfill", func(ctx context.Context) {
-		if _, _, err := requestsSvc.BackfillBookIDs(ctx); err != nil {
-			log.Warn("requests: book link backfill failed", "err", err)
-		}
+		return requests.LimitsFrom(global, own.Movies, own.Seasons), nil
 	})
 	// Movies stored before original and alternative titles were kept read them from TMDB,
 	// one every two seconds, so searches and imports match them without a manual refresh.
@@ -869,8 +763,7 @@ func main() {
 			Except: i.ReportedBy, Pref: requests.PrefNewRequest, What: "issue", ID: i.ID,
 		})
 	})
-	// Settles the problems being fixed (a finished subtitle job, a new file whose import
-	// signal was missed, a fix that brought nothing in a week) and re-sends a closed
+	// Settles the problems being fixed (a new file whose import signal was missed, a fix that brought nothing in a week) and re-sends a closed
 	// issue's notices to any reporter an inbox write missed.
 	sched.Register("issues-check", time.Minute, false, issuesSvc.Sweep,
 		scheduler.Label("Follow up reported problems"),
@@ -882,90 +775,13 @@ func main() {
 		return requestsSvc.SweepReadyRequests(ctx)
 	}, scheduler.Label("Tell requesters their request is ready"), scheduler.Description("Catches requests that became available without an import, and lets the requester know."))
 
-	// Subtitles module (Bazarr replacement): grabs external SRT sidecars over the
-	// Movies/Series catalogs via OpenSubtitles.
-	subsProvider := subtitles.NewOpenSubtitlesFunc(keyStore.Func("opensubtitles_api"), keyStore.Func("opensubtitles_username"), keyStore.Func("opensubtitles_password"))
-	subtitlesSvc := subtitles.NewService(st.DB(), movieSvc, seriesSvc, settingsSvc, subsProvider, "ffmpeg", "ffprobe", filepath.Join(cfg.DataDir, "whisper"), modLog(log, "subtitles"))
-	// Replaced and removed sidecars go to the recycle bins, like their videos.
-	subtitlesSvc.SetBin(bins)
-	// A reported problem's subtitles fix resolves once its job has made subtitles. Hooked
-	// up before the worker starts: the queue saved at shutdown runs straight away.
-	issuesSvc.SetSubtitles(subtitleOutcomes{runCtx, subtitlesSvc, log})
-	subtitlesSvc.SetJobDoneHook(subtitleJobDone(runCtx, issuesSvc, log))
-	grp.Loop("subtitles: worker", subtitlesSvc.Run) // subtitle-ensure job worker
-	// The library pass behind the Subtitles Overview/Library pages. The worker runs the
-	// first one at startup; this keeps it from going stale.
-	sched.Register("subtitles-library-scan", 6*time.Hour, false, func(ctx context.Context) error {
-		subtitlesSvc.Rescan(ctx)
-		return nil
-	}, scheduler.Label("Check the library for subtitles"), scheduler.Description("Refreshes which movies and episodes have the subtitles they need."))
-	sched.Register("subtitles-auto-grab", 6*time.Hour, false, func(ctx context.Context) error {
-		subtitlesSvc.AutoGrab(ctx)
-		return nil
-	}, scheduler.Label("Download missing subtitles"), scheduler.Description("Fetches subtitles for anything still missing a wanted language."))
-	sched.Register("subtitles-upgrade", 24*time.Hour, false, func(ctx context.Context) error {
-		subtitlesSvc.UpgradeSweep(ctx)
-		return nil
-	}, scheduler.Label("Upgrade weak subtitles"), scheduler.Description("Replaces recent AI-made subtitles and loose downloads when a subtitle made for the exact file appears, using a small share of the day's OpenSubtitles downloads."))
-
-	// Convert module (Tdarr replacement): GPU/CPU transcoding over the Movies library.
-	convertScratch := cfg.ConvertScratchDir
-	if convertScratch == "" {
-		// Default to the image's /transcode mount point (put a fast SSD/NVMe pool
-		// there in compose) so the heavy encode stays off the array; fall back to
-		// appdata only if /transcode isn't present.
-		if _, err := os.Stat("/transcode"); err == nil {
-			convertScratch = "/transcode"
-		} else {
-			convertScratch = filepath.Join(cfg.DataDir, "convert")
-		}
-	}
-	convertSvc := convert.NewService(st.DB(), movieSvc, seriesSvc, settingsSvc, "ffmpeg", "ffprobe", convertScratch, "", modLog(log, "convert"))
-	// Converted originals wait in a hidden hold on their own library folder (same drive, a
-	// rename) for the undo window — never in the recycle bin, whose cap would purge them.
-	convertSvc.SetHoldRoots(func() []libroots.Root { return roots.Libraries(context.Background()) }, cfg.DataDir)
-	// "Same as Subtitles" for the subtitle tracks Convert keeps reads the Subtitles list.
-	convertSvc.SetSubtitleLangs(subtitlesSvc.Languages)
-	// Upgrade decisions judge a library file by what Convert's analysis found in it, not
-	// only by its release name — the same facts the Library fit bars read.
-	coordinator.SetFileFacts(convertSvc)
-	// The Unwanted pack's foreign-only check: the audio languages Convert keeps are the
-	// household's own, so a release dubbed into one of them is never foreign.
-	qualitySvc.SetOwnerLanguages(convertSvc.AudioLanguages)
-	// A conversion plan warns when dropping a file's Dolby Vision layer would leave it
-	// outside the target of the profile its title runs under.
-	convertSvc.SetProfilePrefersDV(func(ctx context.Context, kind string, id int64) bool {
-		if kind == "episode" {
-			sr, err := seriesSvc.Get(ctx, id)
-			return err == nil && qualitySvc.PrefersDolbyVision(ctx, sr.QualityProfile, quality.MediaSeries)
-		}
-		m, err := movieSvc.Get(ctx, id)
-		return err == nil && qualitySvc.PrefersDolbyVision(ctx, m.QualityProfile, quality.MediaMovie)
-	})
 	// The manager looks after every bin: one per library folder (or the one override),
 	// plus the old shared bin while it still holds files, so what's in it stays listed,
 	// restorable, aged and capped until it drains.
 	recycleSvc := recyclebin.NewBins(bins.All, settingsSvc, log)
-	grp.Loop("convert: runner", convertSvc.Run)
-	// Originals whose undo window has ended leave the hold — the only deletes it makes on
-	// its own, and only by the retention you set.
-	sched.Register("convert-hold-expire", time.Hour, true, convertSvc.ExpireHolds,
-		scheduler.Label("Release converted originals"),
-		scheduler.Description("Deletes originals Convert kept for undo once their undo window ends (Convert settings, Undo)."))
-	// Warm the probe cache off the request path so the first Convert page load after
-	// a restart is instant instead of re-analyzing the whole library, then build the
-	// library index the Convert list reads (both are incremental — see migration 0058).
-	grp.Go("convert: warm cache and index", func(ctx context.Context) {
-		convertSvc.WarmCache(ctx)
-		convertSvc.IndexAll(ctx)
-	})
-	// Keep the Convert library index current. Imports reindex just their own series, so
-	// this only catches changes made outside Arrmada; it ticks hourly but sweeps once a
-	// day at the admin-configured time (Settings → Convert).
-	// Warm the Discover rows (movies, TV and books) at startup and every six hours, so
-	// the page never waits on an upstream — the disk cache serves what's here while the
-	// refresh runs. Books rows go through Hardcover's one-a-second pacing, which is why
-	// this runs in the background rather than on first open.
+	// Warm the Discover rows (movies and TV) at startup and every six hours, so the page
+	// never waits on an upstream — the disk cache serves what's here while the refresh
+	// runs.
 	sched.Register("discover-warm", 6*time.Hour, true, func(ctx context.Context) error {
 		if tmdb.Available() {
 			tmdb.WarmGenres(ctx) // genre names for the cards; loaded once, kept a day
@@ -979,17 +795,8 @@ func main() {
 			_, _ = tmdb.NowPlaying(ctx)
 			_, _ = tmdb.Anime(ctx)
 		}
-		for _, kind := range []string{metadata.BrowseTrending, metadata.BrowseNewReleases, metadata.BrowseTopRated, metadata.BrowsePopular} {
-			_, _ = booksSvc.Browse(ctx, kind)
-		}
-		_, _ = booksSvc.Recommended(ctx)
 		return nil
 	}, scheduler.Label("Pre-load Discover rows"), scheduler.Description("Refreshes the Discover rows in the background so the page opens instantly."))
-	sched.Register("convert-index", time.Hour, false, func(ctx context.Context) error {
-		convertSvc.MaybeIndexSweep(ctx)
-		return nil
-	}, scheduler.Label("Index the library for Convert"), scheduler.Description("Keeps Convert's list of files current; the full sweep runs once a day at the set time."))
-
 	// Insights (Plex watch monitoring — Tautulli replacement).
 	geoDB := cfg.GeoIPDB
 	if geoDB == "" { // auto-detect a GeoLite2 DB dropped in the data dir
@@ -1009,24 +816,10 @@ func main() {
 	}
 	grp.Loop("insights: poller", insightsSvc.Run) // Plex watch-monitoring poller (records when enabled + configured)
 	// Alerts link back to the app at its outside address and carry the title's poster:
-	// the library's stored TMDB / Open Library image, or a Plex image fetched server-side.
+	// the library's stored TMDB image, or a Plex image fetched server-side.
 	notifySvc.SetPublicURL(settingsSvc.PublicURL)
-	notifySvc.SetPosters(alertPosters(movieSvc, seriesSvc, booksSvc), insightsSvc.Image)
-	// Convert pauses its encodes while someone is watching — which it can only know while
-	// monitoring is on, so its settings page says so when it isn't.
-	convertSvc.SetWatching(insightsSvc.Watching, func() bool { return insightsSvc.MonitoringActive(runCtx) })
-	// convert.done / failed / blocked / stalled (staff-only topics): the live UI and the
-	// admin alerts hear them (internal/notify/convert_digest.go).
-	convertSvc.SetBus(bus)
-	// "Convert gave up on a file" at once, and one summary a morning (notify/convert_digest.go;
-	// its counts survive a restart in a setting). Stuck-for-space is a Needs-you item below.
-	convertAlerts := notify.NewConvertAlerts(notifySvc, settingsSvc, log)
-	grp.Loop("notify: convert alerts", func(ctx context.Context) { convertAlerts.Run(ctx, bus) })
-	sched.Register("convert-digest", 15*time.Minute, false, convertAlerts.SendDigest,
-		scheduler.Label("Send the daily Convert summary"),
-		scheduler.Description("After 09:00, sends one message with what Convert did since the last one: files converted, space freed and any problems."))
-	// Tell Plex which folder changed after an import, upgrade, rename, delete or Convert
-	// swap: one debounced partial scan per folder, translated to Plex's own paths. Plex
+	notifySvc.SetPosters(alertPosters(movieSvc, seriesSvc), insightsSvc.Image)
+	// Tell Plex which folder changed after an import, upgrade, rename or delete: one debounced partial scan per folder, translated to Plex's own paths. Plex
 	// being down or unset never holds anything up — requests are queued in memory and
 	// the worker logs what it couldn't send.
 	scanRoots := func(ctx context.Context) map[string]string {
@@ -1065,10 +858,6 @@ func main() {
 	// below); the changes that don't go through the outbox call it directly.
 	seriesSvc.SetLibraryChanged(media.Request)   // episode and show deletes
 	coordinator.SetLibraryChanged(media.Request) // series renames
-	convertSvc.SetLibraryChanged(media.Request)  // a converted file swapped in
-	// A subtitle written, shifted, removed or adopted: the servers pick it up without a
-	// full scan.
-	subtitlesSvc.SetLibraryChanged(media.Request)
 	// Prune raw bandwidth samples older than 90 days: the poller writes one row per
 	// cycle, so at the 5s default that's ~17k/day and every graph query scans them all.
 	// Watch history itself is kept — only the high-frequency bandwidth series is rolled off.
@@ -1085,9 +874,6 @@ func main() {
 		recycleSvc.Enforce(ctx)
 		return nil
 	}, scheduler.Label("Tidy the recycle bin"), scheduler.Description("Keeps the recycle bin within its size and age limits."))
-	// Originals of merged audiobooks kept while the bin is off go after 14 days.
-	sched.Register("book-merge-backup-prune", 24*time.Hour, true, coordinator.PruneMergeBackups, scheduler.Label("Remove old audiobook merge backups"), scheduler.Description("Deletes originals kept from audiobook merges after 14 days."))
-
 	// Database backups: checked hourly, taken once a night after the configured hour (and
 	// at once after a long downtime), newest 7 kept in <data>/backups.
 	backupSvc := backup.New(st, settingsSvc, log)
@@ -1104,47 +890,6 @@ func main() {
 	sched.Register("update-check", updatecheck.Interval, true, updates.Run,
 		scheduler.Label("Check for updates"), scheduler.Description("Asks GitHub every 12 hours whether a newer Arrmada release is out. Switch it off on Settings → Status."))
 
-	// Audiobook server: listening apps (Lissen and other Audiobookshelf clients) connect to
-	// its own port. Off until an admin switches it on in Books → Audiobook server.
-	listenStore := listening.NewStore(st.DB())
-	// A book merge moves everyone's listening places with the book, and queues the kept
-	// book's catalogue refresh and requesters' "ready" in the same transaction.
-	booksSvc.SetMergeHooks(listenStore, func(ctx context.Context, q store.Execer, keepID int64) error {
-		return box.Enqueue(ctx, q, outbox.TopicBookImported, outbox.BookImported{BookID: keepID, Edition: "merge"},
-			fmt.Sprintf("book:%d", keepID))
-	})
-	audioSrv := audioserver.New(audioserver.Options{
-		DB: st.DB(), Books: booksSvc, Listen: listenStore, Users: authSvc, Settings: settingsSvc,
-		Log: modLog(log, "audioserver"), FFprobe: "ffprobe", DataDir: cfg.DataDir,
-	})
-	audioPort := os.Getenv("ARRMADA_AUDIOBOOK_LISTEN_PORT")
-	if audioPort == "" {
-		audioPort = "13378"
-	}
-	audioMgr := audioserver.NewManager(audioSrv, ":"+audioPort, modLog(log, "audioserver"))
-	audioMgr.Apply(settingsSvc.GetBool(context.Background(), audioserver.KeyEnabled, false))
-	sched.Register("audioserver-prune", 24*time.Hour, false, func(ctx context.Context) error {
-		return listenStore.Prune(ctx)
-	}, scheduler.Label("Tidy audiobook server records"), scheduler.Description("Removes old audiobook server records."))
-	sched.Register("audioserver-warm", 30*time.Minute, true, func(ctx context.Context) error {
-		if settingsSvc.GetBool(ctx, audioserver.KeyEnabled, false) {
-			if n := audioSrv.Warm(ctx); n > 0 {
-				log.Info("audiobook server: read chapters and durations", "audiobooks", n)
-			}
-		}
-		return nil
-	}, scheduler.Label("Read audiobook chapters"), scheduler.Description("Reads chapters and durations for new audiobooks so listening apps start quickly."))
-	// The one full walk of the audiobook folders: the warm-up and every listing read what
-	// is known from the database, so a file deleted outside Arrmada is noticed here.
-	sched.Register("audioserver-verify", 24*time.Hour, false, func(ctx context.Context) error {
-		if settingsSvc.GetBool(ctx, audioserver.KeyEnabled, false) {
-			if n := audioSrv.Verify(ctx); n > 0 {
-				log.Info("audiobook server: forgot audio files that are gone", "files", n)
-			}
-		}
-		return nil
-	}, scheduler.Label("Check audiobook files"), scheduler.Description("Once a day, checks the audiobook folders for files added or removed outside Arrmada."))
-
 	// Health checks run in the background on their own intervals (the health-check task
 	// below drives them); the health endpoint serves their cached results. httpapi.New
 	// registers the checks built from its deps.
@@ -1160,21 +905,13 @@ func main() {
 		attention.Imports(importFailures, coordinator),
 		attention.WrongCategory(coordinator.WrongCategoryDownloads),
 		attention.Health(healthReg),
-		attention.Convert(convertSvc),
 		attention.Issues(issuesSvc),
-		attention.Subtitles(subtitlesSvc),
 		attention.Searches(
 			func(ctx context.Context) (int, error) {
 				return movieSvc.CountSearchStuck(ctx, attention.SearchStuckAfter)
 			},
 			func(ctx context.Context) (int, error) {
 				return seriesSvc.CountSearchStuck(ctx, attention.SearchStuckAfter)
-			},
-			func(ctx context.Context) (int, error) {
-				if !settingsSvc.GetBool(ctx, settings.KeyModuleBooks, true) {
-					return 0, nil
-				}
-				return booksSvc.CountSearchGivenUp(ctx)
 			},
 		),
 	)
@@ -1196,7 +933,7 @@ func main() {
 	// registered at that moment. Rows a previous run left unfinished run as soon as the
 	// dispatcher starts.
 	importConsumers{
-		convert: convertSvc, subtitles: subtitlesSvc, requests: requestsSvc, issues: issuesSvc, audio: audioSrv, grp: grp,
+		requests: requestsSvc, issues: issuesSvc,
 		plex: media, showFolder: seriesSvc.FolderPath,
 		// With scans switched off nothing calls OnRefreshed; the server's own watcher adds
 		// the file in its own time, so look again a few minutes after the import.
@@ -1226,12 +963,9 @@ func main() {
 
 	// The API key Test: one live request each, on demand only (never in health polling).
 	keyVerifiers := map[string]func(context.Context, string) (string, error){
-		"tmdb":              tmdb.VerifyKey,
-		"tvdb":              tvdb.VerifyKey,
-		"omdb":              omdb.VerifyKey,
-		"opensubtitles_api": subsProvider.Verify,
-		// A typed Hardcover key only; the saved one is tested through Books.
-		"hardcover": hardcover.VerifyKey,
+		"tmdb": tmdb.VerifyKey,
+		"tvdb": tvdb.VerifyKey,
+		"omdb": omdb.VerifyKey,
 	}
 	restartCh := make(chan struct{}, 1)
 	srv := httpapi.New(httpapi.Deps{
@@ -1255,10 +989,7 @@ func main() {
 		Issues:       issuesSvc,
 		Discovery:    tmdb,
 		Ratings:      omdb,
-		Books:        booksSvc,
 		Music:        musicSvc,
-		Subtitles:    subtitlesSvc,
-		Convert:      convertSvc,
 		Insights:     insightsSvc,
 		Push:         pushSvc,
 		Recycle:      recycleSvc,
@@ -1268,10 +999,6 @@ func main() {
 		FlareSolverr: flare,
 		ConnStatus:   connStatus,
 		KeyVerifiers: keyVerifiers,
-		AudioServer:  audioSrv,
-		AudioManager: audioMgr,
-		// Setup's OpenSubtitles check: the key, username and password typed together.
-		SubtitleLoginVerifier: subsProvider.VerifyLogin,
 		Restart: func() {
 			select {
 			case restartCh <- struct{}{}:
@@ -1280,8 +1007,7 @@ func main() {
 		},
 		ImportFailures: importFailures,
 		// Safety copies before destructive admin actions (user delete). Newest 3 of each
-		// kind are kept in <data>/backups; deleting an account with no listening data is a
-		// kind of its own, so it can't push out a copy that holds someone's places.
+		// kind are kept in <data>/backups.
 		Snapshot: func(ctx context.Context, kind string) (string, error) {
 			b, err := backupSvc.Create(ctx, store.BackupKind(kind))
 			if err != nil {
@@ -1386,7 +1112,6 @@ func main() {
 	// Docker kills the container ten seconds after asking it to stop (the compose files
 	// set no stop_grace_period), so the steps below share a budget that fits inside it.
 	cancelRun() // signal background jobs (and request-started work) to stop
-	audioMgr.Stop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -1505,29 +1230,6 @@ func summarizeNames(names []string, max int) []string {
 // look at. At ~200 bytes an entry this is ~10 MB of memory, which is cheap next to
 // losing the evidence. The on-disk files hold considerably more than the ring does.
 var logRing = applog.NewRing(50000)
-
-// scrubLegacyMarker records that the one-time audiobook scrub has run.
-const scrubLegacyMarker = ".scrub-audiobook-v1"
-
-// scrubLegacyLogs rewrites log files written before request logging switched to route
-// patterns, so no line on disk still names a book someone opened, played or bookmarked,
-// or what they searched for. It runs once: a marker beside the logs stops it repeating,
-// and is only written when the rewrite succeeded. Copies of old lines in Docker's own
-// stdout log aren't reachable from here; recreating the container drops them.
-func scrubLegacyLogs(logPath string) error {
-	dir := filepath.Dir(logPath)
-	marker := filepath.Join(dir, scrubLegacyMarker)
-	if _, err := os.Stat(marker); err == nil {
-		return nil
-	}
-	if err := applog.RewriteFiles(logPath, audioserver.ScrubLegacyEntry); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(marker, []byte(time.Now().UTC().Format(time.RFC3339)+"\n"), 0o644)
-}
 
 // logLevel is the level every log line is checked against. It starts at the install's
 // ARRMADA_LOG_LEVEL; the Logs page can raise it for a while (it reverts by itself, and a

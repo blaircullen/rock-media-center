@@ -107,7 +107,7 @@ func (s *Service) observePoll(err error) {
 }
 
 // PollHealth reports how the Plex connection has been doing, without calling Plex. It is the
-// one source for the health panel, the Insights badge and Convert's pause hint.
+// one source for the health panel, and the Insights badge.
 func (s *Service) PollHealth(ctx context.Context) PlexHealth {
 	h := s.health.get()
 	h.Configured = s.configured(ctx)
@@ -117,7 +117,7 @@ func (s *Service) PollHealth(ctx context.Context) PlexHealth {
 }
 
 // MonitoringActive reports whether a poller is meant to be recording: monitoring switched
-// on with a server to talk to, on Plex or on Jellyfin. Convert's "pause while someone is
+// on with a server to talk to, on Plex or on Jellyfin. a "pause while someone is
 // watching" only works then.
 func (s *Service) MonitoringActive(ctx context.Context) bool {
 	return s.PollHealth(ctx).Monitoring || s.jellyfinMonitoring(ctx)

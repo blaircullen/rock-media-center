@@ -41,7 +41,7 @@ const (
 type ListFilter struct {
 	Section   string // a Section*; "" is all
 	Status    string // legacy: one status
-	MediaType string // movie | series | book
+	MediaType string // movie | series
 	Query     string // a title search
 	// UserID scopes the list to one user's own requests (0: everyone's). IncludeJoined adds
 	// the requests they follow, each marked with its Relation.
@@ -70,6 +70,7 @@ const (
 // scopeWhere is the filter every list and count shares: the user scope, media type and
 // title search. Section and status come on top.
 func (f ListFilter) scopeWhere() (where []string, args []any) {
+	where = append(where, knownKinds)
 	if f.UserID != 0 {
 		if f.IncludeJoined {
 			where = append(where, `(requested_by = ? OR id IN (SELECT request_id FROM request_subscribers WHERE user_id = ?))`)

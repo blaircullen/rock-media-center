@@ -4,7 +4,7 @@ import { plexWatchURL } from "./fixtures/discover";
 
 // APP-05: the requester's phone shell. A bottom tab bar with only the places this session
 // can reach, room left for the iPhone's status bar and home indicator, one bell on every
-// page (staff too), and the shelf called "My shelf".
+// page (staff too).
 
 const tabBar = (page: Page) => page.getByRole("navigation", { name: "Primary" });
 
@@ -21,26 +21,18 @@ test.describe("requester at 375px", () => {
     await open(page, "/discover", api);
     const bar = tabBar(page);
     await expect(bar).toBeVisible();
-    await expect(bar.getByRole("link")).toHaveText(["Discover", "Requests", "Shelf", "Listen", "Me"]);
+    await expect(bar.getByRole("link")).toHaveText(["Discover", "Requests", "Me"]);
     await expect(bar.getByRole("link", { name: "Discover" })).toHaveAttribute("aria-current", "page");
     // The header names the section; the wide-screen links are hidden.
     await expect(page.getByRole("navigation", { name: "Sections" })).toBeHidden();
 
-    await bar.getByRole("link", { name: "Shelf" }).click();
-    await expect(page).toHaveURL(/\/shelf$/);
-    await expect(page.getByRole("heading", { level: 1, name: "My shelf" })).toBeVisible();
-    await expect(bar.getByRole("link", { name: "Shelf" })).toHaveAttribute("aria-current", "page");
+    await bar.getByRole("link", { name: "Requests" }).click();
+    await expect(page).toHaveURL(/\/requests$/);
+    await expect(bar.getByRole("link", { name: "Requests" })).toHaveAttribute("aria-current", "page");
 
     await bar.getByRole("link", { name: "Me" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "deckhand" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Calendar" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Audiobook apps & password" })).toBeVisible();
-  });
-
-  test("an old /books bookmark lands on the shelf", async ({ page, api }) => {
-    await open(page, "/books", api);
-    await expect(page).toHaveURL(/\/shelf$/);
-    await expect(page.getByRole("heading", { level: 1, name: "My shelf" })).toBeVisible();
   });
 
   test("leaves room for the iPhone's status bar and home indicator", async ({ page, api }) => {
@@ -91,7 +83,7 @@ test.describe("requester at 375px", () => {
   });
 
   test("one bell on every page", async ({ page, api }) => {
-    for (const path of ["/discover", "/requests", "/calendar", "/shelf", "/audiobooks", "/me"]) {
+    for (const path of ["/discover", "/requests", "/calendar", "/me"]) {
       await open(page, path, api);
       await expect(page.getByRole("button", { name: "Notifications" }), path).toHaveCount(1);
       await expect(page.getByRole("button", { name: "Notifications" }), path).toBeVisible();
@@ -104,7 +96,7 @@ test.describe("outside visitor at 375px", () => {
 
   test("gets only the tabs it can reach, and no Calendar anywhere", async ({ page, api }) => {
     await open(page, "/me", api);
-    await expect(tabBar(page).getByRole("link")).toHaveText(["Discover", "Requests", "Shelf", "Listen", "Me"]);
+    await expect(tabBar(page).getByRole("link")).toHaveText(["Discover", "Requests", "Me"]);
     await expect(page.getByRole("link", { name: "Calendar" })).toHaveCount(0);
   });
 });
@@ -116,7 +108,7 @@ test.describe("requester at 768px", () => {
     await open(page, "/discover", api);
     await expect(tabBar(page)).toBeHidden();
     const links = page.getByRole("navigation", { name: "Sections" }).getByRole("link");
-    await expect(links).toHaveText(["Discover", "Requests", "Calendar", "My shelf", "Audiobooks"]);
+    await expect(links).toHaveText(["Discover", "Requests", "Calendar"]);
     await expect(page.getByRole("button", { name: "Notifications" })).toHaveCount(1);
   });
 });
@@ -222,7 +214,7 @@ test.describe("notifications on a phone", () => {
   test.use({ persona: "requester" });
 
   test("a 'ready' notice opens that exact title", async ({ page, api }) => {
-    await open(page, "/shelf", api);
+    await open(page, "/requests", api);
     await page.getByRole("button", { name: "Notifications" }).tap();
     await page.getByRole("button", { name: /“The Cartographer” is ready to watch/ }).tap();
     await expect(page).toHaveURL(/\/discover\/movie\/1007$/);
@@ -237,18 +229,6 @@ test.describe("notifications on a phone", () => {
     await expect(watch).toHaveCount(1); // only the ready notice has one
     await expect(watch).toHaveAttribute("href", plexWatchURL);
     await expect(watch).toHaveAttribute("target", "_blank");
-  });
-
-  test("a book notice opens the book on the Books tab, Hardcover key and all", async ({ page, api }) => {
-    await open(page, "/discover", api);
-    await page.getByRole("button", { name: "Notifications" }).tap();
-    await page.getByRole("button", { name: /“Moby-Dick” was approved/ }).tap();
-    await expect(page).toHaveURL(/\/discover\?tab=books&work=hc%3A4242$/);
-    // The Books hero can feature the same fixture book behind the sheet, depending on which
-    // loads first; the sheet's heading is the later one.
-    await expect(page.getByRole("heading", { level: 2, name: "The Salt Road" }).last()).toBeVisible();
-    await api.quiet();
-    expect(api.calls.some((c) => c.path === "/api/v1/books/discover/detail?key=hc%3A4242")).toBe(true);
   });
 
   test("an old notice without a reference still lands on a search", async ({ page, api }) => {

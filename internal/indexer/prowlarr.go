@@ -161,8 +161,13 @@ func (s *Service) BackfillProwlarrIDs(ctx context.Context, prowlarrURL string) (
 	return n, nil
 }
 
+// booksOnly is the scope a synced indexer whose only categories are books (7000s, and 3030
+// audiobooks) gets. Arrmada searches no books, so the indexer is never asked — scoping it
+// to nothing would read as "used for everything" and send it every movie search.
+const booksOnly = "book"
+
 // mediaTypesFor scopes a newly synced indexer from the categories Prowlarr says it has:
-// 2000 movies, 5000 TV, 7000 and 3030 (audiobooks) books, any other 3000 music. A
+// 2000 movies, 5000 TV, any 3000 but 3030 (audiobooks) music; 7000s and 3030 are books. A
 // category with subcategories counts by its subcategories, so an audiobook-only tracker
 // (3000 > 3030) is a book indexer, not a music one. Nothing recognised, or every area,
 // is nil: used for everything.
@@ -178,7 +183,7 @@ func mediaTypesFor(cats []prowlarrCategory) []string {
 		}
 		switch {
 		case c.ID == 3030:
-			has[MediaBook] = true
+			has[booksOnly] = true
 		case c.ID >= 2000 && c.ID < 3000:
 			has[MediaMovie] = true
 		case c.ID >= 3000 && c.ID < 4000:
@@ -186,20 +191,23 @@ func mediaTypesFor(cats []prowlarrCategory) []string {
 		case c.ID >= 5000 && c.ID < 6000:
 			has[MediaSeries] = true
 		case c.ID >= 7000 && c.ID < 8000:
-			has[MediaBook] = true
+			has[booksOnly] = true
 		}
 	}
 	for _, c := range cats {
 		visit(c)
 	}
 	var out []string
-	for _, m := range []string{MediaMovie, MediaSeries, MediaBook, MediaMusic} {
+	for _, m := range []string{MediaMovie, MediaSeries, MediaMusic} {
 		if has[m] {
 			out = append(out, m)
 		}
 	}
-	if len(out) == 4 {
+	switch {
+	case len(out) == 3:
 		return nil
+	case len(out) == 0 && has[booksOnly]:
+		return []string{booksOnly}
 	}
 	return out
 }
@@ -208,7 +216,7 @@ func mediaTypesFor(cats []prowlarrCategory) []string {
 // searches through Prowlarr's API instead of scraping sites itself.
 //
 // A sync owns only what it can know: a row's name, feed address, key and Prowlarr id.
-// Whether it's used for movies or books, its priority, seeder floor and seed rules are the
+// Whether it's used for movies or music, its priority, seeder floor and seed rules are the
 // owner's, set once on a new row and never touched again. Rows are matched on Prowlarr's
 // id, so a rename in Prowlarr renames the row (and the grabs that name it) instead of
 // adding a second one. An indexer disabled or removed in Prowlarr is switched off here —

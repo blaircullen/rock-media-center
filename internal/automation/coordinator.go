@@ -19,8 +19,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/tristenlammi/arrmada/internal/audiobook"
-	"github.com/tristenlammi/arrmada/internal/books"
 	"github.com/tristenlammi/arrmada/internal/diskspace"
 	"github.com/tristenlammi/arrmada/internal/download"
 	"github.com/tristenlammi/arrmada/internal/eventbus"
@@ -51,11 +49,9 @@ type Coordinator struct {
 	downloadsFn  func() string   // the live downloads folder (Settings → Library); nil = downloadsDir
 	movieCat     string          // the movie download category (SetMovieCategory); "" = download.DefaultMovieCategory
 	series       *series.Service // set post-construction via SetSeries
-	fileFacts    FileFactsSource // Convert's probed facts for library files; nil = release names only
-	books        *books.Service  // set post-construction via SetBooks
 	music        *music.Service  // set post-construction via SetMusic
 	imp          *library.Importer
-	recycle      string      // recycle-bin dir for book deletes ("" = bin off); set via SetRecycleDir
+	recycle      string      // recycle-bin dir for deletes ("" = bin off); set via SetRecycleDir
 	binv         library.Bin // the bins set by SetBin; nil = the single bin at recycle
 
 	// removeTorrent overrides downloads.Remove in tests; nil uses the real client.
@@ -72,15 +68,6 @@ type Coordinator struct {
 	// importRetry drops the movie importer's back-off for a download (SetImportRetry);
 	// nil = nothing to drop.
 	importRetry func(hash string)
-
-	// merging holds the IDs of books with an audiobook merge running, so a second click
-	// can't start another ffmpeg over the same files.
-	merging sync.Map
-	// mergeFn, durationFn and decodedDurationFn default to the audiobook package; tests
-	// swap them.
-	mergeFn           func(ctx context.Context, files []string, out string, opts audiobook.MergeOptions) (audiobook.MergeResult, error)
-	durationFn        func(ctx context.Context, path string) (float64, error)
-	decodedDurationFn func(ctx context.Context, path string) (float64, error)
 
 	// moduleGate says whether a switchable module is on right now. Asked on every run
 	// rather than captured at startup, so flipping a module in Settings takes effect on
@@ -123,12 +110,8 @@ type Coordinator struct {
 	// set once at startup; nil means DefaultUpgradeBudget. See upgradebudget.go.
 	upgradeBudgetFn func(ctx context.Context) int
 
-	// bookLangsFn reads the languages automatic book grabs accept (Settings → Library),
-	// set once at startup; nil accepts every language. See booklangs.go.
-	bookLangsFn func(ctx context.Context) []string
-
-	// now is the books sweep's clock; nil means time.Now. Tests set it to step through
-	// the search ladder.
+	// now is the coordinator's clock; nil means time.Now. Tests set it to step through
+	// stall and search timing.
 	now func() time.Time
 
 	// claims keeps two searches of one title from running at once (claims.go).
@@ -143,18 +126,13 @@ type Coordinator struct {
 	tokensOnce sync.Once
 	tokens     *releaseTokens
 
-	// The manual missing-editions sweep for books (books_sweep.go).
-	bookSweepMu sync.Mutex
-	bookSweep   BookSweepStatus
-
 	// danglingLogged remembers which deleted profile refs effectiveProfile has already
 	// reported, so a library full of titles on one deleted profile logs it once per
 	// process instead of on every sweep.
 	danglingLogged sync.Map
 
-	// outbox receives the durable side effects of series and book imports (Convert and
-	// Subtitles for the episodes that landed, the requester's "ready", the audiobook
-	// catalogue). nil means nothing is wired (tests).
+	// outbox receives the durable side effects of series imports (the requester's
+	// "ready", the media servers' scans). nil means nothing is wired (tests).
 	outbox outbox.Enqueuer
 	// onLibraryChanged hears about folders a rename changed (Plex's scanner); nil = none.
 	onLibraryChanged func(kind, dir string)
@@ -174,7 +152,7 @@ type Coordinator struct {
 	usenet usenetWatch
 }
 
-// SetOutbox installs where series and book imports queue their side effects.
+// SetOutbox installs where series imports queue their side effects.
 func (c *Coordinator) SetOutbox(o outbox.Enqueuer) { c.outbox = o }
 
 // SetLibraryChanged installs who hears that a library folder's files changed outside an
@@ -188,10 +166,9 @@ func (c *Coordinator) libraryChanged(kind, dir string) {
 	}
 }
 
-// enqueue writes an outbox row on its own (series and book imports aren't one
-// transaction). A failure is logged, not fatal: the files are in place either way, and
-// the nightly Convert sweep, the 6-hourly Subtitles pass and the request-ready sweep
-// still catch up.
+// enqueue writes an outbox row on its own (series imports aren't one transaction). A
+// failure is logged, not fatal: the files are in place either way, and the request-ready
+// sweep still catches up.
 func (c *Coordinator) enqueue(ctx context.Context, topic string, payload any, key string) {
 	if c.outbox == nil {
 		return
@@ -201,10 +178,10 @@ func (c *Coordinator) enqueue(ctx context.Context, topic string, payload any, ke
 	}
 }
 
-// seriesImported queues the follow-up work for episodes an import just placed: Convert
-// reindexes the show, Subtitles fetches for exactly those episodes, and the requester
-// hears once nothing is still wanted. episodes is what the import placed — just those,
-// not the whole show.
+// seriesImported queues the follow-up work for episodes an import just placed: the media
+// servers rescan the show, reported problems on exactly those episodes settle, and the
+// requester hears once nothing is still wanted. episodes is what the import placed — just
+// those, not the whole show.
 func (c *Coordinator) seriesImported(ctx context.Context, seriesID int64, episodes []series.EpisodeRef) {
 	p := outbox.SeriesImported{SeriesID: seriesID}
 	for _, e := range episodes {
@@ -219,28 +196,23 @@ func (c *Coordinator) seriesImported(ctx context.Context, seriesID int64, episod
 	c.enqueue(ctx, outbox.TopicSeriesImported, p, key)
 }
 
-// bookImported queues the follow-up work for a book edition or audiobook version that
-// just landed: the requester's "ready" and the audiobook catalogue refresh.
-func (c *Coordinator) bookImported(ctx context.Context, bookID int64, edition string) {
-	c.enqueue(ctx, outbox.TopicBookImported, outbox.BookImported{BookID: bookID, Edition: edition}, fmt.Sprintf("book:%d", bookID))
+// clock is the coordinator's now (time.Now unless a test set c.now).
+func (c *Coordinator) clock() time.Time {
+	if c.now != nil {
+		return c.now()
+	}
+	return time.Now()
 }
 
-// bookFilesChanged queues the audiobook catalogue's re-read after a book's files were
-// renamed or deleted. It is never book.imported, which would tell the requester the book
-// is ready.
-func (c *Coordinator) bookFilesChanged(ctx context.Context, bookID int64) {
-	c.enqueue(ctx, outbox.TopicBookFilesChanged, outbox.BookFilesChanged{BookID: bookID}, fmt.Sprintf("book:%d", bookID))
-}
-
-// SetRecycleDir points book file deletion at the recycle bin (matching movies). Empty
+// SetRecycleDir points file deletion at the recycle bin (matching movies). Empty
 // means the bin is switched off and deletes are permanent.
 func (c *Coordinator) SetRecycleDir(dir string) { c.recycle = dir }
 
-// SetBin points book file and series duplicate deletion at bin (the per-library bins in
+// SetBin points album file and series duplicate deletion at bin (the per-library bins in
 // the app). Call it at startup, before anything runs.
 func (c *Coordinator) SetBin(b library.Bin) { c.binv = b }
 
-// bin is where book files and series duplicates go when deleted (off = permanent).
+// bin is where album files and series duplicates go when deleted (off = permanent).
 func (c *Coordinator) bin() library.Bin {
 	if c.binv != nil {
 		return c.binv
@@ -280,9 +252,6 @@ func (c *Coordinator) SetSeries(s *series.Service, imp *library.Importer) {
 	c.series = s
 	c.imp = imp
 }
-
-// SetBooks wires the books module (shares the importer set by SetSeries).
-func (c *Coordinator) SetBooks(b *books.Service) { c.books = b }
 
 // SetMusic wires the music module (shares the importer set by SetSeries).
 func (c *Coordinator) SetMusic(m *music.Service) { c.music = m }
@@ -538,40 +507,6 @@ func (c *Coordinator) GrabSeriesTorrent(ctx context.Context, seriesID int64, fil
 	return nil
 }
 
-// GrabBookTorrent adds an uploaded .torrent file for a book and records the grab.
-//
-// Book trackers are the ones you most often have to reach into by hand: a private tracker
-// may hold the only copy of an edition, and a title that search can't phrase a query for
-// (an author's initials punctuated differently, a series name the listing spells its own
-// way) is otherwise unreachable from inside Arrmada.
-//
-// The book category matters — it's what routes the finished download through the book
-// importer, which knows an ebook from an audiobook and hardlinks each edition into place.
-func (c *Coordinator) GrabBookTorrent(ctx context.Context, bookID, versionID int64, file []byte, filename, title string) error {
-	if versionID > 0 && c.books != nil {
-		if _, err := c.books.GetAudioVersion(ctx, bookID, versionID); err != nil {
-			return err
-		}
-	}
-	hash, tr, err := c.addTorrentFile(ctx, file, filename, title, bookCategory)
-	if err != nil {
-		return err
-	}
-	ctx = withUploadedTransport(ctx, tr)
-	if c.books != nil {
-		if b, err := c.books.Get(ctx, bookID); err == nil {
-			// "manual" as the indexer, same as the movie and series paths: seedRules
-			// treats an unknown indexer as seed-for-the-standard-window rather than
-			// don't-seed, so an uploaded torrent from a private tracker isn't deleted
-			// the moment it imports.
-			c.recordBookGrab(ctx, bookID, versionID, title, "manual", b.QualityProfile, hash)
-			c.markGrabManual(ctx, hash) // imports into this book whatever the torrent is called
-		}
-		c.books.AddEvent(ctx, bookID, "grabbed", uploadedEvent(tr, title))
-	}
-	return nil
-}
-
 // RecordManualGrab tracks a release grabbed by hand (interactive search) exactly
 // like an automatic grab, so it's seed-managed and stall-detected too. movieID 0
 // (not tied to a tracked movie) is a no-op.
@@ -704,17 +639,6 @@ type RankedRelease struct {
 	// fourth cour, not the show's fourth season — so the release's own label looks like
 	// the wrong season entirely until you say what it resolved to.
 	Resolves string `json:"resolves,omitempty"`
-	// Books only:
-	Edition  string `json:"edition,omitempty"`  // ebook | audiobook
-	Format   string `json:"format,omitempty"`   // EPUB, M4B, MP3…
-	Narrator string `json:"narrator,omitempty"` // audiobook narrator, when detected
-	Author   string `json:"author,omitempty"`   // structured author (e.g. from MyAnonaMouse)
-	Series   string `json:"series,omitempty"`   // structured series + number
-	Language string `json:"language,omitempty"` // language code/name when known
-	// VersionID/Version name the extra audiobook version this release belongs to (its
-	// words match the version's search terms); 0/"" is the standard audiobook.
-	VersionID int64  `json:"version_id,omitempty"`
-	Version   string `json:"version,omitempty"`
 
 	// Why an eligible row ranks where it does (explainRow): the formats it matched and the
 	// ones it has that the profile avoids, whether its preferences were waived because its
@@ -1389,7 +1313,6 @@ func (c *Coordinator) RSSSync(ctx context.Context) {
 		c.log.Warn("rss: fetch feeds failed", "err", err)
 		return
 	}
-	res.Releases = withoutBookUploads(res.Releases) // the feed is shared with the book sweep
 	if len(res.Releases) == 0 {
 		return
 	}
@@ -1856,7 +1779,7 @@ func (c *Coordinator) Unblock(ctx context.Context, id int64) error { return c.re
 var ErrNothingToBlock = errors.New("not linked to anything in your library — use Remove instead")
 
 // BlockTarget is what a Block resolved to: the library item the release is blocked for.
-// Kind is movie | series | book | music; for a music discography ID is the artist.
+// Kind is movie | series | music; for a music discography ID is the artist.
 type BlockTarget struct {
 	Kind  string `json:"kind"`
 	ID    int64  `json:"id"`
@@ -1887,8 +1810,8 @@ func (c *Coordinator) BlockRelease(ctx context.Context, hash, name string) (Bloc
 // what the release was grabbed for. Only without a grab does the release name decide,
 // and then within the torrent's own category, so a TV torrent is never matched to a movie.
 // That used to happen: "Fargo.S05E01…" carries no year, matched the Fargo movie first,
-// blocklisted and re-searched the movie, and left the show free to grab it again. Books and
-// music weren't handled at all, so blocking one deleted it and the next sweep grabbed it
+// blocklisted and re-searched the movie, and left the show free to grab it again. Music
+// wasn't handled at all, so blocking one deleted it and the next sweep grabbed it
 // straight back.
 func (c *Coordinator) ResolveBlock(ctx context.Context, hash, name string) (BlockTarget, error) {
 	if g, status := c.grabForDownload(ctx, hash, name); g != nil && status != "" {
@@ -1923,8 +1846,6 @@ func (c *Coordinator) ResolveBlock(ctx context.Context, hash, name string) (Bloc
 	switch {
 	case category == seriesCategory:
 		kind = "series"
-	case category == bookCategory:
-		kind = "book"
 	case category == musicCategory:
 		kind = "music"
 	case category == "" && parser.Parse(name).IsTV():
@@ -1938,12 +1859,6 @@ func (c *Coordinator) ResolveBlock(ctx context.Context, hash, name string) (Bloc
 		if c.series != nil {
 			if s, ok, _ := c.series.MatchRelease(ctx, parser.Parse(name)); ok {
 				id = s.ID
-			}
-		}
-	case "book":
-		if c.books != nil {
-			if b, ok := c.books.MatchByRelease(ctx, name); ok {
-				id = b.ID
 			}
 		}
 	case "music":
@@ -1989,15 +1904,6 @@ func (c *Coordinator) blockTargetFor(ctx context.Context, kind string, id int64,
 			return t, false
 		}
 		t.Title = s.Title
-	case "book":
-		if c.books == nil {
-			return t, false
-		}
-		b, err := c.books.Get(ctx, id)
-		if err != nil {
-			return t, false
-		}
-		t.Title = b.Title
 	case "music":
 		if c.music == nil {
 			return t, false
@@ -2040,8 +1946,6 @@ func (c *Coordinator) BlockResolved(ctx context.Context, hash string, t BlockTar
 			}
 		case "series":
 			c.addBlockSeries(ctx, t.ID, title, t.indexer, reason)
-		case "book":
-			c.addBlockBook(ctx, t.ID, title, t.indexer, reason)
 		case "music":
 			c.addBlockMusic(ctx, t.ID, title, t.indexer, reason)
 		default:
@@ -2073,9 +1977,6 @@ func (c *Coordinator) BlockResolved(ctx context.Context, hash string, t BlockTar
 	case t.Kind == "series":
 		c.addMediaEvent(ctx, what, "blocklisted", t.release)
 		_, err = c.SearchSeriesNow(ctx, t.ID)
-	case t.Kind == "book":
-		c.addMediaEvent(ctx, what, "blocklisted", t.release)
-		_, err = c.SearchBookNow(ctx, t.ID)
 	case t.Kind == "music":
 		c.addMediaEvent(ctx, what, "blocklisted", t.release)
 		_, err = c.SearchAlbumNow(ctx, t.ID)
@@ -2242,7 +2143,9 @@ func (c *Coordinator) DetectStalled(ctx context.Context) {
 		case "music":
 			c.detectStalledMusic(ctx, g, queue, tick)
 		case "book":
-			c.detectStalledBook(ctx, g, queue, tick)
+			// A grab an older version made for a book: there is no book module to land
+			// it in any more, and judging it as a movie would read its id as one.
+			c.closeStale(ctx, g, grabStatusFailed, tick)
 		default:
 			c.detectStalledMovie(ctx, g, queue, tick)
 		}
@@ -2319,7 +2222,7 @@ func (c *Coordinator) ManageSeeding(ctx context.Context) {
 			continue
 		}
 		// The same torrent can be held for review under a later grab (re-grabbed for
-		// another item, or an audiobook version). Removing it — with its data — would take
+		// another item). Removing it — with its data — would take
 		// away the files that review is waiting on. Leave it until the review is decided.
 		if c.heldForReview(ctx, it.Hash) {
 			continue

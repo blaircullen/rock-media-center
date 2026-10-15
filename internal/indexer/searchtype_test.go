@@ -12,7 +12,6 @@ func TestSearchTypePerMediaType(t *testing.T) {
 	cases := []struct{ media, want string }{
 		{MediaSeries, "tvsearch"},
 		{MediaMovie, "movie"},
-		{MediaBook, "search"},
 		{"", "search"},
 	}
 	for _, c := range cases {

@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tristenlammi/arrmada/internal/audioserver"
 	"github.com/tristenlammi/arrmada/internal/auth"
 	"github.com/tristenlammi/arrmada/internal/connstatus"
 	"github.com/tristenlammi/arrmada/internal/download"
@@ -21,8 +20,8 @@ import (
 )
 
 // Settings → Connections answers "is everything connected and working?" in one place:
-// every indexer, download client, Prowlarr, FlareSolverr, metadata key, Plex, the alert
-// connections and the audiobook server, each with how it has been answering. The list is
+// every indexer, download client, Prowlarr, FlareSolverr, metadata key, Plex and the alert
+// connections, each with how it has been answering. The list is
 // read from what's already known (the integration status tracker, Plex's poll record,
 // the alert delivery log) — loading the page never calls anything outside Arrmada. Only
 // Test does, for the one connection asked about.
@@ -34,7 +33,6 @@ const (
 	connKindPlex          = "plex"
 	connKindJellyfin      = "jellyfin"
 	connKindNotifications = "notifications"
-	connKindAudioServer   = "audioserver"
 
 	// The one-of-a-kind connections all use this ref (and main records FlareSolverr's
 	// pings under it).
@@ -344,11 +342,11 @@ func (a *api) downloadConnections(ctx context.Context, now time.Time) ([]connect
 	return out, nil
 }
 
-// metadataKeys are the keys that get a card of their own. The OpenSubtitles login rides on
-// the API key's card (its Test signs in), and FlareSolverr's URL is a search connection.
-var metadataKeys = map[string]bool{"tmdb": true, "tvdb": true, "omdb": true, "hardcover": true, "opensubtitles_api": true}
+// metadataKeys are the keys that get a card of their own. FlareSolverr's URL is a search
+// connection.
+var metadataKeys = map[string]bool{"tmdb": true, "tvdb": true, "omdb": true}
 
-// metadataConnections: TMDB, TheTVDB, OMDb, Hardcover and OpenSubtitles. Only an admin may
+// metadataConnections: TMDB, TheTVDB and OMDb. Only an admin may
 // test or change a key, so a manager's cards are read-only.
 func (a *api) metadataConnections(ctx context.Context, now time.Time, admin bool) []connectionItem {
 	out := []connectionItem{}
@@ -356,20 +354,11 @@ func (a *api) metadataConnections(ctx context.Context, now time.Time, admin bool
 		return out
 	}
 	keys := a.keyStatuses(ctx)
-	osLogin := 0
-	for _, k := range keys {
-		if (k.ID == "opensubtitles_username" || k.ID == "opensubtitles_password") && k.Configured {
-			osLogin++
-		}
-	}
 	for _, k := range keys {
 		if !metadataKeys[k.ID] {
 			continue
 		}
 		name := k.Label
-		if k.ID == "opensubtitles_api" {
-			name = "OpenSubtitles"
-		}
 		it := connectionItem{
 			Kind: connKindAPIKey, Ref: k.ID, Card: "apikey-" + k.ID, Name: name, Subtitle: k.Purpose,
 			Configured: k.Configured, Enabled: k.Configured, Source: k.Source,
@@ -383,9 +372,6 @@ func (a *api) metadataConnections(ctx context.Context, now time.Time, admin bool
 			if k.LastErrorAt != nil && k.LastError != "" && (it.CheckedAt == nil || k.LastErrorAt.After(*it.CheckedAt)) {
 				it.State, it.LastError, it.LastErrorAt, it.CheckedAt = connstatus.PhaseFailing, connstatus.Redact(k.LastError), k.LastErrorAt, k.LastErrorAt
 			}
-			if k.ID == "opensubtitles_api" && osLogin < 2 {
-				it.Detail = "Searching works; downloading also needs the username and password"
-			}
 		} else {
 			it.State = connstatus.PhaseUnknown
 		}
@@ -394,8 +380,7 @@ func (a *api) metadataConnections(ctx context.Context, now time.Time, admin bool
 	return out
 }
 
-// otherConnections: the media servers (Plex, Jellyfin), the alert connections and the
-// audiobook server. The page lifts the media servers into a section of their own; the
+// otherConnections: the media servers (Plex, Jellyfin) and the alert connections. The page lifts the media servers into a section of their own; the
 // rest are edited on their own pages, which FixPath names.
 func (a *api) otherConnections(ctx context.Context, now time.Time) []connectionItem {
 	out := []connectionItem{}
@@ -407,9 +392,6 @@ func (a *api) otherConnections(ctx context.Context, now time.Time) []connectionI
 	}
 	if a.deps.Notify != nil {
 		out = append(out, a.notificationsItem(ctx))
-	}
-	if a.deps.AudioManager != nil && a.deps.Settings != nil {
-		out = append(out, a.audioServerItem(ctx))
 	}
 	return out
 }
@@ -564,29 +546,6 @@ func (a *api) notificationsItem(ctx context.Context) connectionItem {
 	return it
 }
 
-// audioServerItem is the listening apps' server: on or off, and running or why not.
-func (a *api) audioServerItem(ctx context.Context) connectionItem {
-	on := a.deps.Settings.GetBool(ctx, audioserver.KeyEnabled, false)
-	running, lastErr := a.deps.AudioManager.Running()
-	it := connectionItem{
-		Kind: connKindAudioServer, Ref: singletonRef, Card: "audioserver", Name: "Audiobook server",
-		Subtitle: "For listening apps", Configured: on, Enabled: on, Testable: on, FixPath: health.FixAudiobookServer.Path,
-	}
-	if port := portOf(a.deps.AudioManager.Addr()); port != "" {
-		it.Subtitle = "For listening apps · port " + port
-	}
-	switch {
-	case !on:
-		it.State, it.Detail = connStateDisabled, "Switched off"
-	case running:
-		it.State = connstatus.PhaseOK
-	default:
-		it.State, it.LastError = connstatus.PhaseFailing, connstatus.Redact(lastErr)
-		it.Detail = "Switched on but not running"
-	}
-	return it
-}
-
 // handleTestConnection is POST /api/v1/connections/{kind}/{ref}/test: a real check of one
 // connection, recorded like any other use, answered with the refreshed card. An unknown
 // kind or ref is a 404. Metadata keys have their own admin-only route onto this handler.
@@ -729,20 +688,6 @@ func (a *api) testConnection(ctx context.Context, kind, ref string) (detail stri
 		}
 		return "Jellyfin is answering.", nil, true
 
-	case connKindAudioServer:
-		if ref != singletonRef || a.deps.AudioManager == nil || a.deps.Settings == nil {
-			return "", nil, false
-		}
-		if !a.deps.Settings.GetBool(ctx, audioserver.KeyEnabled, false) {
-			return "", errors.New("the audiobook server is switched off"), true
-		}
-		if running, lastErr := a.deps.AudioManager.Running(); !running {
-			if lastErr == "" {
-				lastErr = "it isn't running"
-			}
-			return "", errors.New(lastErr), true
-		}
-		return "Listening apps can connect.", nil, true
 	}
 	return "", errNotFound, false
 }
@@ -767,14 +712,6 @@ func joinDetail(a, b string) string {
 		return b
 	}
 	return a + " · " + b
-}
-
-// portOf is the port in a listen address (":13378" → "13378").
-func portOf(addr string) string {
-	if i := strings.LastIndex(addr, ":"); i >= 0 && i < len(addr)-1 {
-		return addr[i+1:]
-	}
-	return ""
 }
 
 func plural(n int) string {

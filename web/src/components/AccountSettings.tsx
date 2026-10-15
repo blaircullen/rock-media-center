@@ -134,7 +134,7 @@ function Devices() {
   const signOutOthers = async () => {
     const ok = await confirm({
       title: "Sign out your other devices?",
-      body: "Every other phone, tablet and browser signed in as you will need to sign in again. This one stays signed in. Audiobook apps aren’t affected.",
+      body: "Every other phone, tablet and browser signed in as you will need to sign in again. This one stays signed in.",
       confirmLabel: "Sign out others",
       tone: "danger",
     });

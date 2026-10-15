@@ -18,12 +18,6 @@ import (
 // share also keeps the file on the disk it was already on.
 const RecycleDirName = ".arrmada-recycle"
 
-// HoldDirName is Convert's originals hold at the top of each library folder: converted
-// originals wait there, on the drive they were already on, until their undo window ends.
-// Hidden like the bins (dot folder plus .plexignore and .ignore) and skipped by every scan
-// (SkipScanDir). It is not a recycle bin: nothing in it is purged by a size cap.
-const HoldDirName = ".arrmada-hold"
-
 // plexignoreName is the file that keeps Plex from listing a bin's contents as library
 // items. "*" ignores everything under the folder it sits in.
 const plexignoreName = ".plexignore"
@@ -98,7 +92,7 @@ func (b *RootBins) rootOf(path string) string {
 
 // RootOf is the longest of roots holding path ("" when none does) — the library folder a
 // file belongs to, for anything Arrmada keeps beside it on the same drive (the recycle
-// bins, Convert's originals hold). The folder itself doesn't count as inside it.
+// bins). The folder itself doesn't count as inside it.
 func RootOf(roots []libroots.Root, path string) string {
 	p, err := filepath.Abs(path)
 	if err != nil {
@@ -154,7 +148,7 @@ func topDir(path string) string {
 }
 
 // PrepareHiddenDir makes one of Arrmada's hidden folders at the top of a library folder (a
-// recycle bin, Convert's originals hold) and its marker files (.plexignore, .ignore).
+// recycle bin) and its marker files (.plexignore, .ignore).
 // Without them a media server could list every file in it as a library item, so a folder
 // that can't have them is an error like any other. A folder made before a marker existed
 // gets it the next time it's prepared.
@@ -186,7 +180,7 @@ func PrepareHiddenDir(dir string) error {
 
 // rootLabels names the libraries for the UI.
 var rootLabels = map[string]string{
-	"movies": "Movies", "tv": "TV", "ebooks": "Ebooks", "audiobooks": "Audiobooks", "music": "Music",
+	"movies": "Movies", "tv": "TV", "music": "Music",
 }
 
 // All lists every bin the manager should look after: the old shared bin first while it
@@ -252,7 +246,7 @@ func binHasItems(dir string) bool {
 }
 
 // SkipScanDir reports whether a library scan should skip a folder by its name. Hidden
-// folders are Arrmada's own — the .arrmada-recycle bins, the audiobook merge backups — or
+// folders are Arrmada's own — the .arrmada-recycle bins — or
 // a system's (.AppleDouble, .Trash): scanned as media they'd add deleted films back to the
 // library, or bogus titles that vanish when the folder is cleared.
 func SkipScanDir(name string) bool { return strings.HasPrefix(name, ".") }

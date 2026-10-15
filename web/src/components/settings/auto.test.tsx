@@ -120,7 +120,7 @@ describe("AutoToggle", () => {
   function ToggleHarness({ save }: { save: (v: boolean) => Promise<void> }) {
     const [stored, setStored] = useState(false);
     const t = useAutoSave(stored, async (v) => { await save(v); setStored(v); });
-    return <><AutoToggle label="Books" hint="" save={t} /><output data-testid="stored">{String(stored)}</output></>;
+    return <><AutoToggle label="Music" hint="" save={t} /><output data-testid="stored">{String(stored)}</output></>;
   }
 
   it("saves on change", async () => {
@@ -132,7 +132,7 @@ describe("AutoToggle", () => {
   });
 
   it("flips back when the save fails, and says why", async () => {
-    const save = vi.fn().mockRejectedValue(new ApiError("Only an admin can change the Books module", 403));
+    const save = vi.fn().mockRejectedValue(new ApiError("Only an admin can change the Music module", 403));
     render(<ToggleHarness save={save} />);
     await act(async () => { fireEvent.click(screen.getByRole("switch")); });
     expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("false");
