@@ -24,6 +24,7 @@ set up.
 
 - 🎬 **Movies and TV** — search, download, import, rename and upgrade, the way Radarr and Sonarr do. Anime numbering included.
 - 🎵 **Music (preview)** — artists and albums, searched and imported into their own library folder.
+- 💿 **Lossless music engine** — follows a Spotify playlist, fetches the exact recording as genuine lossless (Usenet, torrents or Soulseek over a VPN), rejects fake or upsampled files, and upgrades lossy library copies with undoable swaps. Off until switched on; see [the plan](docs/plans/2026-10-14-2001-feat-lossless-music-engine-plan.md) and [deploy/beast](deploy/beast/README.md).
 - 🙋 **Requests** — family and friends browse and request titles, Overseerr-style, and get told when they're ready. Sign in with Plex or Jellyfin.
 - 📺 **Plex and Jellyfin** — connect either or both: Watch buttons, library updates after every change, and Insights — who's watching what, history and stats, Tautulli-style.
 - 📰 **Usenet, optional** — SABnzbd alongside qBittorrent (`--with-sabnzbd` sets one up for you); bring your own Usenet provider and indexers.
