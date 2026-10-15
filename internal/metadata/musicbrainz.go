@@ -9,7 +9,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -25,11 +24,12 @@ type MusicBrainz struct {
 	base string // musicbrainz.org web-service root; overridden in tests
 	art  string // Cover Art Archive root; overridden in tests
 
-	mu sync.Mutex
+	// pacer serialises every request into one per minInterval, intake before sweep before
+	// catalogue (KTD15). Callers pick the class with WithMBClass.
+	pacer *mbPacer
 	// minInterval is the pacing gap. A field rather than a constant so tests can run
 	// without sleeping a second between every request.
 	minInterval time.Duration
-	last        time.Time
 }
 
 const (
@@ -44,7 +44,7 @@ const (
 func NewMusicBrainz() *MusicBrainz {
 	return &MusicBrainz{
 		http: &http.Client{Timeout: mbTimeout},
-		base: mbBaseURL, art: caaBaseURL, minInterval: mbMinInterval,
+		base: mbBaseURL, art: caaBaseURL, minInterval: mbMinInterval, pacer: newMBPacer(),
 	}
 }
 
@@ -303,7 +303,9 @@ func (m *MusicBrainz) get(ctx context.Context, path string, q url.Values, out an
 				}
 			}
 		}
-		m.pace()
+		if err := m.pace(ctx); err != nil {
+			return err
+		}
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, m.base+path+"?"+q.Encode(), nil)
 		if err != nil {
@@ -337,15 +339,11 @@ func (m *MusicBrainz) get(ctx context.Context, path string, q url.Values, out an
 	return fmt.Errorf("musicbrainz: %s still returning %s after %d retries", path, lastStatus, mbRetries)
 }
 
-// pace holds anonymous clients to one request per second, which is what the service asks
-// for and enforces with blocks.
-func (m *MusicBrainz) pace() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if wait := m.minInterval - time.Since(m.last); wait > 0 {
-		time.Sleep(wait)
-	}
-	m.last = time.Now()
+// pace takes the next request slot from the shared priority pacer, which holds anonymous
+// clients to one request per interval — what the service asks for and enforces with blocks.
+// The class comes from ctx (WithMBClass); an unmarked context is the catalogue class.
+func (m *MusicBrainz) pace(ctx context.Context) error {
+	return m.pacer.wait(ctx, MBClassOf(ctx), m.minInterval)
 }
 
 func mbOrDefault(s, def string) string {
