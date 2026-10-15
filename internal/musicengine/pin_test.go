@@ -71,9 +71,25 @@ func TestAcousticSpotifyTitlePinsTheAcousticRecording(t *testing.T) {
 	}
 }
 
-func TestRelinkedEntryGoesToBlairOnceEvenIfRunTwice(t *testing.T) {
+// A relinked entry with exactly one fitting recording is pinned like any other (Blair,
+// 2026-10-15).
+func TestRelinkedEntryWithOneMatchIsPinned(t *testing.T) {
 	v := newEnv(t)
 	v.mb.add(mbRec("rec-1", "Song", "Artist", "", "I1"))
+	e := entry("sp1", "Song", "Artist", "I1")
+	e.LinkedFromID = "spOriginal"
+	v.spotify.set(e)
+	v.sync()
+	v.tick(2)
+	if it := v.itemFor("sp1"); it.State != StateLibraryCheck || v.recordingMBID(it.RecordingID) != "rec-1" {
+		t.Fatalf("state %s reason %q, want pinned to rec-1", it.State, it.LastReason)
+	}
+}
+
+func TestAmbiguousRelinkedEntryGoesToBlairOnceEvenIfRunTwice(t *testing.T) {
+	v := newEnv(t)
+	v.mb.add(mbRec("rec-1", "Song", "Artist", "", "I1"))
+	v.mb.add(mbRec("rec-2", "Song", "Artist", "", "I1"))
 	e := entry("sp1", "Song", "Artist", "I1")
 	e.LinkedFromID = "spOriginal"
 	v.spotify.set(e)

@@ -280,9 +280,10 @@ func (e *Engine) handlePinning(ctx context.Context, it Item) error {
 		forced = "Spotify lists this track as unavailable"
 	case en.IsLocal:
 		forced = "local file or an entry with no Spotify track id"
-	case en.RelinkedID != "":
-		forced = "Spotify relinked this track (was " + en.RelinkedID + ")"
 	}
+	// A relink (Spotify serving the same song under another track id in this market) is
+	// pinned like any entry when exactly one recording fits (Blair, 2026-10-15: "auto-pin
+	// relinks"); only an ambiguous relink goes to him, with the relink named in the reason.
 	if forced == "" && len(filtered) == 1 {
 		return e.applyPin(mctx, it, en, filtered[0])
 	}
@@ -298,6 +299,9 @@ func (e *Engine) handlePinning(ctx context.Context, it Item) error {
 		pool = cands
 	default:
 		reason = fmt.Sprintf("%d MusicBrainz recordings match equally", len(filtered))
+	}
+	if forced == "" && en.RelinkedID != "" {
+		reason += " (Spotify relinked this track, was " + en.RelinkedID + ")"
 	}
 	if forced != "" && len(pool) == 0 {
 		pool = cands

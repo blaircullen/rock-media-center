@@ -80,7 +80,7 @@ Arrmada's existing music module does not cover this: it is album-only (`internal
 - R3. Each playlist entry produces at most one request, identified by the song itself, so re-reads, reconnects and duplicates in the playlist never create a second request; a song removed and later re-added reopens its earlier request rather than creating a new one.
 - R4. Removing a song from the playlist cancels its request only until a download starts; after that the item finishes, and removal never touches a placed library file.
 - R5. If the playlist cannot be read completely (lost access, error, partial page), the engine changes nothing, keeps all existing requests, and alerts Blair; a failed read is never treated as an empty playlist.
-- R6. Each request is pinned to the exact recording Blair heard: studio, acoustic, live, remix, edit, explicit or clean must match, using the song's Spotify identity (ISRC when present) cross-checked against MusicBrainz; regional relinks, unavailable or local-only entries, and anything ambiguous go to Blair instead of guessing.
+- R6. Each request is pinned to the exact recording Blair heard: studio, acoustic, live, remix, edit, explicit or clean must match, using the song's Spotify identity (ISRC when present) cross-checked against MusicBrainz; unavailable or local-only entries and anything ambiguous go to Blair instead of guessing. A regional relink is pinned like any entry when exactly one recording fits (Blair, 2026-10-15: "auto-pin relinks"); an ambiguous relink goes to Blair.
 
 **Library check (before any download)**
 
@@ -553,7 +553,7 @@ U1 lands first, after the fork cleanup is committed. U2–U7 and U17 then run in
   1. `interfaces.go` declares the seams later units implement (lanes, placement, space gate, alerts), each with a no-op default, so U9–U12 work in their own files.
   2. The state machine holds the transitions from the state diagram; every transition records the state, the time entered, the deadline, and the reason in one transaction through `store.WithTx`.
   3. Intake sync runs on a schedule. A failed read changes nothing and raises an alert (R5). Each new entry creates or reopens one item (R3). Removal cancels the item only before `downloading` (R4). A song still in the playlist under a duplicate entry is not cancelled.
-  4. Pinning resolves the recording from ISRC through MusicBrainz and checks version and explicit flags against the Spotify entry; a relink, local entry, or ambiguity goes to Blair once (R6).
+  4. Pinning resolves the recording from ISRC through MusicBrainz and checks version and explicit flags against the Spotify entry; a local entry or an ambiguity (including an ambiguous relink) goes to Blair once (R6).
   5. The catalogue pass refreshes the library tracks table from Plex nightly at the catalogue priority. The library check follows KTD6.
 - **Patterns to follow:** `internal/scheduler` registration style (registered in U15), `internal/automation/claims.go`.
 - **Test scenarios:**
@@ -564,7 +564,7 @@ U1 lands first, after the fork cleanup is committed. U2–U7 and U17 then run in
   - Re-adding a cancelled song reopens the same item.
   - A failed playlist read leaves every item untouched and raises one alert. Covers AE12.
   - An ISRC that resolves to the studio recording pins to it, not the acoustic one. Covers AE1.
-  - A Spotify entry relinked to another track goes to `waiting_blair` with reason "relinked".
+  - A Spotify entry relinked to another track is pinned when exactly one recording fits; an ambiguous relink goes to `waiting_blair` with the relink named in the reason (changed 2026-10-15).
   - A library copy of the same recording verified genuine ends the item `done` with no search. Covers AE2.
   - A library copy that is a live recording does not match a studio request, and the item goes to `searching`. Covers AE4.
   - A library copy verified SUSPECT turns the item into an upgrade.
