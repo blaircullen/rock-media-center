@@ -274,7 +274,7 @@ type acqFakeSpace struct {
 	released int
 }
 
-func (s *acqFakeSpace) Reserve(_ context.Context, _ WorkKind, _ int64, bytes int64) (bool, string) {
+func (s *acqFakeSpace) Reserve(_ context.Context, _ int64, bytes int64) (bool, string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.ok {
@@ -821,3 +821,6 @@ func TestNewAcquireRequiresPieces(t *testing.T) {
 		t.Error("missing database should fail")
 	}
 }
+
+// The real space gate must satisfy the acquirer's reservation seam.
+var _ StagingSpace = (*Space)(nil)

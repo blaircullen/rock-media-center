@@ -47,15 +47,13 @@ const (
 // says no when the download could take the volume below the floor or the volume cannot be
 // measured. Release is called when the download is checked, rejected or lost. The reserved
 // size is also written to mus_candidates.reserved_bytes, so a restarted gate can rebuild its
-// holds from the database.
-type StagingSpace interface {
-	Reserve(ctx context.Context, kind WorkKind, itemID int64, bytes int64) (ok bool, reason string)
-	Release(ctx context.Context, itemID int64)
-}
+// holds from the database. It is the same contract as SpaceReserver, which *Space implements;
+// the gate reads the item's kind (intake or sweep) itself.
+type StagingSpace = SpaceReserver
 
 type acqAllowAllSpace struct{}
 
-func (acqAllowAllSpace) Reserve(context.Context, WorkKind, int64, int64) (bool, string) {
+func (acqAllowAllSpace) Reserve(context.Context, int64, int64) (bool, string) {
 	return true, ""
 }
 func (acqAllowAllSpace) Release(context.Context, int64) {}
@@ -397,7 +395,7 @@ func acqReserveBytes(c candRow) int64 {
 
 func (a *Acquire) startCandidate(ctx context.Context, m Machine, it Item, rec Recording, c candRow) error {
 	need := acqReserveBytes(c)
-	if ok, why := a.space.Reserve(ctx, workKind(it), it.ID, need); !ok {
+	if ok, why := a.space.Reserve(ctx, it.ID, need); !ok {
 		reason := "waiting for space: " + clip(why, 300)
 		_, err := m.DB().ExecContext(ctx,
 			`UPDATE mus_items SET last_reason = ?, next_attempt_at = ?, updated_at = ? WHERE id = ? AND state = ?`,
