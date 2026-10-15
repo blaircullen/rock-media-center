@@ -14,7 +14,8 @@ import (
 // The delivery queue. Dispatch writes one notification_deliveries row per subscribed,
 // enabled connection — a quick insert, so the bus loop never waits on a slow endpoint —
 // and RunWorker sends them: up to three at once, one at a time per connection, each
-// failure retried after 1, 5 and 30 minutes before the row is marked failed. The rows
+// failure retried after 1, 5 and 30 minutes before the row is marked failed (an event
+// with a RetryPolicy in the catalog is instead retried until delivered). The rows
 // are also each connection's delivery log on the Alerts page.
 //
 // Why not internal/outbox: its dispatcher runs one handler at a time across every
@@ -286,7 +287,7 @@ func (s *Service) finishDelivery(ctx context.Context, d delivery, sendErr error,
 		_, err = s.db.ExecContext(ctx,
 			`UPDATE notification_deliveries SET status = ?, attempts = ?, last_error = '', sent_at = ? WHERE id = ?`,
 			StatusSent, attempts, now.Unix(), d.id)
-	case final || attempts >= maxAttempts:
+	case final || (attempts >= maxAttempts && retryPolicyFor(d.event) == nil):
 		if sendErr == errConnectionDisabled {
 			attempts = d.attempts
 		}
@@ -294,9 +295,17 @@ func (s *Service) finishDelivery(ctx context.Context, d delivery, sendErr error,
 			`UPDATE notification_deliveries SET status = ?, attempts = ?, last_error = ? WHERE id = ?`,
 			StatusFailed, attempts, clip(sendErr.Error()), d.id)
 	default:
+		// An event with its own policy keeps retrying until it is delivered; the rest
+		// follow retryAfter and fail after maxAttempts (checked above).
+		var wait time.Duration
+		if pol := retryPolicyFor(d.event); pol != nil {
+			wait = pol.Delay(attempts)
+		} else {
+			wait = retryAfter[attempts-1]
+		}
 		_, err = s.db.ExecContext(ctx,
 			`UPDATE notification_deliveries SET status = ?, attempts = ?, last_error = ?, next_attempt_at = ? WHERE id = ?`,
-			StatusQueued, attempts, clip(sendErr.Error()), now.Add(retryAfter[attempts-1]).Unix(), d.id)
+			StatusQueued, attempts, clip(sendErr.Error()), now.Add(wait).Unix(), d.id)
 	}
 	if err != nil {
 		s.log.Warn("notify: couldn't record a delivery outcome", "id", d.id, "err", err)

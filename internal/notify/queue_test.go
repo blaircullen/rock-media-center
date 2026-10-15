@@ -362,3 +362,47 @@ func TestPruneDeliveries(t *testing.T) {
 		t.Fatalf("pruned %d, %v; want the old test row only", n, err)
 	}
 }
+
+// An engine alert whose target is down for 3 hours keeps retrying (the wait doubles to
+// the 1-hour cap) and is delivered once when the target returns; an event with no policy
+// still fails for good after 4 attempts.
+func TestEngineAlertRetriesUntilDelivered(t *testing.T) {
+	s, rec, _ := newTestService(t)
+	clk := newClock()
+	useClock(s, clk)
+	ctx := context.Background()
+	mustCreate(t, s, Connection{Name: "tg", URL: "ntfy://tg", Events: sub(EventMusicEnginePausedForSpace, "release.grabbed"), Enabled: true})
+	rec.fail["ntfy://tg"] = true
+	if n, err := s.EmitOnce(ctx, EventMusicEnginePausedForSpace, "mus-space:1", map[string]any{"subject": "Paused", "body": "low space"}); err != nil || n != 1 {
+		t.Fatalf("EmitOnce = %d, %v", n, err)
+	}
+	if _, err := s.Dispatch(ctx, "release.grabbed", msg("Dune")); err != nil {
+		t.Fatal(err)
+	}
+	for elapsed := time.Duration(0); elapsed < 3*time.Hour; elapsed += time.Minute {
+		drainNow(t, s)
+		clk.advance(time.Minute)
+	}
+	if status, attempts, _, lastErr := row(t, s, 1); status != StatusQueued || attempts <= maxAttempts || lastErr == "" {
+		t.Fatalf("engine alert after 3h down = %s after %d attempts (%q), want still queued past %d attempts", status, attempts, lastErr, maxAttempts)
+	}
+	if status, attempts, _, _ := row(t, s, 2); status != StatusFailed || attempts != maxAttempts {
+		t.Errorf("plain event = %s after %d attempts, want failed after %d", status, attempts, maxAttempts)
+	}
+	if _, _, next, _ := row(t, s, 1); next-clk.t.Unix() > int64(time.Hour/time.Second) {
+		t.Errorf("next attempt is %ds away, want at most an hour", next-clk.t.Unix())
+	}
+
+	delete(rec.fail, "ntfy://tg")
+	clk.advance(time.Hour)
+	drainNow(t, s)
+	if status, _, _, lastErr := row(t, s, 1); status != StatusSent || lastErr != "" {
+		t.Fatalf("after the target returned: %s %q, want sent", status, lastErr)
+	}
+	before := rec.count()
+	clk.advance(2 * time.Hour)
+	drainNow(t, s)
+	if rec.count() != before {
+		t.Errorf("a delivered alert was sent again (%d -> %d sends)", before, rec.count())
+	}
+}

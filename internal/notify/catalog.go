@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // The alert catalog: every event a connection can subscribe to, with the words the
@@ -26,6 +27,39 @@ import (
 //
 // Never declare an event about what someone listens to or watches in particular: admins
 // see how much and when, never what.
+
+// RetryPolicy is an event's own retry schedule: after the nth failed send the next try is
+// Base*2^(n-1) later, never more than Max after the failure, and the row is never given
+// up on (a connection that is switched off still fails its queued rows).
+type RetryPolicy struct {
+	Base time.Duration
+	Max  time.Duration
+}
+
+// Delay is the wait after the nth failed attempt (n >= 1).
+func (p RetryPolicy) Delay(n int) time.Duration {
+	d := p.Base
+	if d <= 0 {
+		d = time.Minute
+	}
+	for i := 1; i < n && (p.Max <= 0 || d < p.Max); i++ {
+		d *= 2
+	}
+	if p.Max > 0 && d > p.Max {
+		d = p.Max
+	}
+	return d
+}
+
+// retryPolicyFor is the policy of the event with this key, nil for the default schedule
+// (and for a key no longer in the catalog, such as the "test" rows).
+func retryPolicyFor(key string) *RetryPolicy {
+	def, ok := Lookup(key)
+	if !ok {
+		return nil
+	}
+	return def.Retry
+}
 
 // Message is one alert as it's sent: a title, a body and an in-app link ("/activity/needs-you",
 // "/movies/12") a push notification opens.
@@ -49,6 +83,10 @@ type EventDef struct {
 	DefaultOn bool `json:"default_on"`
 	// Module hides the event while that module ("music") is switched off.
 	Module string `json:"module,omitempty"`
+	// Retry, when set, replaces the queue's default of 4 attempts over about 36 minutes:
+	// the event is retried with this backoff until it is delivered (the lossless music
+	// engine's alerts use it). nil keeps the default.
+	Retry *RetryPolicy `json:"-"`
 	// Format writes the message from the event's payload. ok=false means "nothing to
 	// say" (no title, a library scan adopting files) and nothing is sent.
 	Format func(data map[string]any) (m Message, ok bool) `json:"-"`
