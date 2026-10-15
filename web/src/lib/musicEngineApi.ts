@@ -111,7 +111,13 @@ export interface EngineSettings {
   margin_gb: number;
   quarantine_share_gb: number;
   auto_swaps: boolean;
+  /** The saved switch. The engine is built only when the app starts, so it can differ from running. */
   enabled: boolean;
+  /** Whether the engine was built at the last start. The server ignores it on save. */
+  running: boolean;
+  plex_section: string;
+  slskd_url: string;
+  gluetun_control_url: string;
 }
 
 export interface CheckResult { passed: boolean | null; at: number | null; summary: string }
@@ -159,7 +165,12 @@ export const musicEngineApi = {
   quarantineClear: (olderThanDays: number) => call<QuarantineCleared>("/quarantine/clear", post({ older_than_days: olderThanDays })),
   alertFailures: () => call<{ failures: DeliveryFailure[] }>("/alerts/failures").then((r) => r.failures),
   settings: () => call<EngineSettings>("/settings"),
-  saveSettings: (s: EngineSettings) => call<EngineSettings>("/settings", { method: "PUT", body: JSON.stringify(s) }),
+  // running is read-only; the server refuses a body that carries a field it does not take.
+  saveSettings: (s: EngineSettings) => {
+    const body: Partial<EngineSettings> = { ...s };
+    delete body.running;
+    return call<EngineSettings>("/settings", { method: "PUT", body: JSON.stringify(body) });
+  },
   releaseChecks: () => call<ReleaseChecks>("/release-checks"),
   runCalibration: (rows: CalibrationRow[]) => call<CalibrationResult>("/release-checks/calibration", post({ rows })),
   recordPathTest: (passed: boolean, summary: string) => call<ReleaseChecks>("/release-checks/path-test", post({ passed, summary })),

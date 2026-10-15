@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -41,6 +42,10 @@ const (
 	MusicEngineKeyQuarGB    = "musicengine_quarantine_share_gb"
 	MusicEngineKeyAutoSwaps = "musicengine_auto_swaps"
 	MusicEngineKeyEnabled   = "musicengine_enabled"
+	// The three connection settings the wiring reads (plan U15), edited on the settings page.
+	MusicEngineKeyPlexSection = "musicengine_plex_section"        // Plex music section key
+	MusicEngineKeySlskdURL    = "musicengine_slskd_url"           // slskd base URL
+	MusicEngineKeyGluetunURL  = "musicengine_gluetun_control_url" // gluetun control server base URL
 	// The two release checks (R13, KTD16) are stored separately as JSON.
 	MusicEngineKeyCalibration = "musicengine_check_calibration"
 	MusicEngineKeyPathTest    = "musicengine_check_path_test"
@@ -54,6 +59,11 @@ const (
 	meDefaultMarginGB = 25.0
 	meDefaultQuarGB   = 200.0
 
+	// MusicEngineDefaultPlexSection and MusicEngineDefaultSlskdURL are used when the
+	// setting was never saved.
+	MusicEngineDefaultPlexSection = "5"
+	MusicEngineDefaultSlskdURL    = "http://gluetun:5030"
+
 	meMaxCalibrationRows = 50
 	meMaxItemsPage       = 500
 	meDefaultItemsPage   = 100
@@ -62,6 +72,10 @@ const (
 )
 
 const meAutoSwapsRefusal = "automatic swaps stay off until both release checks pass"
+
+// meNotReadyPrefix leads the 503 a mutating route answers while the engine's startup
+// reconcile has not succeeded (finding 16).
+const meNotReadyPrefix = "the music engine is not ready: "
 
 // ---- what the routes call (satisfied by the musicengine services; fakes in tests) ----
 
@@ -127,6 +141,15 @@ type MusicEngineAPI struct {
 	Heartbeat  MusicEngineHeartbeat
 	Checker    MusicEngineChecker
 
+	// Ready reports whether the engine may change anything: it returns nil once the
+	// startup reconcile of the placement journal has succeeded and an error saying why
+	// not otherwise. Every route that mutates engine state answers 503 with that reason
+	// while it errors. Nil means always ready.
+	Ready func(ctx context.Context) error
+	// Running says whether the engine was built when the app started. The enabled
+	// setting is read only at boot, so the settings page compares the two.
+	Running bool
+
 	// LibraryRoot is the music library root (/mnt/nas/music); calibration paths must sit
 	// under it. LibraryPath and DownloadsPath name the volumes the space gate measures.
 	LibraryRoot   func() string
@@ -155,7 +178,14 @@ type MusicEngineSettings struct {
 	MarginGB          float64 `json:"margin_gb"`
 	QuarantineShareGB float64 `json:"quarantine_share_gb"`
 	AutoSwaps         bool    `json:"auto_swaps"`
-	Enabled           bool    `json:"enabled"`
+	// Enabled is the saved setting; Running is whether the engine was built at boot. They
+	// differ until the app restarts. Running is not stored.
+	Enabled bool `json:"enabled"`
+	Running bool `json:"running"`
+
+	PlexSection       string `json:"plex_section"`
+	SlskdURL          string `json:"slskd_url"`
+	GluetunControlURL string `json:"gluetun_control_url"`
 }
 
 // LoadMusicEngineSettings reads the stored settings, with defaults for anything unset.
@@ -179,6 +209,9 @@ func LoadMusicEngineSettings(ctx context.Context, s *settings.Service) MusicEngi
 		QuarantineShareGB: num(MusicEngineKeyQuarGB, meDefaultQuarGB),
 		AutoSwaps:         s.GetBool(ctx, MusicEngineKeyAutoSwaps, false),
 		Enabled:           s.GetBool(ctx, MusicEngineKeyEnabled, false),
+		PlexSection:       strings.TrimSpace(s.Get(ctx, MusicEngineKeyPlexSection, MusicEngineDefaultPlexSection)),
+		SlskdURL:          strings.TrimSpace(s.Get(ctx, MusicEngineKeySlskdURL, MusicEngineDefaultSlskdURL)),
+		GluetunControlURL: strings.TrimSpace(s.Get(ctx, MusicEngineKeyGluetunURL, musicengine.DefaultGluetunControlURL)),
 	}
 }
 
@@ -227,20 +260,28 @@ func meCheckPassed(ctx context.Context, s *settings.Service, key string, log fun
 // answers 503 so the route table, and the golden, stay the same either way.
 func (a *api) registerMusicEngineRoutes(mux *router, m *MusicEngineAPI) {
 	const base = "/api/v1/musicengine"
+	// Admin only (finding 7): these routes undo swaps, clear the quarantine and answer
+	// decisions that move or delete library files.
 	staff := func(h func(w http.ResponseWriter, r *http.Request, m *MusicEngineAPI)) guard {
-		return a.requireRole(auth.RoleManager, a.meRoute(m, h))
+		return a.requireRole(auth.RoleAdmin, a.meRoute(m, h))
+	}
+	// mutating routes also wait for the startup reconcile (finding 16). The settings and
+	// release-check routes only write settings and stay available so the engine can be
+	// switched off while it is stuck.
+	mutating := func(h func(w http.ResponseWriter, r *http.Request, m *MusicEngineAPI)) guard {
+		return staff(a.meReady(h))
 	}
 	mux.HandleFunc("GET "+base+"/items", staff(a.meListItems))
 	mux.HandleFunc("GET "+base+"/items/{id}", staff(a.meGetItem))
-	mux.HandleFunc("POST "+base+"/items/{id}/full-album", staff(a.meFullAlbum))
+	mux.HandleFunc("POST "+base+"/items/{id}/full-album", mutating(a.meFullAlbum))
 	mux.HandleFunc("GET "+base+"/decisions", staff(a.meListDecisions))
-	mux.HandleFunc("POST "+base+"/decisions/{id}/answer", staff(a.meAnswerDecision))
+	mux.HandleFunc("POST "+base+"/decisions/{id}/answer", mutating(a.meAnswerDecision))
 	mux.HandleFunc("GET "+base+"/swaps", staff(a.meListSwaps))
-	mux.HandleFunc("POST "+base+"/swaps/{id}/undo", staff(a.meUndoSwap))
+	mux.HandleFunc("POST "+base+"/swaps/{id}/undo", mutating(a.meUndoSwap))
 	mux.HandleFunc("GET "+base+"/lanes", staff(a.meLanes))
 	mux.HandleFunc("GET "+base+"/space", staff(a.meSpace))
 	mux.HandleFunc("GET "+base+"/quarantine/preview", staff(a.meQuarantinePreview))
-	mux.HandleFunc("POST "+base+"/quarantine/clear", staff(a.meQuarantineClear))
+	mux.HandleFunc("POST "+base+"/quarantine/clear", mutating(a.meQuarantineClear))
 	mux.HandleFunc("GET "+base+"/alerts/failures", staff(a.meAlertFailures))
 	mux.HandleFunc("GET "+base+"/settings", staff(a.meGetSettings))
 	mux.HandleFunc("PUT "+base+"/settings", staff(a.mePutSettings))
@@ -258,6 +299,21 @@ func (a *api) meRoute(m *MusicEngineAPI, h func(w http.ResponseWriter, r *http.R
 		if m == nil {
 			a.meError(w, http.StatusServiceUnavailable, "the music engine is not running")
 			return
+		}
+		h(w, r, m)
+	}
+}
+
+// meReady wraps a handler that changes engine state so it answers 503 until the engine
+// is ready, with the reason from m.Ready.
+func (a *api) meReady(h func(w http.ResponseWriter, r *http.Request, m *MusicEngineAPI)) func(w http.ResponseWriter, r *http.Request, m *MusicEngineAPI) {
+	return func(w http.ResponseWriter, r *http.Request, m *MusicEngineAPI) {
+		if m.Ready != nil {
+			if err := m.Ready(r.Context()); err != nil {
+				a.deps.Log.Warn("musicengine api: refusing a change while the engine is not ready", "method", r.Method, "path", r.URL.Path, "err", err)
+				a.meError(w, http.StatusServiceUnavailable, meNotReadyPrefix+err.Error())
+				return
+			}
 		}
 		h(w, r, m)
 	}
@@ -1206,14 +1262,15 @@ func (a *api) meAlertFailures(w http.ResponseWriter, r *http.Request, m *MusicEn
 
 // ---- settings and release checks ----
 
-func (a *api) meGetSettings(w http.ResponseWriter, r *http.Request, _ *MusicEngineAPI) {
-	a.writeJSON(w, http.StatusOK, a.meSettingsView(r.Context()))
+func (a *api) meGetSettings(w http.ResponseWriter, r *http.Request, m *MusicEngineAPI) {
+	a.writeJSON(w, http.StatusOK, a.meSettingsView(r.Context(), m))
 }
 
 // meSettingsView is the stored settings with the auto-swaps flag as it will act: on only
 // when both checks are recorded as passed.
-func (a *api) meSettingsView(ctx context.Context) MusicEngineSettings {
+func (a *api) meSettingsView(ctx context.Context, m *MusicEngineAPI) MusicEngineSettings {
 	s := LoadMusicEngineSettings(ctx, a.deps.Settings)
+	s.Running = m != nil && m.Running
 	s.AutoSwaps = s.AutoSwaps && a.meBothChecksPassed(ctx)
 	return s
 }
@@ -1227,6 +1284,16 @@ func meGBOK(v float64, min float64) bool {
 	return !math.IsNaN(v) && !math.IsInf(v, 0) && v >= min && v <= 1e7
 }
 
+// meHTTPURL checks a service address: an http or https URL with a host.
+func meHTTPURL(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return "", errors.New("must be a full http:// or https:// address")
+	}
+	return raw, nil
+}
+
 func (a *api) mePutSettings(w http.ResponseWriter, r *http.Request, m *MusicEngineAPI) {
 	var req struct {
 		WatchedPlaylist   *string  `json:"watched_playlist"`
@@ -1235,6 +1302,9 @@ func (a *api) mePutSettings(w http.ResponseWriter, r *http.Request, m *MusicEngi
 		QuarantineShareGB *float64 `json:"quarantine_share_gb"`
 		AutoSwaps         *bool    `json:"auto_swaps"`
 		Enabled           *bool    `json:"enabled"`
+		PlexSection       *string  `json:"plex_section"`
+		SlskdURL          *string  `json:"slskd_url"`
+		GluetunControlURL *string  `json:"gluetun_control_url"`
 	}
 	if !a.decodeJSON(w, r, &req) {
 		return
@@ -1275,6 +1345,30 @@ func (a *api) mePutSettings(w http.ResponseWriter, r *http.Request, m *MusicEngi
 		}
 		cur.QuarantineShareGB = *req.QuarantineShareGB
 	}
+	if req.PlexSection != nil {
+		sec := strings.TrimSpace(*req.PlexSection)
+		if n, err := strconv.Atoi(sec); err != nil || n < 1 || strconv.Itoa(n) != sec {
+			a.meError(w, http.StatusBadRequest, "the Plex music section must be a positive whole number")
+			return
+		}
+		cur.PlexSection = sec
+	}
+	if req.SlskdURL != nil {
+		u, err := meHTTPURL(*req.SlskdURL)
+		if err != nil {
+			a.meError(w, http.StatusBadRequest, "the slskd address "+err.Error())
+			return
+		}
+		cur.SlskdURL = u
+	}
+	if req.GluetunControlURL != nil {
+		u, err := meHTTPURL(*req.GluetunControlURL)
+		if err != nil {
+			a.meError(w, http.StatusBadRequest, "the gluetun control address "+err.Error())
+			return
+		}
+		cur.GluetunControlURL = u
+	}
 	if req.Enabled != nil {
 		cur.Enabled = *req.Enabled
 	}
@@ -1294,6 +1388,9 @@ func (a *api) mePutSettings(w http.ResponseWriter, r *http.Request, m *MusicEngi
 		{MusicEngineKeyQuarGB, strconv.FormatFloat(cur.QuarantineShareGB, 'f', -1, 64)},
 		{MusicEngineKeyAutoSwaps, strconv.FormatBool(cur.AutoSwaps)},
 		{MusicEngineKeyEnabled, strconv.FormatBool(cur.Enabled)},
+		{MusicEngineKeyPlexSection, cur.PlexSection},
+		{MusicEngineKeySlskdURL, cur.SlskdURL},
+		{MusicEngineKeyGluetunURL, cur.GluetunControlURL},
 	}
 	for _, wr := range writes {
 		if err := a.deps.Settings.Set(ctx, wr.key, wr.val); err != nil {
@@ -1301,7 +1398,7 @@ func (a *api) mePutSettings(w http.ResponseWriter, r *http.Request, m *MusicEngi
 			return
 		}
 	}
-	a.writeJSON(w, http.StatusOK, a.meSettingsView(ctx))
+	a.writeJSON(w, http.StatusOK, a.meSettingsView(ctx, m))
 }
 
 func (a *api) meChecksView(ctx context.Context) map[string]meCheck {
@@ -1488,7 +1585,10 @@ func (a *api) meCalibration(w http.ResponseWriter, r *http.Request, m *MusicEngi
 // ---- heartbeat ----
 
 func (a *api) meHeartbeat(w http.ResponseWriter, _ *http.Request, m *MusicEngineAPI) {
-	if !meNeed(a, w, m.Heartbeat != nil, "the heartbeat") {
+	if m.Heartbeat == nil {
+		// Still 503 and still no data beyond this sentence; the watchdog must tell
+		// "switched off" from "stalled".
+		a.meError(w, http.StatusServiceUnavailable, "the music engine is switched off")
 		return
 	}
 	// The one thing this route says. U12's status calls the field last_tick_at; the

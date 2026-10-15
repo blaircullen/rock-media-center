@@ -246,7 +246,7 @@ type finishing struct {
 func (a *api) finishingFacts(ctx context.Context) finishing {
 	f := finishing{reviews: map[string]pipeline.Review{}, failures: map[string]pipeline.Failure{}, wrongCat: map[string]bool{}, own: map[string]bool{}}
 	cats := download.FixedCategories(a.deps.Config.DownloadCategory)
-	for _, c := range []string{cats.Movies, cats.TV, cats.Music} {
+	for _, c := range []string{cats.Movies, cats.TV, cats.Music, download.CategoryMusicEngine} {
 		f.own[c] = true
 	}
 	for _, fl := range a.importFailures() {

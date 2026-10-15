@@ -16,6 +16,15 @@ import { Button, ErrorState, StatusChip, useToast } from "../../ui";
 const SETTINGS_KEY = "musicengine:settings";
 const CHECKS_KEY = "musicengine:checks";
 
+const isHttpUrl = (v: string) => {
+  try {
+    const u = new URL(v.trim());
+    return (u.protocol === "http:" || u.protocol === "https:") && u.host !== "";
+  } catch {
+    return false;
+  }
+};
+
 const numberField = (v: string) => (v.trim() === "" ? NaN : Number(v));
 
 export function MusicEngineSettings() {
@@ -23,11 +32,16 @@ export function MusicEngineSettings() {
   const checks = useQuery(CHECKS_KEY, musicEngineApi.releaseChecks, { staleMs: 0 });
   const toast = useToast();
   const [form, setForm] = useState<EngineSettings | null>(null);
+  // What the server has saved, for the restart notice (the form may hold unsaved edits).
+  const [saved, setSaved] = useState<EngineSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
 
   useEffect(() => {
-    if (settings.data) setForm((f) => f ?? settings.data!);
+    if (settings.data) {
+      setForm((f) => f ?? settings.data!);
+      setSaved(settings.data);
+    }
   }, [settings.data]);
 
   const bothPassed = checks.data?.calibration.passed === true && checks.data?.path_test.passed === true;
@@ -37,8 +51,9 @@ export function MusicEngineSettings() {
     setSaving(true);
     setRefusal(null);
     try {
-      const saved = await musicEngineApi.saveSettings(form);
-      setForm(saved);
+      const result = await musicEngineApi.saveSettings(form);
+      setForm(result);
+      setSaved(result);
       invalidate(SETTINGS_KEY);
       toast("Saved", { tone: "good" });
     } catch (e) {
@@ -56,7 +71,11 @@ export function MusicEngineSettings() {
       <Input type="number" min={0} className="w-32 px-3 py-2 text-base" value={Number.isNaN(form![k]) ? "" : form![k]} onChange={(e) => set(k, numberField(e.target.value))} />
     </Field>
   );
-  const valid = !!form && [form.floor_gb, form.margin_gb, form.quarantine_share_gb].every((n) => Number.isFinite(n) && n >= 0);
+  const sectionOk = !!form && /^[1-9][0-9]*$/.test(form.plex_section.trim());
+  const slskdOk = !!form && isHttpUrl(form.slskd_url);
+  const gluetunOk = !!form && isHttpUrl(form.gluetun_control_url);
+  const valid = !!form && [form.floor_gb, form.margin_gb, form.quarantine_share_gb].every((n) => Number.isFinite(n) && n >= 0) && sectionOk && slskdOk && gluetunOk;
+  const needsRestart = !!saved && saved.enabled !== saved.running;
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,8 +87,22 @@ export function MusicEngineSettings() {
         ) : (
           <>
             <Switch checked={form.enabled} onChange={(v) => set("enabled", v)}>Engine on</Switch>
+            {needsRestart && (
+              <Note tone="info">
+                The engine is {saved!.running ? "running" : "off"} but saved as {saved!.enabled ? "on" : "off"}. Restart Rock Media Center to apply.
+              </Note>
+            )}
             <Field label="Watched playlist" hint="The Spotify playlist the engine follows.">
               <Input value={form.watched_playlist} onChange={(e) => set("watched_playlist", e.target.value)} />
+            </Field>
+            <Field label="Plex music section" hint="The number of your music library in Plex." error={sectionOk ? undefined : "Enter a whole number, 1 or more."}>
+              <Input inputMode="numeric" className="w-32 px-3 py-2 text-base" value={form.plex_section} onChange={(e) => set("plex_section", e.target.value)} />
+            </Field>
+            <Field label="slskd address" hint="Where the Soulseek client answers, for example http://gluetun:5030." error={slskdOk ? undefined : "Enter a full http:// or https:// address."}>
+              <Input value={form.slskd_url} onChange={(e) => set("slskd_url", e.target.value)} />
+            </Field>
+            <Field label="VPN control address" hint="The gluetun control server the engine asks whether the VPN is up." error={gluetunOk ? undefined : "Enter a full http:// or https:// address."}>
+              <Input value={form.gluetun_control_url} onChange={(e) => set("gluetun_control_url", e.target.value)} />
             </Field>
             {gb("floor_gb", "Free space floor (GB)", "New work pauses below this much free space.")}
             {gb("margin_gb", "Safety margin (GB)", "Extra room kept on top of the floor.")}

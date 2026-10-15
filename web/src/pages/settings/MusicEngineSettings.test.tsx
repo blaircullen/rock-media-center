@@ -9,7 +9,7 @@ import { MusicEngineSettings } from "./MusicEngineSettings";
 
 afterEach(() => { cleanup(); clearQueryCache(); vi.restoreAllMocks(); });
 
-const base: EngineSettings = { watched_playlist: "spotify:playlist:abc", floor_gb: 50, margin_gb: 10, quarantine_share_gb: 200, auto_swaps: false, enabled: true };
+const base: EngineSettings = { watched_playlist: "spotify:playlist:abc", floor_gb: 50, margin_gb: 10, quarantine_share_gb: 200, auto_swaps: false, enabled: true, running: true, plex_section: "5", slskd_url: "http://gluetun:5030", gluetun_control_url: "http://gluetun:8000" };
 const checks = (cal: boolean | null, path: boolean | null): ReleaseChecks => ({
   calibration: { passed: cal, at: cal === null ? null : 1_700_000_000, summary: cal ? "All 6 files matched." : "" },
   path_test: { passed: path, at: path === null ? null : 1_700_000_000, summary: path ? "Plex kept the same track." : "" },
@@ -53,6 +53,43 @@ describe("MusicEngineSettings", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText(msg)).toBeTruthy();
     expect((await autoSwitch()).getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("says to restart when the saved switch and the running engine differ, and not otherwise", async () => {
+    show(checks(null, null), { ...base, enabled: true, running: false });
+    expect(await screen.findByText(/Restart Rock Media Center to apply/)).toBeTruthy();
+    cleanup();
+    clearQueryCache();
+    show(checks(null, null), { ...base, enabled: true, running: true });
+    await autoSwitch();
+    expect(screen.queryByText(/Restart Rock Media Center to apply/)).toBeNull();
+  });
+
+  it("saves the Plex section and both addresses, and blocks a bad value before sending", async () => {
+    show(checks(null, null));
+    const save = vi.spyOn(musicEngineApi, "saveSettings").mockResolvedValue({ ...base, plex_section: "7" });
+    await autoSwitch();
+    fireEvent.change(screen.getByLabelText("Plex music section"), { target: { value: "seven" } });
+    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText("Plex music section"), { target: { value: "7" } });
+    fireEvent.change(screen.getByLabelText("slskd address"), { target: { value: "gluetun:5030" } });
+    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText("slskd address"), { target: { value: "https://slskd.lan:5030" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(save).toHaveBeenCalledWith({ ...base, plex_section: "7", slskd_url: "https://slskd.lan:5030" }));
+  });
+
+  it("never sends the read-only running flag (the server refuses unknown fields)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(base), { status: 200, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      await musicEngineApi.saveSettings(base);
+      const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+      expect("running" in body).toBe(false);
+      expect(body.plex_section).toBe("5");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("records a path test result with what was seen", async () => {

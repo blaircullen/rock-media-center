@@ -218,3 +218,21 @@ func TestImportUnmanagedIntoAMovie(t *testing.T) {
 		t.Errorf("second import = %d, want 404", rec.Code)
 	}
 }
+
+// A finished download in the music engine's category is the engine's own: it is neither
+// offered for import nor counted as a stranger, and the activity page treats it as one of
+// Rock Media Center's categories.
+func TestMusicEngineCategoryIsNotUnmanaged(t *testing.T) {
+	e := newUnmanagedEnv(t)
+	dl := e.a.deps.Config.DownloadsDir
+	e.set(
+		doneTorrent(strangerA, "Artist - Song FLAC", download.CategoryMusicEngine, filepath.Join(dl, "rmc", "a")),
+		doneTorrent(strangerB, "Linux.Distro.ISO", "linux", filepath.Join(dl, "b")),
+	)
+	if got, _ := e.list(t); fmt.Sprint(got) != fmt.Sprint([]string{strangerB}) {
+		t.Fatalf("unmanaged = %v, want only the stranger", got)
+	}
+	if !e.a.finishingFacts(context.Background()).own[download.CategoryMusicEngine] {
+		t.Error("the activity page does not treat the engine's category as Rock Media Center's own")
+	}
+}

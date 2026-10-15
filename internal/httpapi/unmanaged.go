@@ -70,7 +70,7 @@ func (a *api) readUnmanaged(ctx context.Context) (unmanagedState, error) {
 	}
 	ignored := a.ignoredHashes(ctx, snap)
 	cats := download.FixedCategories(a.deps.Config.DownloadCategory)
-	own := map[string]bool{cats.Movies: true, cats.TV: true, cats.Music: true}
+	own := map[string]bool{cats.Movies: true, cats.TV: true, cats.Music: true, download.CategoryMusicEngine: true}
 	misfiled := map[string]bool{}
 	for _, it := range a.deps.Automation.WrongCategoryDownloads() {
 		misfiled[strings.ToLower(it.Hash)] = true

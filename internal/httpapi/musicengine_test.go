@@ -187,14 +187,16 @@ func meRealDecisions(t *testing.T, db *sql.DB) *musicengine.Decisions {
 
 // ---- access ----
 
-// Every engine route is staff-only except the heartbeat: requesters and read-only accounts
-// get 403, a visitor with no session gets 401, and a manager is let through.
-func TestMusicEngineRoutesAreStaffOnlyExceptHeartbeat(t *testing.T) {
+// Every engine route is admin-only except the heartbeat (finding 7): requesters, read-only
+// accounts and managers get 403, a visitor with no session gets 401, and an admin is let
+// through.
+func TestMusicEngineRoutesAreAdminOnlyExceptHeartbeat(t *testing.T) {
 	m := &MusicEngineAPI{Heartbeat: meFakeBeat{at: 77}}
 	s := newMEServer(t, m)
 	_, requester := s.user(t, "kid", auth.RoleRequester)
 	_, readonly := s.user(t, "ro", auth.RoleReadonly)
 	_, manager := s.user(t, "mgr", auth.RoleManager)
+	_, admin := s.user(t, "admin", auth.RoleAdmin)
 
 	routes := []struct{ method, path, body string }{
 		{"GET", "/items", ""}, {"GET", "/items/1", ""}, {"POST", "/items/1/full-album", `{"confirm":false}`},
@@ -208,7 +210,7 @@ func TestMusicEngineRoutesAreStaffOnlyExceptHeartbeat(t *testing.T) {
 		{"POST", "/release-checks/calibration", `{"rows":[]}`}, {"POST", "/release-checks/path-test", `{"passed":false,"summary":""}`},
 	}
 	for _, rt := range routes {
-		for name, c := range map[string]*http.Cookie{"requester": requester, "readonly": readonly} {
+		for name, c := range map[string]*http.Cookie{"requester": requester, "readonly": readonly, "manager": manager} {
 			if rec := s.doJSON(rt.method, meBase+rt.path, c, rt.body); rec.Code != http.StatusForbidden {
 				t.Errorf("%s %s as %s: HTTP %d, want 403", rt.method, rt.path, name, rec.Code)
 			}
@@ -216,8 +218,8 @@ func TestMusicEngineRoutesAreStaffOnlyExceptHeartbeat(t *testing.T) {
 		if rec := s.doJSON(rt.method, meBase+rt.path, nil, rt.body); rec.Code != http.StatusUnauthorized {
 			t.Errorf("%s %s with no session: HTTP %d, want 401", rt.method, rt.path, rec.Code)
 		}
-		if rec := s.doJSON(rt.method, meBase+rt.path, manager, rt.body); rec.Code == http.StatusForbidden || rec.Code == http.StatusUnauthorized {
-			t.Errorf("%s %s as manager: HTTP %d, want it let through", rt.method, rt.path, rec.Code)
+		if rec := s.doJSON(rt.method, meBase+rt.path, admin, rt.body); rec.Code == http.StatusForbidden || rec.Code == http.StatusUnauthorized {
+			t.Errorf("%s %s as admin: HTTP %d, want it let through", rt.method, rt.path, rec.Code)
 		}
 	}
 
@@ -703,5 +705,100 @@ func TestMusicEngineAlertFailuresListsOnlyEngineDeliveryFailures(t *testing.T) {
 	f := fails[1].(map[string]any)
 	if f["event"] != "musicengine.item_past_deadline" || f["connection"] != "Telegram" || f["last_error"] != "telegram: 401" || f["attempts"] != float64(4) || f["updated_at"] != float64(777) {
 		t.Errorf("failure = %v", f)
+	}
+}
+
+// While the engine is not ready (the startup reconcile failed) every route that changes
+// engine state answers 503 with the reason and does nothing; reads and the settings stay
+// available, and the routes work once the engine is ready (finding 16).
+func TestMusicEngineMutatingRoutesWaitForReadiness(t *testing.T) {
+	sw := &meFakeSwaps{}
+	q := &meFakeQuarantine{}
+	notReady := errors.New("library share unreachable")
+	m := &MusicEngineAPI{Swaps: sw, Quarantine: q, Album: &meFakeAlbum{}, Ready: func(context.Context) error { return notReady }}
+	s := newMEServer(t, m)
+	_, admin := s.user(t, "admin", auth.RoleAdmin)
+	db := s.st.DB()
+	item := meSeedItem(t, db, "request", "waiting_blair", "A", "S")
+	dec := meSeedDecision(t, db, item, "ambiguous", "drop")
+
+	for _, rt := range []struct{ method, path, body string }{
+		{"POST", "/swaps/1/undo", ""},
+		{"POST", "/quarantine/clear", `{"older_than_days":90}`},
+		{"POST", fmt.Sprintf("/items/%d/full-album", item), `{"confirm":true}`},
+		{"POST", fmt.Sprintf("/decisions/%d/answer", dec), `{"option":"drop"}`},
+	} {
+		body := meJSON(t, s.doJSON(rt.method, meBase+rt.path, admin, rt.body), http.StatusServiceUnavailable)
+		if msg, _ := body["message"].(string); !strings.Contains(msg, "not ready") || !strings.Contains(msg, "library share unreachable") {
+			t.Errorf("%s %s: message %q, want the not-ready reason", rt.method, rt.path, msg)
+		}
+	}
+	if len(sw.ids) != 0 || q.clearedAge != 0 || meItemState(t, db, item) != "waiting_blair" {
+		t.Errorf("a refused route changed something: undo calls %v, cleared %v, item %s", sw.ids, q.clearedAge, meItemState(t, db, item))
+	}
+	for _, p := range []string{"/items", "/settings", "/swaps"} {
+		if rec := s.do("GET", meBase+p, admin); rec.Code != http.StatusOK {
+			t.Errorf("GET %s while not ready: HTTP %d, want 200", p, rec.Code)
+		}
+	}
+
+	notReady = nil
+	if rec := s.doJSON("POST", meBase+"/swaps/1/undo", admin, ""); rec.Code != http.StatusOK || len(sw.ids) != 1 {
+		t.Errorf("undo once ready: HTTP %d, calls %v, want 200 and one call", rec.Code, sw.ids)
+	}
+}
+
+// The settings carry the saved flag and whether the engine was built at boot, plus the
+// Plex section and the two service addresses, validated on save (findings 17 and K3).
+func TestMusicEngineSettingsShowRunningAndTakeConnectionFields(t *testing.T) {
+	s := newMEServer(t, &MusicEngineAPI{Running: false})
+	_, admin := s.user(t, "admin", auth.RoleAdmin)
+
+	got := meJSON(t, s.do("GET", meBase+"/settings", admin), http.StatusOK)
+	if got["enabled"] != false || got["running"] != false || got["plex_section"] != "5" ||
+		got["slskd_url"] != "http://gluetun:5030" || got["gluetun_control_url"] != musicengine.DefaultGluetunControlURL {
+		t.Fatalf("defaults = %v", got)
+	}
+
+	put := meJSON(t, s.doJSON("PUT", meBase+"/settings", admin,
+		`{"enabled":true,"plex_section":"7","slskd_url":"https://slskd.lan:5030","gluetun_control_url":"http://10.0.0.5:8000"}`), http.StatusOK)
+	if put["enabled"] != true || put["running"] != false || put["plex_section"] != "7" ||
+		put["slskd_url"] != "https://slskd.lan:5030" || put["gluetun_control_url"] != "http://10.0.0.5:8000" {
+		t.Fatalf("after save = %v", put)
+	}
+	if v := s.deps.Settings.Get(t.Context(), MusicEngineKeyPlexSection, ""); v != "7" {
+		t.Errorf("stored plex section %q, want 7", v)
+	}
+
+	for _, bad := range []string{
+		`{"plex_section":"0"}`, `{"plex_section":"-3"}`, `{"plex_section":"abc"}`, `{"plex_section":""}`,
+		`{"slskd_url":"ftp://x"}`, `{"slskd_url":"gluetun:5030"}`, `{"slskd_url":""}`,
+		`{"gluetun_control_url":"not a url"}`,
+	} {
+		if rec := s.doJSON("PUT", meBase+"/settings", admin, bad); rec.Code != http.StatusBadRequest {
+			t.Errorf("PUT %s: HTTP %d, want 400", bad, rec.Code)
+		}
+	}
+	if v := s.deps.Settings.Get(t.Context(), MusicEngineKeyPlexSection, ""); v != "7" {
+		t.Errorf("a refused save changed the plex section to %q", v)
+	}
+
+	live := newMEServer(t, &MusicEngineAPI{Running: true})
+	_, admin2 := live.user(t, "admin", auth.RoleAdmin)
+	if got := meJSON(t, live.do("GET", meBase+"/settings", admin2), http.StatusOK); got["running"] != true {
+		t.Errorf("running = %v, want true for a built engine", got["running"])
+	}
+}
+
+// With the engine switched off the heartbeat is still 503 and still carries no data, but
+// it says the engine is off so the watchdog can tell that from a stall (K4).
+func TestMusicEngineHeartbeatSaysWhenTheEngineIsSwitchedOff(t *testing.T) {
+	s := newMEServer(t, &MusicEngineAPI{})
+	body := meJSON(t, s.do("GET", meBase+"/heartbeat", nil), http.StatusServiceUnavailable)
+	if msg, _ := body["message"].(string); !strings.Contains(msg, "switched off") {
+		t.Errorf("message %q, want it to say the engine is switched off", msg)
+	}
+	if _, has := body["last_tick"]; has {
+		t.Errorf("an off engine's heartbeat carried data: %v", body)
 	}
 }

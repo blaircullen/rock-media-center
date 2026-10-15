@@ -43,19 +43,22 @@ import (
 //	->  engine  ->  placement.Bind(engine)  ->  swaps.Bind(placement)  ->  Reconcile  ->  tasks
 //
 // Reconcile settles the placement journal before the first engine Tick (KTD7). If it fails
-// (the library share is unreachable) the Tick task retries it first and does nothing else
-// until it succeeds, and the heartbeat stays stale, which is what the watchdog reads.
+// (the library share is unreachable) nothing that changes engine state runs until a retry
+// succeeds: every scheduler task except the digest goes through the reconciler's gate, and
+// so does every mutating API route (503 with the reason). The heartbeat stays stale, which
+// is what the watchdog reads.
 
-// Setting keys that only this wiring reads. They have no field on the engine settings page
-// yet, so they are changed in the settings table until U13/U14 add one.
+// Setting keys. The Plex section and the two service addresses are edited on the engine
+// settings page, so their names and defaults live with the API (httpapi); the Plex library
+// root has no page field and is changed in the settings table.
 const (
-	meKeyPlexSection    = "musicengine_plex_section"        // Plex music section key
-	meKeySlskdURL       = "musicengine_slskd_url"           // slskd base URL
-	meKeyGluetunURL     = "musicengine_gluetun_control_url" // gluetun control server base URL
-	meKeyPlexLibraryDir = "musicengine_plex_library_root"   // the library as Plex sees it, when it differs
+	meKeyPlexSection    = httpapi.MusicEngineKeyPlexSection
+	meKeySlskdURL       = httpapi.MusicEngineKeySlskdURL
+	meKeyGluetunURL     = httpapi.MusicEngineKeyGluetunURL
+	meKeyPlexLibraryDir = "musicengine_plex_library_root" // the library as Plex sees it, when it differs
 
-	meDefaultPlexSection = "5"
-	meDefaultSlskdURL    = "http://gluetun:5030"
+	meDefaultPlexSection = httpapi.MusicEngineDefaultPlexSection
+	meDefaultSlskdURL    = httpapi.MusicEngineDefaultSlskdURL
 )
 
 // Scheduler intervals.
@@ -253,14 +256,15 @@ func buildMusicEngine(d musicEngineDeps) (*httpapi.MusicEngineAPI, error) {
 			return acquire.AcceptLossy(ctx, engine, it.ID)
 		},
 		ApproveSwap: swaps.ApproveSwap,
-		// TreatAsMatch is not wired: the engine has no method that takes a decision's
-		// unsettled library file as the item's copy. Answering "treat_match" answers 501.
+		TreatAsMatch: func(ctx context.Context, _ musicengine.Decision, it musicengine.Item) error {
+			return engine.TreatLibraryFileAsMatch(ctx, it.ID)
+		},
 	})
 	heartbeat := musicengine.NewHeartbeat(nil)
 	digest := musicengine.NewDigest(d.DB, notifier, nil)
 
 	// Reconcile before anything runs (KTD7). A failure is retried by the Tick task.
-	rec := &reconciler{pl: placement, log: modLog(log, "musicengine")}
+	rec := &reconciler{reconcile: placement.Reconcile, log: modLog(log, "musicengine")}
 	if err := rec.ensure(d.Ctx); err != nil {
 		log.Error("music engine: reconcile failed; no engine step runs until it succeeds", "err", err)
 	}
@@ -274,15 +278,16 @@ func buildMusicEngine(d musicEngineDeps) (*httpapi.MusicEngineAPI, error) {
 		DB: d.DB, Decisions: decisions, Swaps: swaps, Quarantine: quarantine, Space: space,
 		Album: album, Remapper: remapper, Heartbeat: heartbeat, Checker: checker,
 		LibraryRoot: func() string { return libRoot }, LibraryPath: libRoot, DownloadsPath: dlRoot,
+		Ready: rec.ensure, Running: true,
 	}, nil
 }
 
 // reconciler runs Placement.Reconcile until it has succeeded once.
 type reconciler struct {
-	pl   *musicengine.Placement
-	log  *slog.Logger
-	mu   sync.Mutex
-	done bool
+	reconcile func(context.Context) (musicengine.ReconcileReport, error)
+	log       *slog.Logger
+	mu        sync.Mutex
+	done      bool
 }
 
 func (r *reconciler) ensure(ctx context.Context) error {
@@ -291,7 +296,7 @@ func (r *reconciler) ensure(ctx context.Context) error {
 	if r.done {
 		return nil
 	}
-	rep, err := r.pl.Reconcile(ctx)
+	rep, err := r.reconcile(ctx)
 	r.log.Info("music engine: reconciled the placement journal",
 		"rows", rep.Rows, "rolled_back", rep.RolledBack, "stopped", rep.Stopped, "advanced", rep.Advanced,
 		"closed", rep.Closed, "confirmed_by_plex", rep.ConfirmedBy, "err", err)
@@ -302,32 +307,52 @@ func (r *reconciler) ensure(ctx context.Context) error {
 	return nil
 }
 
+// gate wraps a task body so it runs only once the startup reconcile has succeeded; until
+// then it retries the reconcile and returns the reason, doing nothing else.
+func (r *reconciler) gate(run func(ctx context.Context) error) func(ctx context.Context) error {
+	return func(ctx context.Context) error {
+		if err := r.ensure(ctx); err != nil {
+			return fmt.Errorf("the placement journal is not settled yet: %w", err)
+		}
+		return run(ctx)
+	}
+}
+
 func registerMusicEngineTasks(d musicEngineDeps, rec *reconciler, engine *musicengine.Engine, hb *musicengine.Heartbeat,
 	sweep *musicengine.Sweep, acquire *musicengine.Acquire, digest *musicengine.DigestSender, space *musicengine.Space,
 	remapper *musicengine.Remapper, mirror *musicengine.Mirror) {
 	s, log := d.Sched, modLog(d.Log, "musicengine")
 	notifier := musicengine.NewNotifier(d.Notify)
 
-	s.Register("musicengine-tick", meTickEvery, true, func(ctx context.Context) error {
-		if err := rec.ensure(ctx); err != nil {
-			return fmt.Errorf("the placement journal is not settled yet: %w", err)
-		}
+	// Every task that reads or changes engine state waits for the startup reconcile
+	// (finding 16); a failed reconcile is retried here and the task does nothing else.
+	gated := rec.gate
+
+	s.Register("musicengine-tick", meTickEvery, true, gated(func(ctx context.Context) error {
 		return hb.Tick(ctx, engine)
-	}, scheduler.Label("Music engine: advance requests"),
+	}), scheduler.Label("Music engine: advance requests"),
 		scheduler.Description("Moves each requested or upgraded song one step through the music engine. A successful run is the engine's heartbeat."))
 
-	s.Register("musicengine-intake", meIntakeEvery, true, func(ctx context.Context) error {
+	// The mirror playlist follows the watched playlist, so it is brought up to date after
+	// every successful intake run, not only in the daily catalogue task (finding 19).
+	s.Register("musicengine-intake", meIntakeEvery, true, gated(func(ctx context.Context) error {
 		rep, err := engine.SyncIntake(ctx)
 		if rep.Created > 0 || rep.Removed > 0 || rep.Reopened > 0 {
 			log.Info("music engine: playlist synced", "entries", rep.Entries, "created", rep.Created, "reopened", rep.Reopened, "removed", rep.Removed)
 		}
-		return err
-	}, scheduler.Label("Music engine: read the Spotify playlist"),
-		scheduler.Description("Reads the watched Spotify playlist and opens a request for each new song."))
+		if err != nil {
+			return err
+		}
+		if _, err := mirror.Sync(ctx); err != nil {
+			return fmt.Errorf("playlist mirror: %w", err)
+		}
+		return nil
+	}), scheduler.Label("Music engine: read the Spotify playlist"),
+		scheduler.Description("Reads the watched Spotify playlist, opens a request for each new song and updates the mirror playlist."))
 
 	// The catalogue first: Plex rating keys go stale after a re-import, and the remap and
 	// the playlist mirror both depend on fresh keys.
-	s.Register("musicengine-catalogue", meCatalogueEvery, true, func(ctx context.Context) error {
+	s.Register("musicengine-catalogue", meCatalogueEvery, true, gated(func(ctx context.Context) error {
 		rep, err := engine.RefreshCatalogue(ctx)
 		if err != nil {
 			return err
@@ -341,37 +366,34 @@ func registerMusicEngineTasks(d musicEngineDeps, rec *reconciler, engine *musice
 			errs = append(errs, fmt.Errorf("playlist mirror: %w", err))
 		}
 		return errors.Join(errs...)
-	}, scheduler.Label("Music engine: refresh the library catalogue"),
+	}), scheduler.Label("Music engine: refresh the library catalogue"),
 		scheduler.Description("Reads every music track from Plex, restores ratings and playlists after a re-import, and updates the mirror playlist."))
 
-	s.Register("musicengine-sweep", meSweepEvery, false, func(ctx context.Context) error {
-		if err := rec.ensure(ctx); err != nil {
-			return fmt.Errorf("the placement journal is not settled yet: %w", err)
-		}
+	s.Register("musicengine-sweep", meSweepEvery, false, gated(func(ctx context.Context) error {
 		rep, err := sweep.Run(ctx)
 		if rep.Created > 0 || rep.Paused {
 			log.Info("music engine: upgrade sweep", "created_item", rep.Created, "track", rep.Track, "paused", rep.Paused, "reason", rep.Reason, "skipped", rep.Skipped)
 		}
 		return err
-	}, scheduler.Label("Music engine: upgrade sweep"),
+	}), scheduler.Label("Music engine: upgrade sweep"),
 		scheduler.Description("Picks the next library song to look for a better copy of, and finishes any swap or undo left half-done."))
 
-	s.Register("musicengine-expire-staging", meExpireStagingEvery, true, func(ctx context.Context) error {
+	s.Register("musicengine-expire-staging", meExpireStagingEvery, true, gated(func(ctx context.Context) error {
 		rep, err := acquire.ExpireStaging(ctx)
 		log.Info("music engine: staging expiry", "report", fmt.Sprintf("%+v", rep), "err", err)
 		return err
-	}, scheduler.Label("Music engine: clear old downloads"),
+	}), scheduler.Label("Music engine: clear old downloads"),
 		scheduler.Description("Removes staged downloads that were rejected or never used, after a week."))
 
-	s.Register("musicengine-lane-check", meLaneCheckEvery, false, func(ctx context.Context) error {
+	s.Register("musicengine-lane-check", meLaneCheckEvery, false, gated(func(ctx context.Context) error {
 		return musicengine.CheckLanes(ctx, d.DB, notifier, time.Now())
-	}, scheduler.Label("Music engine: check the sources"),
+	}), scheduler.Label("Music engine: check the sources"),
 		scheduler.Description("Alerts when a music source (usenet, torrents, Soulseek) has been unavailable for more than a day."))
 
-	s.Register("musicengine-space-check", meSpaceCheckEvery, true, func(ctx context.Context) error {
+	s.Register("musicengine-space-check", meSpaceCheckEvery, true, gated(func(ctx context.Context) error {
 		_, err := space.Status(ctx)
 		return err
-	}, scheduler.Label("Music engine: check disk space"),
+	}), scheduler.Label("Music engine: check disk space"),
 		scheduler.Description("Measures the library and downloads drives so the engine pauses, resumes and alerts on free space even while idle."))
 
 	et, err := time.LoadLocation("America/New_York")
