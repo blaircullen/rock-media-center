@@ -82,3 +82,14 @@ was not run; it sends real messages.
 - The four remixes were pinned to the remix recordings, not the originals.
 - 18 songs went to Blair only because Spotify relinked the track id (R6 sends every relink to
   Blair).
+
+## Release checks (both passed 2026-10-15) and automatic swaps
+
+- Calibration (R13): 23 of 23 files classified as expected, list confirmed by Blair
+  (`deploy/beast/calibration.tsv`).
+- Plex path test (R13), track picked by Blair: 3 Doors Down "Kryptonite", swap 19 at 07:58 ET.
+  Plex rating key 241948 unchanged; a 4-star rating and 1 play set for the test survived the
+  swap, as did its "Gym Jiggling" membership; one Plex track at the path and none from
+  dot-prefixed temp files; the old file is in quarantine and the swap is undoable. The test
+  rating and play were cleared afterwards.
+- Automatic swaps switched ON after both passed (plan KTD16).
