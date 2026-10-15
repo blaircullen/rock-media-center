@@ -40,13 +40,16 @@ func (e *Engine) TreatLibraryFileAsMatch(ctx context.Context, itemID int64) erro
 		return err
 	}
 	mctx := metadata.WithMBClass(ctx, mbClass(it))
-	cands, err := e.libraryCandidates(ctx, section, it, rec)
+	// Truncation does not matter here: the same bounded list the decision was raised from is
+	// read again, in the same order.
+	cands, _, err := e.libraryCandidates(ctx, section, it, rec)
 	if err != nil {
 		return err
 	}
 
 	var pick *libCand
 	var pinnedFull *metadata.Recording
+	unsettled := 0
 	for i := range cands {
 		c := cands[i]
 		res := matchYes
@@ -58,12 +61,20 @@ func (e *Engine) TreatLibraryFileAsMatch(ctx context.Context, itemID int64) erro
 			res = r
 		}
 		if res == matchUnsettled {
-			pick = &c
-			break
+			unsettled++
+			if unsettled == 1 {
+				pick = &c
+			}
+			continue
 		}
 		if res == matchYes && pick == nil {
 			pick = &c
 		}
+	}
+	if unsettled > 1 {
+		// The decision names no file, so with two unsettled copies the answer cannot say
+		// which one Blair meant; guessing could keep the wrong copy.
+		return fmt.Errorf("item %d has %d unsettled library files, so \"treat as match\" cannot tell which one is meant", it.ID, unsettled)
 	}
 	if pick == nil {
 		return fmt.Errorf("the library file for item %d is no longer in the library; answer again after the next check", it.ID)

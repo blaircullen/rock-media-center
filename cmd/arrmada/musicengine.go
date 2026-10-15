@@ -216,7 +216,7 @@ func buildMusicEngine(d musicEngineDeps) (*httpapi.MusicEngineAPI, error) {
 		Settings: func() musicengine.Settings {
 			return musicengine.Settings{PlaylistID: cfgSettings().WatchedPlaylist, PlexSection: plexSection()}
 		},
-		Spotify: &liveSpotify{keys: d.Keys}, MB: d.MB, Plex: plexLive, Checker: checker, Tags: tags,
+		Spotify: &liveSpotify{keys: d.Keys, notBefore: d.Settings}, MB: d.MB, Plex: plexLive, Checker: checker, Tags: tags,
 		Acquirer: acquire, Placer: placement, Space: space, Notifier: notifier,
 		Log: modLog(log, "musicengine"),
 	})
@@ -228,7 +228,7 @@ func buildMusicEngine(d musicEngineDeps) (*httpapi.MusicEngineAPI, error) {
 		return nil, err
 	}
 
-	album, err := musicengine.NewAlbum(musicengine.AlbumConfig{Placement: placement, Releases: d.MB, Staging: staging})
+	album, err := musicengine.NewAlbum(musicengine.AlbumConfig{Placement: placement, Releases: d.MB, Staging: staging, Library: engine})
 	if err != nil {
 		return nil, err
 	}
@@ -536,6 +536,8 @@ var (
 // engine records and alerts on like any failed read (R5).
 type liveSpotify struct {
 	keys *apikeys.Store
+	// notBefore keeps Spotify's Retry-After cool-down across restarts (Astra #22).
+	notBefore spotify.NotBeforeStore
 
 	mu         sync.Mutex
 	cur        *spotify.Client
@@ -546,7 +548,7 @@ func (l *liveSpotify) ReadPlaylist(ctx context.Context, playlistID string) (*spo
 	id, secret := l.keys.Value(ctx, apikeys.SpotifyClientID), l.keys.Value(ctx, apikeys.SpotifyClientSecret)
 	l.mu.Lock()
 	if l.cur == nil || id != l.id || secret != l.secret {
-		c, err := spotify.New(spotify.Config{ClientID: id, ClientSecret: secret})
+		c, err := spotify.New(spotify.Config{ClientID: id, ClientSecret: secret, NotBefore: l.notBefore})
 		if err != nil {
 			l.mu.Unlock()
 			return nil, fmt.Errorf("Spotify client ID and secret are not both set (Settings → Connections): %w", err)
