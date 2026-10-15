@@ -208,10 +208,11 @@ func (e *Engine) insertEntry(ctx context.Context, tx store.Execer, playlistID in
 	return nil
 }
 
-// isLocalEntry: a local file, an item Spotify gave no track id for, or a track Spotify lists
-// but marks unavailable has no identity the engine can pin by itself; pinning sends such an
-// entry to Blair instead of searching (R6). The unavailable column keeps the real reason.
-func isLocalEntry(se spotify.Entry) bool { return se.IsLocal || se.TrackID == "" || se.Unavailable }
+// isLocalEntry: a local file or an item Spotify gave no track id for has no identity the
+// engine can pin by itself; pinning sends such an entry to Blair instead of searching (R6).
+// A track Spotify lists but marks unavailable is flagged in its own column and also goes to
+// Blair (pin.go).
+func isLocalEntry(se spotify.Entry) bool { return se.IsLocal || se.TrackID == "" }
 
 // refreshEntry updates a known entry from the read and, when it comes back after being
 // removed, reopens its item.

@@ -37,14 +37,14 @@ func TestNullSlotInThePlaylistRemovesAndCancelsNothing(t *testing.T) {
 }
 
 // An identified track Spotify marks unavailable keeps that flag and is routed like a local
-// entry (to Blair), not searched.
+// entry (to Blair, pin.go), not searched; it is not marked local.
 func TestUnavailableIdentifiedEntryKeepsItsFlag(t *testing.T) {
 	v := newEnv(t)
 	u := entry("spU", "U", "X", "I9")
 	u.Unavailable = true
 	v.spotify.set(entry("spA", "A", "X", "I1"), u)
 	v.sync()
-	if n := v.count(`SELECT COUNT(*) FROM mus_playlist_entries WHERE spotify_track_id = 'spU' AND unavailable = 1 AND is_local = 1`); n != 1 {
+	if n := v.count(`SELECT COUNT(*) FROM mus_playlist_entries WHERE spotify_track_id = 'spU' AND unavailable = 1 AND is_local = 0`); n != 1 {
 		t.Fatalf("unavailable entry not flagged")
 	}
 	if n := v.count(`SELECT COUNT(*) FROM mus_playlist_entries WHERE spotify_track_id = 'spA' AND unavailable = 0 AND is_local = 0`); n != 1 {

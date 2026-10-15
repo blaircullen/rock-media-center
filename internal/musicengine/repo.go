@@ -221,6 +221,7 @@ type entryRow struct {
 	DurationMs  int
 	Explicit    bool
 	IsLocal     bool
+	Unavailable bool // Spotify lists the track but marks it not playable (0402)
 	RelinkedID  string
 	RecordingID int64
 	ItemID      int64
@@ -228,14 +229,15 @@ type entryRow struct {
 }
 
 const entryCols = `id, spotify_track_id, isrc, title, artist, album, duration_ms, explicit, is_local,
-	relinked_from_id, COALESCE(recording_id, 0), COALESCE(item_id, 0), present`
+	relinked_from_id, COALESCE(recording_id, 0), COALESCE(item_id, 0), present, unavailable`
 
 func scanEntry(r rowScanner) (entryRow, error) {
 	var en entryRow
-	var explicit, local, present int
+	var explicit, local, present, unavailable int
 	err := r.Scan(&en.ID, &en.Key, &en.ISRC, &en.Title, &en.Artist, &en.Album, &en.DurationMs,
-		&explicit, &local, &en.RelinkedID, &en.RecordingID, &en.ItemID, &present)
+		&explicit, &local, &en.RelinkedID, &en.RecordingID, &en.ItemID, &present, &unavailable)
 	en.Explicit, en.IsLocal, en.Present = explicit != 0, local != 0, present != 0
+	en.Unavailable = unavailable != 0
 	return en, err
 }
 

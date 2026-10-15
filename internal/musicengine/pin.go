@@ -276,6 +276,8 @@ func (e *Engine) handlePinning(ctx context.Context, it Item) error {
 
 	var forced string
 	switch {
+	case en.Unavailable:
+		forced = "Spotify lists this track as unavailable"
 	case en.IsLocal:
 		forced = "local file or an entry with no Spotify track id"
 	case en.RelinkedID != "":

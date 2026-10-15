@@ -124,6 +124,21 @@ func TestLocalFileGoesToBlair(t *testing.T) {
 	}
 }
 
+// Astra #12: an identified track Spotify marks unavailable is not pinned and searched, even
+// when MusicBrainz has exactly one match; it goes to Blair with the real reason.
+func TestUnavailableTrackGoesToBlair(t *testing.T) {
+	v := newEnv(t)
+	v.mb.search = []metadata.Recording{mbRec("rec-1", "Song", "Artist", "", "")}
+	e := entry("sp1", "Song", "Artist", "")
+	e.Unavailable = true
+	v.spotify.set(e)
+	v.sync()
+	v.tick(2)
+	if it := v.itemFor("sp1"); it.State != StateWaitingBlair || !strings.Contains(it.LastReason, "unavailable") {
+		t.Fatalf("state %s reason %q", it.State, it.LastReason)
+	}
+}
+
 func TestNoISRCWithOneClearSearchMatchPins(t *testing.T) {
 	v := newEnv(t)
 	v.mb.search = []metadata.Recording{mbRec("rec-1", "Song", "Artist", "", "")}
