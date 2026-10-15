@@ -1,14 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#c56a44"/>
-      <stop offset="1" stop-color="#9a4526"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" fill="url(#bg)"/>
-  <!-- The A-sail: two sails back to back make an "A" over a hull. Kept inside the
-       maskable safe circle so the same art serves as Android's adaptive icon. -->
-  <path d="M244 92 L244 352 L128 352 Q176 212 244 92 Z" fill="#fdf1e7" opacity="0.72"/>
-  <path d="M268 92 L268 352 L384 352 Q336 212 268 92 Z" fill="#fdf1e7"/>
-  <path d="M128 376 L384 376 Q368 420 330 420 L182 420 Q144 420 128 376 Z" fill="#fdf1e7"/>
+  <!-- The Rock Media Center mark: a rock outcrop (Cobbling Rock) with sound bars and a play
+       notch cut through it, on navy. -->
+  <rect width="512" height="512" fill="#1d2d42"/>
+  <g transform="translate(256 256) scale(0.74) translate(-398 -485.5)">
+    <path fill="#f3efe7" fill-rule="evenodd" d="M132 676 L184 571 L222 549 L256 453 L300 422 L324 334 L364 295 L430 325 L452 365 L516 403 L541 482 L580 508 L616 614 L644 637 L664 676 Z M270 511 L270 586 L296 586 L296 511 Z M321 470 L321 627 L348 627 L348 470 Z M372 427 L372 627 L429 563 L429 500 Z M453 470 L453 627 L480 627 L480 470 Z M504 511 L504 586 L530 586 L530 511 Z"/>
+  </g>
 </svg>

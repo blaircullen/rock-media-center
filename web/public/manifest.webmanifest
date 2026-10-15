@@ -5,7 +5,7 @@
   "start_url": "/discover",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#1a1310",
+  "background_color": "#1d2d42",
   "theme_color": "#1a1310",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
