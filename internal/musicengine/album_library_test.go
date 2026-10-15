@@ -93,3 +93,29 @@ func TestEngineTrackBlocked(t *testing.T) {
 		t.Errorf("genuine copy: %q", why)
 	}
 }
+
+// With no room for a track, the album reports it skipped with a reason (no journal row was
+// started, so nothing would resume it) instead of failing the whole request.
+func TestAlbumTrackWithoutRoomIsSkippedNotFailed(t *testing.T) {
+	r, _, s := newAlbumFix(t, placeSeed{
+		Title: "Song", Artist: "Band", Album: "Album", Disc: 1, Track: 1,
+		Others: []placeOther{{Title: "Other One", Disc: 1, Track: 2}},
+	}, nil)
+	r.pl.cfg.Space = &placeSpy{refuse: true}
+	before := r.v.count(`SELECT COUNT(*) FROM mus_swap_journal`) // the single's own row
+	a, err := NewAlbum(AlbumConfig{Placement: r.pl, Releases: placeFakeReleases{rel: placeRelease(2)},
+		Library: albumFakeLibrary{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := a.Place(context.Background(), s.ItemID, AlbumOptions{})
+	if err != nil {
+		t.Fatalf("a space refusal must not fail the album: %v", err)
+	}
+	if len(res.Placed) != 0 || len(res.Skipped) != 1 || !strings.Contains(res.Skipped[0].Reason, "free space") {
+		t.Errorf("result = %+v, want Other One skipped for space", res)
+	}
+	if n := r.v.count(`SELECT COUNT(*) FROM mus_swap_journal`); n != before {
+		t.Errorf("journal rows = %d, want %d (no new row without room)", n, before)
+	}
+}

@@ -205,7 +205,7 @@ func buildMusicEngine(d musicEngineDeps) (*httpapi.MusicEngineAPI, error) {
 		LibraryRoot: libRoot, PlexRoot: plexRoot, QuarantineRoot: quarantineRoot,
 		PlexSection: plexSection, Plex: plexLive, Checker: checker, Tags: tags,
 		Editor: musicengine.Metaflac{}, Releases: d.MB, Staging: staging, Mirror: mirror,
-		Swaps: swaps, Finalize: swaps.Finalize, Log: modLog(log, "musicengine"),
+		Swaps: swaps, Space: space, Finalize: swaps.Finalize, Log: modLog(log, "musicengine"),
 	})
 	if err != nil {
 		return nil, err

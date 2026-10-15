@@ -88,20 +88,6 @@ func parseAcquireTags(b []byte) (AcquireFileTags, error) {
 	return out, nil
 }
 
-// acqLosslessCodec reports whether an ffprobe codec name is a lossless one. An unknown name
-// is not lossless: the library takes only codecs it can name.
-func acqLosslessCodec(codec string) bool {
-	c := strings.ToLower(strings.TrimSpace(codec))
-	if strings.HasPrefix(c, "pcm_") {
-		return true // wav, aiff
-	}
-	switch c {
-	case "flac", "alac", "wavpack", "ape", "tta", "mlp", "truehd", "shorten", "tak":
-		return true
-	}
-	return false
-}
-
 // acqWantedVersionWords are the version words the pinned recording records ("studio" is the
 // absence of any).
 func acqWantedVersionWords(hint string) []string {

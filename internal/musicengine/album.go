@@ -431,14 +431,24 @@ func (a *Album) placeOne(ctx context.Context, f albumFile, dest string, num layo
 		Kind: JournalPlace, RecordingID: recID, Source: f.Path, Dest: dest,
 		ExpectFingerprint: f.Res.Fingerprint, Number: &num,
 	})
+	if errors.Is(err, ErrSpaceWait) {
+		// No journal row was started, so nothing resumes this track; asking for the album
+		// again places it once there is room (earlier tracks are reported as placed).
+		return albumPlaced{stopped: true, reason: "not enough free space; ask for the album again later"}, nil
+	}
 	if err != nil {
 		return albumPlaced{}, err
 	}
 	out, err := p.Advance(ctx, row)
+	if errors.Is(err, ErrSpaceWait) {
+		return albumPlaced{pending: true}, nil // the open row is advanced by Swaps.Resume
+	}
 	if err != nil {
 		return albumPlaced{}, err
 	}
 	switch out {
+	case OutcomePending:
+		return albumPlaced{pending: true}, nil
 	case OutcomeRolledBack:
 		return albumPlaced{stopped: true, reason: "rolled back; nothing was placed"}, nil
 	case OutcomeStopped:

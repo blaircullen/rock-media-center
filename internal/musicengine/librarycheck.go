@@ -55,14 +55,15 @@ type checkedFile struct {
 	res  audiocheck.Result
 }
 
-// isLossless reports whether an ffprobe codec name is a lossless one.
+// isLossless reports whether an ffprobe codec name is a lossless one. It is the one list:
+// acquisition, placement and the library check all use it, and an unknown name is not lossless.
 func isLossless(codec string) bool {
-	codec = strings.ToLower(codec)
+	codec = strings.ToLower(strings.TrimSpace(codec))
 	if strings.HasPrefix(codec, "pcm_") || strings.HasPrefix(codec, "dsd_") {
 		return true
 	}
 	switch codec {
-	case "flac", "alac", "ape", "wavpack", "tta", "mlp", "truehd":
+	case "flac", "alac", "ape", "wavpack", "tta", "mlp", "truehd", "shorten", "tak":
 		return true
 	}
 	return false

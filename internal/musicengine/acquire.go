@@ -932,7 +932,7 @@ func (a *Acquire) checkStep(ctx context.Context, m Machine, it Item) error {
 		return a.acceptChecked(ctx, m, it, *c, "LOSSY", res, target, "")
 	case !lossy && res.Verdict == audiocheck.Genuine && res.Integrity.OK:
 		// A spectral "Genuine" says nothing about the codec: AAC and MP3 can read as genuine.
-		if !acqLosslessCodec(res.Facts.Codec) {
+		if !isLossless(res.Facts.Codec) {
 			return a.rejectChecked(ctx, m, it, *c, string(res.Verdict),
 				fmt.Sprintf("not a lossless codec (%q): only FLAC, ALAC, WAV and similar are accepted", res.Facts.Codec), &res, target)
 		}

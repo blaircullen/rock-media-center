@@ -54,12 +54,12 @@ func TestAcquireRejectsLossyCodecThatReadsGenuine(t *testing.T) {
 
 func TestAcquireAcceptsLosslessCodecs(t *testing.T) {
 	for _, codec := range []string{"flac", "alac", "pcm_s24le", "wavpack"} {
-		if !acqLosslessCodec(codec) {
+		if !isLossless(codec) {
 			t.Errorf("%s should be lossless", codec)
 		}
 	}
 	for _, codec := range []string{"aac", "mp3", "opus", "vorbis", "", "wmav2"} {
-		if acqLosslessCodec(codec) {
+		if isLossless(codec) {
 			t.Errorf("%q should not be lossless", codec)
 		}
 	}
