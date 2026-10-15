@@ -38,11 +38,12 @@ services:
       # Engine staging and quarantine live under rmc/ here, on the same NFS export as the
       # clients' finished downloads, so moving a download into staging is a rename.
       ARRMADA_DOWNLOADS_DIR: "/mnt/nas/downloads/beast-qbt"
-      # Clients and Plex by address. Settings made in the app's UI (indexers, clients, Spotify,
-      # Plex token, Apprise URL) are stored in /data, not here.
+      # Plex by address (the token comes from .env). SABnzbd and qBittorrent are added in the
+      # app as ordinary clients with path mappings, NOT through ARRMADA_SABNZBD_URL /
+      # ARRMADA_QBITTORRENT_URL: those mark a client as bundled, i.e. owned by this app, which
+      # then sets qBittorrent's default save path and incoming port. On Beast both clients
+      # are shared with Sonarr/Radarr, so the app must never own them.
       ARRMADA_PLEX_URL: "http://10.0.0.13:32400"
-      ARRMADA_SABNZBD_URL: "http://10.0.0.13:8085"
-      ARRMADA_QBITTORRENT_URL: "http://gluetun:8090"
     extra_hosts:
       # Name for the host in case an app setting prefers a hostname over the LAN IP.
       - "beast-host:10.0.0.13"
