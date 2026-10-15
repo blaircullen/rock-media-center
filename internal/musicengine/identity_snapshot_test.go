@@ -88,3 +88,31 @@ func TestRemapMergesTheCatalogueRowInsertedForTheNewKey(t *testing.T) {
 		t.Errorf("item now points at library row %d, want %d", got, trackID)
 	}
 }
+
+// A library-matched track is recorded without a checksum. With its key unchanged the remap
+// must not ask Blair about it (Beast, 2026-10-15: 35 such decisions), and an open remap
+// decision about it from an earlier run is closed.
+func TestRemapLeavesAnUnchangedTrackWithoutAChecksumAlone(t *testing.T) {
+	f := newMirrorFix(t)
+	ctx := context.Background()
+	f.recordState(f.itemA, 0, "", "")
+	rec := f.v.item(f.itemA).RecordingID
+	var path string
+	if err := f.v.db.QueryRow(`SELECT path FROM mus_track_identities WHERE recording_id = ?`, rec).Scan(&path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.v.db.Exec(`UPDATE mus_track_identities SET sha256 = '' WHERE recording_id = ?`, rec); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.v.db.Exec(`INSERT INTO mus_decisions (item_id, kind, reason, options, created_at) VALUES (?, 'remap', ?, '[]', 1)`,
+		f.itemA, path+": no checksum was recorded, so the file cannot be proven to be the same"); err != nil {
+		t.Fatal(err)
+	}
+	rep, err := f.remapper(false).Remap(ctx)
+	if err != nil || len(rep.Unmappable) != 0 {
+		t.Fatalf("remap = %+v, %v; want nothing unmappable", rep, err)
+	}
+	if n := f.v.count(`SELECT COUNT(*) FROM mus_decisions WHERE kind = 'remap' AND answered_at = 0`); n != 0 {
+		t.Fatalf("open remap decisions = %d, want the stale one closed", n)
+	}
+}

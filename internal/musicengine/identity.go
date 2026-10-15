@@ -184,8 +184,10 @@ func (r *Remapper) Remap(ctx context.Context) (RemapReport, error) {
 			r.raise(ctx, id, why)
 		case outcome == remapChanged:
 			rep.Remapped++
+			r.settle(ctx, id)
 		default:
 			rep.Unchanged++
+			r.settle(ctx, id)
 		}
 	}
 	if r.cfg.Mirror != nil {
@@ -279,6 +281,15 @@ func (r *Remapper) remapOne(ctx context.Context, section string, id identityRow,
 	case len(hits) > 1:
 		return remapUnmappable, fmt.Sprintf("Plex lists %d tracks at that path (ambiguous)", len(hits)), nil
 	}
+	track := hits[0]
+	if id.Key == track.RatingKey {
+		// Same key at the same path: Plex did not re-import anything, so Plex is the truth and
+		// no checksum is needed (a library-matched track has none; asking for one raised a
+		// decision on every such song, Beast 2026-10-15). Restoring the saved state here would
+		// undo a rating change or playlist removal the user made since.
+		return r.refreshSnapshot(ctx, id, track, pls)
+	}
+	// The key changed: only a checksum proves the file under the new key is the same one.
 	if id.SHA256 == "" {
 		return remapUnmappable, "no checksum was recorded, so the file cannot be proven to be the same", nil
 	}
@@ -288,12 +299,6 @@ func (r *Remapper) remapOne(ctx context.Context, section string, id identityRow,
 	}
 	if sum != id.SHA256 {
 		return remapUnmappable, "the file's checksum is not the recorded one", nil
-	}
-	track := hits[0]
-	if id.Key == track.RatingKey {
-		// Same key, same file: nothing was replaced, so Plex is the truth. Restoring the saved
-		// state here would undo a rating change or playlist removal the user made since.
-		return r.refreshSnapshot(ctx, id, track, pls)
 	}
 	ms, err := r.memberships(ctx, id.ID)
 	if err != nil {
@@ -393,6 +398,23 @@ func remapHasKey(items []plex.PlaylistItem, key string) bool {
 		}
 	}
 	return false
+}
+
+// settle closes an open remap decision about this track once a later run finds it fine, so a
+// question that no longer applies does not wait on Blair.
+func (r *Remapper) settle(ctx context.Context, id identityRow) {
+	if _, err := r.cfg.DB.ExecContext(ctx,
+		`UPDATE mus_decisions SET answer = 'resolved', answer_note = 'a later remap found the track fine', answered_at = ?
+		 WHERE kind = 'remap' AND answered_at = 0 AND reason LIKE ? ESCAPE '\'
+		   AND item_id IN (SELECT id FROM mus_items WHERE recording_id = ?)`,
+		r.now().Unix(), remapLikePrefix(id.Path)+"%", id.RecordingID); err != nil {
+		r.log.Warn("musicengine remap: could not close a settled decision", "path", id.Path, "err", err)
+	}
+}
+
+// remapLikePrefix escapes a path for a LIKE prefix match on "<path>: ...".
+func remapLikePrefix(path string) string {
+	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(path + ": ")
 }
 
 // raise files the remap decision on the track's newest item. Raising twice is a no-op.
