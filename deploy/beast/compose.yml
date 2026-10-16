@@ -44,6 +44,11 @@ services:
       # then sets qBittorrent's default save path and incoming port. On Beast both clients
       # are shared with Sonarr/Radarr, so the app must never own them.
       ARRMADA_PLEX_URL: "http://10.0.0.13:32400"
+    dns_opt:
+      # Beast load runs 30+ on 24 cores (Plex analyzers); Docker's default 1s x2 resolver
+      # timeout expired and failed the Spotify playlist read (2026-10-16).
+      - "timeout:5"
+      - "attempts:3"
     extra_hosts:
       # Name for the host in case an app setting prefers a hostname over the LAN IP.
       - "beast-host:10.0.0.13"

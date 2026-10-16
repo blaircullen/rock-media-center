@@ -70,11 +70,16 @@ type mirrorTrack struct {
 
 // desired lists the library tracks of the watched playlist's present songs, in the order the
 // songs were added. Songs without a library track yet are not members.
+// A Plex re-import gives a file a new rating key and leaves the old row behind (the identity
+// row keeps the recording but the catalogue refresh inserts the new key as a separate row), so
+// the key comes from the row at that path the catalogue saw most recently, not the oldest one
+// (Beast 2026-10-15: 41 of 56 mirror members were keys Plex answered 404 for).
 func (m *Mirror) desired(ctx context.Context, playlistRow int64) ([]mirrorTrack, error) {
 	rows, err := m.cfg.DB.QueryContext(ctx,
-		`SELECT lt.plex_rating_key, lt.path, lt.sha256, e.recording_id
+		`SELECT cur.plex_rating_key, lt.path, lt.sha256, e.recording_id
 		 FROM mus_playlist_entries e
 		 JOIN mus_library_tracks lt ON lt.id = (SELECT MIN(id) FROM mus_library_tracks WHERE recording_id = e.recording_id AND plex_rating_key <> '')
+		 JOIN mus_library_tracks cur ON cur.id = (SELECT id FROM mus_library_tracks WHERE path = lt.path AND plex_rating_key <> '' ORDER BY last_seen_at DESC, id DESC LIMIT 1)
 		 WHERE e.playlist_id = ? AND e.present = 1 AND e.recording_id IS NOT NULL
 		 ORDER BY e.first_seen_at, e.id`, playlistRow)
 	if err != nil {

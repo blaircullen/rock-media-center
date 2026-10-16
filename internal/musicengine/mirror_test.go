@@ -351,3 +351,40 @@ func TestRemapPlaylistThatNoLongerExistsMeansNoWritesForThatTrack(t *testing.T) 
 		t.Errorf("ratings written despite the unresolved playlist: %v", f.plex.ratings)
 	}
 }
+
+// After a Plex re-import the catalogue refresh adds the file under its new key as a separate
+// row; the mirror must hold the new key, not the old row that carries the recording.
+func TestMirrorUsesTheNewestKeyAtThePathAfterAReimport(t *testing.T) {
+	f := newMirrorFix(t)
+	var path string
+	if err := f.v.db.QueryRow(`SELECT lt.path FROM mus_items i JOIN mus_library_tracks lt ON lt.id = i.track_id WHERE i.id = ?`, f.itemA).Scan(&path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.v.db.Exec(`UPDATE mus_library_tracks SET last_seen_at = 1000 WHERE path = ?`, path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.v.db.Exec(`INSERT INTO mus_library_tracks (plex_rating_key, path, title, artist, album, last_seen_at, created_at)
+		VALUES ('re-imported-key', ?, 'Song A', 'Band', 'Album', 2000, 2000)`, path); err != nil {
+		t.Fatal(err)
+	}
+	want, err := f.mirror.desired(context.Background(), f.plID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, w := range want {
+		got = append(got, w.Key)
+	}
+	found := false
+	for _, k := range got {
+		if k == "re-imported-key" {
+			found = true
+		}
+		if k == f.keyOf(f.itemA) {
+			t.Errorf("the mirror still wants the old key %s: %v", k, got)
+		}
+	}
+	if !found {
+		t.Errorf("the mirror wants %v, want the re-imported key", got)
+	}
+}
